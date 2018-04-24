@@ -1,0 +1,190 @@
+diff --git a/sriov/sriov.go b/sriov/sriov.go
+index 25cb4c9..a5cb76b 100644
+--- a/sriov/sriov.go
++++ b/sriov/sriov.go
+@@ -43,6 +43,8 @@ type NetConf struct {
+ 	IF0NAME  string   `json:"if0name"`
+ 	L2Mode   bool     `json:"l2enable"`
+ 	Vlan     int      `json:"vlan"`
++	DeviceId string   `json:"deviceid"` // Device ID holds an VF's PCI address
++	VfId     int      `json: "vfid"`
+ }
+ 
+ // Link names given as os.FileInfo need to be sorted by their Index
+@@ -92,8 +94,8 @@ func loadConf(bytes []byte) (*NetConf, error) {
+ 		}
+ 	}
+ 
+-	if n.IF0 == "" {
+-		return nil, fmt.Errorf(`"if0" field is required. It specifies the host interface name to virtualize`)
++	if n.IF0 == "" && n.DeviceId == "" {
++		return nil, fmt.Errorf(`either "if0" OR "deviceid" field is required. It specifies the host interface name to virtualize`)
+ 	}
+ 
+ 	if n.CNIDir == "" {
+@@ -304,12 +306,100 @@ func setSharedVfVlan(ifName string, vfIdx int, vlan int) error {
+ 	return nil
+ }
+ 
++func moveIfToNetns(ifname string, netns ns.NetNS) error {
++	vfDev, err := netlink.LinkByName(ifname)
++	if err != nil {
++		return fmt.Errorf("failed to lookup vf device %v: %q", ifname, err)
++	}
++
++	if err = netlink.LinkSetUp(vfDev); err != nil {
++		return fmt.Errorf("failed to setup netlink device %v %q", ifname, err)
++	}
++
++	// move VF device to ns
++	if err = netlink.LinkSetNsFd(vfDev, int(netns.Fd())); err != nil {
++		return fmt.Errorf("failed to move device %+v to netns: %q", ifname, err)
++	}
++
++	return nil
++}
++
++func getDeviceNameFromPci(pciaddr string) (string, error) {
++	var devName string
++	vfDir := fmt.Sprintf("/sys/bus/pci/devices/%s/net/", pciaddr)
++	_, err := os.Lstat(vfDir)
++	if err != nil {
++		return devName, fmt.Errorf("cannot get a network device with pci address %v %q", pciaddr, err)
++	}
++	dirContents, _ := ioutil.ReadDir(vfDir)
++
++	if err != nil || len(dirContents) < 1 {
++		return devName, fmt.Errorf("failed to get network device name in %v %v", vfDir, err)
++	}
++
++	if len(dirContents) < 1 {
++		return devName, fmt.Errorf("no network device found in %v", vfDir)
++	}
++
++	devName = dirContents[0].Name() // assuming one net device in this directory
++	return strings.TrimSpace(devName), nil
++}
++
++func setupWithVfInfo(conf *NetConf, netns ns.NetNS, cid, podifName string) error {
++	var err error
++
++	// Get PF link with given name
++	m, err := netlink.LinkByName(conf.IF0)
++	if err != nil {
++		return fmt.Errorf("failed to lookup master %q: %v", conf.IF0, err)
++	}
++
++	// Get VF link name
++	vfLinkName, err := getDeviceNameFromPci(conf.DeviceId)
++	if err != nil {
++		return err
++	}
++
++	// Set Vlan
++	if conf.Vlan != 0 {
++		if err = netlink.LinkSetVfVlan(m, conf.VfId, conf.Vlan); err != nil {
++			return fmt.Errorf("failed to set vf %d vlan: %v", conf.VfId, err)
++		}
++	}
++
++	// if dpdk mode then skip rest
++	if conf.DPDKMode != false {
++		conf.DPDKConf.PCIaddr = conf.DeviceId
++		conf.DPDKConf.Ifname = podifName
++		conf.DPDKConf.VFID = conf.VfId
++		if err = savedpdkConf(cid, conf.CNIDir, conf); err != nil {
++			return err
++		}
++		return enabledpdkmode(&conf.DPDKConf, vfLinkName, true)
++	}
++
++	// move VF to pod netns
++	if err = moveIfToNetns(vfLinkName, netns); err != nil {
++		return err
++	}
++
++	// Rename VF in Pod
++	return netns.Do(func(_ ns.NetNS) error {
++		err := renameLink(vfLinkName, podifName)
++		if err != nil {
++			return fmt.Errorf("failed to rename  interface %v to %v in Pod netns %q", vfLinkName, podifName, err)
++		}
++		return nil
++	})
++}
++
+ func setupVF(conf *NetConf, ifName string, podifName string, cid string, netns ns.NetNS) error {
+ 
+ 	var vfIdx int
+ 	var infos []os.FileInfo
+ 	var pciAddr string
+ 
++	// try to get VF using PF information
+ 	m, err := netlink.LinkByName(ifName)
+ 	if err != nil {
+ 		return fmt.Errorf("failed to lookup master %q: %v", conf.IF0, err)
+@@ -325,6 +415,7 @@ func setupVF(conf *NetConf, ifName string, podifName string, cid string, netns n
+ 		return fmt.Errorf("no virtual function in the device %q: %v", ifName)
+ 	}
+ 
++	// Select a free VF
+ 	for vf := 0; vf <= (vfTotal - 1); vf++ {
+ 		vfDir := fmt.Sprintf("/sys/class/net/%s/device/virtfn%d/net", ifName, vf)
+ 		if _, err := os.Lstat(vfDir); err != nil {
+@@ -401,18 +492,11 @@ func setupVF(conf *NetConf, ifName string, podifName string, cid string, netns n
+ 	}
+ 
+ 	for i := 1; i <= len(infos); i++ {
+-		vfDev, err := netlink.LinkByName(infos[i-1].Name())
+-		if err != nil {
+-			return fmt.Errorf("failed to lookup vf device %q: %v", infos[i-1].Name(), err)
+-		}
++		// vfDev, err := netlink.LinkByName(infos[i-1].Name())
++		linkName := infos[i-1].Name()
+ 
+-		if err = netlink.LinkSetUp(vfDev); err != nil {
+-			return fmt.Errorf("failed to setup vf %d device: %v", vfIdx, err)
+-		}
+-
+-		// move VF device to ns
+-		if err = netlink.LinkSetNsFd(vfDev, int(netns.Fd())); err != nil {
+-			return fmt.Errorf("failed to move vf %d to netns: %v", vfIdx, err)
++		if err = moveIfToNetns(linkName, netns); err != nil {
++			return err
+ 		}
+ 	}
+ 
+@@ -525,7 +609,7 @@ func releaseVF(conf *NetConf, podifName string, cid string, netns ns.NetNS) erro
+ 
+ 		// move VF device to init netns
+ 		if err = netlink.LinkSetNsFd(vfDev, int(initns.Fd())); err != nil {
+-			return fmt.Errorf("failed to move vf device to init netns: %v", ifName, err)
++			return fmt.Errorf("failed to move vf device %q to init netns: %v", ifName, err)
+ 		}
+ 
+ 		// reset vlan
+@@ -601,8 +685,14 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 		args.IfName = n.IF0NAME
+ 	}
+ 
+-	if err = setupVF(n, n.IF0, args.IfName, args.ContainerID, netns); err != nil {
+-		return fmt.Errorf("failed to set up pod interface %q from the device %q: %v", args.IfName, n.IF0, err)
++	if n.DeviceId != "" && n.VfId >= 0 {
++		if err = setupWithVfInfo(n, netns, args.ContainerID, args.IfName); err != nil {
++			return err
++		}
++	} else {
++		if err = setupVF(n, n.IF0, args.IfName, args.ContainerID, netns); err != nil {
++			return fmt.Errorf("failed to set up pod interface %q from the device %q: %v", args.IfName, n.IF0, err)
++		}
+ 	}
+ 
+ 	// skip the IPAM allocation for the DPDK and L2 mode
+@@ -616,6 +706,7 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 	if err != nil {
+ 		return fmt.Errorf("failed to set up IPAM plugin type %q from the device %q: %v", n.IPAM.Type, n.IF0, err)
+ 	}
++
+ 	if result.IP4 == nil {
+ 		return errors.New("IPAM plugin returned missing IPv4 config")
+ 	}

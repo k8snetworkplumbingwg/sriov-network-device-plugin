@@ -1,0 +1,11 @@
+{
+	"name": "multus-cni-network",
+	"type": "multus",
+	"delegates": [{
+		"type": "flannel",
+		"delegate": {
+			"isDefaultGateway": true
+		}
+	}],
+	"kubeconfig": "/etc/kubernetes/node-kubeconfig.yaml"
+}

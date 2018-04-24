@@ -1,0 +1,31 @@
+kind: Pod
+apiVersion: v1
+metadata:
+        name: sriov-device-plugin
+spec:
+  containers:
+  - name: sriov-device-plugin 
+    image: sriov-device-plugin 
+    imagePullPolicy: IfNotPresent
+    #command: [ "/usr/bin/sriovdp", "-logtostderr", "-v", "99" ]
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    #securityContext:
+        #privileged: true
+    volumeMounts:
+    - mountPath: /var/lib/kubelet/device-plugins/ 
+      name: devicesock 
+      readOnly: false
+    - mountPath: /sys/class/net
+      name: net
+      readOnly: true
+  volumes:
+  - name: devicesock 
+    hostPath:
+     # directory location on host
+     path: /var/lib/kubelet/device-plugins/
+  - name: net
+    hostPath:
+      path: /sys/class/net
+  hostNetwork: true
+  hostPID: true
