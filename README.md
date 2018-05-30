@@ -74,7 +74,7 @@ $ cd multus-cni
 $ ./build
 $ cp bin/multus /opt/cni/bin
 ````
-2. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni#usage-with-kubernetes-crdtpr-based-network-objects)
+2. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
 
 ### SRIOV CNI
  Compile SRIOV-CNI:
