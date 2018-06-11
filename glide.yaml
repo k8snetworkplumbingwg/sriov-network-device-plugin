@@ -1,4 +1,4 @@
-package: github.com/Intel-Corp/sriov-net-dp
+package: github.com/intel/sriov-network-device-plugin
 import:
 - package: github.com/golang/glog
 - package: github.com/golang/protobuf
