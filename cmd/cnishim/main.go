@@ -232,12 +232,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	conf.Delegate["name"] = conf.Name
-	conf.Delegate["deviceid"] = vfInfo.GetPciaddr() // Add in device information
-	conf.Delegate["if0"] = vfInfo.GetPfname()
-	conf.Delegate["vfid"] = int(vfInfo.GetVfid())
-
-	// TODO: use conf.Args to pass additional device specific info
-	// args.Args = args.Args + fmt.Sprintf("deviceid=%s;pfname=%s;vfnum=%d",vfInfo.GetPfname(), vfInfo.GetPciaddr(), int(vfInfo.GetVfid()))
+	conf.Delegate["deviceinfo"] = vfInfo
 
 	return delegateExec(args.ContainerID, conf.DataDir, args.IfName, conf.Delegate, Add)
 }
