@@ -51,21 +51,38 @@ const (
 	resourceName         = "intel.com/sriov"
 )
 
+type deviceEntry struct {
+	deviceID  string
+	allocated bool
+}
+
 // sriovManager manages sriov networking devices
 type sriovManager struct {
+	k8ClientSet      *kubernetes.Clientset
 	defaultDevices   []string
 	socketFile       string
 	devices          map[string]pluginapi.Device   // for Kubelet DP API
 	managedDevices   map[string]*api.VfInformation // for internal use (key: pciaddr; value: VfInfo)
 	grpcServer       *grpc.Server
-	allocatedDevices map[string][]string
+	allocatedDevices map[string][]*deviceEntry // map: PodID to allocated Devices
 }
 
 func NewSriovManager() *sriovManager {
 
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		glog.Errorf("Error. Could not get InClusterConfig to create K8s Client. %v", err)
+		return nil
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		glog.Errorf("Error. Could not create K8s Client using supplied config. %v", err)
+		return nil
+	}
 	return &sriovManager{
+		k8ClientSet:      clientset,
 		devices:          make(map[string]pluginapi.Device),
-		allocatedDevices: make(map[string][]string),
+		allocatedDevices: make(map[string][]*deviceEntry),
 		managedDevices:   make(map[string]*api.VfInformation),
 		socketFile:       fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 	}
@@ -201,7 +218,7 @@ func (sm *sriovManager) Start() error {
 
 	// Register all services
 	pluginapi.RegisterDevicePluginServer(sm.grpcServer, sm)
-	api.RegisterSendPodInformationServer(sm.grpcServer, sm)
+	api.RegisterCniEndpointServer(sm.grpcServer, sm)
 
 	go sm.grpcServer.Serve(lis)
 
@@ -321,8 +338,6 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 		glog.Infof("PodUID: %v & Container Name: %v in Allocate", container.PodUID, container.ContName)
 		for _, id := range container.DevicesIDs {
 			glog.Infof("DeviceID in Allocate: %v", id)
-			//PodUID to PCI mapping for CNI Communication
-			sm.allocatedDevices[string(container.PodUID)] = append(sm.allocatedDevices[string(container.PodUID)], id)
 			dev, ok := sm.devices[id]
 			if !ok {
 				glog.Errorf("Error. Invalid allocation request with non-existing device %s", id)
@@ -332,6 +347,10 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 				glog.Errorf("Error. Invalid allocation request with unhealthy device %s", id)
 				return nil, fmt.Errorf("Error. Invalid allocation request with unhealthy device %s", id)
 			}
+
+			//PodUID to PCI mapping for CNI Communication
+			de := &deviceEntry{deviceID: id, allocated: false}
+			sm.allocatedDevices[string(container.PodUID)] = append(sm.allocatedDevices[string(container.PodUID)], de)
 			pciAddrs = pciAddrs + id + ","
 		}
 
@@ -347,32 +366,64 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 
 //gRPC Server implementation of CNI/Device communication
 //CNI sends Pod Name and Pod Namespace - use inclusterconfig to get PodUID
-func (sm *sriovManager) SendPodInformation(ctx context.Context, podInfo *api.PodInformation) (*api.DeviceInformation, error) {
-	glog.Infof("SendPodInformation in Device Plugin. Recieved Pod Name: %v Pod Namespace: %v", podInfo.PodName, podInfo.PodNamespace)
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		glog.Errorf("Error. Could not get InClusterConfig to create K8s Client. %v", err)
-		return &api.DeviceInformation{}, err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		glog.Errorf("Error. Could not create K8s Client using supplied config. %v", err)
-		return &api.DeviceInformation{}, err
-	}
-	pod, err := clientset.CoreV1().Pods(podInfo.PodNamespace).Get((podInfo.PodName), metav1.GetOptions{})
+func (sm *sriovManager) GetDeviceInfo(ctx context.Context, podInfo *api.PodInformation) (*api.VfInformation, error) {
+	vfInfo := &api.VfInformation{}
+
+	// Get Pod information
+	pod, err := sm.k8ClientSet.CoreV1().Pods(podInfo.PodNamespace).Get((podInfo.PodName), metav1.GetOptions{})
 	if err != nil {
 		glog.Errorf("Error. Could not get Pod Information from K8s Client. %v", err)
-		return &api.DeviceInformation{}, err
+		return vfInfo, err
 	}
 	glog.Infof("Pod UID from API server %v", pod.UID)
-	pciForPod := sm.allocatedDevices[string(pod.UID)]
-	glog.Infof("PCI for Pod: %v", pciForPod)
+	podDevices, ok := sm.allocatedDevices[string(pod.UID)]
 
-	vfInfos := []*api.VfInformation{}
-	for _, p := range pciForPod {
-		vfInfos = append(vfInfos, sm.managedDevices[p])
+	if !ok {
+		err = fmt.Errorf("no VF information found for Pod: %s", pod.UID)
+		glog.Errorf("Error. %v", err)
+		return vfInfo, err
 	}
-	return &api.DeviceInformation{VFs: vfInfos}, nil
+
+	for _, p := range podDevices {
+		if !p.allocated {
+			vfInfo = sm.managedDevices[p.deviceID]
+			p.allocated = true // mark this VF as assigned to a CNI plugin client; next Allocate() call will skip this one
+			glog.Infof("PCI for Pod: %v", p.deviceID)
+			return vfInfo, nil
+		}
+	}
+	err = fmt.Errorf("all allocated VF(s) already assigned to CNI")
+	glog.Errorf("Error. %v", err)
+	return vfInfo, err
+}
+
+func (sm *sriovManager) CNIDelete(ctx context.Context, podInfo *api.PodInformation) (a *api.Empty, err error) {
+	// Get Pod information
+	a = &api.Empty{}
+	pod, err := sm.k8ClientSet.CoreV1().Pods(podInfo.PodNamespace).Get((podInfo.PodName), metav1.GetOptions{})
+	if err != nil {
+		glog.Errorf("Error. Could not get Pod Information from K8s Client. %v", err)
+		return
+	}
+	glog.Infof("Pod UID from API server %v", pod.UID)
+	podDevices, ok := sm.allocatedDevices[string(pod.UID)]
+
+	if !ok {
+		err = fmt.Errorf("no VF information found for Pod: %s", pod.UID)
+		glog.Errorf("Error. %v", err)
+		return
+	}
+
+	for _, p := range podDevices {
+		if p.allocated {
+			p.allocated = false // mark this VF as NOT assigned to a CNI plugin client; next CNIDelete() call will skip this one
+			glog.Infof("VF with ID %v marked as unconfigured", p.deviceID)
+			return
+		}
+	}
+	err = fmt.Errorf("no allocated VF found")
+	glog.Errorf("Error. %v", err)
+	return
 }
 
 func main() {

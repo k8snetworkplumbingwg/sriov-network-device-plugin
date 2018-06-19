@@ -99,7 +99,7 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 }
 
 // Establishes a gRPC connection with the device plugin
-func dialToDP(dpEndPointPath string) (pb.SendPodInformationClient, *grpc.ClientConn, error) {
+func dialToDP(dpEndPointPath string) (pb.CniEndpointClient, *grpc.ClientConn, error) {
 	conn, err := grpc.Dial(dpEndPointPath, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(10*time.Second),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
@@ -110,7 +110,7 @@ func dialToDP(dpEndPointPath string) (pb.SendPodInformationClient, *grpc.ClientC
 		return nil, nil, fmt.Errorf("failed to dial to grpc server %v", err)
 	}
 
-	return pb.NewSendPodInformationClient(conn), conn, nil
+	return pb.NewCniEndpointClient(conn), conn, nil
 }
 
 func getDeviceInfo(k *K8sArgs, dpEndpointPrefix string) (*pb.VfInformation, error) {
@@ -121,20 +121,36 @@ func getDeviceInfo(k *K8sArgs, dpEndpointPrefix string) (*pb.VfInformation, erro
 
 	client, conn, err := dialToDP(dpEndPointPath)
 	if err != nil {
-		fmt.Printf("error making connection to grpc server using %v : %v", dpEndPointPath, err)
 		return nil, err
 	}
 	defer conn.Close()
 
 	req := &pb.PodInformation{PodName: string(k.K8S_POD_NAME), PodNamespace: string(k.K8S_POD_NAMESPACE)}
-	resp, err := client.SendPodInformation(context.Background(), req)
+	resp, err := client.GetDeviceInfo(context.Background(), req)
 	if err != nil {
-		fmt.Printf("error getting response from device plugin server: %q", err)
 		return nil, err
 	}
 
-	vfInfo := resp.GetVFs()[0] // For now just work on the first VF
-	return vfInfo, nil
+	return resp, nil
+}
+
+func updateDPonDel(k *K8sArgs, dpEndpointPrefix string) error {
+
+	// Set up a connection to the gRPC server.
+	dpEndPoint := fmt.Sprintf("%s.sock", dpEndpointPrefix)
+	dpEndPointPath := filepath.Join(dpMountPath, dpEndPoint)
+
+	client, conn, err := dialToDP(dpEndPointPath)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	req := &pb.PodInformation{PodName: string(k.K8S_POD_NAME), PodNamespace: string(k.K8S_POD_NAMESPACE)}
+	_, err = client.CNIDelete(context.Background(), req)
+	if err != nil {
+	}
+	return err
 }
 
 // Adapted from flannel-cni
@@ -243,6 +259,14 @@ func cmdDel(args *skel.CmdArgs) error {
 		return fmt.Errorf("Error in loading the CNI-Shim args %v", err)
 	}
 
+	// Get Pod info from CNI_Args
+	k8sArgs := K8sArgs{}
+	err = types.LoadArgs(args.Args, &k8sArgs)
+	if err != nil {
+		return fmt.Errorf("Error in loading the k8s args %v", err)
+	}
+
+	err = updateDPonDel(&k8sArgs, conf.DevicePlugin)
 	// conf.Delegate is not being used for deletion as configs are read from a file.
 	// It's just a dummy parameter for the function call
 	return delegateExec(args.ContainerID, conf.DataDir, args.IfName, conf.Delegate, Del)

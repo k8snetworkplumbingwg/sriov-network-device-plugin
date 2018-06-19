@@ -9,8 +9,8 @@ It is generated from these files:
 
 It has these top-level messages:
 	PodInformation
-	DeviceInformation
 	VfInformation
+	Empty
 */
 package api
 
@@ -58,22 +58,6 @@ func (m *PodInformation) GetPodNamespace() string {
 	return ""
 }
 
-type DeviceInformation struct {
-	VFs []*VfInformation `protobuf:"bytes,1,rep,name=VFs" json:"VFs,omitempty"`
-}
-
-func (m *DeviceInformation) Reset()                    { *m = DeviceInformation{} }
-func (m *DeviceInformation) String() string            { return proto.CompactTextString(m) }
-func (*DeviceInformation) ProtoMessage()               {}
-func (*DeviceInformation) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *DeviceInformation) GetVFs() []*VfInformation {
-	if m != nil {
-		return m.VFs
-	}
-	return nil
-}
-
 type VfInformation struct {
 	Pciaddr string `protobuf:"bytes,3,opt,name=pciaddr" json:"pciaddr,omitempty"`
 	Pfname  string `protobuf:"bytes,1,opt,name=pfname" json:"pfname,omitempty"`
@@ -83,7 +67,7 @@ type VfInformation struct {
 func (m *VfInformation) Reset()                    { *m = VfInformation{} }
 func (m *VfInformation) String() string            { return proto.CompactTextString(m) }
 func (*VfInformation) ProtoMessage()               {}
-func (*VfInformation) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*VfInformation) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *VfInformation) GetPciaddr() string {
 	if m != nil {
@@ -106,10 +90,18 @@ func (m *VfInformation) GetVfid() int32 {
 	return 0
 }
 
+type Empty struct {
+}
+
+func (m *Empty) Reset()                    { *m = Empty{} }
+func (m *Empty) String() string            { return proto.CompactTextString(m) }
+func (*Empty) ProtoMessage()               {}
+func (*Empty) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
 func init() {
 	proto.RegisterType((*PodInformation)(nil), "api.PodInformation")
-	proto.RegisterType((*DeviceInformation)(nil), "api.DeviceInformation")
 	proto.RegisterType((*VfInformation)(nil), "api.VfInformation")
+	proto.RegisterType((*Empty)(nil), "api.Empty")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -120,64 +112,97 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for SendPodInformation service
+// Client API for CniEndpoint service
 
-type SendPodInformationClient interface {
-	SendPodInformation(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*DeviceInformation, error)
+type CniEndpointClient interface {
+	GetDeviceInfo(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*VfInformation, error)
+	CNIDelete(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*Empty, error)
 }
 
-type sendPodInformationClient struct {
+type cniEndpointClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewSendPodInformationClient(cc *grpc.ClientConn) SendPodInformationClient {
-	return &sendPodInformationClient{cc}
+func NewCniEndpointClient(cc *grpc.ClientConn) CniEndpointClient {
+	return &cniEndpointClient{cc}
 }
 
-func (c *sendPodInformationClient) SendPodInformation(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*DeviceInformation, error) {
-	out := new(DeviceInformation)
-	err := grpc.Invoke(ctx, "/api.SendPodInformation/SendPodInformation", in, out, c.cc, opts...)
+func (c *cniEndpointClient) GetDeviceInfo(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*VfInformation, error) {
+	out := new(VfInformation)
+	err := grpc.Invoke(ctx, "/api.CniEndpoint/GetDeviceInfo", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for SendPodInformation service
-
-type SendPodInformationServer interface {
-	SendPodInformation(context.Context, *PodInformation) (*DeviceInformation, error)
+func (c *cniEndpointClient) CNIDelete(ctx context.Context, in *PodInformation, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := grpc.Invoke(ctx, "/api.CniEndpoint/CNIDelete", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-func RegisterSendPodInformationServer(s *grpc.Server, srv SendPodInformationServer) {
-	s.RegisterService(&_SendPodInformation_serviceDesc, srv)
+// Server API for CniEndpoint service
+
+type CniEndpointServer interface {
+	GetDeviceInfo(context.Context, *PodInformation) (*VfInformation, error)
+	CNIDelete(context.Context, *PodInformation) (*Empty, error)
 }
 
-func _SendPodInformation_SendPodInformation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func RegisterCniEndpointServer(s *grpc.Server, srv CniEndpointServer) {
+	s.RegisterService(&_CniEndpoint_serviceDesc, srv)
+}
+
+func _CniEndpoint_GetDeviceInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PodInformation)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SendPodInformationServer).SendPodInformation(ctx, in)
+		return srv.(CniEndpointServer).GetDeviceInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/api.SendPodInformation/SendPodInformation",
+		FullMethod: "/api.CniEndpoint/GetDeviceInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SendPodInformationServer).SendPodInformation(ctx, req.(*PodInformation))
+		return srv.(CniEndpointServer).GetDeviceInfo(ctx, req.(*PodInformation))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _SendPodInformation_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "api.SendPodInformation",
-	HandlerType: (*SendPodInformationServer)(nil),
+func _CniEndpoint_CNIDelete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PodInformation)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CniEndpointServer).CNIDelete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/api.CniEndpoint/CNIDelete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CniEndpointServer).CNIDelete(ctx, req.(*PodInformation))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _CniEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "api.CniEndpoint",
+	HandlerType: (*CniEndpointServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SendPodInformation",
-			Handler:    _SendPodInformation_SendPodInformation_Handler,
+			MethodName: "GetDeviceInfo",
+			Handler:    _CniEndpoint_GetDeviceInfo_Handler,
+		},
+		{
+			MethodName: "CNIDelete",
+			Handler:    _CniEndpoint_CNIDelete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -187,19 +212,19 @@ var _SendPodInformation_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("api.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 209 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4c, 0x2c, 0xc8, 0xd4,
-	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x4e, 0x2c, 0xc8, 0x54, 0xf2, 0xe3, 0xe2, 0x0b, 0xc8,
-	0x4f, 0xf1, 0xcc, 0x4b, 0xcb, 0x2f, 0xca, 0x4d, 0x2c, 0xc9, 0xcc, 0xcf, 0x13, 0x92, 0xe0, 0x62,
-	0x2f, 0xc8, 0x4f, 0xf1, 0x4b, 0xcc, 0x4d, 0x95, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x82, 0x71,
-	0x85, 0x94, 0xb8, 0x78, 0xa0, 0xcc, 0xe2, 0x82, 0xc4, 0xe4, 0x54, 0x09, 0x26, 0xb0, 0x34, 0x8a,
-	0x98, 0x92, 0x25, 0x97, 0xa0, 0x4b, 0x6a, 0x59, 0x66, 0x72, 0x2a, 0xb2, 0x91, 0x2a, 0x5c, 0xcc,
-	0x61, 0x6e, 0xc5, 0x12, 0x8c, 0x0a, 0xcc, 0x1a, 0xdc, 0x46, 0x42, 0x7a, 0x20, 0x27, 0x84, 0xa5,
-	0x21, 0x29, 0x08, 0x02, 0x49, 0x2b, 0x85, 0x72, 0xf1, 0xa2, 0x88, 0x82, 0x5d, 0x92, 0x9c, 0x99,
-	0x98, 0x92, 0x52, 0x24, 0xc1, 0x0c, 0x75, 0x09, 0x84, 0x2b, 0x24, 0xc6, 0xc5, 0x56, 0x90, 0x96,
-	0x87, 0x70, 0x22, 0x94, 0x27, 0x24, 0xc4, 0xc5, 0x52, 0x96, 0x96, 0x99, 0x02, 0x76, 0x19, 0x6b,
-	0x10, 0x98, 0x6d, 0x14, 0xc9, 0x25, 0x14, 0x9c, 0x9a, 0x97, 0x82, 0xe6, 0x4b, 0x67, 0xac, 0xa2,
-	0xc2, 0x60, 0xb7, 0xa1, 0x0a, 0x4a, 0x89, 0x81, 0x05, 0x31, 0x7c, 0xa5, 0xc4, 0x90, 0xc4, 0x06,
-	0x0e, 0x48, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x0e, 0x8c, 0xbd, 0x80, 0x55, 0x01, 0x00,
-	0x00,
+	// 217 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x50, 0xb1, 0x4a, 0xc4, 0x40,
+	0x10, 0xbd, 0xf3, 0xbc, 0x3b, 0x32, 0x7a, 0x16, 0x23, 0xc8, 0x62, 0x25, 0x5b, 0x59, 0xa5, 0xd0,
+	0xce, 0x36, 0x09, 0x92, 0x26, 0x48, 0x40, 0xfb, 0x35, 0x3b, 0x0b, 0x03, 0x66, 0x77, 0x88, 0x4b,
+	0x20, 0x7f, 0x2f, 0x59, 0x23, 0x12, 0xb1, 0x7b, 0xef, 0x0d, 0xf3, 0xde, 0xbc, 0x81, 0xcc, 0x08,
+	0xe7, 0x32, 0x84, 0x18, 0x70, 0x67, 0x84, 0x75, 0x03, 0x57, 0x2f, 0xc1, 0xd6, 0xde, 0x85, 0xa1,
+	0x37, 0x91, 0x83, 0x47, 0x05, 0x47, 0x09, 0xb6, 0x31, 0x3d, 0xa9, 0xed, 0xdd, 0xf6, 0x3e, 0x6b,
+	0x7f, 0x28, 0x6a, 0xb8, 0x5c, 0xe0, 0xa7, 0x98, 0x8e, 0xd4, 0x59, 0x1a, 0xaf, 0x34, 0xfd, 0x0a,
+	0xa7, 0x37, 0xf7, 0xd7, 0xae, 0x63, 0x63, 0xed, 0xa0, 0x76, 0x8b, 0xdd, 0x37, 0xc5, 0x1b, 0x38,
+	0x88, 0xf3, 0xbf, 0x39, 0x0b, 0x43, 0x84, 0xf3, 0xd1, 0xb1, 0x4d, 0xf6, 0xfb, 0x36, 0x61, 0x7d,
+	0x84, 0x7d, 0xd5, 0x4b, 0x9c, 0x1e, 0x26, 0xb8, 0x28, 0x3c, 0x57, 0xde, 0x4a, 0x60, 0x1f, 0xf1,
+	0x09, 0x4e, 0xcf, 0x14, 0x4b, 0x1a, 0xb9, 0xa3, 0x39, 0x15, 0xaf, 0xf3, 0xb9, 0xe0, 0xba, 0xd2,
+	0x2d, 0x26, 0x71, 0x75, 0x97, 0xde, 0x60, 0x0e, 0x59, 0xd1, 0xd4, 0x25, 0x7d, 0x50, 0xa4, 0xff,
+	0xf7, 0x20, 0x89, 0x29, 0x58, 0x6f, 0xde, 0x0f, 0xe9, 0x6d, 0x8f, 0x5f, 0x01, 0x00, 0x00, 0xff,
+	0xff, 0xdb, 0x4e, 0x64, 0x31, 0x43, 0x01, 0x00, 0x00,
 }
