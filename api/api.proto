@@ -20,16 +20,15 @@ message PodInformation {
 	string podNamespace = 2;
 }
 
-message DeviceInformation {
-	repeated VfInformation VFs = 1;
-}
-
 message VfInformation {
 	string pciaddr = 3;
 	string pfname = 1;
 	int32 vfid = 2;
 }
 
-service SendPodInformation {
-	rpc SendPodInformation(PodInformation) returns (DeviceInformation) {}
+message Empty {}
+
+service CniEndpoint {
+	rpc GetDeviceInfo(PodInformation) returns (VfInformation) {};
+	rpc CNIDelete(PodInformation) returns (Empty) {}
 }
