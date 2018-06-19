@@ -33,6 +33,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/intel/sriov-network-device-plugin/api"
+	"github.com/intel/sriov-network-device-plugin/checkpoint"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -79,12 +80,36 @@ func newSriovManager() *sriovManager {
 		glog.Errorf("Error. Could not create K8s Client using supplied config. %v", err)
 		return nil
 	}
-	return &sriovManager{
+	sm := &sriovManager{
 		k8ClientSet:      clientset,
 		devices:          make(map[string]pluginapi.Device),
 		allocatedDevices: make(map[string][]*deviceEntry),
 		managedDevices:   make(map[string]*api.VfInformation),
 		socketFile:       fmt.Sprintf("%s.sock", pluginEndpointPrefix),
+	}
+	// get device mapping from checkpoint if there's any
+	restorePodMapping(sm)
+
+	return sm
+}
+
+// Restore Pod to device mapping from checkpoint file
+func restorePodMapping(sm *sriovManager) {
+	glog.Infof("Checking checkpoint file")
+	podEntries, err := checkpoint.GetPodEntries(resourceName)
+	if err == nil && len(podEntries) > 0 {
+		for _, p := range podEntries {
+			logStr := fmt.Sprintf("Restored PodUID: %s DeviceIDs : {", p.PodUID)
+			dEntry := []*deviceEntry{}
+			for _, d := range p.DeviceIDs {
+				// assuming CNI plugin already configured these VFs mark them as configured 'true'
+				dEntry = append(dEntry, &deviceEntry{deviceID: d, allocated: true})
+				logStr += fmt.Sprintf("%s,", d)
+			}
+			logStr += "}"
+			sm.allocatedDevices[p.PodUID] = dEntry
+			glog.Infof(logStr)
+		}
 	}
 }
 
@@ -315,6 +340,7 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 		changed = false
 		time.Sleep(5 * time.Second)
 	}
+	return nil
 }
 
 func (sm *sriovManager) PreStartContainer(ctx context.Context, psRqt *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
@@ -427,8 +453,12 @@ func (sm *sriovManager) CNIDelete(ctx context.Context, podInfo *api.PodInformati
 
 func main() {
 	flag.Parse()
-	glog.Infof("SRIOV Network Device Plugin started...")
+	glog.Infof("Starting SRIOV Network Device Plugin...")
 	sm := newSriovManager()
+	if sm == nil {
+		glog.Errorf("Unable to get instance of a SRIOV-Manager")
+		return
+	}
 	sm.cleanup()
 
 	// respond to syscalls for termination
