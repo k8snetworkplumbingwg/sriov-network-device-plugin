@@ -40,9 +40,9 @@ import (
 )
 
 const (
-	netDirectory     = "/sys/class/net/"
-	sriov_capabale   = "/sriov_totalvfs"
-	sriov_configured = "/sriov_numvfs"
+	netDirectory    = "/sys/class/net/"
+	sriovCapable    = "/sriov_totalvfs"
+	sriovConfigured = "/sriov_numvfs"
 
 	// Device plugin settings.
 	pluginMountPath      = "/var/lib/kubelet/device-plugins"
@@ -67,7 +67,7 @@ type sriovManager struct {
 	allocatedDevices map[string][]*deviceEntry // map: PodID to allocated Devices
 }
 
-func NewSriovManager() *sriovManager {
+func newSriovManager() *sriovManager {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -134,7 +134,7 @@ func (sm *sriovManager) discoverNetworks() error {
 	}
 
 	for _, dev := range pfList {
-		sriovcapablepath := filepath.Join(netDirectory, dev, "device", sriov_capabale)
+		sriovcapablepath := filepath.Join(netDirectory, dev, "device", sriovCapable)
 		glog.Infof("Sriov Capable Path: %v", sriovcapablepath)
 		vfs, err := ioutil.ReadFile(sriovcapablepath)
 		if err != nil {
@@ -150,19 +150,19 @@ func (sm *sriovManager) discoverNetworks() error {
 		glog.Infof("Total number of VFs for device %v is %v", dev, numvfs)
 		if numvfs > 0 {
 			glog.Infof("SRIOV capable device discovered: %v", dev)
-			sriovconfiguredpath := netDirectory + dev + "/device" + sriov_configured
+			sriovconfiguredpath := netDirectory + dev + "/device" + sriovConfigured
 			vfs, err = ioutil.ReadFile(sriovconfiguredpath)
 			if err != nil {
 				glog.Errorf("Error. Could not read sriov_numvfs file. SRIOV error. %v", err)
 				return err
 			}
-			configured_vfs := bytes.TrimSpace(vfs)
-			numconfiguredvfs, err := strconv.Atoi(string(configured_vfs))
+			configuredVFs := bytes.TrimSpace(vfs)
+			numconfiguredvfs, err := strconv.Atoi(string(configuredVFs))
 			if err != nil {
 				glog.Errorf("Error. Could not parse sriov_numvfs files. Skipping device. Err: %v", err)
 				return err
 			}
-			glog.Infof("Number of Configured VFs for device %v is %v", dev, string(configured_vfs))
+			glog.Infof("Number of Configured VFs for device %v is %v", dev, string(configuredVFs))
 
 			//get PCI IDs for VFs
 			for vf := 0; vf < numconfiguredvfs; vf++ {
@@ -188,7 +188,7 @@ func (sm *sriovManager) discoverNetworks() error {
 				glog.Infof("PCI Address for device %s, VF %v is %s", dev, vf, pciAddr)
 
 				devName := pciAddr
-				sm.devices[devName] = pluginapi.Device{devName, pluginapi.Healthy}
+				sm.devices[devName] = pluginapi.Device{ID: devName, Health: pluginapi.Healthy}
 				sm.managedDevices[devName] = &api.VfInformation{Pciaddr: pciAddr, Vfid: int32(vf), Pfname: dev}
 			}
 
@@ -262,7 +262,7 @@ func (sm *sriovManager) cleanup() error {
 	return nil
 }
 
-// Act as a grpc client and register with the kubelet.
+// Register registers as a grpc client with the kubelet.
 func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
 	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
@@ -289,7 +289,7 @@ func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
 }
 
 // Implements DevicePlugin service functions
-func (sm *sriovManager) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 	changed := true
 	for {
 		for id, dev := range sm.devices {
@@ -303,7 +303,7 @@ func (sm *sriovManager) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.De
 		if changed {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
-				resp.Devices = append(resp.Devices, &pluginapi.Device{dev.ID, dev.Health})
+				resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
 			}
 			glog.Infof("ListAndWatch: send devices %v\n", resp)
 			if err := stream.Send(resp); err != nil {
@@ -315,7 +315,6 @@ func (sm *sriovManager) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.De
 		changed = false
 		time.Sleep(5 * time.Second)
 	}
-	return nil
 }
 
 func (sm *sriovManager) PreStartContainer(ctx context.Context, psRqt *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
@@ -429,7 +428,7 @@ func (sm *sriovManager) CNIDelete(ctx context.Context, podInfo *api.PodInformati
 func main() {
 	flag.Parse()
 	glog.Infof("SRIOV Network Device Plugin started...")
-	sm := NewSriovManager()
+	sm := newSriovManager()
 	sm.cleanup()
 
 	// respond to syscalls for termination
