@@ -641,7 +641,7 @@ func (m *ManagerImpl) allocateContainerResources(pod *v1.Pod, container *v1.Cont
 		// TODO: refactor this part of code to just append a ContainerAllocationRequest
 		// in a passed in AllocateRequest pointer, and issues a single Allocate call per pod.
 		glog.V(3).Infof("Making allocation request for devices %v for device plugin %s", devs, resource)
-		resp, err := e.allocate(devs, podUID, contName)
+		resp, err := e.allocate(devs)
 		metrics.DevicePluginAllocationLatency.WithLabelValues(resource).Observe(metrics.SinceInMicroseconds(startRPCTime))
 		if err != nil {
 			// In case of allocation failure, we want to restore m.allocatedDevices

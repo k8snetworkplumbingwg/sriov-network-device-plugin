@@ -35,7 +35,7 @@ import (
 type endpoint interface {
 	run()
 	stop()
-	allocate(devs []string, podUID string, contName string) (*pluginapi.AllocateResponse, error)
+	allocate(devs []string) (*pluginapi.AllocateResponse, error)
 	preStartContainer(devs []string) (*pluginapi.PreStartContainerResponse, error)
 	getDevices() []pluginapi.Device
 	callback(resourceName string, added, updated, deleted []pluginapi.Device)
@@ -210,16 +210,13 @@ func (e *endpointImpl) setStopTime(t time.Time) {
 }
 
 // allocate issues Allocate gRPC call to the device plugin.
-func (e *endpointImpl) allocate(devs []string,  podUID string, contName string) (*pluginapi.AllocateResponse, error) {
+func (e *endpointImpl) allocate(devs []string) (*pluginapi.AllocateResponse, error) {
 	if e.isStopped() {
 		return nil, fmt.Errorf(errEndpointStopped, e)
 	}
-	glog.Infof("Endpoint Allocate Call. PodUID: %v, Container Name: %v", podUID, contName)
 	return e.client.Allocate(context.Background(), &pluginapi.AllocateRequest{
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
-			{DevicesIDs: devs,
-			PodUID: podUID,
-			ContName: contName,},
+			{DevicesIDs: devs},
 		},
 	})
 }

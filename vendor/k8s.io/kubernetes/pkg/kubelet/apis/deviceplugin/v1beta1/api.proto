@@ -111,8 +111,6 @@ message AllocateRequest {
 
 message ContainerAllocateRequest {
 	repeated string devicesIDs = 1;
-	string podUID = 2;
-	string contName = 3; 
 }
 
 // AllocateResponse includes the artifacts that needs to be injected into
