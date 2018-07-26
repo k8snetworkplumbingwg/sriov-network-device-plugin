@@ -35,14 +35,8 @@ mkdir -p "${PWD}/bin"
 export GOBIN=${PWD}/bin
 
 
-echo "Building protobuf API"
-protoc -I api/ -I${GOPATH}/src api/api.proto --go_out=plugins=grpc:api
-
 echo "Building SRIOV Device plugin"
 $GO install "$@" ${REPO_PATH}/cmd/sriovdp
-
-echo "Building CNI-Shim"
-$GO install "$@" ${REPO_PATH}/cmd/cnishim
 
 ## Build docker image
 # yes | cp bin/sriov_dp deployments/

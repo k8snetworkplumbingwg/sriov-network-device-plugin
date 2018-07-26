@@ -32,9 +32,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"github.com/intel/sriov-network-device-plugin/api"
-	"github.com/intel/sriov-network-device-plugin/checkpoint"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
@@ -63,9 +60,7 @@ type sriovManager struct {
 	defaultDevices   []string
 	socketFile       string
 	devices          map[string]pluginapi.Device   // for Kubelet DP API
-	managedDevices   map[string]*api.VfInformation // for internal use (key: pciaddr; value: VfInfo)
 	grpcServer       *grpc.Server
-	allocatedDevices map[string][]*deviceEntry // map: PodID to allocated Devices
 }
 
 func newSriovManager() *sriovManager {
@@ -80,36 +75,10 @@ func newSriovManager() *sriovManager {
 		glog.Errorf("Error. Could not create K8s Client using supplied config. %v", err)
 		return nil
 	}
-	sm := &sriovManager{
+	return &sriovManager{
 		k8ClientSet:      clientset,
 		devices:          make(map[string]pluginapi.Device),
-		allocatedDevices: make(map[string][]*deviceEntry),
-		managedDevices:   make(map[string]*api.VfInformation),
 		socketFile:       fmt.Sprintf("%s.sock", pluginEndpointPrefix),
-	}
-	// get device mapping from checkpoint if there's any
-	restorePodMapping(sm)
-
-	return sm
-}
-
-// Restore Pod to device mapping from checkpoint file
-func restorePodMapping(sm *sriovManager) {
-	glog.Infof("Checking checkpoint file")
-	podEntries, err := checkpoint.GetPodEntries(resourceName)
-	if err == nil && len(podEntries) > 0 {
-		for _, p := range podEntries {
-			logStr := fmt.Sprintf("Restored PodUID: %s DeviceIDs : {", p.PodUID)
-			dEntry := []*deviceEntry{}
-			for _, d := range p.DeviceIDs {
-				// assuming CNI plugin already configured these VFs mark them as configured 'true'
-				dEntry = append(dEntry, &deviceEntry{deviceID: d, allocated: true})
-				logStr += fmt.Sprintf("%s,", d)
-			}
-			logStr += "}"
-			sm.allocatedDevices[p.PodUID] = dEntry
-			glog.Infof(logStr)
-		}
 	}
 }
 
@@ -214,7 +183,6 @@ func (sm *sriovManager) discoverNetworks() error {
 
 				devName := pciAddr
 				sm.devices[devName] = pluginapi.Device{ID: devName, Health: pluginapi.Healthy}
-				sm.managedDevices[devName] = &api.VfInformation{Pciaddr: pciAddr, Vfid: int32(vf), Pfname: dev}
 			}
 
 		}
@@ -241,9 +209,8 @@ func (sm *sriovManager) Start() error {
 	}
 	sm.grpcServer = grpc.NewServer()
 
-	// Register all services
+	// Register SRIOV device plugin service
 	pluginapi.RegisterDevicePluginServer(sm.grpcServer, sm)
-	api.RegisterCniEndpointServer(sm.grpcServer, sm)
 
 	go sm.grpcServer.Serve(lis)
 
@@ -353,14 +320,12 @@ func (sm *sriovManager) GetDevicePluginOptions(ctx context.Context, empty *plugi
 	}, nil
 }
 
-//API Change: Pod Information passed in here
 //Allocate passes the PCI Addr(s) as an env variable to the requesting container
 func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	resp := new(pluginapi.AllocateResponse)
 	pciAddrs := ""
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
-		glog.Infof("PodUID: %v & Container Name: %v in Allocate", container.PodUID, container.ContName)
 		for _, id := range container.DevicesIDs {
 			glog.Infof("DeviceID in Allocate: %v", id)
 			dev, ok := sm.devices[id]
@@ -373,9 +338,6 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 				return nil, fmt.Errorf("Error. Invalid allocation request with unhealthy device %s", id)
 			}
 
-			//PodUID to PCI mapping for CNI Communication
-			de := &deviceEntry{deviceID: id, allocated: false}
-			sm.allocatedDevices[string(container.PodUID)] = append(sm.allocatedDevices[string(container.PodUID)], de)
 			pciAddrs = pciAddrs + id + ","
 		}
 
@@ -387,68 +349,6 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
 	return resp, nil
-}
-
-//gRPC Server implementation of CNI/Device communication
-//CNI sends Pod Name and Pod Namespace - use inclusterconfig to get PodUID
-func (sm *sriovManager) GetDeviceInfo(ctx context.Context, podInfo *api.PodInformation) (*api.VfInformation, error) {
-	vfInfo := &api.VfInformation{}
-
-	// Get Pod information
-	pod, err := sm.k8ClientSet.CoreV1().Pods(podInfo.PodNamespace).Get((podInfo.PodName), metav1.GetOptions{})
-	if err != nil {
-		glog.Errorf("Error. Could not get Pod Information from K8s Client. %v", err)
-		return vfInfo, err
-	}
-	glog.Infof("Pod UID from API server %v", pod.UID)
-	podDevices, ok := sm.allocatedDevices[string(pod.UID)]
-
-	if !ok {
-		err = fmt.Errorf("no VF information found for Pod: %s", pod.UID)
-		glog.Errorf("Error. %v", err)
-		return vfInfo, err
-	}
-
-	for _, p := range podDevices {
-		if !p.allocated {
-			vfInfo = sm.managedDevices[p.deviceID]
-			p.allocated = true // mark this VF as assigned to a CNI plugin client; next Allocate() call will skip this one
-			glog.Infof("PCI for Pod: %v", p.deviceID)
-			return vfInfo, nil
-		}
-	}
-	err = fmt.Errorf("all allocated VF(s) already assigned to CNI")
-	glog.Errorf("Error. %v", err)
-	return vfInfo, err
-}
-
-func (sm *sriovManager) CNIDelete(ctx context.Context, podInfo *api.PodInformation) (a *api.Empty, err error) {
-	// Get Pod information
-	a = &api.Empty{}
-	pod, err := sm.k8ClientSet.CoreV1().Pods(podInfo.PodNamespace).Get((podInfo.PodName), metav1.GetOptions{})
-	if err != nil {
-		glog.Errorf("Error. Could not get Pod Information from K8s Client. %v", err)
-		return
-	}
-	glog.Infof("Pod UID from API server %v", pod.UID)
-	podDevices, ok := sm.allocatedDevices[string(pod.UID)]
-
-	if !ok {
-		err = fmt.Errorf("no VF information found for Pod: %s", pod.UID)
-		glog.Errorf("Error. %v", err)
-		return
-	}
-
-	for _, p := range podDevices {
-		if p.allocated {
-			p.allocated = false // mark this VF as NOT assigned to a CNI plugin client; next CNIDelete() call will skip this one
-			glog.Infof("VF with ID %v marked as unconfigured", p.deviceID)
-			return
-		}
-	}
-	err = fmt.Errorf("no allocated VF found")
-	glog.Errorf("Error. %v", err)
-	return
 }
 
 func main() {
