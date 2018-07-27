@@ -32,8 +32,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
@@ -49,15 +47,8 @@ const (
 	resourceName         = "intel.com/sriov"
 )
 
-type deviceEntry struct {
-	deviceID  string
-	allocated bool
-}
-
 // sriovManager manages sriov networking devices
 type sriovManager struct {
-	k8ClientSet      *kubernetes.Clientset
-	defaultDevices   []string
 	socketFile       string
 	devices          map[string]pluginapi.Device   // for Kubelet DP API
 	grpcServer       *grpc.Server
@@ -65,18 +56,7 @@ type sriovManager struct {
 
 func newSriovManager() *sriovManager {
 
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		glog.Errorf("Error. Could not get InClusterConfig to create K8s Client. %v", err)
-		return nil
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		glog.Errorf("Error. Could not create K8s Client using supplied config. %v", err)
-		return nil
-	}
 	return &sriovManager{
-		k8ClientSet:      clientset,
 		devices:          make(map[string]pluginapi.Device),
 		socketFile:       fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 	}
