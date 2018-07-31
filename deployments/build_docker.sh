@@ -5,5 +5,3 @@ set -e
 yes | cp ../bin/sriovdp .
 # cd deployments
 docker build -t sriov-device-plugin . 
-
-
