@@ -1,7 +1,9 @@
-apiVersion: "kubernetes.cni.cncf.io/v1"
-kind: Network
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
 metadata:
   name: sriov-net1
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: intel.com/sriov
 spec:
   config: '{
 	"type": "sriov",

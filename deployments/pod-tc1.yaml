@@ -5,7 +5,7 @@ metadata:
   labels:
     env: test
   annotations:
-      kubernetes.v1.cni.cncf.io/networks: sriov-net1
+    k8s.v1.cni.cncf.io/networks: sriov-net1
 spec:
   containers:
   - name: appcntr1 
