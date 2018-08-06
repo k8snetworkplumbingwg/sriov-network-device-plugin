@@ -7,16 +7,16 @@
 - [Quick Start](#quick-start)
 	- [Network Object CRDs](#network-object-crds)
 	- [Meta-Plugin CNI](#meta-plugin-cni) 
-	 - [SRIOV CNI](#sriov-cni)
-	 - [Build and run SRIOV Device plugin and CNI-Shim](#build-and-run-sriov-device-plugin-and-cni-shim)
-	 - [Testing SRIOV workloads](#testing-sriov-workloads)  
+	- [SRIOV CNI](#sriov-cni)
+	- [Build and run SRIOV Device plugin](#build-and-run-sriov-device-plugin)
+	- [Testing SRIOV workloads](#testing-sriov-workloads)
 		 - [Deploy test Pod](#deploy-test-pod)
 		 - [Verify Pod network interfaces](#verify-pod-network-interfaces)
 		 - [Verify Pod routing table](#verify-pod-routing-table)		 
 - [Issues and Contributing](#issues-and-contributing)
 
 ## SRIOV Network Device Plugin
-The goal of the SRIOV Network device plugin is to manage the lifecycle of SRIOV VFs on a Kubernetes node. The device plugin discovers, advertises and allocates SRIOV VFs to requesting pods and the SRIOV CNI using information passed from the CNI Shim plumbs the VF to the pods network namespace. 
+The goal of the SRIOV Network device plugin is to manage the lifecycle of SRIOV VFs on a Kubernetes node. The device plugin discovers, advertises and allocates SRIOV VFs to requesting pods and the Multus CNI retrieves the allocated Device information from the Kubernetes APIServer and delegates SRIOV CNI to plumb the VF to the pods network namespace.
 - Device Plugin/Device Manager
 
   - Discovery of SRIOV NIC devices in a node
@@ -25,32 +25,29 @@ The goal of the SRIOV Network device plugin is to manage the lifecycle of SRIOV 
 
   - Allocation of SRIOV VF to a pod
 
-  - Storing of VF Information to Pod Information
+- Multus CNI
 
-- CNI Shim
+  - Retrieve allocatd VF information for a pod from Kubernetes APIServer
 
-  - Establish gRPC communication with device plugin
-
-  - Retrieve VF information for a pod from device plugin using gRPC
-
-  - Passing retrieved information from device plugin to SRIOV CNI
+  - Passing retrieved information to SRIOV CNI
 
 - SRIOV CNI
 
-  -  On Cmd Add, using information passed from CNI Shim plumb allocated SRIOV VF to the pods network namespace
+  - On Cmd Add, using information passed from Multus CNI plumb allocated SRIOV VF to the pods network namespace
 
   - On Cmd Del, release VF from the pods network namespace
 
 This implementation follows the directions of [this proposal document](https://docs.google.com/document/d/1Ewe9Of84GkP0b2Q2PC0y9RVZNkN2WeVEagX9m99Nrzc/).
+
 ## Prerequisites
 There are list of items should be required before installing the SRIOV Network device plugin
- 1.  SRIOV NICs - (Tested with Intel NIC, should support all the NICs)
- 2.  Intel SRIOV CNI - v0.3 Alpha
- 3. Kubernetes version - 1.10 (with patch applied included in [`patches/`]() )
- 4. Meta plugin - Multus v2.0
- 5. Enable `--feature-gates=DevicePlugins=True` in the Kubelet
+ 1. SRIOV NICs - (Tested with Intel NIC, should support all the NICs)
+ 2. Intel SRIOV CNI - dev/k8s-deviceid-model branch
+ 3. Kubernetes version - 1.11 or higher(with [patch](https://github.com/kubernetes/kubernetes/compare/master...dashpole:device_id#diff-bf28da68f62a8df6e99e447c4351122) applied)
+ 4. Meta plugin - Multus dev/k8s-deviceid-model branch
 
-Make sure to implement the steps described in [Quick Start](#quick-start) for Kubernetes cluster to support multi network.  SRIOV network device plugin is a collective plugin model to work with device plugin, Meta-plugin and SRIOV CNI plugin.
+Make sure to implement the steps described in [Quick Start](#quick-start) for Kubernetes cluster to support multi network.  SRIOV network device plugin is a collective plugin model to work with device manager, Meta-plugin and SRIOV CNI plugin.
+
 ### Supported SRIOV NICs
 The following  NICs were tested with this implementation. However, other SRIOV capable NICs should work as well.
 -  Intel® Ethernet Controller X710 Series 4x10G
@@ -64,51 +61,53 @@ The following  NICs were tested with this implementation. However, other SRIOV c
 
 ## Quick Start
 This section explains how to set up SRIOV Network device plugin in Kubernetes. Required YAML files can be found in [deployments/](deployments/) directory.
+
 ### Network Object CRDs
 Kubernetes out of the box only allows to have one network interface per pod. In order to add multiple interfaces in a Pod we need to configure Kubernetes with a CNI meta plugin that enables invoking multiple CNI plugins to add additional interfaces.  [Multus](https://github.com/intel/multus-cni) is only meta plugin that supports this mechanism. Multus uses Kubernetes Custom Resource Definition or CRDs to define network objects. For more information see Multus [documentation](https://github.com/intel/multus-cni/blob/master/README.md). 
+
 ### Meta Plugin CNI
-1. Compile Meta Plugin CNI (Multus v2.0):
+1. Compile Meta Plugin CNI (Multus dev/k8s-deviceid-model branch):
 ````
-$ git clone --branch v2.0 https://github.com/intel/multus-cni.git --single-branch
+$ git clone https://github.com/intel/multus-cni.git
 $ cd multus-cni
+$ git fetch
+$ git checkout dev/k8s-deviceid-model
 $ ./build
 $ cp bin/multus /opt/cni/bin
 ````
 2. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
 
 ### SRIOV CNI
- Compile SRIOV-CNI:
+ Compile SRIOV-CNI (dev/k8s-deviceid-model branch):
 
-    $ git clone https://github.com/Intel-Corp/sriov-cni.git
-    $ git fetch
-    $ git checkout dev/sriov-network-device-plugin-alpha
+    $ git clone https://github.com/intel/sriov-cni.git
     $ cd sriov-cni
+    $ git fetch
+    $ git checkout dev/k8s-deviceid-model
     $ ./build
     $ cp bin/sriov /opt/cni/bin
 
-#### Build and run SRIOV Device plugin and CNI-Shim
+### Build and run SRIOV Device plugin
 
- 1. Clone the sriov-network-device-plugin repository
+ 1. Clone the sriov-network-device-plugin repository and checkout dev/k8s-deviceid-model branch
  ```
 $ git clone https://github.com/intel/sriov-network-device-plugin.git
+$ cd sriov-network-device-plugin
+$ git fetch
+$ git checkout dev/k8s-deviceid-model
  ```  
- 2. Run the build script, this will build the SRIOV Network Device Plugin binaries as well as generated the protobuf API for gRPC communication 
+ 2. Run the build script, this will build the SRIOV Network Device Plugin binary
  ``` 
 $ ./build.sh
 ```      
- 2. Copy the CNI Shim binary from the bin folder to the CNI binary folder
-```
-$ cp bin/cnishim /opt/cni/bin
-```   
- 3. Copy the CNI Shim Configuration file from the Deployments folder to the CNI Configuration diectory
+ 3. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
 ```
 $ cp deployments/cni-conf.json /etc/cni/net.d/
 ```
-
->Note: ensure the CNI Shim configuration file is the first file in lexicographical order in the folder 
- 4. Create the CNI-Shim Network CRD
+ 4. Create the SRIOV Network CRD
 ```
-$ kubectl create -f deployments/cnishim-crd.yaml
+$ kubectl create -f deployments/crdnetwork.yaml
+$ kubectl create -f deployments/sriov-crd.yaml
 ```
  
  5. Run build docker script to create SRIOV Network Device Plugin Docker image
