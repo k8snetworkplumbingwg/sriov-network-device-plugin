@@ -79,8 +79,19 @@ func getSriovPfList() ([]string, error) {
 	}
 
 	for _, dev := range netDevices {
-		sriovFilePath := filepath.Join(netDirectory, dev.Name(), "device", "sriov_numvfs")
-		glog.Infof("Checking for file %s ", sriovFilePath)
+		sriovDirPath := filepath.Join(netDirectory, dev.Name())
+		glog.Infof("Checking inside dir %s", sriovDirPath)
+		dir, err := os.Stat(sriovDirPath)
+		if err != nil {
+			continue
+		}
+		if !dir.Mode().IsDir() {
+			// Could be e.g. bonding_masters file
+			continue
+		}
+
+		sriovFilePath := filepath.Join(sriovDirPath, "device", "sriov_numvfs")
+		glog.Infof("Checking for file %s", sriovFilePath)
 
 		if f, err := os.Lstat(sriovFilePath); !os.IsNotExist(err) {
 			if f.Mode().IsRegular() { // and its a regular file
