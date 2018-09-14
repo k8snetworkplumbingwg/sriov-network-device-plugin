@@ -344,6 +344,7 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 
 func main() {
 	flag.Parse()
+	defer glog.Flush()
 	glog.Infof("Starting SRIOV Network Device Plugin...")
 	sm := newSriovManager()
 	if sm == nil {

@@ -33,6 +33,9 @@ spec:
       containers:
       - name: kube-sriovdp
         image: nfvpe/sriovdp:latest
+        args:
+        - --log-dir=sriovdp
+        - --log-level=10
         resources:
           requests:
             cpu: "100m"
@@ -41,7 +44,7 @@ spec:
             cpu: "100m"
             memory: "50Mi"
         securityContext:
-          privileged: true
+          privileged: false
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins/
@@ -49,6 +52,8 @@ spec:
         - name: net
           mountPath: /sys/class/net
           readOnly: true
+        - name: log
+          mountPath: /var/log
       volumes:
         - name: devicesock
           hostPath:
@@ -56,3 +61,6 @@ spec:
         - name: net
           hostPath:
             path: /sys/class/net
+        - name: log
+          hostPath:
+            path: /var/log
