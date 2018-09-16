@@ -15,10 +15,6 @@ spec:
     args: [ "while true; do sleep 300000; done;" ]
     resources:
       requests:
-        cpu: "1"
-        memory: "512Mi"
         intel.com/sriov: '1' 
       limits:
-        cpu: "1"
-        memory: "512Mi"
         intel.com/sriov: '1'
