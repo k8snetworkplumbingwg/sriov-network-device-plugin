@@ -1,4 +1,6 @@
 package: github.com/intel/sriov-network-device-plugin
+ignore:
+- bytes
 import:
 - package: github.com/golang/glog
 - package: github.com/golang/protobuf
