@@ -33,34 +33,38 @@ spec:
       containers:
       - name: kube-sriovdp
         image: nfvpe/sriov-device-plugin:latest
+        imagePullPolicy: Never
         args:
         - --log-dir=sriovdp
         - --log-level=10
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "50Mi"
-          limits:
-            cpu: "100m"
-            memory: "50Mi"
         securityContext:
           privileged: false
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins/
           readOnly: false
-        - name: net
-          mountPath: /sys/class/net
+        - name: sysfs
+          mountPath: /sys
           readOnly: true
-        - name: log
-          mountPath: /var/log
+        - name: devfs
+          mountPath: /dev
+          readOnly: true
+        - name: config
+          mountPath: /etc/pcidp/config.json
+          readOnly: true
       volumes:
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/
-        - name: net
-          hostPath:
-            path: /sys/class/net
         - name: log
           hostPath:
             path: /var/log
+        - name: sysfs
+          hostPath:
+            path: /sys
+        - name: devfs
+          hostPath:
+            path: /dev
+        - name: config
+          hostPath:
+            path: /etc/pcidp/config.json
