@@ -57,7 +57,7 @@ type ResourceFactory interface {
 	GetResourcePool(*ResourceConfig) ResourcePool
 }
 
-//ResourcePool represents a generic resource entity
+// ResourcePool represents a generic resource entity
 type ResourcePool interface {
 	// extended API for internal use
 	InitDevice() error
@@ -70,7 +70,7 @@ type ResourcePool interface {
 	IBaseResource
 }
 
-//ResourcePool represents a generic resource entity
+// IBaseResource represents a specific resource pool
 type IBaseResource interface {
 	GetDeviceFile(dev string) (devFile string, err error)
 	GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec

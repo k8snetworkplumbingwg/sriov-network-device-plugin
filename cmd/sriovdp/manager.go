@@ -154,7 +154,8 @@ func (rm *resourceManager) validConfigs() bool {
 			}
 		}
 
-		// Validate deviceType
+		// [To-Do]: Validate deviceType
+
 		resourceName[conf.ResourceName] = conf.ResourceName
 	}
 

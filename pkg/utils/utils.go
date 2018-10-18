@@ -173,3 +173,64 @@ func ValidResourceName(name string) bool {
 	var validString = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 	return validString.MatchString(name)
 }
+
+// GetVFIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
+func GetVFIODeviceFile(dev string) (devFile string, err error) {
+	// Get iommu group for this device
+	devPath := filepath.Join(sysBusPci, dev)
+	_, err = os.Lstat(devPath)
+	if err != nil {
+		err = fmt.Errorf("GetVFIODeviceFile(): Could not get directory information for device: %s, Err: %v", dev, err)
+		return
+	}
+
+	iommuDir := filepath.Join(devPath, "iommu_group")
+	if err != nil {
+		err = fmt.Errorf("GetVFIODeviceFile(): error reading iommuDir %v", err)
+		return
+	}
+
+	dirInfo, err := os.Lstat(iommuDir)
+	if err != nil {
+		err = fmt.Errorf("GetVFIODeviceFile(): unable to find iommu_group %v", err)
+		return
+	}
+
+	if dirInfo.Mode()&os.ModeSymlink == 0 {
+		err = fmt.Errorf("GetVFIODeviceFile(): invalid symlink to iommu_group %v", err)
+		return
+	}
+
+	linkName, err := filepath.EvalSymlinks(iommuDir)
+	if err != nil {
+		err = fmt.Errorf("GetVFIODeviceFile(): error reading symlink to iommu_group %v", err)
+		return
+	}
+
+	devFile = filepath.Join("/dev/vfio", filepath.Base(linkName))
+
+	return
+}
+
+// GetUIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
+func GetUIODeviceFile(dev string) (devFile string, err error) {
+
+	vfDir := filepath.Join(sysBusPci, dev, "uio")
+
+	_, err = os.Lstat(vfDir)
+	if err != nil {
+		return "", fmt.Errorf("GetUIODeviceFile(): could not get directory information for device: %s Err: %v", vfDir, err)
+	}
+
+	files, err := ioutil.ReadDir(vfDir)
+
+	if err != nil {
+		return
+	}
+
+	// uio directory should only contain one directory e.g uio1
+	// assuption is there's a corresponding device file in /dev e.g. /dev/uio1
+	devFile = filepath.Join("/dev", files[0].Name())
+
+	return
+}

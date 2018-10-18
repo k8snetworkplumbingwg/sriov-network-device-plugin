@@ -15,12 +15,9 @@
 package resources
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
@@ -45,40 +42,7 @@ func newVfioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
 
 // Overrides GetDeviceFile() method
 func (rp *vfioResourcePool) GetDeviceFile(dev string) (devFile string, err error) {
-	// Get iommu group for this device
-	devPath := filepath.Join(sysBusPci, dev)
-	_, err = os.Lstat(devPath)
-	if err != nil {
-		err = fmt.Errorf("Error. Could not get directory information for device: %s, Err: %v", dev, err)
-		return
-	}
-
-	iommuDir := filepath.Join(devPath, "iommu_group")
-	if err != nil {
-		err = fmt.Errorf("error reading iommuDir %v", err)
-		return
-	}
-
-	dirInfo, err := os.Lstat(iommuDir)
-	if err != nil {
-		err = fmt.Errorf("unable to find iommu_group %v", err)
-		return
-	}
-
-	if dirInfo.Mode()&os.ModeSymlink == 0 {
-		err = fmt.Errorf("invalid symlink to iommu_group %v", err)
-		return
-	}
-
-	linkName, err := filepath.EvalSymlinks(iommuDir)
-	if err != nil {
-		err = fmt.Errorf("error reading symlink to iommu_group %v", err)
-		return
-	}
-
-	devFile = filepath.Join("/dev/vfio", filepath.Base(linkName))
-
-	return
+	return utils.GetVFIODeviceFile(dev)
 }
 
 func (rp *vfioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {

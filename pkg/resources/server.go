@@ -29,7 +29,7 @@ import (
 )
 
 type resourceServer struct {
-	resourcPool       types.ResourcePool
+	resourcePool      types.ResourcePool
 	endPoint          string // Socket file
 	resouceNamePrefix string
 	grpcServer        *grpc.Server
@@ -42,7 +42,7 @@ type resourceServer struct {
 func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s.%s", rp.GetResourceName(), suffix)
 	return &resourceServer{
-		resourcPool:       rp,
+		resourcePool:      rp,
 		endPoint:          sockName,
 		resouceNamePrefix: prefix,
 		grpcServer:        grpc.NewServer(),
@@ -60,7 +60,7 @@ func (rs *resourceServer) register() error {
 			return net.DialTimeout("unix", addr, timeout)
 		}))
 	if err != nil {
-		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcPool.GetResourceName(), err)
+		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
 		return err
 	}
 	defer conn.Close()
@@ -69,14 +69,14 @@ func (rs *resourceServer) register() error {
 	request := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
 		Endpoint:     rs.endPoint,
-		ResourceName: fmt.Sprintf("%s/%s", rs.resouceNamePrefix, rs.resourcPool.GetResourceName()),
+		ResourceName: fmt.Sprintf("%s/%s", rs.resouceNamePrefix, rs.resourcePool.GetResourceName()),
 	}
 
 	if _, err = client.Register(context.Background(), request); err != nil {
-		glog.Errorf("%s device plugin unable to register with Kubelet : %v", rs.resourcPool.GetResourceName(), err)
+		glog.Errorf("%s device plugin unable to register with Kubelet : %v", rs.resourcePool.GetResourceName(), err)
 		return err
 	}
-	glog.Infof("%s device plugin registered with Kubelet", rs.resourcPool.GetResourceName())
+	glog.Infof("%s device plugin registered with Kubelet", rs.resourcePool.GetResourceName())
 	return nil
 }
 
@@ -85,9 +85,9 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	resp := new(pluginapi.AllocateResponse)
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
-		containerResp.Devices = rs.resourcPool.GetDeviceSpecs(rs.resourcPool.GetDeviceFiles(), container.DevicesIDs)
-		containerResp.Envs = rs.resourcPool.GetEnvs(rs.resourcPool.GetResourceName(), container.DevicesIDs)
-		containerResp.Mounts = rs.resourcPool.GetMounts()
+		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(rs.resourcePool.GetDeviceFiles(), container.DevicesIDs)
+		containerResp.Envs = rs.resourcePool.GetEnvs(rs.resourcePool.GetResourceName(), container.DevicesIDs)
+		containerResp.Mounts = rs.resourcePool.GetMounts()
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
 	glog.Infof("AllocateResponse send: %+v", resp)
@@ -96,12 +96,12 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 
 func (rs *resourceServer) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	methodID := fmt.Sprintf("ListAndWatch(%s)", rs.resourcPool.GetResourceName()) // for logging purpose
+	methodID := fmt.Sprintf("ListAndWatch(%s)", rs.resourcePool.GetResourceName()) // for logging purpose
 	glog.Infof("%s invoked", methodID)
 	// Send initial list of devices
 	devs := make([]*pluginapi.Device, 0)
 	resp := new(pluginapi.ListAndWatchResponse)
-	for _, dev := range rs.resourcPool.GetDevices() {
+	for _, dev := range rs.resourcePool.GetDevices() {
 		devs = append(devs, dev)
 	}
 	resp.Devices = devs
@@ -123,7 +123,7 @@ func (rs *resourceServer) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.
 		case <-rs.updateSignal:
 			// Device health changed; so send new device list
 			glog.Infof("%s: device health changed!\n", methodID)
-			for _, dev := range rs.resourcPool.GetDevices() {
+			for _, dev := range rs.resourcePool.GetDevices() {
 				devs = append(devs, dev)
 			}
 			resp.Devices = devs
@@ -149,9 +149,9 @@ func (rs *resourceServer) GetDevicePluginOptions(ctx context.Context, empty *plu
 }
 
 func (rs *resourceServer) Init() error {
-	resourceName := rs.resourcPool.GetResourceName()
+	resourceName := rs.resourcePool.GetResourceName()
 	glog.Infof("initializing %s device pool", resourceName)
-	if err := rs.resourcPool.DiscoverDevices(); err != nil {
+	if err := rs.resourcePool.DiscoverDevices(); err != nil {
 		return err
 	}
 	return nil
@@ -159,7 +159,7 @@ func (rs *resourceServer) Init() error {
 
 // gRPC server related
 func (rs *resourceServer) Start() error {
-	resourceName := rs.resourcPool.GetResourceName()
+	resourceName := rs.resourcePool.GetResourceName()
 	_ = rs.cleanUp() // try tp clean up and continue
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
 	sockPath := filepath.Join(types.SockDir, rs.endPoint)
@@ -202,7 +202,7 @@ func (rs *resourceServer) Start() error {
 }
 
 func (rs *resourceServer) restart() error {
-	resourceName := rs.resourcPool.GetResourceName()
+	resourceName := rs.resourcePool.GetResourceName()
 	glog.Infof("restarting %s device plugin server...", resourceName)
 	if rs.grpcServer == nil {
 		return fmt.Errorf("grpc server instance not found for %s", resourceName)
@@ -217,7 +217,7 @@ func (rs *resourceServer) restart() error {
 }
 
 func (rs *resourceServer) Stop() error {
-	resourceName := rs.resourcPool.GetResourceName()
+	resourceName := rs.resourcePool.GetResourceName()
 	glog.Infof("stopping %s device plugin server...", resourceName)
 	if rs.grpcServer == nil {
 		return nil
@@ -267,11 +267,11 @@ func (rs *resourceServer) cleanUp() error {
 }
 
 func (rs *resourceServer) triggerUpdate() {
-	rp := rs.resourcPool
+	rp := rs.resourcePool
 	if rs.checkIntervals > 0 {
 		go func() {
 			for {
-				changed := rp.Probe(rs.resourcPool.GetConfig(), rp.GetDevices())
+				changed := rp.Probe(rs.resourcePool.GetConfig(), rp.GetDevices())
 				if changed {
 					rs.updateSignal <- true
 				}

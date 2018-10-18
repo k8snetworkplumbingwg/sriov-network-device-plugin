@@ -23,12 +23,6 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-const (
-	sysBusPci        = "/sys/bus/pci/devices"
-	totalVfFile      = "sriov_totalvfs"
-	configuredVfFile = "sriov_numvfs"
-)
-
 type resourcePool struct {
 	config      *types.ResourceConfig
 	devices     map[string]*pluginapi.Device

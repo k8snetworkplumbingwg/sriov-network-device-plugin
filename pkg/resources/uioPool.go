@@ -15,12 +15,8 @@
 package resources
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
-	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
@@ -44,26 +40,7 @@ func newUioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
 
 // Overrides GetDeviceFile() method
 func (rp *uioResourcePool) GetDeviceFile(dev string) (devFile string, err error) {
-
-	vfDir := filepath.Join(sysBusPci, dev, "uio")
-
-	_, err = os.Lstat(vfDir)
-	if err != nil {
-		glog.Errorf("Error. Could not get directory information for device: %s Err: %v", vfDir, err)
-		return "", err
-	}
-
-	files, err := ioutil.ReadDir(vfDir)
-
-	if err != nil {
-		return
-	}
-
-	// uio directory should only contain one directory e.g uio1
-	// assuption is there's a corresponding device file in /dev e.g. /dev/uio1
-	devFile = filepath.Join("/dev", files[0].Name())
-
-	return
+	return utils.GetUIODeviceFile(dev)
 }
 
 func (rp *uioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {
