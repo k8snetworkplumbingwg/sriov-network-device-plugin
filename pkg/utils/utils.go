@@ -132,7 +132,7 @@ func IsNetlinkStatusUp(dev string) bool {
 	return true
 }
 
-// Validate PciAddr given as string with host system
+// ValidPciAddr validates PciAddr given as string with host system
 func ValidPciAddr(addr string) (string, error) {
 	//Check system pci address
 
