@@ -1,11 +1,11 @@
 kind: Pod
 apiVersion: v1
 metadata:
-        name: sriov-device-plugin
+  name: sriov-device-plugin
 spec:
   containers:
   - name: sriov-device-plugin 
-    image: sriov-device-plugin 
+    image: nfvpe/sriov-device-plugin:latest
     imagePullPolicy: IfNotPresent
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 300000; done;" ]

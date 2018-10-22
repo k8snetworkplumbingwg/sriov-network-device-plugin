@@ -2,7 +2,7 @@
 
 set -e
 
-SRIOV_DP_BINARY_FILE="/usr/src/sriov-network-device-plugin/bin/sriovdp"
+SRIOV_DP_BINARY_FILE="/usr/src/sriov-network-device-plugin/build/sriovdp"
 SRIOV_DP_SYS_BINARY_DIR="/usr/bin/"
 LOG_DIR=""
 LOG_LEVEL=10

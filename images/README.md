@@ -7,8 +7,7 @@ Typically you'd build this from the root of your SR-IOV network device plugin cl
 ```
 $ docker build -t sriov-device-plugin -f ./images/Dockerfile .
 ```
-
-A `build_docker.sh` script is available for building the SR-IOV device plugin docker image from the `./images` directory.
+You can run `make image` to build the docker image as well.
 
 ---
 
