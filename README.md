@@ -19,13 +19,13 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 
 - Multus CNI
 
-  - Retrieves allocatd network device information of a Pod
+  - Retrieves allocated network device information of a Pod
 
   - Passes allocated SRIOV VF information to SRIOV CNI
 
 - SRIOV CNI
 
-  - During Pod creation plumbs allocated SRIOV VF to a Pods network namespace using VF information given by Multus
+  - During Pod creation, plumbs allocated SRIOV VF to a Pods network namespace using VF information given by Multus
 
   - On Pod deletion, reset and release the VF from the Pod
 
@@ -49,7 +49,7 @@ The following  NICs were tested with this implementation. However, other SRIOV c
 This section explains an exmaple deployment of SRIOV Network device plugin in Kubernetes. Required YAML files can be found in [deployments/](deployments/) directory.
 
 ### Network Object CRDs
-Multus uses Custom Resource Definitions(CRDs) for defining additional network attachement. These network attachment CRDs follows the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
+Multus uses Custom Resource Definitions(CRDs) for defining additional network attachement. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
 
 ### Building Multus
 1. Compile Meta Plugin CNI (Multus dev/k8s-deviceid-model branch):
