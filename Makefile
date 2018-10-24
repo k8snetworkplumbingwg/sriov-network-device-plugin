@@ -15,6 +15,7 @@ PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./.
 TESTPKGS = $(shell env GOPATH=$(GOPATH) $(GO) list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 
 export GOPATH
+export GOBIN
 # Docker
 IMAGEDIR=$(BASE)/images
 DOCKERFILE=$(IMAGEDIR)/Dockerfile
