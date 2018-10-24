@@ -5,9 +5,9 @@
 	-  [Supported SRIOV NICs](#supported-sriov-nics)
 - [Quick Start](#quick-start)
 	- [Network Object CRDs](#network-object-crds)
-	- [Meta-Plugin CNI](#meta-plugin-cni) 
-	- [SRIOV CNI](#sriov-cni)
-	- [Build and run SRIOV Device plugin](#build-and-run-sriov-device-plugin)
+	- [Build and configure Multus](#build-and-configure-multus) 
+	- [Build SRIOV CNI](#build-sriov-cni)
+	- [Build and run SRIOV network device plugin](#build-and-run-sriov-network-device-plugin)
 	- [Testing SRIOV workloads](#testing-sriov-workloads)
 		 - [Deploy test Pod](#deploy-test-pod)
 		 - [Verify Pod network interfaces](#verify-pod-network-interfaces)
@@ -49,29 +49,41 @@ The following  NICs were tested with this implementation. However, other SRIOV c
 This section explains an exmaple deployment of SRIOV Network device plugin in Kubernetes. Required YAML files can be found in [deployments/](deployments/) directory.
 
 ### Network Object CRDs
-Multus uses Custom Resource Definitions(CRDs) for defining additional network attachement. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
+Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
 
-### Building Multus
-1. Compile Meta Plugin CNI (Multus dev/k8s-deviceid-model branch):
-````
+### Build and configure Multus
+1. Compile Multus executable:
+```
 $ git clone https://github.com/intel/multus-cni.git
 $ cd multus-cni
 $ ./build
 $ cp bin/multus /opt/cni/bin
-````
-2. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
+```
+ 2. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
+```
+$ cp deployments/cni-conf.json /etc/cni/net.d/
+```
 
-### Building SRIOV CNI
- Compile SRIOV-CNI (dev/k8s-deviceid-model branch):
+3. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
+```
+$ kubectl create -f deployments/crdnetwork.yaml
+```
 
-    $ git clone https://github.com/intel/sriov-cni.git
-    $ cd sriov-cni
-    $ git fetch
-    $ git checkout dev/k8s-deviceid-model
-    $ ./build
-    $ cp bin/sriov /opt/cni/bin
-
-### Build and run SRIOV Device plugin
+### Build SRIOV CNI
+ 1. Compile SRIOV-CNI (dev/k8s-deviceid-model branch):
+```
+$ git clone https://github.com/intel/sriov-cni.git
+$ cd sriov-cni
+$ git fetch
+$ git checkout dev/k8s-deviceid-model
+$ ./build
+$ cp bin/sriov /opt/cni/bin
+```
+ 2. Create the SRIOV Network CRD
+```
+$ kubectl create -f deployments/sriov-crd.yaml
+```
+### Build and run SRIOV network device plugin
 
  1. Clone the sriov-network-device-plugin
  ```
@@ -82,33 +94,24 @@ $ cd sriov-network-device-plugin
  ``` 
 $ make
 ```      
- 3. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
-```
-$ cp deployments/cni-conf.json /etc/cni/net.d/
-```
- 4. Create the SRIOV Network CRD
-```
-$ kubectl create -f deployments/crdnetwork.yaml
-$ kubectl create -f deployments/sriov-crd.yaml
-```
- 
- 5. Build docker image
+> On successful build the `sriovdp` executable can be found in `./build` directory. It is recommended to run the plugin in a container or K8s Pod. The follow on steps cover how to build and run the Docker image of the plugin.
+
+ 3. Build docker image
  ```
 $ make image
 ``` 
-> On successful build the executable binay can be found in `./build` directory.
 
- 6. Create SRIOV Network Device Plugin Pod
+ 4. Create SRIOV network device plugin Pod
  ```
 $ kubectl create -f pod-sriovdp.yaml
 ```
 
- 7. Get a bash terminal to the SRIOV device plugin Pod
+ 5. Get a bash terminal to the SRIOV network device plugin Pod
  ```
 $ kubectl exec -it sriov-device-plugin bash
 ```
 
- 8. Execute the SRIOV Network Device Plugin binary from within the Pod
+ 6. Execute the SRIOV network device plugin binary from within the Pod
 ````
 $ ./usr/bin/sriovdp --logtostderr -v 10
 
