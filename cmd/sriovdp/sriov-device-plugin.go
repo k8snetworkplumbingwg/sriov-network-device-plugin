@@ -49,16 +49,16 @@ const (
 
 // sriovManager manages sriov networking devices
 type sriovManager struct {
-	socketFile       string
-	devices          map[string]pluginapi.Device   // for Kubelet DP API
-	grpcServer       *grpc.Server
+	socketFile string
+	devices    map[string]pluginapi.Device // for Kubelet DP API
+	grpcServer *grpc.Server
 }
 
 func newSriovManager() *sriovManager {
 
 	return &sriovManager{
-		devices:          make(map[string]pluginapi.Device),
-		socketFile:       fmt.Sprintf("%s.sock", pluginEndpointPrefix),
+		devices:    make(map[string]pluginapi.Device),
+		socketFile: fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 	}
 }
 
