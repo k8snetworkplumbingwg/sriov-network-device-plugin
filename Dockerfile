@@ -2,6 +2,8 @@ FROM centos:centos7
 
 ADD . /usr/src/sriov-network-device-plugin
 
+ENV HTTP_PROXY $http_proxy
+ENV HTTPS_PROXY $https_proxy
 ENV INSTALL_PKGS "git golang make"
 RUN yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
