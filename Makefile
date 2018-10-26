@@ -16,10 +16,19 @@ TESTPKGS = $(shell env GOPATH=$(GOPATH) $(GO) list -f '{{ if or .TestGoFiles .XT
 
 export GOPATH
 export GOBIN
+
 # Docker
 IMAGEDIR=$(BASE)/images
 DOCKERFILE=$(CURDIR)/Dockerfile
 TAG=nfvpe/sriov-device-plugin
+# Accept proxy settings for docker 
+DOCKERARGS=
+ifdef HTTP_PROXY
+	DOCKERARGS += --build-arg http_proxy=$(HTTP_PROXY)
+endif
+ifdef HTTPS_PROXY
+	DOCKERARGS += --build-arg https_proxy=$(HTTPS_PROXY)
+endif
 
 # Go tools
 GO      = go
@@ -137,11 +146,7 @@ vendor: glide.lock | $(BASE) ; $(info  retrieving dependencies...)
 # To pass proxy for Docker invoke it as 'make image HTTP_POXY=http://192.168.0.1:8080'
 .PHONY: image
 image: | $(BASE) ; $(info Building Docker image...)
-ifdef HTTP_PROXY
-	@docker build -t $(TAG) -f $(DOCKERFILE)  $(CURDIR) --build-arg http_proxy=$(HTTP_PROXY)
-else
-	@docker build -t $(TAG) -f $(DOCKERFILE)  $(CURDIR) 
-endif
+	@docker build -t $(TAG) -f $(DOCKERFILE)  $(CURDIR) $(DOCKERARGS)
 
 # Misc
 
