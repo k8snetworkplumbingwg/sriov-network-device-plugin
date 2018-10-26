@@ -18,7 +18,7 @@ export GOPATH
 export GOBIN
 # Docker
 IMAGEDIR=$(BASE)/images
-DOCKERFILE=$(IMAGEDIR)/Dockerfile
+DOCKERFILE=$(CURDIR)/Dockerfile
 TAG=nfvpe/sriov-device-plugin
 
 # Go tools

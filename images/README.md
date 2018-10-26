@@ -5,7 +5,7 @@ This is used for distribution of SR-IOV Device Plugin binary in a Docker image.
 Typically you'd build this from the root of your SR-IOV network device plugin clone, and you'd set the `-f` flag to specify the Dockerfile during build time. This allows the addition of the entirety of the SR-IOV network device plugin git clone as part of the Docker context. Use the `-f` flag with the root of the clone as the context (e.g. your current work directory would be root of git clone), such as:
 
 ```
-$ docker build -t sriov-device-plugin -f ./images/Dockerfile .
+$ docker build -t nfvpe/sriov-device-plugin -f ./Dockerfile .
 ```
 You can run `make image` to build the docker image as well.
 
