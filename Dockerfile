@@ -7,7 +7,7 @@ RUN yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     cd /usr/src/sriov-network-device-plugin && \
     make clean && \
-    make && \
+    make build && \
     yum autoremove -y $INSTALL_PKGS && \
     yum clean all && \
     rm -rf /tmp/*
