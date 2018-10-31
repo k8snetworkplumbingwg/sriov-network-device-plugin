@@ -123,10 +123,11 @@ func (rs *resourceServer) ListAndWatch(emtpy *pluginapi.Empty, stream pluginapi.
 		case <-rs.updateSignal:
 			// Device health changed; so send new device list
 			glog.Infof("%s: device health changed!\n", methodID)
+			newDevs := make([]*pluginapi.Device, 0)
 			for _, dev := range rs.resourcePool.GetDevices() {
-				devs = append(devs, dev)
+				newDevs = append(newDevs, dev)
 			}
-			resp.Devices = devs
+			resp.Devices = newDevs
 			glog.Infof("%s: send updated devices %v", methodID, resp)
 
 			if err := stream.Send(resp); err != nil {
