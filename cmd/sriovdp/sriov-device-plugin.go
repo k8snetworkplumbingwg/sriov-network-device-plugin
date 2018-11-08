@@ -190,6 +190,7 @@ func (sm *sriovManager) discoverNetworks() error {
 	return nil
 }
 
+// IsNetlinkStatusUp returns 'false' if 'operstate' is not "up" for a Linux netowrk device
 func IsNetlinkStatusUp(dev string) bool {
 	opsFile := filepath.Join(netDirectory, dev, "operstate")
 	bytes, err := ioutil.ReadFile(opsFile)
@@ -199,6 +200,7 @@ func IsNetlinkStatusUp(dev string) bool {
 	return true
 }
 
+// Probe returns 'true' if device health changes 'false' otherwise
 func (sm *sriovManager) Probe() bool {
 	// Network device should check link status for each physical port and update health status for
 	// all associated VFs if there is any
@@ -313,9 +315,8 @@ func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
 
 // Implements DevicePlugin service functions
 func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
-	changed := true
 	for {
-		if sm.Probe() || changed {
+		if sm.Probe() {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
 				resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
@@ -327,7 +328,6 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 				return err
 			}
 		}
-		changed = false
 		time.Sleep(5 * time.Second)
 	}
 	return nil
