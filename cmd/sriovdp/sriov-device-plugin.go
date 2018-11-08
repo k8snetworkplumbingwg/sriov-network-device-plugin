@@ -25,6 +25,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -49,9 +50,10 @@ const (
 
 // sriovManager manages sriov networking devices
 type sriovManager struct {
-	socketFile string
-	devices    map[string]pluginapi.Device // for Kubelet DP API
-	grpcServer *grpc.Server
+	socketFile	string
+	devices		map[string]pluginapi.Device // for Kubelet DP API
+	rootDevices	[]string
+	grpcServer	*grpc.Server
 }
 
 func newSriovManager() *sriovManager {
@@ -103,6 +105,36 @@ func getSriovPfList() ([]string, error) {
 	return sriovNetDevices, nil
 }
 
+// GetVFList returns a List containing PCI addr for all VF discovered in a given PF
+func GetVFList(pf string) ([]string, error) {
+	vfList := make([]string, 0)
+	pfDir := filepath.Join(netDirectory, pf, "device")
+	_, err := os.Lstat(pfDir)
+	if err != nil {
+		glog.Errorf("Error. Could not get PF directory information for device: %s, Err: %v", pf, err)
+		return vfList, err
+	}
+
+	vfDirs, err := filepath.Glob(filepath.Join(pfDir, "virtfn*"))
+	if err != nil {
+		glog.Errorf("Error. Could not read VF directories, Err: %v", err)
+		return vfList, err
+	}
+
+	//Read all VF directory and get add VF PCI addr to the vfList
+	for _, dir := range vfDirs {
+		dirInfo, err := os.Lstat(dir)
+		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
+			linkName, err := filepath.EvalSymlinks(dir)
+			if err == nil {
+				vfLink := filepath.Base(linkName)
+				vfList = append(vfList, vfLink)
+			}
+		}
+	}
+	return vfList, err
+}
+
 //Reads DeviceName and gets PCI Addresses of VFs configured
 func (sm *sriovManager) discoverNetworks() error {
 
@@ -149,41 +181,49 @@ func (sm *sriovManager) discoverNetworks() error {
 			}
 			glog.Infof("Number of Configured VFs for device %v is %v", dev, string(configuredVFs))
 
-			//get PCI IDs for VFs
-			for vf := 0; vf < numconfiguredvfs; vf++ {
-				vfDir := fmt.Sprintf("/sys/class/net/%s/device/virtfn%d", dev, vf)
-				dirInfo, err := os.Lstat(vfDir)
-				if err != nil {
-					glog.Errorf("Error. Could not get directory information for device: %s, VF: %v. Err: %v", dev, vf, err)
-					return err
-				}
-
-				if (dirInfo.Mode() & os.ModeSymlink) == 0 {
-					glog.Errorf("Error. No symbolic link between virtual function and PCI - Device: %s, VF: %v", dev, vf)
-					return fmt.Errorf("Error. No symbolic link between virtual function and PCI - Device: %s, VF: %v", dev, vf)
-				}
-
-				pciInfo, err := os.Readlink(vfDir)
-				if err != nil {
-					glog.Errorf("Error. Cannot read symbolic link between virtual function and PCI - Device: %s, VF: %v. Err: %v", dev, vf, err)
-					return err
-				}
-
-				pciAddr := pciInfo[len("../"):]
-				glog.Infof("PCI Address for device %s, VF %v is %s", dev, vf, pciAddr)
-
-				devName := pciAddr
-				sm.devices[devName] = pluginapi.Device{ID: devName, Health: pluginapi.Healthy}
+			if numconfiguredvfs > 0 {
+				sm.rootDevices = append(sm.rootDevices, dev)
 			}
-
 		}
 	}
+	glog.Infof("Discovered SR-IOV PF devices: %v", sm.rootDevices)
 	return nil
 }
 
-func (sm *sriovManager) GetDeviceState(DeviceName string) string {
-	// TODO: Discover device health
-	return pluginapi.Healthy
+func IsNetlinkStatusUp(dev string) bool {
+	opsFile := filepath.Join(netDirectory, dev, "operstate")
+	bytes, err := ioutil.ReadFile(opsFile)
+	if err != nil || strings.TrimSpace(string(bytes)) != "up" {
+		return false
+	}
+	return true
+}
+
+func (sm *sriovManager) Probe() bool {
+	// Network device should check link status for each physical port and update health status for
+	// all associated VFs if there is any
+	changed := false
+	var healthValue string
+	for _, pf := range sm.rootDevices {
+		// If the PF link is up = "Healthy"
+		if IsNetlinkStatusUp(pf) {
+			healthValue = pluginapi.Healthy
+		} else {
+			healthValue = "Unhealthy"
+		}
+
+		// Get VFs associated with this device
+		if vfs, err := GetVFList(pf); err == nil {
+			for _, vf := range vfs {
+				device := sm.devices[vf]
+				if device.Health != healthValue {
+					sm.devices[vf] = pluginapi.Device{ID: vf, Health: healthValue}
+					changed = true
+				}
+			}
+		}
+	}
+	return changed
 }
 
 // Discovers SRIOV capabable NIC devices.
@@ -275,15 +315,7 @@ func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
 func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 	changed := true
 	for {
-		for id, dev := range sm.devices {
-			state := sm.GetDeviceState(id)
-			if dev.Health != state {
-				changed = true
-				dev.Health = state
-				sm.devices[id] = dev
-			}
-		}
-		if changed {
+		if sm.Probe() || changed {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
 				resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
