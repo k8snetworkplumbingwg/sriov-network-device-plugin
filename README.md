@@ -108,8 +108,6 @@ $ kubectl create -f deployments/sriov-crd.yaml
  ```
 $ git clone https://github.com/intel/sriov-network-device-plugin.git
 $ cd sriov-network-device-plugin
-$ git fetch
-$ git checkout dev/multiendpoints
  ```  
  2. Build executable binary using `make` 
  ``` 
@@ -152,7 +150,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 |     Field      | Required |                    Description                    |                       Type - Accepted values                        |         Example          |
 |----------------|----------|---------------------------------------------------|---------------------------------------------------------------------|--------------------------|
-| "resourceName" | Yes      | Endpoint resourece name                           | `string` - must be unique and should not contain special characters | `"sriov_net_A"`          |
+| "resourceName" | Yes      | Endpoint resource name                            | `string` - must be unique and should not contain special characters | `"sriov_net_A"`          |
 | "rootDevices"  | Yes      | List of PCI address for a resource pool           | A list of `string` - in sysfs pci address format                    | `["02:00.0", "02:00.2"]` |
 | "sriovMode"    | No       | Whether the root devices are SRIOV capable or not | `bool` - true OR false[default]                                     | `true`                   |
 | "deviceType"   | No       | Device driver type                                | `string` - "netdevice"\|"uio"\|"vfio"                               | `"netdevice"`            |
@@ -176,7 +174,7 @@ Usage of ./sriovdp:
   -logtostderr
         log to standard error instead of files
   -resource-prefix string
-        resource name prefix used for K8s extented resource (default "intel.com")
+        resource name prefix used for K8s extended resource (default "intel.com")
   -stderrthreshold value
         logs at or above this threshold go to stderr
   -v value
@@ -186,9 +184,9 @@ Usage of ./sriovdp:
 ```
 
 ### Assumptions
-This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extented resource so that its able to create appropriate Device Specs for the requested resource.
+This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
-For exmaple, if the driver type is uio(i.e. igb_uio.ko) then there are specefic device files to added in Device 
+For exmaple, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
 Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
 The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list of device PCI addresses, whether the resources are physical functions or virtual functions(`"sriovMode": true`) and its type.

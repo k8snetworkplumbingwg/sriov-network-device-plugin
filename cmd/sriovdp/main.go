@@ -32,7 +32,7 @@ func flagInit(cp *cliParams) {
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
-		"resource name prefix used for K8s extented resource")
+		"resource name prefix used for K8s extended resource")
 }
 
 func main() {
@@ -67,7 +67,7 @@ func main() {
 		glog.Errorf("error starting resource servers %v\n", err)
 		return
 	}
-	glog.Infof("All server started.")
+	glog.Infof("All servers started.")
 	glog.Infof("Listening for term signals")
 	// respond to syscalls for termination
 	sigCh := make(chan os.Signal, 1)
