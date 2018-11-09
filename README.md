@@ -2,12 +2,20 @@
 ## Table of Contents
 
 - [SRIOV Network device plugin](#sriov-network-device-plugin)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
 	-  [Supported SRIOV NICs](#supported-sriov-nics)
 - [Quick Start](#quick-start)
 	- [Network Object CRDs](#network-object-crds)
 	- [Build and configure Multus](#build-and-configure-multus) 
 	- [Build SRIOV CNI](#build-sriov-cni)
 	- [Build and run SRIOV network device plugin](#build-and-run-sriov-network-device-plugin)
+        - [Configurations](#configurations)
+                 - [Config parameters](#config-parameters)
+                 - [Command line arguments](#command-line-arguments)
+                 - [Assumptions](#assumptions)
+                 - [Workflow](#workflow)
+        - [Example deployments](#example-deployments)
 	- [Testing SRIOV workloads](#testing-sriov-workloads)
 		 - [Deploy test Pod](#deploy-test-pod)
 		 - [Verify Pod network interfaces](#verify-pod-network-interfaces)
@@ -15,13 +23,24 @@
 - [Issues and Contributing](#issues-and-contributing)
 
 ## SRIOV Network Device Plugin
-The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) in a Kubernetes host. To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI plugins:
+The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) in a Kubernetes host. 
+
+## Features
+- Handles SRIOV capable/not-capable devices (NICs and Accelerators alike)
+- Supports devices with both Kernel and userspace(uio and VFIO) drivers
+- Supports PF bound to DPDK driver to meet certain use-cases
+- Allow grouping together multiple PCI devices as one aggregated resource pool
+- Can represent each PF as a separately addressable resource pool to K8s
+- User configurable resourceName
+- Detects Kubelet restarts and auto-re-register
+- Detects Link status (for Linux network devices) and updates associated VFs health accordingly
+- Extensible to support new device types with minimal effort if not already supported
+
+To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI plugins:
 
 - Multus CNI
 
   - Retrieves allocated network device information of a Pod
-
-  - Passes allocated SRIOV VF information to SRIOV CNI
 
 - SRIOV CNI
 
@@ -101,53 +120,111 @@ $ make
 $ make image
 ``` 
 
- 4. Create SRIOV network device plugin Pod
- ```
-$ kubectl create -f pod-sriovdp.yaml
+> See following sections on how to configure and run SRIOV device plugin.
+
+## Configurations
+
+### Config parameters
+This plugin creates device plugin endpoints based on the configurations given in file `/etc/pcidp/config.json`. This configuration file is in json format as shown below:
+
+```json
+{
+    "resourceList":
+    [
+        {
+            "resourceName": "sriov_net_A",
+            "rootDevices": ["02:00.0", "02:00.2"],
+            "sriovMode": true,
+            "deviceType": "netdevice"
+        },
+        {
+            "resourceName": "sriov_net_B",
+            "rootDevices": ["02:00.1", "02:00.3"],
+            "sriovMode": true,
+            "deviceType": "vfio"
+        }
+    ]
+}
+```
+`"resourceList"` should contain a list of config objects. Each config object may consist of following fields:
+
+|     Field      | Required |                    Description                    |                       Type - Accepted values                        |         Example          |
+|----------------|----------|---------------------------------------------------|---------------------------------------------------------------------|--------------------------|
+| "resourceName" | Yes      | Endpoint resource name                            | `string` - must be unique and should not contain special characters | `"sriov_net_A"`          |
+| "rootDevices"  | Yes      | List of PCI address for a resource pool           | A list of `string` - in sysfs pci address format                    | `["02:00.0", "02:00.2"]` |
+| "sriovMode"    | No       | Whether the root devices are SRIOV capable or not | `bool` - true OR false[default]                                     | `true`                   |
+| "deviceType"   | No       | Device driver type                                | `string` - "netdevice"\|"uio"\|"vfio"                               | `"netdevice"`            |
+
+
+### Command line arguments
+This plugin accepts the following optional run-time command line arguments:
+
+```bash
+./sriovdp --help
+
+Usage of ./sriovdp:
+  -alsologtostderr
+        log to standard error as well as files
+  -config-file string
+        JSON device pool config file location (default "/etc/pcidp/config.json")
+  -log_backtrace_at value
+        when logging hits line file:N, emit a stack trace
+  -log_dir string
+        If non-empty, write log files in this directory
+  -logtostderr
+        log to standard error instead of files
+  -resource-prefix string
+        resource name prefix used for K8s extended resource (default "intel.com")
+  -stderrthreshold value
+        logs at or above this threshold go to stderr
+  -v value
+        log level for V logs
+  -vmodule value
+        comma-separated list of pattern=N settings for file-filtered logging
 ```
 
- 5. Get a bash terminal to the SRIOV network device plugin Pod
- ```
-$ kubectl exec -it sriov-device-plugin bash
+### Assumptions
+This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
+
+For exmaple, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
+Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
+
+The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list of device PCI addresses, whether the resources are physical functions or virtual functions(`"sriovMode": true`) and its type.
+
+If `"sriovMode": true` is given for a resource config then plugin will look for virtual functions(VFs) for all the devices listed in `"rootDevices"` and export the discovered VFs as allocatable extended resource list. Otherwise, plugin will export the root devices themsleves as the allocatable extended resources.
+
+### Workflow
+- Load device's (Physical funtion if it is SRIOV capable) kernel module and bind the driver to the PF
+- Create required Virtual functions
+- Bind all VF with right drivers
+- Create resource config entry in `/etc/pcidp/config.json`
+- Run SRIOV device plugin (as daemonset)
+
+On successfull run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
+
+```json
+$ kubectl get node node1 -o json | jq '.status.allocatable'
+
+{
+  "cpu": "8",
+  "ephemeral-storage": "169986638772",
+  "hugepages-1Gi": "0",
+  "hugepages-2Mi": "8Gi",
+  "intel.com/sriov_net_A": "8",
+  "intel.com/sriov_net_B": "8",
+  "memory": "7880620Ki",
+  "pods": "1k"
+}
+
 ```
 
- 6. Execute the SRIOV network device plugin binary from within the Pod
-````
-$ ./usr/bin/sriovdp --logtostderr -v 10
+## Example deployments
+We assume that you have working K8s cluster configured with Mutlus meta plugin for multi-network support. Please see [Additional information](#additional-information) section for more informaiton on required CNI plugins.
 
-sriov-device-plugin.go:380] SRIOV Network Device Plugin started...
-sriov-device-plugin.go:190] Discovering SRIOV network device[s]
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp0s31f6/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp14s0/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f0/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f1/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f2/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f3/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp6s2/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp6s2f1/device/sriov_numvfs
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f0/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f0 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f0
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f0 is 2
-sriov-device-plugin.go:171] PCI Address for device enp5s0f0, VF 0 is 0000:06:02.0
-sriov-device-plugin.go:171] PCI Address for device enp5s0f0, VF 1 is 0000:06:02.1
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f1/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f1 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f1
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f1 is 0
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f2/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f2 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f2
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f2 is 0
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f3/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f3 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f3
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f3 is 0
-sriov-device-plugin.go:195] Starting SRIOV Network Device Plugin server at: /var/lib/kubelet/device-plugins/sriovNet.sock
-sriov-device-plugin.go:220] SRIOV Network Device Plugin server started serving
-sriov-device-plugin.go:402] SRIOV Network Device Plugin registered with the Kubelet
-sriov-device-plugin.go:291] ListAndWatch: send devices &ListAndWatchResponse{Devices:[&Device{ID:0000:06:02.0,Health:Healthy,} &Device{ID:0000:06:02.1,Health:Healthy,}],}
-````
+The [images](./images) directory contains example Docker file, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) building docker the image.
+
+There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployments.
+
 
 ### Testing SRIOV workloads
 Leave the sriov device plugin running and open a new terminal session for following steps.
