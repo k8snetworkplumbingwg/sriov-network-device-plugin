@@ -21,8 +21,6 @@ spec:
         tier: node
         app: sriovdp
     spec:
-      hostNetwork: true
-      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: amd64
       tolerations:
@@ -46,9 +44,6 @@ spec:
         - name: sysfs
           mountPath: /sys
           readOnly: true
-        - name: devfs
-          mountPath: /dev
-          readOnly: true
         - name: config
           mountPath: /etc/pcidp/config.json
           readOnly: true
@@ -64,9 +59,6 @@ spec:
         - name: sysfs
           hostPath:
             path: /sys
-        - name: devfs
-          hostPath:
-            path: /dev
         - name: config
           hostPath:
             path: /etc/pcidp/config.json
