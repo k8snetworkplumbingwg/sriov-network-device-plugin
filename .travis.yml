@@ -1,0 +1,16 @@
+language: go
+
+script:
+  - make build
+  - make
+  - make image
+
+before_deploy:
+  - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: docker push nfvpe/sriov-device-plugin
+    on:
+      branch: master
