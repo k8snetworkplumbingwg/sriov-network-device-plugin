@@ -142,6 +142,7 @@ func GetVFList(pf string) ([]string, error) {
 //Reads DeviceName and gets PCI Addresses of VFs configured
 func (sm *sriovManager) discoverNetworks() error {
 
+	var healthValue string
 	sm.rootDevices = []string{}
 
 	// Get a list of SRIOV capable NICs in the host
@@ -189,6 +190,16 @@ func (sm *sriovManager) discoverNetworks() error {
 
 			if numconfiguredvfs > 0 {
 				sm.rootDevices = append(sm.rootDevices, dev)
+				if IsNetlinkStatusUp(dev) {
+					healthValue = pluginapi.Healthy
+				} else {
+					healthValue = "Unhealthy"
+				}
+				if vfList, err := GetVFList(dev); err == nil {
+					for _, vfDev := range vfList {
+						sm.devices[vfDev] = pluginapi.Device{ID: vfDev, Health: healthValue}
+					}
+				}
 			}
 		}
 	}
@@ -372,7 +383,28 @@ func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
 
 // Implements DevicePlugin service functions
 func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
+	// Send initial list of devices
+	resp := new(pluginapi.ListAndWatchResponse)
+	for _, dev := range sm.devices {
+		resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
+	}
+	glog.Infof("ListAndWatch: send initial devices %v\n", resp)
+	if err := stream.Send(resp); err != nil {
+		glog.Errorf("Error. Cannot send initial device states: %v\n", err)
+		sm.grpcServer.Stop()
+		return err
+	}
+
+	// Probes device state every 10 seconds and updates if changed.
+	// Terminates when termSignal received.
 	for {
+		select {
+		case <- time.After(10 * time.Second):
+			continue
+		case <- sm.termSignal:
+			glog.Infof("Terminate signal received, exiting ListAndWatch.")
+			return nil
+		}
 		if sm.Probe() {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
@@ -384,14 +416,6 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 				sm.grpcServer.Stop()
 				return err
 			}
-		}
-		select {
-		case <- time.After(10 * time.Second):
-			continue
-		case <- sm.termSignal:
-			sm.devices = make(map[string]pluginapi.Device)
-			glog.Infof("Terminate signal received, exiting ListAndWatch.")
-			return nil
 		}
 	}
 	return nil
