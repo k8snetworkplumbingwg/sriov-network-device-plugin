@@ -50,21 +50,21 @@ const (
 
 // sriovManager manages sriov networking devices
 type sriovManager struct {
-	socketFile	string
-	devices		map[string]pluginapi.Device // for Kubelet DP API
-	rootDevices	[]string
-	grpcServer	*grpc.Server
-	termSignal	chan bool
-	stopWatcher	chan bool
+	socketFile  string
+	devices     map[string]pluginapi.Device // for Kubelet DP API
+	rootDevices []string
+	grpcServer  *grpc.Server
+	termSignal  chan bool
+	stopWatcher chan bool
 }
 
 func newSriovManager() *sriovManager {
 
 	return &sriovManager{
-		devices:	make(map[string]pluginapi.Device),
-		socketFile:	fmt.Sprintf("%s.sock", pluginEndpointPrefix),
-		termSignal:	make(chan bool, 1),
-		stopWatcher:	make(chan bool),
+		devices:     make(map[string]pluginapi.Device),
+		socketFile:  fmt.Sprintf("%s.sock", pluginEndpointPrefix),
+		termSignal:  make(chan bool, 1),
+		stopWatcher: make(chan bool),
 	}
 }
 
@@ -399,9 +399,9 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 	// Terminates when termSignal received.
 	for {
 		select {
-		case <- time.After(10 * time.Second):
+		case <-time.After(10 * time.Second):
 			continue
-		case <- sm.termSignal:
+		case <-sm.termSignal:
 			glog.Infof("Terminate signal received, exiting ListAndWatch.")
 			return nil
 		}
