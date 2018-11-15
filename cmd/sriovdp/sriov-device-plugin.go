@@ -400,7 +400,6 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 	for {
 		select {
 		case <-time.After(10 * time.Second):
-			continue
 		case <-sm.termSignal:
 			glog.Infof("Terminate signal received, exiting ListAndWatch.")
 			return nil
