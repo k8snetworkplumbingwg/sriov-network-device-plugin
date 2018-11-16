@@ -79,13 +79,23 @@ func getSriovPfList() ([]string, error) {
 		return sriovNetDevices, err
 	}
 
-	if len(netDevices) < 1 {
-		glog.Errorf("Error. No network device found in %s directory", netDirectory)
+	pfNetDevices := []string{}
+
+	for _, dev := range netDevices {
+		vfIndicator := filepath.Join(netDirectory, dev.Name(), "device/physfn")
+		_, err := os.Lstat(vfIndicator)
+		if err != nil {
+			pfNetDevices = append(pfNetDevices, dev.Name())
+		}
+	}
+
+	if len(pfNetDevices) < 1 {
+		glog.Errorf("Error. No physical network device found in %s directory", netDirectory)
 		return sriovNetDevices, err
 	}
 
-	for _, dev := range netDevices {
-		sriovDirPath := filepath.Join(netDirectory, dev.Name())
+	for _, dev := range pfNetDevices {
+		sriovDirPath := filepath.Join(netDirectory, dev)
 		glog.Infof("Checking inside dir %s", sriovDirPath)
 		dir, err := os.Stat(sriovDirPath)
 		if err != nil {
@@ -101,7 +111,7 @@ func getSriovPfList() ([]string, error) {
 
 		if f, err := os.Lstat(sriovFilePath); !os.IsNotExist(err) {
 			if f.Mode().IsRegular() { // and its a regular file
-				sriovNetDevices = append(sriovNetDevices, dev.Name())
+				sriovNetDevices = append(sriovNetDevices, dev)
 			}
 		}
 	}
