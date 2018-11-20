@@ -86,7 +86,7 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
 		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(rs.resourcePool.GetDeviceFiles(), container.DevicesIDs)
-		containerResp.Envs = rs.resourcePool.GetEnvs(rs.resourcePool.GetResourceName(), container.DevicesIDs)
+		containerResp.Envs = rs.resourcePool.GetEnvs(container.DevicesIDs)
 		containerResp.Mounts = rs.resourcePool.GetMounts()
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}

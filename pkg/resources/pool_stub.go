@@ -43,7 +43,6 @@ func newResourcePool(rc *types.ResourceConfig, bScript string) types.ResourcePoo
 }
 
 func (rp *resourcePool) GetConfig() *types.ResourceConfig {
-	// Not implemented
 	return rp.config
 }
 

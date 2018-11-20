@@ -28,16 +28,21 @@ import (
 	GetMounts()
 */
 type vfioResourcePool struct {
+	resourcePool
 	vfioMount string
 }
 
 func newVfioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	return &resourcePool{
-		config:        rc,
-		devices:       make(map[string]*pluginapi.Device),
-		deviceFiles:   make(map[string]string),
-		IBaseResource: &vfioResourcePool{vfioMount: "/dev/vfio/vfio"},
+	this := &vfioResourcePool{
+		resourcePool: resourcePool{
+			config:      rc,
+			devices:     make(map[string]*pluginapi.Device),
+			deviceFiles: make(map[string]string),
+		},
+		vfioMount: "/dev/vfio/vfio",
 	}
+	this.IBaseResource = this
+	return this
 }
 
 // Overrides GetDeviceFile() method
@@ -45,7 +50,7 @@ func (rp *vfioResourcePool) GetDeviceFile(dev string) (devFile string, err error
 	return utils.GetVFIODeviceFile(dev)
 }
 
-func (rp *vfioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {
+func (rp *vfioResourcePool) GetEnvs(deviceIDs []string) map[string]string {
 	glog.Infof("vfio GetEnvs() called")
 	envs := make(map[string]string)
 	values := ""
@@ -57,7 +62,7 @@ func (rp *vfioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map
 		}
 		values += " "
 	}
-	envs[resourceName] = values
+	envs[rp.config.ResourceName] = values
 	return envs
 }
 

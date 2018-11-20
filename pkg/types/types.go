@@ -74,7 +74,7 @@ type ResourcePool interface {
 type IBaseResource interface {
 	GetDeviceFile(dev string) (devFile string, err error)
 	GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec
-	GetEnvs(resourceName string, deviceIDs []string) map[string]string
+	GetEnvs(deviceIDs []string) map[string]string
 	GetMounts() []*pluginapi.Mount
 	// Probe does device health-check and update devices and returns 'true' if any of device in resource pool changed
 	Probe(*ResourceConfig, map[string]*pluginapi.Device) bool

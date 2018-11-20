@@ -27,15 +27,19 @@ import (
 	GetMounts()
 */
 type genericResourcePool struct {
+	resourcePool
 }
 
 func newGenericResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	return &resourcePool{
-		config:        rc,
-		devices:       make(map[string]*pluginapi.Device),
-		deviceFiles:   make(map[string]string),
-		IBaseResource: &genericResourcePool{},
+	this := &genericResourcePool{
+		resourcePool: resourcePool{
+			config:      rc,
+			devices:     make(map[string]*pluginapi.Device),
+			deviceFiles: make(map[string]string),
+		},
 	}
+	this.IBaseResource = this
+	return this
 }
 
 // Overrides GetDeviceFile() method
@@ -45,7 +49,7 @@ func (rp *genericResourcePool) GetDeviceFile(dev string) (devFile string, err er
 	return // empty string
 }
 
-func (rp *genericResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {
+func (rp *genericResourcePool) GetEnvs(deviceIDs []string) map[string]string {
 	glog.Infof("generic GetEnvs() called")
 	envs := make(map[string]string)
 	values := ""
@@ -57,7 +61,7 @@ func (rp *genericResourcePool) GetEnvs(resourceName string, deviceIDs []string) 
 		}
 		values += " "
 	}
-	envs[resourceName] = values
+	envs[rp.config.ResourceName] = values
 	return envs
 }
 
