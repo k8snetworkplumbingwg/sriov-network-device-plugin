@@ -29,15 +29,19 @@ import (
 	Probe()
 */
 type netDevicePool struct {
+	resourcePool
 }
 
 func newNetDevicePool(rc *types.ResourceConfig) types.ResourcePool {
-	return &resourcePool{
-		config:        rc,
-		devices:       make(map[string]*pluginapi.Device),
-		deviceFiles:   make(map[string]string),
-		IBaseResource: &netDevicePool{},
+	this := &netDevicePool{
+		resourcePool: resourcePool{
+			config:      rc,
+			devices:     make(map[string]*pluginapi.Device),
+			deviceFiles: make(map[string]string),
+		},
 	}
+	this.IBaseResource = this
+	return this
 }
 
 // Overrides GetDeviceFile() method
@@ -47,7 +51,7 @@ func (rp *netDevicePool) GetDeviceFile(dev string) (devFile string, err error) {
 	return // empty string
 }
 
-func (rp *netDevicePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {
+func (rp *netDevicePool) GetEnvs(deviceIDs []string) map[string]string {
 	glog.Infof("generic GetEnvs() called")
 	envs := make(map[string]string)
 	values := ""
@@ -59,7 +63,7 @@ func (rp *netDevicePool) GetEnvs(resourceName string, deviceIDs []string) map[st
 		}
 		values += " "
 	}
-	envs[resourceName] = values
+	envs[rp.config.ResourceName] = values
 	return envs
 }
 

@@ -27,15 +27,19 @@ import (
 	GetMounts()
 */
 type uioResourcePool struct {
+	resourcePool
 }
 
 func newUioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	return &resourcePool{
-		config:        rc,
-		devices:       make(map[string]*pluginapi.Device),
-		deviceFiles:   make(map[string]string),
-		IBaseResource: &uioResourcePool{},
+	this := &uioResourcePool{
+		resourcePool: resourcePool{
+			config:      rc,
+			devices:     make(map[string]*pluginapi.Device),
+			deviceFiles: make(map[string]string),
+		},
 	}
+	this.IBaseResource = this
+	return this
 }
 
 // Overrides GetDeviceFile() method
@@ -43,7 +47,7 @@ func (rp *uioResourcePool) GetDeviceFile(dev string) (devFile string, err error)
 	return utils.GetUIODeviceFile(dev)
 }
 
-func (rp *uioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[string]string {
+func (rp *uioResourcePool) GetEnvs(deviceIDs []string) map[string]string {
 	envs := make(map[string]string)
 	values := ""
 	lastIndex := len(deviceIDs) - 1
@@ -54,7 +58,7 @@ func (rp *uioResourcePool) GetEnvs(resourceName string, deviceIDs []string) map[
 		}
 		values += " "
 	}
-	envs[resourceName] = values
+	envs[rp.config.ResourceName] = values
 	return envs
 }
 func (rp *uioResourcePool) GetMounts() []*pluginapi.Mount {
