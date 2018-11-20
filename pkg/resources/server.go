@@ -19,6 +19,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -86,7 +87,7 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
 		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(rs.resourcePool.GetDeviceFiles(), container.DevicesIDs)
-		containerResp.Envs = rs.resourcePool.GetEnvs(container.DevicesIDs)
+		containerResp.Envs = rs.getEnvs(container.DevicesIDs)
 		containerResp.Mounts = rs.resourcePool.GetMounts()
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
@@ -280,4 +281,19 @@ func (rs *resourceServer) triggerUpdate() {
 			}
 		}()
 	}
+}
+
+func (rs *resourceServer) getEnvs(deviceIDs []string) map[string]string {
+
+	varPrefix := "PCIDEVICE"
+	resourceNamePrefix := strings.Replace(rs.resourceNamePrefix, ".", "_", -1)
+
+	envs := rs.resourcePool.GetEnvs(deviceIDs)
+
+	newEnvs := make(map[string]string)
+	for k, v := range envs {
+		exportedVar := strings.ToUpper(fmt.Sprintf("%s_%s_%s", varPrefix, resourceNamePrefix, k))
+		newEnvs[exportedVar] = v
+	}
+	return newEnvs
 }
