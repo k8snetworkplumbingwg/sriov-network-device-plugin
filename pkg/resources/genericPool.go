@@ -59,7 +59,7 @@ func (rp *genericResourcePool) GetEnvs(deviceIDs []string) map[string]string {
 		if i == lastIndex {
 			break
 		}
-		values += " "
+		values += ","
 	}
 	envs[rp.config.ResourceName] = values
 	return envs
