@@ -398,12 +398,6 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 	// Probes device state every 10 seconds and updates if changed.
 	// Terminates when termSignal received.
 	for {
-		select {
-		case <-time.After(10 * time.Second):
-		case <-sm.termSignal:
-			glog.Infof("Terminate signal received, exiting ListAndWatch.")
-			return nil
-		}
 		if sm.Probe() {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
@@ -415,6 +409,14 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 				sm.grpcServer.Stop()
 				return err
 			}
+		}
+
+		select {
+		case <-time.After(10 * time.Second):
+			continue
+		case <-sm.termSignal:
+			glog.Infof("Terminate signal received, exiting ListAndWatch.")
+			return nil
 		}
 	}
 	return nil
