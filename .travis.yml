@@ -1,5 +1,8 @@
 language: go
 
+before_install:
+  - sudo apt-get update -qq
+
 script:
   - make build
   - make
@@ -9,8 +12,21 @@ before_deploy:
   - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
 deploy:
+  # Push image to Dockerhub on merge to master
   - provider: script
     skip_cleanup: true
     script: docker push nfvpe/sriov-device-plugin
     on:
       branch: master
+  # Push image to Dockerhub on tag
+  - provider: script
+    skip_cleanup: true
+    script: >
+      bash -c '
+      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG;
+      docker push nfvpe/multus:$TRAVIS_TAG;
+      echo foo'
+    on:
+      tags: true
+      all_branches: true
+      condition: "$TRAVIS_TAG =~ ^v[0-9].*$"
