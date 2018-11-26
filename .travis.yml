@@ -24,7 +24,7 @@ deploy:
     script: >
       bash -c '
       docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG;
-      docker push nfvpe/multus:$TRAVIS_TAG;
+      docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG;
       echo foo'
     on:
       tags: true
