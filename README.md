@@ -1,4 +1,7 @@
 # SRIOV Network device plugin for Kubernetes
+
+[![Travis CI](https://travis-ci.org/intel/sriov-network-device-plugin.svg?branch=release-v1)](https://travis-ci.org/intel/sriov-network-device-plugin)
+
 ## Table of Contents
 
 - [SRIOV Network device plugin](#sriov-network-device-plugin)

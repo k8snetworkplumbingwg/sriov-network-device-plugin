@@ -1,0 +1,23 @@
+language: go
+
+before_install:
+  - sudo apt-get update -qq
+
+script:
+  - make build
+  - make
+  - make test
+  - make image
+
+before_deploy:
+  - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+  - docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:release-v1
+
+deploy:
+  # Push image to Dockerhub on merge to release-v1 branch
+  - provider: script
+    skip_cleanup: true
+    script: docker push nfvpe/sriov-device-plugin:release-v1;
+    on:
+      all_branches: true
+      condition: $TRAVIS_BRANCH =~ ^release
