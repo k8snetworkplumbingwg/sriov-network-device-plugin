@@ -33,7 +33,6 @@ spec:
         image: nfvpe/sriov-device-plugin:latest
         imagePullPolicy: Never
         args:
-        - --log-dir=sriovdp
         - --log-level=10
         securityContext:
           privileged: false
@@ -47,15 +46,10 @@ spec:
         - name: config
           mountPath: /etc/pcidp/config.json
           readOnly: true
-        - name: log
-          mountPath: /var/log
       volumes:
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/
-        - name: log
-          hostPath:
-            path: /var/log
         - name: sysfs
           hostPath:
             path: /sys
