@@ -34,7 +34,6 @@ spec:
       - name: kube-sriovdp
         image: nfvpe/sriov-device-plugin:latest
         args:
-        - --log-dir=sriovdp
         - --log-level=10
         resources:
           requests:
@@ -52,8 +51,6 @@ spec:
         - name: net
           mountPath: /sys/class/net
           readOnly: true
-        - name: log
-          mountPath: /var/log
       volumes:
         - name: devicesock
           hostPath:
@@ -61,6 +58,3 @@ spec:
         - name: net
           hostPath:
             path: /sys/class/net
-        - name: log
-          hostPath:
-            path: /var/log
