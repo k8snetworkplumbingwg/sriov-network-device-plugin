@@ -31,7 +31,6 @@ spec:
       containers:
       - name: kube-sriovdp
         image: nfvpe/sriov-device-plugin:latest
-        imagePullPolicy: Never
         args:
         - --log-level=10
         securityContext:
