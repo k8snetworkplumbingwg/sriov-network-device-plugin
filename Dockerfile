@@ -1,21 +1,16 @@
-FROM centos:centos7
+FROM golang:alpine as builder
 
 ADD . /usr/src/sriov-network-device-plugin
 
 ENV HTTP_PROXY $http_proxy
 ENV HTTPS_PROXY $https_proxy
-ENV INSTALL_PKGS "git golang make"
-RUN rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO && \
-    curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo && \
-    yum install -y $INSTALL_PKGS && \
-    rpm -V $INSTALL_PKGS && \
+RUN apk add --update make && \
     cd /usr/src/sriov-network-device-plugin && \
     make clean && \
-    make build && \
-    yum autoremove -y $INSTALL_PKGS && \
-    yum clean all && \
-    rm -rf /tmp/*
+    make build
 
+FROM alpine
+COPY --from=builder /usr/src/sriov-network-device-plugin/build/sriovdp /usr/bin/
 WORKDIR /
 
 LABEL io.k8s.display-name="SRIOV Network Device Plugin"

@@ -2,7 +2,6 @@
 
 set -e
 
-SRIOV_DP_BINARY_FILE="/usr/src/sriov-network-device-plugin/build/sriovdp"
 SRIOV_DP_SYS_BINARY_DIR="/usr/bin/"
 LOG_DIR=""
 LOG_LEVEL=10
@@ -39,8 +38,6 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-
-cp -f $SRIOV_DP_BINARY_FILE $SRIOV_DP_SYS_BINARY_DIR
 
 if [ "$LOG_DIR" != "" ]; then
     mkdir -p "/var/log/$LOG_DIR"
