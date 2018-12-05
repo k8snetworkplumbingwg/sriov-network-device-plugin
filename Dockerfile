@@ -5,7 +5,9 @@ ADD . /usr/src/sriov-network-device-plugin
 ENV HTTP_PROXY $http_proxy
 ENV HTTPS_PROXY $https_proxy
 ENV INSTALL_PKGS "git golang make"
-RUN yum install -y $INSTALL_PKGS && \
+RUN rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO && \
+    curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo && \
+    yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     cd /usr/src/sriov-network-device-plugin && \
     make clean && \
