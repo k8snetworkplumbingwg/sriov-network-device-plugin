@@ -116,17 +116,17 @@ func GetSriovVFcapacity(pf string) int {
 	return numvfs
 }
 
-// IsNetlinkStatusUp returns 'false' if 'operstate' is not "up" for a Linux netowrk device
+// IsNetlinkStatusUp returns 'false' if 'operstate' is not "up" for a Linux network device.
+// This function will only return 'false' if the 'operstate' file of the device is readable
+// and holds value anything other than "up". Or else we assume link is up.
 func IsNetlinkStatusUp(dev string) bool {
-	opsFiles, err := filepath.Glob(filepath.Join(sysBusPci, dev, "net", "*", "operstate"))
-	if err != nil {
-		return false
-	}
 
-	for _, f := range opsFiles {
-		bytes, err := ioutil.ReadFile(f)
-		if err != nil || strings.TrimSpace(string(bytes)) != "up" {
-			return false
+	if opsFiles, err := filepath.Glob(filepath.Join(sysBusPci, dev, "net", "*", "operstate")); err == nil {
+		for _, f := range opsFiles {
+			bytes, err := ioutil.ReadFile(f)
+			if err != nil || strings.TrimSpace(string(bytes)) != "up" {
+				return false
+			}
 		}
 	}
 	return true
