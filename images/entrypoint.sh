@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
@@ -6,14 +6,14 @@ SRIOV_DP_SYS_BINARY_DIR="/usr/bin/"
 LOG_DIR=""
 LOG_LEVEL=10
 
-function usage()
+usage()
 {
-    echo -e "This is an entrypoint script for SR-IOV Network Device Plugin"
-    echo -e ""
-    echo -e "./entrypoint.sh"
-    echo -e "\t-h --help"
-    echo -e "\t--log-dir=$LOG_DIR"
-    echo -e "\t--log-level=$LOG_LEVEL"
+    /bin/echo -e "This is an entrypoint script for SR-IOV Network Device Plugin"
+    /bin/echo -e ""
+    /bin/echo -e "./entrypoint.sh"
+    /bin/echo -e "\t-h --help"
+    /bin/echo -e "\t--log-dir=$LOG_DIR"
+    /bin/echo -e "\t--log-level=$LOG_LEVEL"
 }
 
 while [ "$1" != "" ]; do
