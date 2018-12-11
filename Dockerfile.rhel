@@ -1,0 +1,25 @@
+# This dockerfile is specific to building Multus for OpenShift
+FROM rhel:rhel7
+
+ADD . /usr/src/sriov-network-device-plugin
+
+ENV HTTP_PROXY $http_proxy
+ENV HTTPS_PROXY $https_proxy
+ENV INSTALL_PKGS "git golang make"
+RUN yum install -y $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    cd /usr/src/sriov-network-device-plugin && \
+    make clean && \
+    make build && \
+    cp build/sriovdp /usr/bin/ && \
+    yum autoremove -y $INSTALL_PKGS && \
+    yum clean all && \
+    rm -rf /tmp/*
+
+WORKDIR /
+
+LABEL io.k8s.display-name="SRIOV Network Device Plugin"
+
+ADD ./images/entrypoint.sh /
+
+ENTRYPOINT ["/entrypoint.sh"]
