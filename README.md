@@ -104,10 +104,8 @@ $ kubectl create -f deployments/crdnetwork.yaml
 ```
 $ git clone https://github.com/intel/sriov-cni.git
 $ cd sriov-cni
-$ git fetch
-$ git checkout dev/k8s-deviceid-model
-$ ./build
-$ cp bin/sriov /opt/cni/bin
+$ make
+$ cp build/sriov /opt/cni/bin
 ```
 2. Create the SRIOV Network CRD
 ```
