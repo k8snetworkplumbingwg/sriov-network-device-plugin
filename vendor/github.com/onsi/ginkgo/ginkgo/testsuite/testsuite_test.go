@@ -1,3 +1,5 @@
+// +build go1.6
+
 package testsuite_test
 
 import (
@@ -22,6 +24,16 @@ var _ = Describe("TestSuite", func() {
 		path = filepath.Join(path, filename)
 		ioutil.WriteFile(path, []byte(content), mode)
 	}
+
+	var origVendor string
+
+	BeforeSuite(func() {
+		origVendor = os.Getenv("GO15VENDOREXPERIMENT")
+	})
+
+	AfterSuite(func() {
+		os.Setenv("GO15VENDOREXPERIMENT", origVendor)
+	})
 
 	BeforeEach(func() {
 		var err error
@@ -48,6 +60,9 @@ var _ = Describe("TestSuite", func() {
 
 		//ginkgo tests in a deeply nested directory
 		writeFile("/colonelmustard/library", "library_test.go", `import "github.com/onsi/ginkgo"`, 0666)
+
+		//ginkgo tests deeply nested in a vendored dependency
+		writeFile("/vendor/mrspeacock/lounge", "lounge_test.go", `import "github.com/onsi/ginkgo"`, 0666)
 
 		//a precompiled ginkgo test
 		writeFile("/precompiled-dir", "precompiled.test", `fake-binary-file`, 0777)
@@ -135,6 +150,26 @@ var _ = Describe("TestSuite", func() {
 				Ω(suites[0].PackageName).Should(Equal("professorplum"))
 				Ω(suites[0].IsGinkgo).Should(BeFalse())
 				Ω(suites[0].Precompiled).Should(BeFalse())
+			})
+		})
+
+		Context("given GO15VENDOREXPERIMENT disabled", func() {
+			BeforeEach(func() {
+				os.Setenv("GO15VENDOREXPERIMENT", "0")
+			})
+
+			AfterEach(func() {
+				os.Setenv("GO15VENDOREXPERIMENT", "")
+			})
+
+			It("should not skip vendor dirs", func() {
+				suites := SuitesInDir(filepath.Join(tmpDir+"/vendor"), true)
+				Ω(suites).Should(HaveLen(1))
+			})
+
+			It("should recurse into vendor dirs", func() {
+				suites := SuitesInDir(filepath.Join(tmpDir), true)
+				Ω(suites).Should(HaveLen(4))
 			})
 		})
 

@@ -24,3 +24,6 @@ import:
   version: v0.6.0
   subpackages:
   - pkg/skel
+- package: github.com/intel/multus-cni
+  subpackages:
+  - types
