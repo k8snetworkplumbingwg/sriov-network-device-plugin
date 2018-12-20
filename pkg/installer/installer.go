@@ -244,6 +244,7 @@ func removeSecretIfExists(secretName string) {
 	}
 }
 
+// Install creates resources required by mutating admission webhook
 func Install(k8sNamespace, namePrefix string) {
 	/* setup Kubernetes API client */
 	config, err := rest.InClusterConfig()

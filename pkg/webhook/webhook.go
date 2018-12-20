@@ -252,6 +252,7 @@ func writeResponse(w http.ResponseWriter, ar *v1beta1.AdmissionReview) {
 	w.Write(resp)
 }
 
+// MutateHandler handles AdmissionReview requests and sends responses back to the K8s API server
 func MutateHandler(w http.ResponseWriter, req *http.Request) {
 	glog.Infof("Received mutation request")
 
@@ -350,6 +351,7 @@ func MutateHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+// SetupInClusterClient setups K8s client to communicate with the API server
 func SetupInClusterClient() {
 	/* setup Kubernetes API client */
 	config, err := rest.InClusterConfig()
