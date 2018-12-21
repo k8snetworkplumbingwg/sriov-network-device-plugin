@@ -131,7 +131,7 @@ func createSecret(certificate, key []byte) error {
 func createMutatingWebhookConfiguration(certificate []byte) error {
 	configName := strings.Join([]string{prefix, "mutating-config"}, "-")
 	serviceName := strings.Join([]string{prefix, "service"}, "-")
-	removeValidatingWebhookIfExists(configName)
+	removeMutatingWebhookIfExists(configName)
 	failurePolicy := arv1beta1.Ignore
 	path := "/mutate"
 	configuration := &arv1beta1.MutatingWebhookConfiguration{
@@ -205,18 +205,6 @@ func removeServiceIfExists(serviceName string) {
 			glog.Errorf("error trying to remove service: %s", err)
 		}
 		glog.Infof("service %s removed", serviceName)
-	}
-}
-
-func removeValidatingWebhookIfExists(configName string) {
-	validatingWebhok, err := clientset.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(configName, metav1.GetOptions{})
-	if validatingWebhok != nil && err == nil {
-		glog.Infof("validating webhook %s already exists, removing it first", configName)
-		err := clientset.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Delete(configName, &metav1.DeleteOptions{})
-		if err != nil {
-			glog.Errorf("error trying to remove validating webhook configuration: %s", err)
-		}
-		glog.Infof("validating webhook configuration %s removed", configName)
 	}
 }
 
