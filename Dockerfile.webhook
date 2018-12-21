@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.11
+FROM golang:alpine as builder
 
 ENV PKG_NAME=github.com/intel/sriov-network-device-plugin
 ENV PKG_PATH=$GOPATH/src/$PKG_NAME
@@ -20,5 +20,9 @@ WORKDIR $PKG_PATH
 
 COPY . $PKG_PATH/
 RUN go install ./...
+
+FROM alpine
+COPY --from=builder /go/bin/webhook /go/bin/webhook_installer /usr/bin/
+WORKDIR /
 
 CMD ["webhook"]
