@@ -32,7 +32,7 @@ spec:
       serviceAccountName: sriov-device-plugin
       containers:
       - name: kube-sriovdp
-        image: nfvpe/sriov-device-plugin:latest
+        image: nfvpe/sriov-device-plugin:release-v1
         args:
         - --log-level=10
         resources:
