@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Intel Corporation
+// Copyright (c) 2017 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,6 +74,17 @@ var _ = Describe("Webhook", func() {
 		})
 	})
 
+	Describe("Deserializing Pod", func() {
+		Context("It's not a Pod", func() {
+			It("should return an error", func() {
+				ar := &v1beta1.AdmissionReview{}
+				ar.Request = &v1beta1.AdmissionRequest{}
+				_, err := deserializePod(ar)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
+
 	Describe("Writing a response", func() {
 		Context("with an AdmissionReview", func() {
 			It("should be marshalled and written to a HTTP Response Writer", func() {
@@ -95,115 +106,148 @@ var _ = Describe("Webhook", func() {
 
 	Describe("Handling requests", func() {
 		Context("Request body is empty", func() {
-			It("validate - should return an error", func() {
-				req := httptest.NewRequest("POST", fmt.Sprintf("https://fakewebhook/validate"), nil)
+			It("mutate - should return an error", func() {
+				req := httptest.NewRequest("POST", fmt.Sprintf("https://fakewebhook/mutate"), nil)
 				w := httptest.NewRecorder()
-				ValidateHandler(w, req)
+				MutateHandler(w, req)
 				resp := w.Result()
 				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 			})
 		})
 
 		Context("Content type is not application/json", func() {
-			It("validate - should return an error", func() {
-				req := httptest.NewRequest("POST", fmt.Sprintf("https://fakewebhook/validate"), bytes.NewBufferString("fake-body"))
+			It("mutate - should return an error", func() {
+				req := httptest.NewRequest("POST", fmt.Sprintf("https://fakewebhook/mutate"), bytes.NewBufferString("fake-body"))
 				req.Header.Set("Content-Type", "invalid-type")
 				w := httptest.NewRecorder()
-				ValidateHandler(w, req)
+				MutateHandler(w, req)
 				resp := w.Result()
 				Expect(resp.StatusCode).To(Equal(http.StatusUnsupportedMediaType))
 			})
 		})
-
-		Context("Deserialization of net-attachment-def failed", func() {
-			It("validate - should return an error", func() {
-				req := httptest.NewRequest("POST", fmt.Sprintf("https://fakewebhook/validate"), bytes.NewBufferString("fake-body"))
-				req.Header.Set("Content-Type", "application/json")
-				w := httptest.NewRecorder()
-				ValidateHandler(w, req)
-				resp := w.Result()
-				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-			})
-		})
 	})
 
-	DescribeTable("Network Attachment Definition validation",
-		func(in types.NetworkAttachmentDefinition, out bool, shouldFail bool) {
-			actualOut, err := validateNetworkAttachmentDefinition(in)
-			Expect(actualOut).To(Equal(out))
+	var emptyList []*types.NetworkSelectionElement
+	DescribeTable("Network selection elements parsing",
+
+		func(in string, out []*types.NetworkSelectionElement, shouldFail bool) {
+			actualOut, err := parsePodNetworkSelections(in, "default")
+			Expect(actualOut).To(ConsistOf(out))
 			if shouldFail {
 				Expect(err).To(HaveOccurred())
 			}
 		},
 		Entry(
 			"empty config",
-			types.NetworkAttachmentDefinition{},
-			false, true,
+			"",
+			emptyList,
+			false,
 		),
 		Entry(
-			"invalid name",
-			types.NetworkAttachmentDefinition{
-				Metadata: metav1.ObjectMeta{
-					Name: "some?invalid?name",
+			"csv - correct ns/net@if format",
+			"ns1/net1@eth0",
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "ns1",
+					Name:             "net1",
+					InterfaceRequest: "eth0",
 				},
 			},
-			false, true,
+			false,
 		),
 		Entry(
-			"invalid network config",
-			types.NetworkAttachmentDefinition{
-				Metadata: metav1.ObjectMeta{
-					Name: "some-valid-name",
-				},
-				Spec: types.NetworkAttachmentDefinitionSpec{
-					Config: `{"some-invalid": "config"}`,
+			"csv - correct net@if format",
+			"net1@eth0",
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "default",
+					Name:             "net1",
+					InterfaceRequest: "eth0",
 				},
 			},
-			false, true,
+			false,
 		),
 		Entry(
-			"valid network config",
-			types.NetworkAttachmentDefinition{
-				Metadata: metav1.ObjectMeta{
-					Name: "some-valid-name",
-				},
-				Spec: types.NetworkAttachmentDefinitionSpec{
-					Config: `{"cniVersion": "0.3.0", "type": "some-plugin"}`,
+			"csv - correct *name-only* format",
+			"net1",
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "default",
+					Name:             "net1",
+					InterfaceRequest: "",
 				},
 			},
-			true, false,
+			false,
 		),
 		Entry(
-			"valid network config list",
-			types.NetworkAttachmentDefinition{
-				Metadata: metav1.ObjectMeta{
-					Name: "some-valid-name",
-				},
-				Spec: types.NetworkAttachmentDefinitionSpec{
-					Config: `{
-						"cniVersion": "0.3.0",
-						"name": "some-bridge-network",
-						"plugins": [{
-							"type": "bridge",
-							"bridge": "br0",
-							"ipam": {
-								"type": "host-local",
-								"subnet": "192.168.1.0/24"
-							}
-						},
-						{
-							"type": "some-plugin"
-						},
-						{
-							"type": "another-plugin",
-							"sysctl": {
-								"net.ipv4.conf.all.log_martians": "1"
-							}
-						}]
-					}`,
+			"csv - correct ns/net format",
+			"ns1/net1",
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "ns1",
+					Name:             "net1",
+					InterfaceRequest: "",
 				},
 			},
-			true, false,
+			false,
+		),
+		Entry(
+			"csv - correct multiple networks format",
+			"ns1/net1,net2",
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "ns1",
+					Name:             "net1",
+					InterfaceRequest: "",
+				},
+				{
+					Namespace:        "default",
+					Name:             "net2",
+					InterfaceRequest: "",
+				},
+			},
+			false,
+		),
+		Entry(
+			"csv - incorrect format forward slashes",
+			"ns1/net1/if1",
+			emptyList,
+			true,
+		),
+		Entry(
+			"csv - incorrect format @'s",
+			"net1@if1@if2",
+			emptyList,
+			true,
+		),
+		Entry(
+			"csv - incorrect mixed with correct",
+			"ns/net1,net2,net3@if1@if2",
+			emptyList,
+			true,
+		),
+		Entry(
+			"json - not an array",
+			`{"name": "net1"}`,
+			emptyList,
+			true,
+		),
+		Entry(
+			"json - correct example",
+			`[{"name": "net1"},{"name": "net2", "namespace": "ns1"}]`,
+			[]*types.NetworkSelectionElement{
+				{
+					Namespace:        "default",
+					Name:             "net1",
+					InterfaceRequest: "",
+				},
+				{
+					Namespace:        "ns1",
+					Name:             "net2",
+					InterfaceRequest: "",
+				},
+			},
+			false,
 		),
 	)
 })
