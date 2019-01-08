@@ -54,25 +54,26 @@ func generateCSR() ([]byte, []byte, error) {
 func getSignedCertificate(request []byte) ([]byte, error) {
 	csrName := strings.Join([]string{prefix, "csr"}, "-")
 	csr, err := clientset.CertificatesV1beta1().CertificateSigningRequests().Get(csrName, metav1.GetOptions{})
-	if csr != nil && err == nil {
-		glog.Infof("CSR %s already exists, trying to reuse it", csrName)
-	} else {
-		glog.Infof("creating CSR %s", csrName)
-		/* build Kubernetes CSR object */
-		csr := &v1beta1.CertificateSigningRequest{}
-		csr.ObjectMeta.Name = csrName
-		csr.ObjectMeta.Namespace = namespace
-		csr.Spec.Request = request
-		csr.Spec.Groups = []string{"system:authenticated"}
-		csr.Spec.Usages = []v1beta1.KeyUsage{v1beta1.UsageDigitalSignature, v1beta1.UsageServerAuth, v1beta1.UsageKeyEncipherment}
-
-		/* push CSR to Kubernetes API server */
-		csr, err = clientset.CertificatesV1beta1().CertificateSigningRequests().Create(csr)
-		if err != nil {
-			return nil, errors.Wrap(err, "error creating CSR in Kubernetes API: %s")
-		}
-		glog.Infof("CSR pushed to the Kubernetes API")
+	if csr != nil || err == nil {
+		glog.Infof("CSR %s already exists, removing it first", csrName)
+		clientset.CertificatesV1beta1().CertificateSigningRequests().Delete(csrName, &metav1.DeleteOptions{})
 	}
+
+	glog.Infof("creating new CSR %s", csrName)
+	/* build Kubernetes CSR object */
+	csr = &v1beta1.CertificateSigningRequest{}
+	csr.ObjectMeta.Name = csrName
+	csr.ObjectMeta.Namespace = namespace
+	csr.Spec.Request = request
+	csr.Spec.Groups = []string{"system:authenticated"}
+	csr.Spec.Usages = []v1beta1.KeyUsage{v1beta1.UsageDigitalSignature, v1beta1.UsageServerAuth, v1beta1.UsageKeyEncipherment}
+
+	/* push CSR to Kubernetes API server */
+	csr, err = clientset.CertificatesV1beta1().CertificateSigningRequests().Create(csr)
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating CSR in Kubernetes API: %s")
+	}
+	glog.Infof("CSR pushed to the Kubernetes API")
 
 	if csr.Status.Certificate != nil {
 		glog.Infof("using already issued certificate for CSR %s", csrName)
