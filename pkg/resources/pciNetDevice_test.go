@@ -26,7 +26,7 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 
 				dev, err := NewPciNetDevice(in, f)
@@ -48,7 +48,7 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
