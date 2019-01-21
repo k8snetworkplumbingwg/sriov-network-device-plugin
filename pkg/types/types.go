@@ -20,7 +20,7 @@ import (
 
 const (
 	// SockDir is the default Kubelet device plugin socket directory
-	SockDir = "/var/lib/kubelet/device-plugins"
+	SockDir = "/var/lib/kubelet/plugins"
 	// KubeEndPoint is kubelet socket name
 	KubeEndPoint = "kubelet.sock"
 )

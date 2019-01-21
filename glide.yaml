@@ -20,6 +20,7 @@ import:
 - package: k8s.io/kubernetes
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
+  - pkg/kubelet/apis/pluginregistration/v1
 - package: github.com/containernetworking/cni
   version: v0.6.0
   subpackages:

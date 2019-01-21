@@ -27,6 +27,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1"
 )
 
 type resourceServer struct {
@@ -37,6 +38,7 @@ type resourceServer struct {
 	termSignal         chan bool
 	updateSignal       chan bool
 	stopWatcher        chan bool
+	restartSignal      chan bool
 	checkIntervals     int // health check intervals in seconds
 }
 
@@ -50,35 +52,29 @@ func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.Resou
 		termSignal:         make(chan bool, 1),
 		updateSignal:       make(chan bool),
 		stopWatcher:        make(chan bool),
+		restartSignal:      make(chan bool),
 		checkIntervals:     20, // updates every 20 seconds
 	}
 }
 
-func (rs *resourceServer) register() error {
-	kubeletEndpoint := filepath.Join(types.SockDir, types.KubeEndPoint)
-	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}))
-	if err != nil {
-		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
-		return err
+func (rs *resourceServer) GetInfo(ctx context.Context, rqt *registerapi.InfoRequest) (*registerapi.PluginInfo, error) {
+	pluginInfoResponse := &registerapi.PluginInfo{
+		Type:              registerapi.DevicePlugin,
+		Name:              fmt.Sprintf("%s/%s", rs.resourceNamePrefix, rs.resourcePool.GetResourceName()),
+		Endpoint:          filepath.Join(types.SockDir, rs.endPoint),
+		SupportedVersions: []string{"v1alpha1", "v1beta1", "v1"},
 	}
-	defer conn.Close()
-	client := pluginapi.NewRegistrationClient(conn)
+	return pluginInfoResponse, nil
+}
 
-	request := &pluginapi.RegisterRequest{
-		Version:      pluginapi.Version,
-		Endpoint:     rs.endPoint,
-		ResourceName: fmt.Sprintf("%s/%s", rs.resourceNamePrefix, rs.resourcePool.GetResourceName()),
+func (rs *resourceServer) NotifyRegistrationStatus(ctx context.Context, regstat *registerapi.RegistrationStatus) (*registerapi.RegistrationStatusResponse, error) {
+	if regstat.PluginRegistered {
+		glog.Infof("Plugin: %s gets registered successfully at Kubelet\n", rs.endPoint)
+	} else {
+		glog.Infof("Plugin: %s failed to be registered at Kubelet: %v; restarting.\n", rs.endPoint, regstat.Error)
+		rs.restartSignal <- true
 	}
-
-	if _, err = client.Register(context.Background(), request); err != nil {
-		glog.Errorf("%s device plugin unable to register with Kubelet : %v", rs.resourcePool.GetResourceName(), err)
-		return err
-	}
-	glog.Infof("%s device plugin registered with Kubelet", rs.resourcePool.GetResourceName())
-	return nil
+	return &registerapi.RegistrationStatusResponse{}, nil
 }
 
 func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
@@ -172,6 +168,7 @@ func (rs *resourceServer) Start() error {
 	}
 
 	// Register all services
+	registerapi.RegisterRegistrationServer(rs.grpcServer, rs)
 	pluginapi.RegisterDevicePluginServer(rs.grpcServer, rs)
 
 	go rs.grpcServer.Serve(lis)
@@ -191,15 +188,6 @@ func (rs *resourceServer) Start() error {
 	conn.Close()
 
 	rs.triggerUpdate()
-
-	// Register with Kubelet.
-	err = rs.register()
-	if err != nil {
-		// Stop server
-		rs.grpcServer.Stop()
-		glog.Fatal(err)
-		return err
-	}
 	return nil
 }
 
@@ -235,28 +223,18 @@ func (rs *resourceServer) Stop() error {
 }
 
 func (rs *resourceServer) Watch() {
-	// Watch for socket file; if not present restart server
-	sockPath := filepath.Join(types.SockDir, rs.endPoint)
-	for {
-		select {
-		case stop := <-rs.stopWatcher:
-			if stop {
-				return
-			}
-		default:
-			_, err := os.Lstat(sockPath)
-			if err != nil {
-				// Socket file not found; restart server
-				glog.Warningf("server endpoint not found %s", rs.endPoint)
-				glog.Warningf("most likely Kubelet restarted")
-				if err := rs.restart(); err != nil {
-					glog.Fatalf("unable to restart server %v", err)
-				}
-			}
-
+	select {
+	case stop := <-rs.stopWatcher:
+		if stop {
+			return
 		}
-		// Sleep for some intervals; TODO: investigate on suggested interval
-		time.Sleep(time.Second * time.Duration(5))
+	case restart := <-rs.restartSignal:
+		if restart {
+			time.Sleep(time.Second * time.Duration(5))
+			if err := rs.restart(); err != nil {
+				glog.Fatalf("unable to restart server %v", err)
+			}
+		}
 	}
 }
 
