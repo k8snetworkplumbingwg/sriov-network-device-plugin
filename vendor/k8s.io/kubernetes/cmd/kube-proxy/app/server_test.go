@@ -28,11 +28,11 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
+	componentbaseconfig "k8s.io/component-base/config"
 	api "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/features"
-	"k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig"
+	kubeproxyconfig "k8s.io/kubernetes/pkg/proxy/apis/config"
 	"k8s.io/kubernetes/pkg/util/configz"
-	utilpointer "k8s.io/kubernetes/pkg/util/pointer"
+	utilpointer "k8s.io/utils/pointer"
 )
 
 type fakeNodeInterface struct {
@@ -189,8 +189,6 @@ conntrack:
   min: 1
   tcpCloseWaitTimeout: 10s
   tcpEstablishedTimeout: 20s
-featureGates:
-  SupportIPVSProxyMode: true
 healthzBindAddress: "%s"
 hostnameOverride: "foo"
 iptables:
@@ -201,6 +199,9 @@ iptables:
 ipvs:
   minSyncPeriod: 10s
   syncPeriod: 60s
+  excludeCIDRs:
+    - "10.20.30.40/16"
+    - "fd00:1::0/64"
 kind: KubeProxyConfiguration
 metricsBindAddress: "%s"
 mode: "%s"
@@ -288,11 +289,11 @@ nodePortAddresses:
 		}
 		expected := &kubeproxyconfig.KubeProxyConfiguration{
 			BindAddress: expBindAddr,
-			ClientConnection: kubeproxyconfig.ClientConnectionConfiguration{
+			ClientConnection: componentbaseconfig.ClientConnectionConfiguration{
 				AcceptContentTypes: "abc",
 				Burst:              100,
 				ContentType:        "content-type",
-				KubeConfigFile:     "/path/to/kubeconfig",
+				Kubeconfig:         "/path/to/kubeconfig",
 				QPS:                7,
 			},
 			ClusterCIDR:      tc.clusterCIDR,
@@ -304,7 +305,7 @@ nodePortAddresses:
 				TCPCloseWaitTimeout:   &metav1.Duration{Duration: 10 * time.Second},
 				TCPEstablishedTimeout: &metav1.Duration{Duration: 20 * time.Second},
 			},
-			FeatureGates:       map[string]bool{string(features.SupportIPVSProxyMode): true},
+			FeatureGates:       map[string]bool{},
 			HealthzBindAddress: tc.healthzBindAddress,
 			HostnameOverride:   "foo",
 			IPTables: kubeproxyconfig.KubeProxyIPTablesConfiguration{
@@ -316,6 +317,7 @@ nodePortAddresses:
 			IPVS: kubeproxyconfig.KubeProxyIPVSConfiguration{
 				MinSyncPeriod: metav1.Duration{Duration: 10 * time.Second},
 				SyncPeriod:    metav1.Duration{Duration: 60 * time.Second},
+				ExcludeCIDRs:  []string{"10.20.30.40/16", "fd00:1::0/64"},
 			},
 			MetricsBindAddress: tc.metricsBindAddress,
 			Mode:               kubeproxyconfig.ProxyMode(tc.mode),
@@ -370,5 +372,41 @@ func TestLoadConfigFailures(t *testing.T) {
 		if assert.Error(t, err, tc.name) {
 			assert.Contains(t, err.Error(), tc.expErr, tc.name)
 		}
+	}
+}
+
+// TestProcessHostnameOverrideFlag tests processing hostname-override arg
+func TestProcessHostnameOverrideFlag(t *testing.T) {
+	testCases := []struct {
+		name                 string
+		hostnameOverrideFlag string
+		expectedHostname     string
+	}{
+		{
+			name:                 "Hostname from config file",
+			hostnameOverrideFlag: "",
+			expectedHostname:     "foo",
+		},
+		{
+			name:                 "Hostname from flag",
+			hostnameOverrideFlag: "  bar ",
+			expectedHostname:     "bar",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			options := NewOptions()
+			options.config = &kubeproxyconfig.KubeProxyConfiguration{
+				HostnameOverride: "foo",
+			}
+
+			options.hostnameOverride = tc.hostnameOverrideFlag
+
+			err := options.processHostnameOverrideFlag()
+			assert.NoError(t, err, "unexpected error %v", err)
+			if tc.expectedHostname != options.config.HostnameOverride {
+				t.Fatalf("expected hostname: %s, but got: %s", tc.expectedHostname, options.config.HostnameOverride)
+			}
+		})
 	}
 }

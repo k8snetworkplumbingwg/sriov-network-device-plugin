@@ -59,7 +59,7 @@ func (c *FakeInitializerConfigurations) List(opts v1.ListOptions) (result *admis
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &admissionregistration.InitializerConfigurationList{}
+	list := &admissionregistration.InitializerConfigurationList{ListMeta: obj.(*admissionregistration.InitializerConfigurationList).ListMeta}
 	for _, item := range obj.(*admissionregistration.InitializerConfigurationList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -112,7 +112,7 @@ func (c *FakeInitializerConfigurations) DeleteCollection(options *v1.DeleteOptio
 // Patch applies the patch and returns the patched initializerConfiguration.
 func (c *FakeInitializerConfigurations) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *admissionregistration.InitializerConfiguration, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(initializerconfigurationsResource, name, data, subresources...), &admissionregistration.InitializerConfiguration{})
+		Invokes(testing.NewRootPatchSubresourceAction(initializerconfigurationsResource, name, pt, data, subresources...), &admissionregistration.InitializerConfiguration{})
 	if obj == nil {
 		return nil, err
 	}

@@ -3,7 +3,6 @@ CHANGELOG
 OWNERS
 api.pb.go
 api.proto
-docs/api-reference
 docs/man
 docs/user-guide
 generated.pb.go
@@ -11,6 +10,7 @@ generated.proto
 pkg/client/clientset_generated
 pkg/client/informers/informers_generated/
 pkg/generated
+pkg/kubectl/generated
 swagger
 test/e2e/generated
 third_party/

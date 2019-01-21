@@ -59,7 +59,7 @@ func (c *FakeFischers) List(opts v1.ListOptions) (result *v1alpha1.FischerList, 
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.FischerList{}
+	list := &v1alpha1.FischerList{ListMeta: obj.(*v1alpha1.FischerList).ListMeta}
 	for _, item := range obj.(*v1alpha1.FischerList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -112,7 +112,7 @@ func (c *FakeFischers) DeleteCollection(options *v1.DeleteOptions, listOptions v
 // Patch applies the patch and returns the patched fischer.
 func (c *FakeFischers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Fischer, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(fischersResource, name, data, subresources...), &v1alpha1.Fischer{})
+		Invokes(testing.NewRootPatchSubresourceAction(fischersResource, name, pt, data, subresources...), &v1alpha1.Fischer{})
 	if obj == nil {
 		return nil, err
 	}

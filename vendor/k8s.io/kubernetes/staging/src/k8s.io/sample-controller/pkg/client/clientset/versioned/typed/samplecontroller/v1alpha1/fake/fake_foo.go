@@ -62,7 +62,7 @@ func (c *FakeFoos) List(opts v1.ListOptions) (result *v1alpha1.FooList, err erro
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.FooList{}
+	list := &v1alpha1.FooList{ListMeta: obj.(*v1alpha1.FooList).ListMeta}
 	for _, item := range obj.(*v1alpha1.FooList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
@@ -131,7 +131,7 @@ func (c *FakeFoos) DeleteCollection(options *v1.DeleteOptions, listOptions v1.Li
 // Patch applies the patch and returns the patched foo.
 func (c *FakeFoos) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Foo, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(foosResource, c.ns, name, data, subresources...), &v1alpha1.Foo{})
+		Invokes(testing.NewPatchSubresourceAction(foosResource, c.ns, name, pt, data, subresources...), &v1alpha1.Foo{})
 
 	if obj == nil {
 		return nil, err

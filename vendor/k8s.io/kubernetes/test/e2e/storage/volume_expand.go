@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
 )
 
@@ -39,7 +40,7 @@ const (
 	totalResizeWaitPeriod = 20 * time.Minute
 )
 
-var _ = utils.SIGDescribe("Volume expand [Feature:ExpandPersistentVolumes] [Slow]", func() {
+var _ = utils.SIGDescribe("Volume expand [Slow]", func() {
 	var (
 		c           clientset.Interface
 		ns          string
@@ -54,9 +55,9 @@ var _ = utils.SIGDescribe("Volume expand [Feature:ExpandPersistentVolumes] [Slow
 		c = f.ClientSet
 		ns = f.Namespace.Name
 		framework.ExpectNoError(framework.WaitForAllNodesSchedulable(c, framework.TestContext.NodeSchedulableTimeout))
-		test := storageClassTest{
-			name:      "default",
-			claimSize: "2Gi",
+		test := testsuites.StorageClassTest{
+			Name:      "default",
+			ClaimSize: "2Gi",
 		}
 		resizableSc, err = createResizableStorageClass(test, ns, "resizing", c)
 		Expect(err).NotTo(HaveOccurred(), "Error creating resizable storage class")
@@ -133,7 +134,7 @@ var _ = utils.SIGDescribe("Volume expand [Feature:ExpandPersistentVolumes] [Slow
 	})
 })
 
-func createResizableStorageClass(t storageClassTest, ns string, suffix string, c clientset.Interface) (*storage.StorageClass, error) {
+func createResizableStorageClass(t testsuites.StorageClassTest, ns string, suffix string, c clientset.Interface) (*storage.StorageClass, error) {
 	stKlass := newStorageClass(t, ns, suffix)
 	allowExpansion := true
 	stKlass.AllowVolumeExpansion = &allowExpansion

@@ -1,6 +1,10 @@
 approvers:
 - coffeepac
+- monotek
 - piosz
 reviewers:
 - coffeepac
+- monotek
 - piosz
+labels:
+- sig/instrumentation

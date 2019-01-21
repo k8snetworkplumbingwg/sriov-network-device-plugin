@@ -94,15 +94,16 @@ func TestCompileManifests(t *testing.T) {
 		expected bool
 	}{
 		{
-			manifest: v180AndAboveKubeDNSDeployment,
-			data: struct{ ImageRepository, Arch, Version, DNSBindAddr, DNSProbeAddr, DNSDomain, MasterTaintKey string }{
-				ImageRepository: "foo",
-				Arch:            "foo",
-				Version:         "foo",
-				DNSBindAddr:     "foo",
-				DNSProbeAddr:    "foo",
-				DNSDomain:       "foo",
-				MasterTaintKey:  "foo",
+			manifest: KubeDNSDeployment,
+			data: struct{ DeploymentName, KubeDNSImage, DNSMasqImage, SidecarImage, DNSBindAddr, DNSProbeAddr, DNSDomain, MasterTaintKey string }{
+				DeploymentName: "foo",
+				KubeDNSImage:   "foo",
+				DNSMasqImage:   "foo",
+				SidecarImage:   "foo",
+				DNSBindAddr:    "foo",
+				DNSProbeAddr:   "foo",
+				DNSDomain:      "foo",
+				MasterTaintKey: "foo",
 			},
 			expected: true,
 		},
@@ -115,9 +116,10 @@ func TestCompileManifests(t *testing.T) {
 		},
 		{
 			manifest: CoreDNSDeployment,
-			data: struct{ MasterTaintKey, Version string }{
+			data: struct{ DeploymentName, Image, MasterTaintKey string }{
+				DeploymentName: "foo",
+				Image:          "foo",
 				MasterTaintKey: "foo",
-				Version:        "foo",
 			},
 			expected: true,
 		},
@@ -203,24 +205,28 @@ func TestTranslateStubDomainKubeDNSToCoreDNS(t *testing.T) {
     foo.com:53 {
        errors
        cache 30
+       loop
        proxy . 1.2.3.4:5300 3.3.3.3
     }
     
     my.cluster.local:53 {
        errors
        cache 30
+       loop
        proxy . 2.3.4.5
     }`,
 			expectTwo: `
     my.cluster.local:53 {
        errors
        cache 30
+       loop
        proxy . 2.3.4.5
     }
     
     foo.com:53 {
        errors
        cache 30
+       loop
        proxy . 1.2.3.4:5300 3.3.3.3
     }`,
 		},
@@ -250,24 +256,28 @@ func TestTranslateStubDomainKubeDNSToCoreDNS(t *testing.T) {
     foo.com:53 {
        errors
        cache 30
+       loop
        proxy . 1.2.3.4:5300
     }
     
     my.cluster.local:53 {
        errors
        cache 30
+       loop
        proxy . 2.3.4.5
     }`,
 			expectTwo: `
     my.cluster.local:53 {
        errors
        cache 30
+       loop
        proxy . 2.3.4.5
     }
     
     foo.com:53 {
        errors
        cache 30
+       loop
        proxy . 1.2.3.4:5300
     }`,
 		},

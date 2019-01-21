@@ -17,6 +17,7 @@ limitations under the License.
 package container
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/url"
@@ -24,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/flowcontrol"
+	"k8s.io/klog"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/runtime/v1alpha2"
 	"k8s.io/kubernetes/pkg/volume"
 )
@@ -113,7 +114,7 @@ type Runtime interface {
 	// default, it returns a snapshot of the container log. Set 'follow' to true to
 	// stream the log. Set 'follow' to false and specify the number of lines (e.g.
 	// "100" or "all") to tail the log.
-	GetContainerLogs(pod *v1.Pod, containerID ContainerID, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) (err error)
+	GetContainerLogs(ctx context.Context, pod *v1.Pod, containerID ContainerID, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) (err error)
 	// Delete a container. If the container is still running, an error is returned.
 	DeleteContainer(containerID ContainerID) error
 	// ImageService provides methods to image-related methods.
@@ -124,22 +125,10 @@ type Runtime interface {
 	UpdatePodCIDR(podCIDR string) error
 }
 
-// DirectStreamingRuntime is the interface implemented by runtimes for which the streaming calls
-// (exec/attach/port-forward) should be served directly by the Kubelet.
-type DirectStreamingRuntime interface {
-	// Runs the command in the container of the specified pod. Attaches
-	// the processes stdin, stdout, and stderr. Optionally uses a tty.
-	ExecInContainer(containerID ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan remotecommand.TerminalSize, timeout time.Duration) error
-	// Forward the specified port from the specified pod to the stream.
-	PortForward(pod *Pod, port int32, stream io.ReadWriteCloser) error
-	// ContainerAttach encapsulates the attaching to containers for testability
-	ContainerAttacher
-}
-
-// IndirectStreamingRuntime is the interface implemented by runtimes that handle the serving of the
+// StreamingRuntime is the interface implemented by runtimes that handle the serving of the
 // streaming calls (exec/attach/port-forward) themselves. In this case, Kubelet should redirect to
 // the runtime server.
-type IndirectStreamingRuntime interface {
+type StreamingRuntime interface {
 	GetExec(id ContainerID, cmd []string, stdin, stdout, stderr, tty bool) (*url.URL, error)
 	GetAttach(id ContainerID, stdin, stdout, stderr, tty bool) (*url.URL, error)
 	GetPortForward(podName, podNamespace string, podUID types.UID, ports []int32) (*url.URL, error)
@@ -148,7 +137,7 @@ type IndirectStreamingRuntime interface {
 type ImageService interface {
 	// PullImage pulls an image from the network to local storage using the supplied
 	// secrets if necessary. It returns a reference (digest or ID) to the pulled image.
-	PullImage(image ImageSpec, pullSecrets []v1.Secret) (string, error)
+	PullImage(image ImageSpec, pullSecrets []v1.Secret, podSandboxConfig *runtimeapi.PodSandboxConfig) (string, error)
 	// GetImageRef gets the reference (digest or ID) of the image which has already been in
 	// the local storage. It returns ("", nil) if the image isn't in the local storage.
 	GetImageRef(image ImageSpec) (string, error)
@@ -214,7 +203,7 @@ func BuildContainerID(typ, ID string) ContainerID {
 func ParseContainerID(containerID string) ContainerID {
 	var id ContainerID
 	if err := id.ParseString(containerID); err != nil {
-		glog.Error(err)
+		klog.Error(err)
 	}
 	return id
 }
@@ -265,13 +254,6 @@ const (
 	ContainerStateUnknown ContainerState = "unknown"
 )
 
-type ContainerType string
-
-const (
-	ContainerTypeInit    ContainerType = "INIT"
-	ContainerTypeRegular ContainerType = "REGULAR"
-)
-
 // Container provides the runtime information for a container, such as ID, hash,
 // state of the container.
 type Container struct {
@@ -300,7 +282,7 @@ type PodStatus struct {
 	ID types.UID
 	// Name of the pod.
 	Name string
-	// Namspace of the pod.
+	// Namespace of the pod.
 	Namespace string
 	// IP of the pod.
 	IP string

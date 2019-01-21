@@ -1,18 +1,21 @@
 approvers:
-- jbeda
 - luxas
-- krousey
-- timothysc
-reviewers:
-- luxas
-- dmmcquay
-- krousey
 - timothysc
 - fabriziopandini
-- jamiehannaford
+- neolit123
+reviewers:
+- luxas
+- timothysc
+- fabriziopandini
+- neolit123
 - kad
-- xiangpengzhao
-- kargakis
+- liztio
+- chuckha
+- detiber
+- dixudx
+- rosti
+- yagonobre
+# Might want to add @xiangpengzhao and @stealthybox back in the future
 labels: 
 - area/kubeadm
 - sig/cluster-lifecycle

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2014 The Kubernetes Authors.
 #
@@ -16,6 +16,20 @@
 
 kube::util::sortable_date() {
   date "+%Y%m%d-%H%M%S"
+}
+
+# arguments: target, item1, item2, item3, ...
+# returns 0 if target is in the given items, 1 otherwise.
+kube::util::array_contains() {
+  local search="$1"
+  local element
+  shift
+  for element; do
+    if [[ "${element}" == "${search}" ]]; then
+      return 0
+     fi
+  done
+  return 1
 }
 
 kube::util::wait_for_url() {
@@ -84,12 +98,8 @@ kube::util::ensure-temp-dir() {
   fi
 }
 
-# This figures out the host platform without relying on golang.  We need this as
-# we don't want a golang install to be a prerequisite to building yet we need
-# this info to figure out where the final binaries are placed.
-kube::util::host_platform() {
+kube::util::host_os() {
   local host_os
-  local host_arch
   case "$(uname -s)" in
     Darwin)
       host_os=darwin
@@ -102,7 +112,11 @@ kube::util::host_platform() {
       exit 1
       ;;
   esac
+  echo "${host_os}"
+}
 
+kube::util::host_arch() {
+  local host_arch
   case "$(uname -m)" in
     x86_64*)
       host_arch=amd64
@@ -136,7 +150,14 @@ kube::util::host_platform() {
       exit 1
       ;;
   esac
-  echo "${host_os}/${host_arch}"
+  echo "${host_arch}"
+}
+
+# This figures out the host platform without relying on golang.  We need this as
+# we don't want a golang install to be a prerequisite to building yet we need
+# this info to figure out where the final binaries are placed.
+kube::util::host_platform() {
+  echo "$(kube::util::host_os)/$(kube::util::host_arch)"
 }
 
 kube::util::find-binary-for-platform() {
@@ -149,11 +170,11 @@ kube::util::find-binary-for-platform() {
     "${KUBE_ROOT}/platforms/${platform}/${lookfor}"
   )
   # Also search for binary in bazel build tree.
-  # The bazel go rules place binaries in subtrees like
+  # The bazel go rules place some binaries in subtrees like
   # "bazel-bin/source/path/linux_amd64_pure_stripped/binaryname", so make sure
   # the platform name is matched in the path.
   locations+=($(find "${KUBE_ROOT}/bazel-bin/" -type f -executable \
-    -path "*/${platform/\//_}*/${lookfor}" 2>/dev/null || true) )
+    \( -path "*/${platform/\//_}*/${lookfor}" -o -path "*/${lookfor}" \) 2>/dev/null || true) )
 
   # List most recently-updated location.
   local -r bin=$( (ls -t "${locations[@]}" 2>/dev/null || true) | head -1 )
@@ -303,45 +324,6 @@ kube::util::gv-to-swagger-name() {
   esac
 }
 
-
-# Fetches swagger spec from apiserver.
-# Assumed vars:
-# SWAGGER_API_PATH: Base path for swaggerapi on apiserver. Ex:
-# http://localhost:8080/swaggerapi.
-# SWAGGER_ROOT_DIR: Root dir where we want to to save the fetched spec.
-# VERSIONS: Array of group versions to include in swagger spec.
-kube::util::fetch-swagger-spec() {
-  for ver in ${VERSIONS}; do
-    if [[ " ${KUBE_NONSERVER_GROUP_VERSIONS} " == *" ${ver} "* ]]; then
-      continue
-    fi
-    # fetch the swagger spec for each group version.
-    if [[ ${ver} == "v1" ]]; then
-      SUBPATH="api"
-    else
-      SUBPATH="apis"
-    fi
-    SUBPATH="${SUBPATH}/${ver}"
-    SWAGGER_JSON_NAME="$(kube::util::gv-to-swagger-name ${ver}).json"
-    curl -w "\n" -fs "${SWAGGER_API_PATH}${SUBPATH}" > "${SWAGGER_ROOT_DIR}/${SWAGGER_JSON_NAME}"
-
-    # fetch the swagger spec for the discovery mechanism at group level.
-    if [[ ${ver} == "v1" ]]; then
-      continue
-    fi
-    SUBPATH="apis/"${ver%/*}
-    SWAGGER_JSON_NAME="${ver%/*}.json"
-    curl -w "\n" -fs "${SWAGGER_API_PATH}${SUBPATH}" > "${SWAGGER_ROOT_DIR}/${SWAGGER_JSON_NAME}"
-  done
-
-  # fetch swagger specs for other discovery mechanism.
-  curl -w "\n" -fs "${SWAGGER_API_PATH}" > "${SWAGGER_ROOT_DIR}/resourceListing.json"
-  curl -w "\n" -fs "${SWAGGER_API_PATH}version" > "${SWAGGER_ROOT_DIR}/version.json"
-  curl -w "\n" -fs "${SWAGGER_API_PATH}api" > "${SWAGGER_ROOT_DIR}/api.json"
-  curl -w "\n" -fs "${SWAGGER_API_PATH}apis" > "${SWAGGER_ROOT_DIR}/apis.json"
-  curl -w "\n" -fs "${SWAGGER_API_PATH}logs" > "${SWAGGER_ROOT_DIR}/logs.json"
-}
-
 # Returns the name of the upstream remote repository name for the local git
 # repo, e.g. "upstream" or "origin".
 kube::util::git_upstream_remote_name() {
@@ -427,28 +409,28 @@ kube::util::ensure_clean_working_dir() {
 
 # Ensure that the given godep version is installed and in the path.  Almost
 # nobody should use any version but the default.
+#
+# Sets:
+#  KUBE_GODEP: The path to the godep binary
+#
 kube::util::ensure_godep_version() {
-  GODEP_VERSION=${1:-"v80"} # this version is known to work
+  local godep_target_version=${1:-"v80-k8s-r1"} # this version is known to work
 
-  if [[ "$(godep version 2>/dev/null)" == *"godep ${GODEP_VERSION}"* ]]; then
+  # If KUBE_GODEP is already set, and it's the right version, then use it.
+  if [[ -n "${KUBE_GODEP:-}" && "$(${KUBE_GODEP:?} version 2>/dev/null)" == *"godep ${godep_target_version}"* ]]; then
+    kube::log::status "Using ${KUBE_GODEP}"
     return
   fi
 
-  kube::log::status "Installing godep version ${GODEP_VERSION}"
-  go install ./vendor/github.com/tools/godep/
-  if ! which godep >/dev/null 2>&1; then
-    kube::log::error "Can't find godep - is your GOPATH 'bin' in your PATH?"
-    kube::log::error "  GOPATH: ${GOPATH}"
-    kube::log::error "  PATH:   ${PATH}"
-    return 1
-  fi
+  # Otherwise, install forked godep
+  kube::log::status "Installing godep version ${godep_target_version}"
+  GOBIN="${KUBE_OUTPUT_BINPATH}" go install k8s.io/kubernetes/third_party/forked/godep
+  export KUBE_GODEP="${KUBE_OUTPUT_BINPATH}/godep"
+  kube::log::status "Installed ${KUBE_GODEP}"
 
-  if [[ "$(godep version 2>/dev/null)" != *"godep ${GODEP_VERSION}"* ]]; then
-    kube::log::error "Wrong godep version - is your GOPATH 'bin' in your PATH?"
-    kube::log::error "  expected: godep ${GODEP_VERSION}"
-    kube::log::error "  got:      $(godep version)"
-    kube::log::error "  GOPATH: ${GOPATH}"
-    kube::log::error "  PATH:   ${PATH}"
+  # Verify that the installed godep from fork is what we expect
+  if [[ "$(${KUBE_GODEP:?} version 2>/dev/null)" != *"godep ${godep_target_version}"* ]]; then
+    kube::log::error "Expected godep ${godep_target_version} from ${KUBE_GODEP}, got $(${KUBE_GODEP:?} version)"
     return 1
   fi
 }
@@ -482,25 +464,42 @@ kube::util::ensure_single_dir_gopath() {
   fi
 }
 
-# Checks whether there are any files matching pattern $2 changed between the
-# current branch and upstream branch named by $1.
-# Returns 1 (false) if there are no changes, 0 (true) if there are changes
-# detected.
-kube::util::has_changes_against_upstream_branch() {
+# Find the base commit using:
+# $PULL_BASE_SHA if set (from Prow)
+# current ref from the remote upstream branch
+kube::util::base_ref() {
   local -r git_branch=$1
-  local -r pattern=$2
-  local -r not_pattern=${3:-totallyimpossiblepattern}
-  local full_branch
+
+  if [[ -n ${PULL_BASE_SHA:-} ]]; then
+    echo "${PULL_BASE_SHA}"
+    return
+  fi
 
   full_branch="$(kube::util::git_upstream_remote_name)/${git_branch}"
-  echo "Checking for '${pattern}' changes against '${full_branch}'"
+  
   # make sure the branch is valid, otherwise the check will pass erroneously.
   if ! git describe "${full_branch}" >/dev/null; then
     # abort!
     exit 1
   fi
+
+  echo "${full_branch}"
+}
+
+# Checks whether there are any files matching pattern $2 changed between the
+# current branch and upstream branch named by $1.
+# Returns 1 (false) if there are no changes
+#         0 (true) if there are changes detected.
+kube::util::has_changes() {
+  local -r git_branch=$1
+  local -r pattern=$2
+  local -r not_pattern=${3:-totallyimpossiblepattern}
+  
+  local base_ref=$(kube::util::base_ref "${git_branch}")
+  echo "Checking for '${pattern}' changes against '${base_ref}'"
+
   # notice this uses ... to find the first shared ancestor
-  if git diff --name-only "${full_branch}...HEAD" | grep -v -E "${not_pattern}" | grep "${pattern}" > /dev/null; then
+  if git diff --name-only "${base_ref}...HEAD" | grep -v -E "${not_pattern}" | grep "${pattern}" > /dev/null; then
     return 0
   fi
   # also check for pending changes
@@ -540,6 +539,7 @@ function kube::util::test_openssl_installed {
       echo "Failed to run openssl. Please ensure openssl is installed"
       exit 1
     fi
+
     OPENSSL_BIN=$(command -v openssl)
 }
 
@@ -554,7 +554,7 @@ function kube::util::create_signing_certkey {
     local id=$3
     local purpose=$4
     # Create client ca
-    ${sudo} /bin/bash -e <<EOF
+    ${sudo} /usr/bin/env bash -e <<EOF
     rm -f "${dest_dir}/${id}-ca.crt" "${dest_dir}/${id}-ca.key"
     ${OPENSSL_BIN} req -x509 -sha256 -new -nodes -days 365 -newkey rsa:2048 -keyout "${dest_dir}/${id}-ca.key" -out "${dest_dir}/${id}-ca.crt" -subj "/C=xx/ST=x/L=x/O=x/OU=x/CN=ca/emailAddress=x/"
     echo '{"signing":{"default":{"expiry":"43800h","usages":["signing","key encipherment",${purpose}]}}}' > "${dest_dir}/${id}-ca-config.json"
@@ -576,7 +576,7 @@ function kube::util::create_client_certkey {
         SEP=","
         shift 1
     done
-    ${sudo} /bin/bash -e <<EOF
+    ${sudo} /usr/bin/env bash -e <<EOF
     cd ${dest_dir}
     echo '{"CN":"${cn}","names":[${groups}],"hosts":[""],"key":{"algo":"rsa","size":2048}}' | ${CFSSL_BIN} gencert -ca=${ca}.crt -ca-key=${ca}.key -config=${ca}-config.json - | ${CFSSLJSON_BIN} -bare client-${id}
     mv "client-${id}-key.pem" "client-${id}.key"
@@ -600,7 +600,7 @@ function kube::util::create_serving_certkey {
         SEP=","
         shift 1
     done
-    ${sudo} /bin/bash -e <<EOF
+    ${sudo} /usr/bin/env bash -e <<EOF
     cd ${dest_dir}
     echo '{"CN":"${cn}","hosts":[${hosts}],"key":{"algo":"rsa","size":2048}}' | ${CFSSL_BIN} gencert -ca=${ca}.crt -ca-key=${ca}.key -config=${ca}-config.json - | ${CFSSLJSON_BIN} -bare serving-${id}
     mv "serving-${id}-key.pem" "serving-${id}.key"
@@ -642,7 +642,7 @@ EOF
 
     # flatten the kubeconfig files to make them self contained
     username=$(whoami)
-    ${sudo} /bin/bash -e <<EOF
+    ${sudo} /usr/bin/env bash -e <<EOF
     $(kube::util::find-binary kubectl) --kubeconfig="${dest_dir}/${client_id}.kubeconfig" config view --minify --flatten > "/tmp/${client_id}.kubeconfig"
     mv -f "/tmp/${client_id}.kubeconfig" "${dest_dir}/${client_id}.kubeconfig"
     chown ${username} "${dest_dir}/${client_id}.kubeconfig"
@@ -787,6 +787,8 @@ if [[ -z "${color_start-}" ]]; then
   declare -r color_red="${color_start}0;31m"
   declare -r color_yellow="${color_start}0;33m"
   declare -r color_green="${color_start}0;32m"
+  declare -r color_blue="${color_start}1;34m"
+  declare -r color_cyan="${color_start}1;36m"
   declare -r color_norm="${color_start}0m"
 fi
 
