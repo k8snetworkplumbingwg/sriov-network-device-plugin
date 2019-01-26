@@ -80,8 +80,8 @@ func getSriovPfList() ([]string, error) {
 	}
 
 	if len(netDevices) < 1 {
-		glog.Errorf("Error. No network device found in %s directory", netDirectory)
-		return sriovNetDevices, err
+		glog.Warningf("Warning. No network device found in %s directory", netDirectory)
+		return sriovNetDevices, nil
 	}
 
 	for _, dev := range netDevices {
@@ -147,14 +147,13 @@ func (sm *sriovManager) discoverNetworks() error {
 
 	// Get a list of SRIOV capable NICs in the host
 	pfList, err := getSriovPfList()
-
 	if err != nil {
 		return err
 	}
 
 	if len(pfList) < 1 {
-		glog.Errorf("Error. No SRIOV network device found")
-		return fmt.Errorf("Error. No SRIOV network device found")
+		glog.Warningf("Warning. No SRIOV network device found")
+		return nil
 	}
 
 	for _, dev := range pfList {
