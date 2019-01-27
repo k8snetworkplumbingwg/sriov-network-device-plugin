@@ -70,6 +70,9 @@ func (rp *netDevicePool) GetEnvs(deviceIDs []string) map[string]string {
 func (rp *netDevicePool) GetMounts() []*pluginapi.Mount {
 	glog.Infof("generic GetMounts() called")
 	mounts := make([]*pluginapi.Mount, 0)
+	if rp.config.RdmaMode {
+		mounts = append(mounts, &pluginapi.Mount{ContainerPath: types.RdmaMountPath, HostPath: types.RdmaMountPath, ReadOnly: false})
+	}
 	return mounts
 }
 

@@ -23,6 +23,8 @@ const (
 	SockDir = "/var/lib/kubelet/device-plugins"
 	// KubeEndPoint is kubelet socket name
 	KubeEndPoint = "kubelet.sock"
+	// RdmaMountPath is the path to mount devices that support rdma mode
+	RdmaMountPath = "/dev/infiniband"
 )
 
 // ResourceConfig contains cofiguration paremeters for a resource pool
@@ -31,6 +33,7 @@ type ResourceConfig struct {
 	RootDevices  []string `json:"rootDevices"`          // list of PCI address of root devices e.g. "0000:05:00.0",
 	DeviceType   string   `json:"deviceType,omitempty"` // Device driver type of the device
 	SriovMode    bool     `json:"sriovMode,omitempty"`  // Whether devices have SRIOV virtual function capabilities or not
+	RdmaMode     bool     `json:"rdmaMode,omitempty"`   // Whether devices have is supporting rdma or not
 }
 
 // ResourceConfList is list of ResourceConfig

@@ -165,7 +165,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "resourceName" | Yes      | Endpoint resource name                            | `string` - must be unique and should not contain special characters | `"sriov_net_A"`          |
 | "rootDevices"  | Yes      | List of PCI address for a resource pool           | A list of `string` - in sysfs pci address format                    | `["02:00.0", "02:00.2"]` |
 | "sriovMode"    | No       | Whether the root devices are SRIOV capable or not | `bool` - true OR false[default]                                     | `true`                   |
-| "deviceType"   | No       | Device driver type                                | `string` - "netdevice"\|"uio"\|"vfio"                               | `"netdevice"`            |
+| "deviceType"   | No       | Device driver type                                | `string` - "netdevice"\|"uio"\|"vfio"\|"rdma"                       | `"netdevice"`            |
 
 ### Command line arguments
 

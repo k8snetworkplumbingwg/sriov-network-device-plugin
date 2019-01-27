@@ -63,6 +63,9 @@ func (rp *uioResourcePool) GetEnvs(deviceIDs []string) map[string]string {
 }
 func (rp *uioResourcePool) GetMounts() []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
+	if rp.config.RdmaMode {
+		mounts = append(mounts, &pluginapi.Mount{ContainerPath: types.RdmaMountPath, HostPath: types.RdmaMountPath, ReadOnly: false})
+	}
 	return mounts
 }
 
