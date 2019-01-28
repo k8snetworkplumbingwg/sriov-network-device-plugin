@@ -7,13 +7,13 @@ spec:
   - name: sriov-device-plugin 
     image: nfvpe/sriov-device-plugin:latest
     imagePullPolicy: IfNotPresent
-    command: [ "/bin/bash", "-c", "--" ]
-    args: [ "while true; do sleep 300000; done;" ]
+    command: [ "/bin/sh", "-c", "--" ]
+    args: [ "sriovdp --logtostderr 10;" ]
     volumeMounts:
     - mountPath: /var/lib/kubelet/device-plugins/ 
       name: devicesock 
       readOnly: false
-    - mountPath: /sys/class/net
+    - mountPath: /sys
       name: net
       readOnly: true
   volumes:
@@ -23,6 +23,6 @@ spec:
      path: /var/lib/kubelet/device-plugins/
   - name: net
     hostPath:
-      path: /sys/class/net
+      path: /sys
   hostNetwork: true
   hostPID: true
