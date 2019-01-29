@@ -45,11 +45,31 @@ const (
 	pluginMountPath      = "/var/lib/kubelet/device-plugins"
 	kubeletEndpoint      = "kubelet.sock"
 	pluginEndpointPrefix = "sriovNet"
-	resourceName         = "intel.com/sriov"
+	resourceName         = "netdev/sriov"
 )
+
+// default NIC Model to be discovered
+var defaultNicModel = []string{"0x8086-0x10fb", "0x8086-0x154c"}
+
+type arrayFlags []string
+
+func (a *arrayFlags) String() string {
+	return fmt.Sprint(*a)
+}
+
+func (a *arrayFlags) Set(value string) error {
+	*a = append(*a, value)
+	return nil
+}
+
+// cliParams contains command line parameters
+type cliParams struct {
+	nicModel arrayFlags
+}
 
 // sriovManager manages sriov networking devices
 type sriovManager struct {
+	cliParams
 	socketFile  string
 	devices     map[string]pluginapi.Device // for Kubelet DP API
 	rootDevices []string
@@ -58,9 +78,10 @@ type sriovManager struct {
 	stopWatcher chan bool
 }
 
-func newSriovManager() *sriovManager {
+func newSriovManager(cp *cliParams) *sriovManager {
 
 	return &sriovManager{
+		cliParams:   *cp,
 		devices:     make(map[string]pluginapi.Device),
 		socketFile:  fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 		termSignal:  make(chan bool, 1),
@@ -139,6 +160,37 @@ func GetVFList(pf string) ([]string, error) {
 	return vfList, err
 }
 
+//Get PF whitelist
+func (sm *sriovManager) getPfWhiteList(pfList []string) []string {
+	pfwl := []string{}
+
+	for _, dev := range pfList {
+		vendorPath := filepath.Join(netDirectory, dev, "device", "vendor")
+		devicePath := filepath.Join(netDirectory, dev, "device", "device")
+		glog.Infof("PF vendor id path: %v", vendorPath)
+		glog.Infof("PF device id path: %v", devicePath)
+		vendorID, err := ioutil.ReadFile(vendorPath)
+		if err != nil {
+			glog.Warningf("Warning. Could not read vendor id in device folder. Warn: %v", err)
+			continue
+		}
+		deviceID, err := ioutil.ReadFile(devicePath)
+		if err != nil {
+			glog.Warningf("Warning. Could not read device id in device folder. Warn: %v", err)
+			continue
+		}
+		vID := bytes.TrimSpace(vendorID)
+		dID := bytes.TrimSpace(deviceID)
+		idStr := fmt.Sprintf("%s-%s", string(vID), string(dID))
+		for _, model := range sm.cliParams.nicModel {
+			if idStr == model {
+				pfwl = append(pfwl, dev)
+			}
+		}
+	}
+	return pfwl
+}
+
 //Reads DeviceName and gets PCI Addresses of VFs configured
 func (sm *sriovManager) discoverNetworks() error {
 
@@ -156,7 +208,9 @@ func (sm *sriovManager) discoverNetworks() error {
 		return nil
 	}
 
-	for _, dev := range pfList {
+	pfWhiteList := sm.getPfWhiteList(pfList)
+
+	for _, dev := range pfWhiteList {
 		sriovcapablepath := filepath.Join(netDirectory, dev, "device", sriovCapable)
 		glog.Infof("Sriov Capable Path: %v", sriovcapablepath)
 		vfs, err := ioutil.ReadFile(sriovcapablepath)
@@ -462,11 +516,24 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 	return resp, nil
 }
 
+func flagInit(cp *cliParams) {
+	flag.Var(&cp.nicModel, "nic-model", "NIC Model to be discovered")
+}
+
 func main() {
+	cp := &cliParams{}
+	flagInit(cp)
 	flag.Parse()
 	defer glog.Flush()
 	glog.Infof("Starting SRIOV Network Device Plugin...")
-	sm := newSriovManager()
+
+	if len(cp.nicModel) < 1 {
+		glog.Infof("Using default NIC Model")
+		cp.nicModel = defaultNicModel
+	}
+	glog.Infof("NIC Model enabled: %v", cp.nicModel)
+
+	sm := newSriovManager(cp)
 	if sm == nil {
 		glog.Errorf("Unable to get instance of a SRIOV-Manager")
 		return
