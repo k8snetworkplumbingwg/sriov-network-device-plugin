@@ -10,20 +10,43 @@ type ResourceFactory struct {
 	mock.Mock
 }
 
-// GetResourcePool provides a mock function with given fields: _a0
-func (_m *ResourceFactory) GetResourcePool(_a0 *types.ResourceConfig) types.ResourcePool {
+// GetInfoProvider provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetInfoProvider(_a0 string) types.DeviceInfoProvider {
 	ret := _m.Called(_a0)
 
-	var r0 types.ResourcePool
-	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) types.ResourcePool); ok {
+	var r0 types.DeviceInfoProvider
+	if rf, ok := ret.Get(0).(func(string) types.DeviceInfoProvider); ok {
 		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.DeviceInfoProvider)
+		}
+	}
+
+	return r0
+}
+
+// GetResourcePool provides a mock function with given fields: rc, deviceList
+func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciNetDevice) (types.ResourcePool, error) {
+	ret := _m.Called(rc, deviceList)
+
+	var r0 types.ResourcePool
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig, []types.PciNetDevice) types.ResourcePool); ok {
+		r0 = rf(rc, deviceList)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.ResourcePool)
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*types.ResourceConfig, []types.PciNetDevice) error); ok {
+		r1 = rf(rc, deviceList)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetResourceServer provides a mock function with given fields: _a0
@@ -42,6 +65,29 @@ func (_m *ResourceFactory) GetResourceServer(_a0 types.ResourcePool) (types.Reso
 	var r1 error
 	if rf, ok := ret.Get(1).(func(types.ResourcePool) error); ok {
 		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSelector provides a mock function with given fields: _a0, _a1
+func (_m *ResourceFactory) GetSelector(_a0 string, _a1 []string) (types.DeviceSelector, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 types.DeviceSelector
+	if rf, ok := ret.Get(0).(func(string, []string) types.DeviceSelector); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.DeviceSelector)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []string) error); ok {
+		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
 	}

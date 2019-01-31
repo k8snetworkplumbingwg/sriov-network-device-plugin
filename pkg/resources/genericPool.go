@@ -15,70 +15,28 @@
 package resources
 
 import (
-	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-/*
-	genericResourcePool extends resourcePool and overrides:
-	GetDeviceFile(),
-	GetEnvs()
-	GetMounts()
-*/
 type genericResourcePool struct {
-	resourcePool
 }
 
-func newGenericResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	this := &genericResourcePool{
-		resourcePool: resourcePool{
-			config:      rc,
-			devices:     make(map[string]*pluginapi.Device),
-			deviceFiles: make(map[string]string),
-		},
-	}
-	this.IBaseResource = this
-	return this
+func newGenericResourcePool() types.DeviceInfoProvider {
+	return &genericResourcePool{}
 }
 
-// Overrides GetDeviceFile() method
-func (rp *genericResourcePool) GetDeviceFile(dev string) (devFile string, err error) {
-	// There are no specific device file
-
-	return // empty string
-}
-
-func (rp *genericResourcePool) GetEnvs(deviceIDs []string) map[string]string {
-	glog.Infof("generic GetEnvs() called")
-	envs := make(map[string]string)
-	values := ""
-	lastIndex := len(deviceIDs) - 1
-	for i, s := range deviceIDs {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[rp.config.ResourceName] = values
-	return envs
-}
-
-func (rp *genericResourcePool) GetMounts() []*pluginapi.Mount {
-	glog.Infof("generic GetMounts() called")
-	mounts := make([]*pluginapi.Mount, 0)
-	return mounts
-}
-
-// genericResourcePool returns empty DeviceSpecs
-func (rp *genericResourcePool) GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("generic GetDeviceSpecs() called")
+func (rp *genericResourcePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-// Probe returns 'true' if device health changes 'false' otherwise
-func (rp *genericResourcePool) Probe(rc *types.ResourceConfig, devices map[string]*pluginapi.Device) bool {
-	return false
+func (rp *genericResourcePool) GetEnvVal(pciAddr string) string {
+	return pciAddr
+}
+
+func (rp *genericResourcePool) GetMounts(pciAddr string) []*pluginapi.Mount {
+	mounts := make([]*pluginapi.Mount, 0)
+	return mounts
 }
