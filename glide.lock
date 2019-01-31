@@ -1,16 +1,12 @@
-hash: 3b5e1c53aaa1747815c6d5e9b176aca0bac65fe65e60e0e857121ffbb3a4cc22
-updated: 2019-02-19T10:26:08.597474577Z
+hash: f483305b4c7e5415cd42c0b85f924071ed88bda6e653eaf3e2c6cbdc117c94e8
+updated: 2019-03-01T14:38:55.654833267Z
 imports:
-- name: github.com/containernetworking/cni
-  version: a7885cb6f8ab03fba07852ded351e4f5e7a112bf
-  subpackages:
-  - pkg/skel
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
   - spew
 - name: github.com/gogo/protobuf
-  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
   subpackages:
   - gogoproto
   - plugin/compare
@@ -39,17 +35,21 @@ imports:
   - vanity
   - vanity/command
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: 1643683e1b54a9e88ad26d98f81400c8c9d9f4f9
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
+  - jsonpb
   - proto
+  - protoc-gen-go/descriptor
   - ptypes
   - ptypes/any
   - ptypes/duration
+  - ptypes/struct
   - ptypes/timestamp
+  - ptypes/wrappers
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
   - difflib
 - name: github.com/stretchr/objx
@@ -61,7 +61,7 @@ imports:
   - mock
   - require
 - name: golang.org/x/net
-  version: 1c05540f6879653db88113bc4a2b70aec4bd491f
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
   - context
   - http2
@@ -92,38 +92,36 @@ imports:
 - name: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
   subpackages:
-  - googleapis/api/annotations
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e
+  version: 168a6198bcb0ef175f7dacec0b8691fc141dc9b8
   subpackages:
   - balancer
+  - balancer/base
+  - balancer/roundrobin
   - codes
   - connectivity
   - credentials
-  - grpclb/grpc_lb_v1/messages
+  - encoding
+  - encoding/proto
   - grpclog
   - internal
+  - internal/backoff
+  - internal/channelz
+  - internal/grpcrand
   - keepalive
   - metadata
   - naming
   - peer
   - resolver
+  - resolver/dns
+  - resolver/passthrough
   - stats
   - status
   - tap
   - transport
-- name: k8s.io/apimachinery
-  version: 73aa818bbacf185a03468ddc170fb275763dec3d
-  subpackages:
-  - pkg/apis/meta/v1
-- name: k8s.io/client-go
-  version: 467c17c87a25ca63c74dfb8cf2545343fbed2d69
-  subpackages:
-  - kubernetes
-  - rest
 - name: k8s.io/kubernetes
-  version: 9c60fd5242c4a912b0f57bc6fb7b1d49033d33ac
+  version: 7514c49ec12e7a8b6840142d723ec25b08a0917a
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
 testImports:
@@ -167,6 +165,7 @@ testImports:
   subpackages:
   - unix
   - windows
+  - windows/registry
   - windows/svc
 - name: gopkg.in/yaml.v2
-  version: 670d4cfef0544295bc27a114dbac37980d83185a
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183

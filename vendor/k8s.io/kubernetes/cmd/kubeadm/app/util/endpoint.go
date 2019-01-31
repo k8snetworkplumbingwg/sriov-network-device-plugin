@@ -19,67 +19,106 @@ package util
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"strconv"
-	"strings"
+
+	"github.com/pkg/errors"
 
 	"k8s.io/apimachinery/pkg/util/validation"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
 
-// GetMasterEndpoint returns a properly formatted Master Endpoint
-// or passes the error from GetMasterHostPort.
-func GetMasterEndpoint(api *kubeadmapi.API) (string, error) {
-
-	hostPort, err := GetMasterHostPort(api)
-	if err != nil {
-		return "", err
+// GetControlPlaneEndpoint returns a properly formatted endpoint for the control plane built according following rules:
+// - If the controlPlaneEndpoint is defined, use it.
+// - if the controlPlaneEndpoint is defined but without a port number, use the controlPlaneEndpoint + localEndpoint.BindPort is used.
+// - Otherwise, in case the controlPlaneEndpoint is not defined, use the localEndpoint.AdvertiseAddress + the localEndpoint.BindPort.
+func GetControlPlaneEndpoint(controlPlaneEndpoint string, localEndpoint *kubeadmapi.APIEndpoint) (string, error) {
+	// parse the bind port
+	bindPortString := strconv.Itoa(int(localEndpoint.BindPort))
+	if _, err := ParsePort(bindPortString); err != nil {
+		return "", errors.Wrapf(err, "invalid value %q given for api.bindPort", localEndpoint.BindPort)
 	}
-	return fmt.Sprintf("https://%s", hostPort), nil
-}
 
-// GetMasterHostPort returns a properly formatted Master hostname or IP and port pair, or error
-// if the hostname or IP address can not be parsed or port is outside the valid TCP range.
-func GetMasterHostPort(api *kubeadmapi.API) (string, error) {
-	var masterIP string
-	var portStr string
-	if len(api.ControlPlaneEndpoint) > 0 {
-		if strings.Contains(api.ControlPlaneEndpoint, ":") {
-			var err error
-			masterIP, portStr, err = net.SplitHostPort(api.ControlPlaneEndpoint)
-			if err != nil {
-				return "", fmt.Errorf("invalid value `%s` given for `ControlPlaneEndpoint`: %s", api.ControlPlaneEndpoint, err)
+	// parse the AdvertiseAddress
+	var ip = net.ParseIP(localEndpoint.AdvertiseAddress)
+	if ip == nil {
+		return "", errors.Errorf("invalid value `%s` given for api.advertiseAddress", localEndpoint.AdvertiseAddress)
+	}
+
+	// set the control-plane url using localEndpoint.AdvertiseAddress + the localEndpoint.BindPort
+	controlPlaneURL := &url.URL{
+		Scheme: "https",
+		Host:   net.JoinHostPort(ip.String(), bindPortString),
+	}
+
+	// if the controlplane endpoint is defined
+	if len(controlPlaneEndpoint) > 0 {
+		// parse the controlplane endpoint
+		var host, port string
+		var err error
+		if host, port, err = ParseHostPort(controlPlaneEndpoint); err != nil {
+			return "", errors.Wrapf(err, "invalid value %q given for controlPlaneEndpoint", controlPlaneEndpoint)
+		}
+
+		// if a port is provided within the controlPlaneAddress warn the users we are using it, else use the bindport
+		if port != "" {
+			if port != bindPortString {
+				fmt.Println("[endpoint] WARNING: port specified in controlPlaneEndpoint overrides bindPort in the controlplane address")
 			}
 		} else {
-			masterIP = api.ControlPlaneEndpoint
+			port = bindPortString
 		}
-		errs := validation.IsDNS1123Subdomain(masterIP)
-		if len(errs) > 0 {
-			return "", fmt.Errorf("error parsing `ControlPlaneEndpoint` to valid dns subdomain with errors: %s", errs)
+
+		// overrides the control-plane url using the controlPlaneAddress (and eventually the bindport)
+		controlPlaneURL = &url.URL{
+			Scheme: "https",
+			Host:   net.JoinHostPort(host, port),
 		}
-	} else {
-		ip := net.ParseIP(api.AdvertiseAddress)
-		if ip == nil {
-			return "", fmt.Errorf("error parsing address %s", api.AdvertiseAddress)
-		}
-		masterIP = ip.String()
 	}
 
-	var port int32
-	if len(portStr) > 0 {
-		portInt, err := strconv.Atoi(portStr)
-		if err != nil {
-			return "", fmt.Errorf("error parsing `ControlPlaneEndpoint` port value `%s`: %s", portStr, err.Error())
+	return controlPlaneURL.String(), nil
+}
+
+// ParseHostPort parses a network address of the form "host:port", "ipv4:port", "[ipv6]:port" into host and port;
+// ":port" can be eventually omitted.
+// If the string is not a valid representation of network address, ParseHostPort returns an error.
+func ParseHostPort(hostport string) (string, string, error) {
+	var host, port string
+	var err error
+
+	// try to split host and port
+	if host, port, err = net.SplitHostPort(hostport); err != nil {
+		// if SplitHostPort returns an error, the entire hostport is considered as host
+		host = hostport
+	}
+
+	// if port is defined, parse and validate it
+	if port != "" {
+		if _, err := ParsePort(port); err != nil {
+			return "", "", errors.Errorf("hostport %s: port %s must be a valid number between 1 and 65535, inclusive", hostport, port)
 		}
-		port = int32(portInt)
-		fmt.Println("[endpoint] WARNING: specifying a port for `ControlPlaneEndpoint` overrides `BindPort`")
-	} else {
-		port = api.BindPort
 	}
 
-	if port < 0 || port > 65535 {
-		return "", fmt.Errorf("api server port must be between 0 and 65535, %d was given", port)
+	// if host is a valid IP, returns it
+	if ip := net.ParseIP(host); ip != nil {
+		return host, port, nil
 	}
 
-	hostPort := net.JoinHostPort(masterIP, strconv.Itoa(int(port)))
-	return hostPort, nil
+	// if host is a validate RFC-1123 subdomain, returns it
+	if errs := validation.IsDNS1123Subdomain(host); len(errs) == 0 {
+		return host, port, nil
+	}
+
+	return "", "", errors.Errorf("hostport %s: host '%s' must be a valid IP address or a valid RFC-1123 DNS subdomain", hostport, host)
+}
+
+// ParsePort parses a string representing a TCP port.
+// If the string is not a valid representation of a TCP port, ParsePort returns an error.
+func ParsePort(port string) (int, error) {
+	portInt, err := strconv.Atoi(port)
+	if err == nil && (1 <= portInt && portInt <= 65535) {
+		return portInt, nil
+	}
+
+	return 0, errors.New("port must be a valid number between 1 and 65535, inclusive")
 }

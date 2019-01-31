@@ -20,26 +20,29 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/apis/example"
 	examplev1 "k8s.io/apiserver/pkg/apis/example/v1"
 	example2v1 "k8s.io/apiserver/pkg/apis/example2/v1"
 )
 
-func initiateScheme() *runtime.Scheme {
+func initiateScheme(t *testing.T) *runtime.Scheme {
 	s := runtime.NewScheme()
-	example.AddToScheme(s)
-	examplev1.AddToScheme(s)
-	example2v1.AddToScheme(s)
+	require.NoError(t, example.AddToScheme(s))
+	require.NoError(t, examplev1.AddToScheme(s))
+	require.NoError(t, example2v1.AddToScheme(s))
 	return s
 }
 
 func TestConvertToGVK(t *testing.T) {
-	scheme := initiateScheme()
-	c := convertor{Scheme: scheme}
+	scheme := initiateScheme(t)
+	o := &admission.SchemeBasedObjectInterfaces{scheme}
 	table := map[string]struct {
 		obj         runtime.Object
 		gvk         schema.GroupVersionKind
@@ -59,6 +62,10 @@ func TestConvertToGVK(t *testing.T) {
 			},
 			gvk: examplev1.SchemeGroupVersion.WithKind("Pod"),
 			expectedObj: &examplev1.Pod{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "example.apiserver.k8s.io/v1",
+					Kind:       "Pod",
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "pod1",
 					Labels: map[string]string{
@@ -84,6 +91,10 @@ func TestConvertToGVK(t *testing.T) {
 			},
 			gvk: example2v1.SchemeGroupVersion.WithKind("ReplicaSet"),
 			expectedObj: &example2v1.ReplicaSet{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "example2.apiserver.k8s.io/v1",
+					Kind:       "ReplicaSet",
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "rs1",
 					Labels: map[string]string{
@@ -120,7 +131,7 @@ func TestConvertToGVK(t *testing.T) {
 
 	for name, test := range table {
 		t.Run(name, func(t *testing.T) {
-			actual, err := c.ConvertToGVK(test.obj, test.gvk)
+			actual, err := ConvertToGVK(test.obj, test.gvk, o)
 			if err != nil {
 				t.Error(err)
 			}
@@ -134,7 +145,7 @@ func TestConvertToGVK(t *testing.T) {
 // TestRuntimeSchemeConvert verifies that scheme.Convert(x, x, nil) for an unstructured x is a no-op.
 // This did not use to be like that and we had to wrap scheme.Convert before.
 func TestRuntimeSchemeConvert(t *testing.T) {
-	scheme := initiateScheme()
+	scheme := initiateScheme(t)
 	obj := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"foo": "bar",
