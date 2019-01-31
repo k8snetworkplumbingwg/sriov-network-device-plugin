@@ -15,72 +15,45 @@
 package resources
 
 import (
+	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-/*
-	uioResoucePool extends resourcePool and overrides:
-	GetDeviceFile(),
-	GetEnvs()
-	GetMounts()
-*/
 type uioResourcePool struct {
-	resourcePool
 }
 
-func newUioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	this := &uioResourcePool{
-		resourcePool: resourcePool{
-			config:      rc,
-			devices:     make(map[string]*pluginapi.Device),
-			deviceFiles: make(map[string]string),
-		},
+func newUioResourcePool() types.DeviceInfoProvider {
+	return &uioResourcePool{}
+}
+
+// *****************************************************************
+/* DeviceInfoProvider Interface */
+func (rp *uioResourcePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+
+	uioDev, err := utils.GetUIODeviceFile(pciAddr)
+	if err != nil {
+		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
+	} else {
+		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
+			HostPath:      uioDev,
+			ContainerPath: uioDev,
+			Permissions:   "mrw",
+		})
 	}
-	this.IBaseResource = this
-	return this
+
+	return devSpecs
 }
 
-// Overrides GetDeviceFile() method
-func (rp *uioResourcePool) GetDeviceFile(dev string) (devFile string, err error) {
-	return utils.GetUIODeviceFile(dev)
+func (rp *uioResourcePool) GetEnvVal(pciAddr string) string {
+	return pciAddr
 }
 
-func (rp *uioResourcePool) GetEnvs(deviceIDs []string) map[string]string {
-	envs := make(map[string]string)
-	values := ""
-	lastIndex := len(deviceIDs) - 1
-	for i, s := range deviceIDs {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[rp.config.ResourceName] = values
-	return envs
-}
-func (rp *uioResourcePool) GetMounts() []*pluginapi.Mount {
+func (rp *uioResourcePool) GetMounts(pciAddr string) []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }
 
-func (rp *uioResourcePool) GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec {
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-	for _, id := range deviceIDs {
-		deviceFile := deviceFiles[id]
-		ds := &pluginapi.DeviceSpec{
-			HostPath:      deviceFile,
-			ContainerPath: deviceFile,
-			Permissions:   "mrw",
-		}
-		devSpecs = append(devSpecs, ds)
-	}
-	return devSpecs
-}
-
-// Probe returns 'true' if device health changes 'false' otherwise
-func (rp *uioResourcePool) Probe(rc *types.ResourceConfig, devices map[string]*pluginapi.Device) bool {
-	return false
-}
+// *****************************************************************

@@ -15,104 +15,28 @@
 package resources
 
 import (
-	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-/*
-	netDevicePool extends resourcePool and overrides:
-	GetDeviceFile(),
-	GetEnvs()
-	GetMounts()
-	Probe()
-*/
 type netDevicePool struct {
-	resourcePool
 }
 
-func newNetDevicePool(rc *types.ResourceConfig) types.ResourcePool {
-	this := &netDevicePool{
-		resourcePool: resourcePool{
-			config:      rc,
-			devices:     make(map[string]*pluginapi.Device),
-			deviceFiles: make(map[string]string),
-		},
-	}
-	this.IBaseResource = this
-	return this
+func newNetDevicePool() types.DeviceInfoProvider {
+	return &netDevicePool{}
 }
 
-// Overrides GetDeviceFile() method
-func (rp *netDevicePool) GetDeviceFile(dev string) (devFile string, err error) {
-	// There are no specific device file
-
-	return // empty string
-}
-
-func (rp *netDevicePool) GetEnvs(deviceIDs []string) map[string]string {
-	glog.Infof("generic GetEnvs() called")
-	envs := make(map[string]string)
-	values := ""
-	lastIndex := len(deviceIDs) - 1
-	for i, s := range deviceIDs {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[rp.config.ResourceName] = values
-	return envs
-}
-
-func (rp *netDevicePool) GetMounts() []*pluginapi.Mount {
-	glog.Infof("generic GetMounts() called")
-	mounts := make([]*pluginapi.Mount, 0)
-	return mounts
-}
-
-// netDevicePool returns empty DeviceSpecs
-func (rp *netDevicePool) GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("generic GetDeviceSpecs() called")
+func (rp *netDevicePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-// Probe returns 'true' if device health changes 'false' otherwise
-func (rp *netDevicePool) Probe(rc *types.ResourceConfig, devices map[string]*pluginapi.Device) bool {
-	// Network device should check link status for each physical port and update health status for
-	// all associated VFs if there is any
-	changed := false // this will be returned
-	healthValue := pluginapi.Healthy
-	for _, pf := range rc.RootDevices {
-		// If the PF link is not up = "Unhealthy"
-		if !utils.IsNetlinkStatusUp(pf) {
-			healthValue = pluginapi.Unhealthy
-		}
+func (rp *netDevicePool) GetEnvVal(pciAddr string) string {
+	return pciAddr
+}
 
-		if rc.SriovMode {
-			// Get VFs associated with this device
-			if vfs, err := utils.GetVFList(pf); err == nil {
-				for _, vf := range vfs {
-					device := devices[vf]
-					if device.Health != healthValue {
-						device.Health = healthValue
-						changed = true
-					}
-				}
-			}
-
-		} else {
-			// device is the PF
-			device := devices[pf]
-			if device.Health != healthValue {
-				device.Health = healthValue
-				changed = true
-			}
-		}
-
-	}
-	return changed
+func (rp *netDevicePool) GetMounts(pciAddr string) []*pluginapi.Mount {
+	mounts := make([]*pluginapi.Mount, 0)
+	return mounts
 }
