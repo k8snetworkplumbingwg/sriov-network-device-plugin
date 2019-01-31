@@ -86,9 +86,9 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	resp := new(pluginapi.AllocateResponse)
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
-		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(rs.resourcePool.GetDeviceFiles(), container.DevicesIDs)
+		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
 		containerResp.Envs = rs.getEnvs(container.DevicesIDs)
-		containerResp.Mounts = rs.resourcePool.GetMounts()
+		containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
 	glog.Infof("AllocateResponse send: %+v", resp)
@@ -151,11 +151,6 @@ func (rs *resourceServer) GetDevicePluginOptions(ctx context.Context, empty *plu
 }
 
 func (rs *resourceServer) Init() error {
-	resourceName := rs.resourcePool.GetResourceName()
-	glog.Infof("initializing %s device pool", resourceName)
-	if err := rs.resourcePool.DiscoverDevices(); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -235,12 +230,13 @@ func (rs *resourceServer) Stop() error {
 }
 
 func (rs *resourceServer) Watch() {
-	// Watch for socket file; if not present restart server
+	// Watch for Kubelet socket file; if not present restart server
 	sockPath := filepath.Join(types.SockDir, rs.endPoint)
 	for {
 		select {
 		case stop := <-rs.stopWatcher:
 			if stop {
+				glog.Infof("kubelet watcher stopped for server %s", rs.resourcePool.GetResourceName())
 				return
 			}
 		default:
@@ -273,7 +269,8 @@ func (rs *resourceServer) triggerUpdate() {
 	if rs.checkIntervals > 0 {
 		go func() {
 			for {
-				changed := rp.Probe(rs.resourcePool.GetConfig(), rp.GetDevices())
+				// changed := rp.Probe(rs.resourcePool.GetConfig(), rp.GetDevices())
+				changed := rp.Probe()
 				if changed {
 					rs.updateSignal <- true
 				}
@@ -285,15 +282,21 @@ func (rs *resourceServer) triggerUpdate() {
 
 func (rs *resourceServer) getEnvs(deviceIDs []string) map[string]string {
 
-	varPrefix := "PCIDEVICE"
-	resourceNamePrefix := strings.Replace(rs.resourceNamePrefix, ".", "_", -1)
+	envs := make(map[string]string)
 
-	envs := rs.resourcePool.GetEnvs(deviceIDs)
+	key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", rs.resourceNamePrefix, rs.resourcePool.GetResourceName())
+	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
 
-	newEnvs := make(map[string]string)
-	for k, v := range envs {
-		exportedVar := strings.ToUpper(fmt.Sprintf("%s_%s_%s", varPrefix, resourceNamePrefix, k))
-		newEnvs[exportedVar] = v
+	envVals := rs.resourcePool.GetEnvs(deviceIDs)
+	values := ""
+	lastIndex := len(envVals) - 1
+	for i, s := range envVals {
+		values += s
+		if i == lastIndex {
+			break
+		}
+		values += ","
 	}
-	return newEnvs
+	envs[key] = values
+	return envs
 }

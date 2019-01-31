@@ -34,6 +34,39 @@ const (
 	configuredVfFile = "sriov_numvfs"
 )
 
+// GetPfAddr returns SRIOV PF pci address if a device is VF given its pci address.
+// If device it not PF then this will return its own address as PF
+func GetPfAddr(pciAddr string) (string, error) {
+	pfSymLink := filepath.Join(sysBusPci, pciAddr, "physfn")
+	pciinfo, err := os.Readlink(pfSymLink)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return pciAddr, nil
+		}
+		return "", fmt.Errorf("error getting PF for PCI device %s %v", pciAddr, err)
+	}
+	return filepath.Base(pciinfo), nil
+}
+
+// IsSriovPF check if a pci device SRIOV capable given its pci address
+func IsSriovPF(pciAddr string) bool {
+	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, totalVfFile)
+	if _, err := os.Stat(totalVfFilePath); err != nil {
+		return false
+	}
+	// sriov_totalvfs file exists -> sriov capable
+	return true
+}
+
+// IsSriovVF check if a pci device has link to a PF
+func IsSriovVF(pciAddr string) bool {
+	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, "physfn")
+	if _, err := os.Stat(totalVfFilePath); err != nil {
+		return false
+	}
+	return true
+}
+
 // GetVFconfigured returns number of VF configured for a PF
 func GetVFconfigured(pf string) int {
 	configuredVfPath := filepath.Join(sysBusPci, pf, configuredVfFile)
@@ -236,4 +269,35 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 	devFile = filepath.Join("/dev", files[0].Name())
 
 	return
+}
+
+// GetNetNames returns host net interface names as string for a PCI device from its pci address
+func GetNetNames(pciAddr string) ([]string, error) {
+	var names []string
+	netDir := filepath.Join(sysBusPci, pciAddr, "net")
+	if _, err := os.Lstat(netDir); err != nil {
+		return nil, fmt.Errorf("GetNetName(): no net directory under pci device %s: %q", pciAddr, err)
+	}
+
+	fInfos, err := ioutil.ReadDir(netDir)
+	if err != nil {
+		return nil, fmt.Errorf("GetNetName(): failed to read net directory %s: %q", netDir, err)
+	}
+
+	names = make([]string, 0)
+	for _, f := range fInfos {
+		names = append(names, f.Name())
+	}
+
+	return names, nil
+}
+
+// GetDriverName returns current driver attached to a pci device from its pci address
+func GetDriverName(pciAddr string) (string, error) {
+	driverLink := filepath.Join(sysBusPci, pciAddr, "driver")
+	driverInfo, err := os.Readlink(driverLink)
+	if err != nil {
+		return "", fmt.Errorf("error getting driver info for device %s %v", pciAddr, err)
+	}
+	return filepath.Base(driverInfo), nil
 }
