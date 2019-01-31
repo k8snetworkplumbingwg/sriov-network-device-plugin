@@ -1,10 +1,12 @@
-hash: f483305b4c7e5415cd42c0b85f924071ed88bda6e653eaf3e2c6cbdc117c94e8
-updated: 2019-03-01T14:38:55.654833267Z
+hash: 95b0f0022b74401f182f198264d8d0d90e4fcf328ff377d17427deecd964b4f4
+updated: 2019-03-01T16:15:36.483063264Z
 imports:
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
   - spew
+- name: github.com/ghodss/yaml
+  version: 25d852aebe32c875e9c044af3eef9c7dc6bc777f
 - name: github.com/gogo/protobuf
   version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
   subpackages:
@@ -48,6 +50,14 @@ imports:
   - ptypes/struct
   - ptypes/timestamp
   - ptypes/wrappers
+- name: github.com/jaypipes/ghw
+  version: 032dfb1f8cb2b9b5c0e894855833e23ff1fe24a9
+- name: github.com/jaypipes/pcidb
+  version: adf5a9192458392195b34ec0677172bd69e95b82
+- name: github.com/mitchellh/go-homedir
+  version: af06845cf3004701891bf4fdb884bfe4920b3727
+- name: github.com/pkg/errors
+  version: 27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7
 - name: github.com/pmezard/go-difflib
   version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
@@ -60,6 +70,12 @@ imports:
   - assert
   - mock
   - require
+- name: github.com/vishvananda/netlink
+  version: b9cafe4a8544a27110dad06be07d48bbe5f292dd
+  subpackages:
+  - nl
+- name: github.com/vishvananda/netns
+  version: 13995c7128ccc8e51e9a6bd2b551020a27180abd
 - name: golang.org/x/net
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
@@ -70,6 +86,10 @@ imports:
   - internal/timeseries
   - lex/httplex
   - trace
+- name: golang.org/x/sys
+  version: a34e9553db1e492c9a76e60db2296ae7e5fbb772
+  subpackages:
+  - unix
 - name: golang.org/x/text
   version: b19bf474d317b857955b12035d2c5acb57ce8b01
   subpackages:
@@ -120,8 +140,12 @@ imports:
   - status
   - tap
   - transport
+- name: gopkg.in/yaml.v2
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+- name: howett.net/plist
+  version: 591f970eefbbeb04d7b37f334a0c4c3256e32876
 - name: k8s.io/kubernetes
-  version: 7514c49ec12e7a8b6840142d723ec25b08a0917a
+  version: 979bef156a8bfff112ab51292e38e036172d5f82
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
 testImports:
@@ -160,12 +184,3 @@ testImports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
-- name: golang.org/x/sys
-  version: 95c6576299259db960f6c5b9b69ea52422860fce
-  subpackages:
-  - unix
-  - windows
-  - windows/registry
-  - windows/svc
-- name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183

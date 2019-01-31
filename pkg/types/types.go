@@ -27,10 +27,12 @@ const (
 
 // ResourceConfig contains cofiguration paremeters for a resource pool
 type ResourceConfig struct {
-	ResourceName string   `json:"resourceName"`         // the resource name will be added with resource prefix in K8s api
-	RootDevices  []string `json:"rootDevices"`          // list of PCI address of root devices e.g. "0000:05:00.0",
-	DeviceType   string   `json:"deviceType,omitempty"` // Device driver type of the device
-	SriovMode    bool     `json:"sriovMode,omitempty"`  // Whether devices have SRIOV virtual function capabilities or not
+	ResourceName string `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	Selectors    struct {
+		Vendors []string `json:"vendors,omitempty"`
+		Devices []string `json:"devices,omitempty"`
+		Drivers []string `json:"drivers,omitempty"`
+	} `json:"selectors,omitempty"` // Whether devices have SRIOV virtual function capabilities or not
 }
 
 // ResourceConfList is list of ResourceConfig
@@ -54,28 +56,52 @@ type ResourceServer interface {
 // ResourceFactory is an interface to get instances of ResourcePool and ResouceServer
 type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
-	GetResourcePool(*ResourceConfig) ResourcePool
+	GetInfoProvider(string) DeviceInfoProvider
+	GetSelector(string, []string) (DeviceSelector, error)
+	GetResourcePool(rc *ResourceConfig, deviceList []PciNetDevice) (ResourcePool, error)
 }
 
 // ResourcePool represents a generic resource entity
 type ResourcePool interface {
 	// extended API for internal use
-	InitDevice() error
-	DiscoverDevices() error
 	GetResourceName() string
-	GetConfig() *ResourceConfig
-
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
-	GetDeviceFiles() map[string]string
-	IBaseResource
+	Probe() bool
+	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
+	GetEnvs(deviceIDs []string) []string
+	GetMounts(deviceIDs []string) []*pluginapi.Mount
 }
 
-// IBaseResource represents a specific resource pool
-type IBaseResource interface {
-	GetDeviceFile(dev string) (devFile string, err error)
-	GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec
-	GetEnvs(deviceIDs []string) map[string]string
+// PciNetDevice provides an interface to get device specific information
+type PciNetDevice interface {
+	GetPFName() string
+	GetPfPciAddr() string
+	GetVendor() string
+	GetDriver() string
+	GetDeviceCode() string
+	GetPciAddr() string
+	IsSriovPF() bool
+	GetLinkSpeed() string
+	GetSubClass() string
+	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetEnvVal() string
 	GetMounts() []*pluginapi.Mount
-	// Probe does device health-check and update devices and returns 'true' if any of device in resource pool changed
-	Probe(*ResourceConfig, map[string]*pluginapi.Device) bool
+	GetAPIDevice() *pluginapi.Device
+}
+
+// DeviceInfoProvider is an interface to get Device Plugin API specific device information
+type DeviceInfoProvider interface {
+	GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec
+	GetEnvVal(pciAddr string) string
+	GetMounts(pciAddr string) []*pluginapi.Mount
+}
+
+// DeviceSelector provides an interface for filtering a list of devices
+type DeviceSelector interface {
+	Filter([]PciNetDevice) []PciNetDevice
+}
+
+// LinkWatcher in interface to watch Network link status
+type LinkWatcher interface { // This is not fully defined yet!!
+	Subscribe()
 }

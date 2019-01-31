@@ -66,17 +66,24 @@ var _ = Describe("Resource manager", func() {
 					panic(testErr)
 				}
 				testErr = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
-					"resourceList":	[{
-						"resourceName": "net_a",
-						"rootDevices": ["02:00.0", "02:00.2"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
-					},{
-						"resourceName": "net_b",
-						"rootDevices": ["02:00.1", "02:00.3"],
-						"sriovMode": true,
-						"deviceType": "vfio"
-				}]}`), 0644)
+						"resourceList": [{
+								"resourceName": "intel_sriov_netdevice",
+								"selectors": {
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"],
+									"drivers": ["i40evf", "ixgbevf"]
+								}
+							},
+							{
+								"resourceName": "intel_sriov_dpdk",
+								"selectors": {
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"],
+									"drivers": ["vfio-pci"]
+								}
+							}
+						]
+					}`), 0644)
 				if testErr != nil {
 					panic(testErr)
 				}
@@ -122,30 +129,6 @@ var _ = Describe("Resource manager", func() {
 			rm = nil
 			cp = nil
 		})
-		Context("when pci addr is invalid", func() {
-			BeforeEach(func() {
-				err := os.MkdirAll("/tmp/sriovdp", 0755)
-				if err != nil {
-					panic(err)
-				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
-					"resourceList":	[{
-						"resourceName": "net_a",
-						"rootDevices": ["junk"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
-					}]
-				}`), 0644)
-				if err != nil {
-					panic(err)
-				}
-				rm.readConfig()
-			})
-			It("should return false", func() {
-				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
-			})
-		})
 		Context("when resource name is invalid", func() {
 			BeforeEach(func() {
 				err := os.MkdirAll("/tmp/sriovdp", 0755)
@@ -155,9 +138,11 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "invalid-name",
-						"rootDevices": ["02:00.0"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
+						"selectors": {
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}
 					}]
 				}`), 0644)
 				if err != nil {
@@ -179,14 +164,18 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "duplicate",
-						"rootDevices": ["02:00.0"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
+						"selectors": {
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}
 					},{
 						"resourceName": "duplicate",
-						"rootDevices": ["02:00.0"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
+						"selectors": {
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["vfio-pci"]
+						}
 					}]
 				}`), 0644)
 				if err != nil {
@@ -199,132 +188,74 @@ var _ = Describe("Resource manager", func() {
 				Expect(rm.validConfigs()).To(Equal(false))
 			})
 		})
-		Context("when config is valid but SRIOV isn't configured on PCI device", func() {
+		Describe("managing resources servers", func() {
+			var rm *resourceManager
+			var mockedRf *fake.ResourceFactory
 			BeforeEach(func() {
-				err := os.RemoveAll("/tmp/sriovdp")
-				if err != nil {
-					panic(err)
-				}
-				err = os.MkdirAll("/tmp/sriovdp", 0755)
-				if err != nil {
-					panic(err)
-				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
-					"resourceList":	[{
-						"resourceName": "no_sriov",
-						"rootDevices": ["03:00.0"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
-					}]
-				}`), 0644)
-				if err != nil {
-					panic(err)
-				}
-				rm.readConfig()
-			})
-			It("should return false", func() {
-				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
-			})
-		})
-		Context("when config is valid and PCI device has SRIOV enabled", func() {
-			BeforeEach(func() {
-				err := os.RemoveAll("/tmp/sriovdp")
-				if err != nil {
-					panic(err)
-				}
-				err = os.MkdirAll("/tmp/sriovdp", 0755)
-				if err != nil {
-					panic(err)
-				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
-					"resourceList":	[{
-						"resourceName": "ok",
-						"rootDevices": ["02:00.0"],
-						"sriovMode": true,
-						"deviceType": "netdevice"
-					}]
-				}`), 0644)
-				if err != nil {
-					panic(err)
-				}
-				rm.readConfig()
-			})
-			It("should return true", func() {
-				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(true))
-			})
-		})
-	})
-	Describe("managing resources servers", func() {
-		var rm *resourceManager
-		var mockedRf *fake.ResourceFactory
-		BeforeEach(func() {
-			mockedRf = &fake.ResourceFactory{}
-			rm = &resourceManager{
-				rFactory: mockedRf,
-				configList: []*types.ResourceConfig{
-					&types.ResourceConfig{
-						ResourceName: "fake",
-						RootDevices:  []string{"0000:00:02.0"},
+				mockedRf = &fake.ResourceFactory{}
+				rm = &resourceManager{
+					rFactory: mockedRf,
+					configList: []*types.ResourceConfig{
+						&types.ResourceConfig{ResourceName: "fake"},
 					},
-				},
-				resourceServers: []types.ResourceServer{},
-			}
-		})
-		Describe("initializing servers", func() {
-			Context("when getting resource server fails", func() {
-				It("should return an error", func() {
-					mockedRf.
-						On("GetResourcePool", rm.configList[0]).
-						Return(&fake.ResourcePool{}).
-						On("GetResourceServer", &fake.ResourcePool{}).
-						Return(&fake.ResourceServer{}, fmt.Errorf("fake error"))
+					resourceServers: []types.ResourceServer{},
+					netDeviceList:   []types.PciNetDevice{},
+				}
+			})
+			Describe("initializing servers", func() {
+				Context("when getting resource server fails", func() {
+					It("should return an error", func() {
+						mockedRf.
+							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
+							Return(&fake.ResourcePool{}, nil).
+							On("GetResourceServer", &fake.ResourcePool{}).
+							Return(&fake.ResourceServer{}, fmt.Errorf("fake error"))
 
-					Expect(rm.initServers()).To(HaveOccurred())
+						Expect(rm.initServers()).To(HaveOccurred())
+					})
 				})
-			})
-			Context("when initializing server fails", func() {
-				var (
-					mockedServer *fake.ResourceServer
-				)
-				BeforeEach(func() {
-					mockedServer = &fake.ResourceServer{}
-					mockedServer.On("Init").Return(fmt.Errorf("fake error"))
-					mockedRf.
-						On("GetResourcePool", rm.configList[0]).
-						Return(&fake.ResourcePool{}).
-						On("GetResourceServer", &fake.ResourcePool{}).
-						Return(mockedServer, nil)
+				Context("when initializing server fails", func() {
+					var (
+						mockedServer *fake.ResourceServer
+					)
+					BeforeEach(func() {
+						mockedServer = &fake.ResourceServer{}
+						mockedServer.On("Init").Return(fmt.Errorf("fake error"))
+						mockedRf.
+							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
+							Return(&fake.ResourcePool{}, nil).
+							On("GetResourceServer", &fake.ResourcePool{}).
+							Return(mockedServer, nil)
+					})
+					It("should not return an error", func() {
+						Expect(rm.initServers()).NotTo(HaveOccurred())
+					})
+					It("should finish with empty list of servers", func() {
+						Expect(len(rm.resourceServers)).To(Equal(0))
+					})
 				})
-				It("should not return an error", func() {
-					Expect(rm.initServers()).NotTo(HaveOccurred())
-				})
-				It("should finish with empty list of servers", func() {
-					Expect(len(rm.resourceServers)).To(Equal(0))
-				})
-			})
-			Context("when server is properly initialized", func() {
-				var (
-					mockedServer *fake.ResourceServer
-				)
-				BeforeEach(func() {
-					mockedServer = &fake.ResourceServer{}
-					mockedRf.
-						On("GetResourcePool", rm.configList[0]).
-						Return(&fake.ResourcePool{}).
-						On("GetResourceServer", &fake.ResourcePool{}).
-						Return(mockedServer, nil)
-					mockedServer.On("Init").Return(nil)
-				})
-				It("should not return an error", func() {
-					Expect(rm.initServers()).NotTo(HaveOccurred())
-				})
-				It("should call Init() method on the server without getting errors", func() {
-					Expect(mockedServer.MethodCalled("Init")).To(Equal(mock.Arguments{nil}))
-				})
-				PIt("should finish with one element in the list of servers", func() {
-					Expect(rm.resourceServers).To(ContainElement(mockedServer))
+				Context("when server is properly initialized", func() {
+					var (
+						mockedServer *fake.ResourceServer
+					)
+					BeforeEach(func() {
+						mockedServer = &fake.ResourceServer{}
+						mockedRf.
+							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
+							Return(&fake.ResourcePool{}, nil).
+							On("GetResourceServer", &fake.ResourcePool{}).
+							Return(mockedServer, nil)
+						mockedServer.On("Init").Return(nil)
+					})
+					It("should not return an error", func() {
+						Expect(rm.initServers()).NotTo(HaveOccurred())
+					})
+					It("should call Init() method on the server without getting errors", func() {
+						Expect(mockedServer.MethodCalled("Init")).To(Equal(mock.Arguments{nil}))
+					})
+					PIt("should finish with one element in the list of servers", func() {
+						Expect(rm.resourceServers).To(ContainElement(mockedServer))
+					})
 				})
 			})
 		})

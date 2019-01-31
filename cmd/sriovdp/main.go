@@ -48,6 +48,7 @@ func main() {
 	}
 
 	if len(rm.configList) < 1 {
+		glog.Errorf("no resource configuration; exiting")
 		return // No config found
 	}
 
@@ -56,6 +57,12 @@ func main() {
 		glog.Fatalf("Exiting.. one or more invalid configuration(s) given")
 		return
 	}
+	glog.Infof("Discovering host network devices")
+	if err := rm.discoverHostDevices(); err != nil {
+		glog.Errorf("error discovering host network devices%v", err)
+		return
+	}
+
 	glog.Infof("Initializing resource servers")
 	if err := rm.initServers(); err != nil {
 		glog.Errorf("error initializing resource servers %v", err)

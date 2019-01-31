@@ -23,79 +23,53 @@ import (
 
 /*
 	vfioResourcePool extends resourcePool and overrides:
-	GetDeviceFile(),
+	GetDeviceSpecs(),
 	GetEnvs()
 	GetMounts()
 */
 type vfioResourcePool struct {
-	resourcePool
 	vfioMount string
 }
 
-func newVfioResourcePool(rc *types.ResourceConfig) types.ResourcePool {
-	this := &vfioResourcePool{
-		resourcePool: resourcePool{
-			config:      rc,
-			devices:     make(map[string]*pluginapi.Device),
-			deviceFiles: make(map[string]string),
-		},
+func newVfioResourcePool() types.DeviceInfoProvider {
+
+	return &vfioResourcePool{
 		vfioMount: "/dev/vfio/vfio",
 	}
-	this.IBaseResource = this
-	return this
+
 }
 
-// Overrides GetDeviceFile() method
-func (rp *vfioResourcePool) GetDeviceFile(dev string) (devFile string, err error) {
-	return utils.GetVFIODeviceFile(dev)
-}
-
-func (rp *vfioResourcePool) GetEnvs(deviceIDs []string) map[string]string {
-	glog.Infof("vfio GetEnvs() called")
-	envs := make(map[string]string)
-	values := ""
-	lastIndex := len(deviceIDs) - 1
-	for i, s := range deviceIDs {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[rp.config.ResourceName] = values
-	return envs
-}
-
-func (rp *vfioResourcePool) GetMounts() []*pluginapi.Mount {
-	glog.Infof("vfio GetMounts() called")
-	mounts := make([]*pluginapi.Mount, 0)
-	return mounts
-}
-
-func (rp *vfioResourcePool) GetDeviceSpecs(deviceFiles map[string]string, deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("vfio GetDeviceSpecs() called")
+// *****************************************************************
+/* DeviceInfoProvider Interface */
+func (rp *vfioResourcePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-	// Add default common vfio device file
 	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 		HostPath:      rp.vfioMount,
 		ContainerPath: rp.vfioMount,
 		Permissions:   "mrw",
 	})
 
-	// Add vfio group specific devices
-	for _, id := range deviceIDs {
-		deviceFile := deviceFiles[id]
-		ds := &pluginapi.DeviceSpec{
-			HostPath:      deviceFile,
-			ContainerPath: deviceFile,
+	vfioDev, err := utils.GetVFIODeviceFile(pciAddr)
+	if err != nil {
+		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
+	} else {
+		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
+			HostPath:      vfioDev,
+			ContainerPath: vfioDev,
 			Permissions:   "mrw",
-		}
-		devSpecs = append(devSpecs, ds)
+		})
 	}
+
 	return devSpecs
 }
 
-// Probe returns 'true' if device health changes 'false' otherwise
-func (rp *vfioResourcePool) Probe(rc *types.ResourceConfig, devices map[string]*pluginapi.Device) bool {
-	return false
+func (rp *vfioResourcePool) GetEnvVal(pciAddr string) string {
+	return pciAddr
 }
+
+func (rp *vfioResourcePool) GetMounts(pciAddr string) []*pluginapi.Mount {
+	mounts := make([]*pluginapi.Mount, 0)
+	return mounts
+}
+
+// *****************************************************************

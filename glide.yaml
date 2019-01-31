@@ -10,6 +10,9 @@ import:
 - package: k8s.io/kubernetes
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
+- package: github.com/jaypipes/ghw
+  version: ^0.3.0
+- package: github.com/vishvananda/netlink
 testImport:
 - package: github.com/onsi/ginkgo
   subpackages:
