@@ -15,30 +15,25 @@
 package resources
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
 type resourcePool struct {
-	config      *types.ResourceConfig
-	devices     map[string]*pluginapi.Device
-	bindScript  string
-	deviceFiles map[string]string // DeviceID -> Device file; e.g. 00:05.01 -> /dev/uio1
-	types.IBaseResource
+	config     *types.ResourceConfig
+	devices    map[string]*pluginapi.Device
+	devicePool map[string]types.PciNetDevice
 }
 
 var _ types.ResourcePool = &resourcePool{}
 
-func newResourcePool(rc *types.ResourceConfig, bScript string) types.ResourcePool {
+// newResourcePool returns an instance of resourcePool
+func newResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciNetDevice) types.ResourcePool {
 	return &resourcePool{
-		config:      rc,
-		devices:     make(map[string]*pluginapi.Device),
-		bindScript:  bScript,
-		deviceFiles: make(map[string]string),
+		config:     rc,
+		devices:    apiDevices,
+		devicePool: devicePool,
 	}
 }
 
@@ -50,56 +45,9 @@ func (rp *resourcePool) InitDevice() error {
 	// Not implemented
 	return nil
 }
-func (rp *resourcePool) DiscoverDevices() error {
-	// discover SRIOV VFs
-	// populate devices[] for each device discovered
-	glog.Infof("Discovering devices with config: %+v", rp.config)
-	deviceList := make([]string, 0)
-	SriovMode := rp.config.SriovMode
-
-	if SriovMode {
-
-		// Discover VFs
-		for _, pf := range rp.config.RootDevices {
-			numvfs := utils.GetSriovVFcapacity(pf)
-			glog.Infof("Total number of VFs for device %v is %v", pf, numvfs)
-			if numvfs > 0 {
-				glog.Infof("SRIOV capable device discovered: %v", pf)
-
-				numConfiguredVFs := utils.GetVFconfigured(pf)
-				glog.Infof("Number of Configured VFs for device %v is %d", pf, numConfiguredVFs)
-
-				if numConfiguredVFs < 1 {
-					glog.Errorf("Error. Virtual Functions are not configured for the device: %s", pf)
-					return fmt.Errorf("Virtual Functions are not configured for the device: %s", pf)
-				}
-
-				if newList, err := utils.GetVFList(pf); err == nil {
-					deviceList = append(deviceList, newList...)
-				}
-			}
-		}
-	} else { // PFs only
-		deviceList = rp.config.RootDevices
-	}
-
-	// Create plugin.Device instaces for all devices
-	for _, dev := range deviceList {
-		devFile, err := rp.GetDeviceFile(dev)
-		if err == nil {
-			rp.devices[dev] = &pluginapi.Device{
-				ID:     dev,
-				Health: pluginapi.Healthy}
-			rp.deviceFiles[dev] = devFile
-		}
-	}
-	glog.Infof("Discovered Devices: %v\n", rp.devices)
-
-	return nil
-}
 
 func (rp *resourcePool) GetResourceName() string {
-	return rp.config.ResourceName // dummy return
+	return rp.config.ResourceName
 }
 
 func (rp *resourcePool) GetDevices() map[string]*pluginapi.Device {
@@ -107,6 +55,64 @@ func (rp *resourcePool) GetDevices() map[string]*pluginapi.Device {
 	return rp.devices
 }
 
-func (rp *resourcePool) GetDeviceFiles() map[string]string {
-	return rp.deviceFiles
+func (rp *resourcePool) Probe() bool {
+	// TO-DO: Implement this
+	return false
+}
+
+func (rp *resourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
+	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
+	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+
+	// Add vfio group specific devices
+	for _, id := range deviceIDs {
+		if dev, ok := rp.devicePool[id]; ok {
+			newSpecs := dev.GetDeviceSpecs()
+			for _, ds := range newSpecs {
+				if !rp.deviceSpecExist(devSpecs, ds) {
+					devSpecs = append(devSpecs, ds)
+				}
+
+			}
+
+		}
+	}
+	return devSpecs
+}
+
+func (rp *resourcePool) GetEnvs(deviceIDs []string) []string {
+	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
+	devEnvs := make([]string, 0)
+
+	// Consolidates all Envs
+	for _, id := range deviceIDs {
+		if dev, ok := rp.devicePool[id]; ok {
+			env := dev.GetEnvVal()
+			devEnvs = append(devEnvs, env)
+		}
+	}
+
+	return devEnvs
+}
+
+func (rp *resourcePool) GetMounts(deviceIDs []string) []*pluginapi.Mount {
+	glog.Infof("GetMounts(): for devices: %v", deviceIDs)
+	devMounts := make([]*pluginapi.Mount, 0)
+
+	for _, id := range deviceIDs {
+		if dev, ok := rp.devicePool[id]; ok {
+			mnt := dev.GetMounts()
+			devMounts = append(devMounts, mnt...)
+		}
+	}
+	return devMounts
+}
+
+func (rp *resourcePool) deviceSpecExist(specs []*pluginapi.DeviceSpec, newSpec *pluginapi.DeviceSpec) bool {
+	for _, sp := range specs {
+		if sp.HostPath == newSpec.HostPath {
+			return true
+		}
+	}
+	return false
 }
