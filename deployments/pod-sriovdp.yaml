@@ -16,6 +16,9 @@ spec:
     - mountPath: /sys
       name: net
       readOnly: true
+    - mountPath: /etc/pcidp/
+      name: config
+      readOnly: true
   volumes:
   - name: devicesock 
     hostPath:
@@ -24,5 +27,8 @@ spec:
   - name: net
     hostPath:
       path: /sys
+  - name: config
+    hostPath:
+      path: /etc/pcidp/
   hostNetwork: true
   hostPID: true

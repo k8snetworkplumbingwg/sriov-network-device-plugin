@@ -71,6 +71,11 @@ The following  NICs were tested with this implementation. However, other SRIOV c
 	- VF driver: v3.2.2-k
 > please refer to Intel download center for installing latest [Intel-Â® 82599ES 10 Gigabit Ethernet](https://ark.intel.com/products/41282/Intel-82599ES-10-Gigabit-Ethernet-Controller) drivers
 
+- Mellanox ConnectX®-4 Lx EN Adapter
+- Mellanox ConnectX®-5 Adapter
+> Network card drivers are available as a part of the various linux distributions and upstream.
+To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.com/page/software_overview_eth).
+
 ## Quick Start
 
 This section explains an exmaple deployment of SRIOV Network device plugin in Kubernetes. Required YAML files can be found in [deployments/](deployments/) directory.
