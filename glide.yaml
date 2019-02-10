@@ -24,3 +24,4 @@ import:
   version: v0.6.0
   subpackages:
   - pkg/skel
+- package: github.com/Mellanox/rdmamap

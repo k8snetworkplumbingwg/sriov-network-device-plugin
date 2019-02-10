@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Mellanox/rdmamap"
 	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"golang.org/x/net/context"
@@ -90,6 +91,22 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 		containerResp.Envs = rs.getEnvs(container.DevicesIDs)
 		containerResp.Mounts = rs.resourcePool.GetMounts()
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
+		foundRdma := false
+		if rs.resourcePool.GetConfig().RdmaMode {
+			for _, id := range container.DevicesIDs {
+				if len(rdmamap.GetRdmaDevicesForPcidev(id)) > 0 {
+					foundRdma = true
+					break
+				}
+			}
+			if foundRdma {
+				containerResp.Mounts = append(containerResp.Mounts, &pluginapi.Mount{
+					ContainerPath: "/dev/infiniband",
+					HostPath:      "/dev/infiniband",
+					ReadOnly:      false,
+				})
+			}
+		}
 	}
 	glog.Infof("AllocateResponse send: %+v", resp)
 	return resp, nil

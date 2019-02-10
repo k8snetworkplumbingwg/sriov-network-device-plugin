@@ -70,6 +70,8 @@ imports:
   version: f51c12702a4d776e4c1fa9b0fabab841babae631
   subpackages:
   - rate
+- name: github.com/Mellanox/rdmamap
+  version: 44bb586a78dd74f8951c3093e30703df652b75f0
 - name: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
   subpackages:
