@@ -104,19 +104,14 @@ $ make
 $ make image
 ``` 
 
- 4. Create SRIOV network device plugin Pod
+ 4. Create SRIOV network device plugin Pod and the SRIOV network device plugin binary will be exectued from within the Pod
  ```
 $ kubectl create -f pod-sriovdp.yaml
 ```
 
- 5. Get a bash terminal to the SRIOV network device plugin Pod
- ```
-$ kubectl exec -it sriov-device-plugin bash
-```
-
- 6. Execute the SRIOV network device plugin binary from within the Pod
+ 5. Check for the logs of the SRIOV network device plugin binary from within the pod
 ````
-$ ./usr/bin/sriovdp --logtostderr -v 10
+$ kubectl logs sriov-device-plugin
 
 sriov-device-plugin.go:380] SRIOV Network Device Plugin started...
 sriov-device-plugin.go:190] Discovering SRIOV network device[s]
