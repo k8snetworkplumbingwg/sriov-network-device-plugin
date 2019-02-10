@@ -1,4 +1,4 @@
-# This dockerfile is specific to building Multus for OpenShift
+# This dockerfile is specific to building sriov device plugin for OpenShift
 FROM rhel:rhel7
 
 ADD . /usr/src/sriov-network-device-plugin
