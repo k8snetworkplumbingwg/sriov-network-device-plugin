@@ -1,7 +1,22 @@
 language: go
 
+matrix:
+  include:
+  - name: amd64
+    os: linux
+    env: ARCH=amd64
+  - name: ppc64le
+    os: linux-ppc64le
+    env: ARCH=ppc64le
+
 before_install:
   - sudo apt-get update -qq
+  - sudo apt-get remove docker-ce
+  - sudo apt-get install docker-ce
+  - sudo mkdir -p ~/.docker
+  - sudo echo '{"experimental":"enabled"}' | sudo tee ~/.docker/config.json
+  - sudo echo '{"experimental":true}' | sudo tee /etc/docker/daemon.json
+  - sudo service docker restart
 
 script:
   - make build
@@ -23,8 +38,12 @@ deploy:
     skip_cleanup: true
     script: >
       bash -c '
-      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG;
-      docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG;
+      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
+      docker push nfvpe/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
+      dokcer manifest create -a nfvpe/sriov-device-plugin:$TRAVIS_TAG nfvpe/sriov-device-plugin:"$TRAVIS_TAG-amd64" nfvpe/sriov-device-plugin:"$TRAVIS_TAG-ppc64le";
+      docker annotate nfvpe/sriov-device-plugin:$TRAVIS_TAG nfvpe/sriov-device-plugin:"$TRAVIS_TAG-amd64" --os linux --arch amd64
+     docker annotate nfvpe/sriov-device-plugin:$TRAVIS_TAG nfvpe/sriov-device-plugin:"$TRAVIS_TAG-ppc64le" --os linux --arch ppc64le
+      docker manifest push nfvpe/sriov-device-plugin:$TRAVIS_TAG -p;
       echo foo'
     on:
       tags: true
