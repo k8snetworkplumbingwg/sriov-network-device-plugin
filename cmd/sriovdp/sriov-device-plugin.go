@@ -48,9 +48,6 @@ const (
 	resourceName         = "netdev/sriov"
 )
 
-// default NIC Model to be discovered
-var defaultNicModel = []string{"0x8086-0x10fb", "0x8086-0x154c"}
-
 type arrayFlags []string
 
 func (a *arrayFlags) String() string {
@@ -195,6 +192,7 @@ func (sm *sriovManager) getPfWhiteList(pfList []string) []string {
 func (sm *sriovManager) discoverNetworks() error {
 
 	var healthValue string
+	pfWhiteList := []string{}
 	sm.rootDevices = []string{}
 
 	// Get a list of SRIOV capable NICs in the host
@@ -208,7 +206,13 @@ func (sm *sriovManager) discoverNetworks() error {
 		return nil
 	}
 
-	pfWhiteList := sm.getPfWhiteList(pfList)
+	if len(sm.cliParams.nicModel) < 1 {
+		glog.Infof("Discovering all capable and configured devices")
+		pfWhiteList = pfList
+	} else {
+		glog.Infof("Discovering all enabled NIC models")
+		pfWhiteList = sm.getPfWhiteList(pfList)
+	}
 
 	for _, dev := range pfWhiteList {
 		sriovcapablepath := filepath.Join(netDirectory, dev, "device", sriovCapable)
@@ -527,11 +531,9 @@ func main() {
 	defer glog.Flush()
 	glog.Infof("Starting SRIOV Network Device Plugin...")
 
-	if len(cp.nicModel) < 1 {
-		glog.Infof("Using default NIC Model")
-		cp.nicModel = defaultNicModel
+	if len(cp.nicModel) > 0 {
+		glog.Infof("NIC Models enabled: %v", cp.nicModel)
 	}
-	glog.Infof("NIC Model enabled: %v", cp.nicModel)
 
 	sm := newSriovManager(cp)
 	if sm == nil {
