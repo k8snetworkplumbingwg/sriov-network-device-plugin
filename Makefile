@@ -30,6 +30,12 @@ ifdef HTTPS_PROXY
 	DOCKERARGS += --build-arg https_proxy=$(HTTPS_PROXY)
 endif
 
+LDFLAGS=
+ifdef STATIC
+	export CGO_ENABLED=0
+	LDFLAGS=-a -ldflags '-extldflags \"-static\"'
+endif
+
 # Go tools
 GO      = go
 GODOC   = godoc
@@ -56,7 +62,7 @@ build: vendor $(BUILDDIR)/$(BINARY_NAME) ; $(info Building $(BINARY_NAME)...)
 	$(info Done!)
 
 $(BUILDDIR)/$(BINARY_NAME): $(BUILDDIR)
-	@cd $(BASE)/cmd/$(BINARY_NAME) && $(GO) build -o $(BUILDDIR)/$(BINARY_NAME) -v
+	@cd $(BASE)/cmd/$(BINARY_NAME) && $(GO) build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -v
 
 
 # Tools
