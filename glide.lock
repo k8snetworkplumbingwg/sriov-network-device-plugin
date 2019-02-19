@@ -1,5 +1,5 @@
-hash: d78bacad64e94a9650ac812143e5f09269b14cc6dba20499aaa9e6759c5062d2
-updated: 2019-02-12T10:17:09.130466837Z
+hash: 3b5e1c53aaa1747815c6d5e9b176aca0bac65fe65e60e0e857121ffbb3a4cc22
+updated: 2019-02-19T10:26:08.597474577Z
 imports:
 - name: github.com/containernetworking/cni
   version: a7885cb6f8ab03fba07852ded351e4f5e7a112bf
@@ -132,13 +132,6 @@ testImports:
   subpackages:
   - config
   - extensions/table
-  - ginkgo
-  - ginkgo/convert
-  - ginkgo/interrupthandler
-  - ginkgo/nodot
-  - ginkgo/testrunner
-  - ginkgo/testsuite
-  - ginkgo/watch
   - internal/codelocation
   - internal/containernode
   - internal/failer
@@ -159,8 +152,6 @@ testImports:
   version: d59fa0ac68bb5dd932ee8d24eed631cdd519efc3
   subpackages:
   - format
-  - gstruct
-  - gstruct/errors
   - internal/assertion
   - internal/asyncassertion
   - internal/oraclematcher

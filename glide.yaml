@@ -24,3 +24,8 @@ import:
   version: v0.6.0
   subpackages:
   - pkg/skel
+testImport:
+- package: github.com/onsi/ginkgo
+  subpackages:
+  - extensions/table
+- package: github.com/onsi/gomega
