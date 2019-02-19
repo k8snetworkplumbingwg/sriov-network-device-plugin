@@ -25,8 +25,11 @@ import (
 	"strings"
 )
 
+var (
+	sysBusPci = "/sys/bus/pci/devices"
+)
+
 const (
-	sysBusPci        = "/sys/bus/pci/devices"
 	totalVfFile      = "sriov_totalvfs"
 	configuredVfFile = "sriov_numvfs"
 )
