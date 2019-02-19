@@ -2,6 +2,7 @@ package ghttp_test
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -31,29 +32,56 @@ var _ = Describe("TestServer", func() {
 		s.Close()
 	})
 
+	Describe("Resetting the server", func() {
+		BeforeEach(func() {
+			s.RouteToHandler("GET", "/", func(w http.ResponseWriter, req *http.Request) {})
+			s.AppendHandlers(func(w http.ResponseWriter, req *http.Request) {})
+			http.Get(s.URL() + "/")
+
+			Ω(s.ReceivedRequests()).Should(HaveLen(1))
+		})
+
+		It("clears all handlers and call counts", func() {
+			s.Reset()
+			Ω(s.ReceivedRequests()).Should(HaveLen(0))
+			Ω(func() { s.GetHandler(0) }).Should(Panic())
+		})
+	})
+
 	Describe("closing client connections", func() {
 		It("closes", func() {
-			s.AppendHandlers(
+			s.RouteToHandler("GET", "/",
 				func(w http.ResponseWriter, req *http.Request) {
-					w.Write([]byte("hello"))
-				},
-				func(w http.ResponseWriter, req *http.Request) {
-					s.CloseClientConnections()
+					io.WriteString(w, req.RemoteAddr)
 				},
 			)
-
-			resp, err := http.Get(s.URL())
+			client := http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+			resp, err := client.Get(s.URL())
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(resp.StatusCode).Should(Equal(200))
 
 			body, err := ioutil.ReadAll(resp.Body)
 			resp.Body.Close()
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(body).Should(Equal([]byte("hello")))
 
-			resp, err = http.Get(s.URL())
-			Ω(err).Should(HaveOccurred())
-			Ω(resp).Should(BeNil())
+			s.CloseClientConnections()
+
+			resp, err = client.Get(s.URL())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(resp.StatusCode).Should(Equal(200))
+
+			body2, err := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(body2).ShouldNot(Equal(body))
+		})
+	})
+
+	Describe("closing server mulitple times", func() {
+		It("should not fail", func() {
+			s.Close()
+			Ω(s.Close).ShouldNot(Panic())
 		})
 	})
 
