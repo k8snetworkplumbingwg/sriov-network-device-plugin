@@ -41,7 +41,7 @@ var _ = Describe("Device Plugin APIs", func() {
 		ctx = context.Background()
 		empty = new(pluginapi.Empty)
 		sm = &sriovManager{
-			devices:     make(map[string]pluginapi.Device),
+			devices:     make(map[string]vfDevice),
 			socketFile:  fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 			termSignal:  make(chan bool, 1),
 			stopWatcher: make(chan bool),
@@ -49,7 +49,8 @@ var _ = Describe("Device Plugin APIs", func() {
 
 		devices = []string{"0000:00:01.0", "0000:00:01.1", "0000:00:02.0"}
 		for _, dev := range devices {
-			sm.devices[dev] = pluginapi.Device{ID: dev, Health: pluginapi.Healthy}
+			device := pluginapi.Device{ID: dev, Health: pluginapi.Healthy}
+			sm.devices[dev] = vfDevice{k8sDevice: device, isRdma: false}
 		}
 	})
 
@@ -113,7 +114,8 @@ var _ = Describe("Device Plugin APIs", func() {
 	It("Check Allocate with unhealthy device", func() {
 		request := new(pluginapi.AllocateRequest)
 		response := new(pluginapi.AllocateResponse)
-		sm.devices["0000:00:02.0"] = pluginapi.Device{ID: "0000:00:02.0", Health: "Unhealthy"}
+		device := pluginapi.Device{ID: "0000:00:02.0", Health: "Unhealthy"}
+		sm.devices["0000:00:02.0"] = vfDevice{k8sDevice: device, isRdma: false}
 		request = &pluginapi.AllocateRequest{
 			ContainerRequests: []*pluginapi.ContainerAllocateRequest{
 				{DevicesIDs: devices},

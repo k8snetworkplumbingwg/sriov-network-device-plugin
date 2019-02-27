@@ -49,7 +49,7 @@ spec:
           mountPath: /var/lib/kubelet/device-plugins/
           readOnly: false
         - name: net
-          mountPath: /sys/class/net
+          mountPath: /sys
           readOnly: true
       volumes:
         - name: devicesock
@@ -57,4 +57,4 @@ spec:
             path: /var/lib/kubelet/device-plugins/
         - name: net
           hostPath:
-            path: /sys/class/net
+            path: /sys

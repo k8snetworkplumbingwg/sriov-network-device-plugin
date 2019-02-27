@@ -38,8 +38,10 @@ import (
 
 const (
 	netDirectory    = "/sys/class/net/"
+	pciBusDirectory = "/sys/bus/pci/devices/"
 	sriovCapable    = "/sriov_totalvfs"
 	sriovConfigured = "/sriov_numvfs"
+	rdmaDevices     = "/dev/infiniband"
 
 	// Device plugin settings.
 	pluginMountPath      = "/var/lib/kubelet/device-plugins"
@@ -64,11 +66,16 @@ type cliParams struct {
 	nicModel arrayFlags
 }
 
+type vfDevice struct {
+	k8sDevice pluginapi.Device
+	isRdma    bool
+}
+
 // sriovManager manages sriov networking devices
 type sriovManager struct {
 	cliParams
 	socketFile  string
-	devices     map[string]pluginapi.Device // for Kubelet DP API
+	devices     map[string]vfDevice // for Kubelet DP API
 	rootDevices []string
 	grpcServer  *grpc.Server
 	termSignal  chan bool
@@ -79,7 +86,7 @@ func newSriovManager(cp *cliParams) *sriovManager {
 
 	return &sriovManager{
 		cliParams:   *cp,
-		devices:     make(map[string]pluginapi.Device),
+		devices:     make(map[string]vfDevice),
 		socketFile:  fmt.Sprintf("%s.sock", pluginEndpointPrefix),
 		termSignal:  make(chan bool, 1),
 		stopWatcher: make(chan bool),
@@ -188,6 +195,14 @@ func (sm *sriovManager) getPfWhiteList(pfList []string) []string {
 	return pfwl
 }
 
+func isRdmaDevice(pciAddr string) bool {
+	pciBusPath := filepath.Join(pciBusDirectory, pciAddr, "infiniband")
+	if _, err := os.Stat(pciBusPath); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 //Reads DeviceName and gets PCI Addresses of VFs configured
 func (sm *sriovManager) discoverNetworks() error {
 
@@ -254,7 +269,8 @@ func (sm *sriovManager) discoverNetworks() error {
 				}
 				if vfList, err := GetVFList(dev); err == nil {
 					for _, vfDev := range vfList {
-						sm.devices[vfDev] = pluginapi.Device{ID: vfDev, Health: healthValue}
+						device := pluginapi.Device{ID: vfDev, Health: healthValue}
+						sm.devices[vfDev] = vfDevice{k8sDevice: device, isRdma: isRdmaDevice(vfDev)}
 					}
 				}
 			}
@@ -292,8 +308,9 @@ func (sm *sriovManager) Probe() bool {
 		if vfs, err := GetVFList(pf); err == nil {
 			for _, vf := range vfs {
 				device := sm.devices[vf]
-				if device.Health != healthValue {
-					sm.devices[vf] = pluginapi.Device{ID: vf, Health: healthValue}
+				if device.k8sDevice.Health != healthValue {
+					device := pluginapi.Device{ID: vf, Health: healthValue}
+					sm.devices[vf] = vfDevice{k8sDevice: device, isRdma: isRdmaDevice(vf)}
 					changed = true
 				}
 			}
@@ -443,7 +460,8 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 	// Send initial list of devices
 	resp := new(pluginapi.ListAndWatchResponse)
 	for _, dev := range sm.devices {
-		resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
+		glog.Infof("SRIOV Network Device %+v\n", dev)
+		resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.k8sDevice.ID, Health: dev.k8sDevice.Health})
 	}
 	glog.Infof("ListAndWatch: send initial devices %v\n", resp)
 	if err := stream.Send(resp); err != nil {
@@ -458,7 +476,7 @@ func (sm *sriovManager) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.De
 		if sm.Probe() {
 			resp := new(pluginapi.ListAndWatchResponse)
 			for _, dev := range sm.devices {
-				resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.ID, Health: dev.Health})
+				resp.Devices = append(resp.Devices, &pluginapi.Device{ID: dev.k8sDevice.ID, Health: dev.k8sDevice.Health})
 			}
 			glog.Infof("ListAndWatch: send devices %v\n", resp)
 			if err := stream.Send(resp); err != nil {
@@ -494,6 +512,7 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 	resp := new(pluginapi.AllocateResponse)
 	pciAddrs := ""
 	for _, container := range rqt.ContainerRequests {
+		foundRdma := false
 		containerResp := new(pluginapi.ContainerAllocateResponse)
 		for _, id := range container.DevicesIDs {
 			glog.Infof("DeviceID in Allocate: %v", id)
@@ -502,11 +521,13 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 				glog.Errorf("Error. Invalid allocation request with non-existing device %s", id)
 				return nil, fmt.Errorf("Error. Invalid allocation request with non-existing device %s", id)
 			}
-			if dev.Health != pluginapi.Healthy {
+			if dev.k8sDevice.Health != pluginapi.Healthy {
 				glog.Errorf("Error. Invalid allocation request with unhealthy device %s", id)
 				return nil, fmt.Errorf("Error. Invalid allocation request with unhealthy device %s", id)
 			}
-
+			if dev.isRdma {
+				foundRdma = true
+			}
 			pciAddrs = pciAddrs + id + ","
 		}
 
@@ -515,6 +536,17 @@ func (sm *sriovManager) Allocate(ctx context.Context, rqt *pluginapi.AllocateReq
 		envmap["SRIOV-VF-PCI-ADDR"] = pciAddrs
 
 		containerResp.Envs = envmap
+
+		if foundRdma {
+			ds := make([]*pluginapi.DeviceSpec, 1)
+			ds[0] = &pluginapi.DeviceSpec{
+				HostPath:      rdmaDevices,
+				ContainerPath: rdmaDevices,
+				Permissions:   "rwm",
+			}
+			containerResp.Devices = ds
+		}
+
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
 	return resp, nil
