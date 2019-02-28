@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
   - name: sriov-device-plugin 
-    image: nfvpe/sriov-device-plugin:latest
+    image: nfvpe/sriov-device-plugin:release-v1
     imagePullPolicy: IfNotPresent
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "sriovdp --logtostderr 10;" ]
