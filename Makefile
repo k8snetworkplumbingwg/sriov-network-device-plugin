@@ -40,7 +40,7 @@ V = 0
 Q = $(if $(filter 1,$V),,@)
 
 .PHONY: all
-all: fmt lint build
+all: clean fmt lint build
 
 $(BASE): ; $(info  setting GOPATH...)
 	@mkdir -p $(dir $@)
