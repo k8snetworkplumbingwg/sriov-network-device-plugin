@@ -17,7 +17,6 @@ limitations under the License.
 package create
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 
@@ -26,20 +25,20 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest/fake"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	cmdtesting "k8s.io/kubernetes/pkg/kubectl/cmd/testing"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 
 func TestCreateRole(t *testing.T) {
 	roleName := "my-role"
 
-	tf := cmdtesting.NewTestFactory()
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
 	defer tf.Cleanup()
 
-	tf.Namespace = "test"
 	tf.Client = &fake.RESTClient{}
-	tf.ClientConfigVal = defaultClientConfig()
+	tf.ClientConfigVal = cmdtesting.DefaultClientConfig()
 
 	tests := map[string]struct {
 		verbs         string
@@ -129,8 +128,8 @@ func TestCreateRole(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			buf := bytes.NewBuffer([]byte{})
-			cmd := NewCmdCreateRole(tf, buf)
+			ioStreams, _, buf, _ := genericclioptions.NewTestIOStreams()
+			cmd := NewCmdCreateRole(tf, ioStreams)
 			cmd.Flags().Set("dry-run", "true")
 			cmd.Flags().Set("output", "yaml")
 			cmd.Flags().Set("verb", test.verbs)
@@ -140,7 +139,7 @@ func TestCreateRole(t *testing.T) {
 			}
 			cmd.Run(cmd, []string{roleName})
 			actual := &rbac.Role{}
-			if err := runtime.DecodeInto(legacyscheme.Codecs.UniversalDecoder(), buf.Bytes(), actual); err != nil {
+			if err := runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), buf.Bytes(), actual); err != nil {
 				t.Log(string(buf.Bytes()))
 				t.Fatal(err)
 			}
@@ -152,10 +151,8 @@ func TestCreateRole(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-	tf := cmdtesting.NewTestFactory()
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
 	defer tf.Cleanup()
-
-	tf.Namespace = "test"
 
 	tests := map[string]struct {
 		roleOptions *CreateRoleOptions
@@ -339,8 +336,12 @@ func TestValidate(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		test.roleOptions.Mapper, _ = tf.Object()
-		err := test.roleOptions.Validate()
+		var err error
+		test.roleOptions.Mapper, err = tf.ToRESTMapper()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = test.roleOptions.Validate()
 		if test.expectErr && err == nil {
 			t.Errorf("%s: expect error happens but validate passes.", name)
 		}
@@ -353,34 +354,34 @@ func TestValidate(t *testing.T) {
 func TestComplete(t *testing.T) {
 	roleName := "my-role"
 
-	tf := cmdtesting.NewTestFactory()
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
 	defer tf.Cleanup()
 
-	tf.Namespace = "test"
 	tf.Client = &fake.RESTClient{}
-	tf.ClientConfigVal = defaultClientConfig()
+	tf.ClientConfigVal = cmdtesting.DefaultClientConfig()
 
-	buf := bytes.NewBuffer([]byte{})
-	cmd := NewCmdCreateRole(tf, buf)
-	cmd.Flags().Set("resource", "pods,deployments.extensions")
+	defaultTestResources := "pods,deployments.extensions"
 
 	tests := map[string]struct {
 		params      []string
+		resources   string
 		roleOptions *CreateRoleOptions
 		expected    *CreateRoleOptions
 		expectErr   bool
 	}{
 		"test-missing-name": {
-			params: []string{},
+			params:    []string{},
+			resources: defaultTestResources,
 			roleOptions: &CreateRoleOptions{
-				PrintFlags: NewPrintFlags("created"),
+				PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 			},
 			expectErr: true,
 		},
 		"test-duplicate-verbs": {
-			params: []string{roleName},
+			params:    []string{roleName},
+			resources: defaultTestResources,
 			roleOptions: &CreateRoleOptions{
-				PrintFlags: NewPrintFlags("created"),
+				PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 				Name:       roleName,
 				Verbs: []string{
 					"get",
@@ -411,9 +412,10 @@ func TestComplete(t *testing.T) {
 			expectErr: false,
 		},
 		"test-verball": {
-			params: []string{roleName},
+			params:    []string{roleName},
+			resources: defaultTestResources,
 			roleOptions: &CreateRoleOptions{
-				PrintFlags: NewPrintFlags("created"),
+				PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 				Name:       roleName,
 				Verbs: []string{
 					"get",
@@ -439,10 +441,153 @@ func TestComplete(t *testing.T) {
 			},
 			expectErr: false,
 		},
-		"test-duplicate-resourcenames": {
-			params: []string{roleName},
+		"test-allresource": {
+			params:    []string{roleName},
+			resources: "*,pods",
 			roleOptions: &CreateRoleOptions{
-				PrintFlags:    NewPrintFlags("created"),
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource: "*",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-allresource-subresource": {
+			params:    []string{roleName},
+			resources: "*/scale,pods",
+			roleOptions: &CreateRoleOptions{
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource:    "*",
+						SubResource: "scale",
+					},
+					{
+						Resource: "pods",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-allresrouce-allgroup": {
+			params:    []string{roleName},
+			resources: "*.*,pods",
+			roleOptions: &CreateRoleOptions{
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource: "*",
+						Group:    "*",
+					},
+					{
+						Resource: "pods",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-allresource-allgroup-subresource": {
+			params:    []string{roleName},
+			resources: "*.*/scale,pods",
+			roleOptions: &CreateRoleOptions{
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource:    "*",
+						Group:       "*",
+						SubResource: "scale",
+					},
+					{
+						Resource: "pods",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-allresource-specificgroup": {
+			params:    []string{roleName},
+			resources: "*.extensions,pods",
+			roleOptions: &CreateRoleOptions{
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource: "*",
+						Group:    "extensions",
+					},
+					{
+						Resource: "pods",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-allresource-specificgroup-subresource": {
+			params:    []string{roleName},
+			resources: "*.extensions/scale,pods",
+			roleOptions: &CreateRoleOptions{
+				PrintFlags: genericclioptions.NewPrintFlags("created"),
+				Name:       roleName,
+				Verbs:      []string{"*"},
+			},
+			expected: &CreateRoleOptions{
+				Name:  roleName,
+				Verbs: []string{"*"},
+				Resources: []ResourceOptions{
+					{
+						Resource:    "*",
+						Group:       "extensions",
+						SubResource: "scale",
+					},
+					{
+						Resource: "pods",
+					},
+				},
+				ResourceNames: []string{},
+			},
+			expectErr: false,
+		},
+		"test-duplicate-resourcenames": {
+			params:    []string{roleName},
+			resources: defaultTestResources,
+			roleOptions: &CreateRoleOptions{
+				PrintFlags:    genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 				Name:          roleName,
 				Verbs:         []string{"*"},
 				ResourceNames: []string{"foo", "foo"},
@@ -465,9 +610,10 @@ func TestComplete(t *testing.T) {
 			expectErr: false,
 		},
 		"test-valid-complete-case": {
-			params: []string{roleName},
+			params:    []string{roleName},
+			resources: defaultTestResources,
 			roleOptions: &CreateRoleOptions{
-				PrintFlags:    NewPrintFlags("created"),
+				PrintFlags:    genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
 				Name:          roleName,
 				Verbs:         []string{"*"},
 				ResourceNames: []string{"foo"},
@@ -492,6 +638,9 @@ func TestComplete(t *testing.T) {
 	}
 
 	for name, test := range tests {
+		cmd := NewCmdCreateRole(tf, genericclioptions.NewTestIOStreamsDiscard())
+		cmd.Flags().Set("resource", test.resources)
+
 		err := test.roleOptions.Complete(tf, cmd, test.params)
 		if !test.expectErr && err != nil {
 			t.Errorf("%s: unexpected error: %v", name, err)

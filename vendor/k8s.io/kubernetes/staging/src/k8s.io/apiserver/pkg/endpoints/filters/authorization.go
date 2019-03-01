@@ -17,10 +17,11 @@ limitations under the License.
 package filters
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/audit"
@@ -41,17 +42,13 @@ const (
 )
 
 // WithAuthorizationCheck passes all authorized requests on to handler, and returns a forbidden error otherwise.
-func WithAuthorization(handler http.Handler, requestContextMapper request.RequestContextMapper, a authorizer.Authorizer, s runtime.NegotiatedSerializer) http.Handler {
+func WithAuthorization(handler http.Handler, a authorizer.Authorizer, s runtime.NegotiatedSerializer) http.Handler {
 	if a == nil {
-		glog.Warningf("Authorization is disabled")
+		klog.Warningf("Authorization is disabled")
 		return handler
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx, ok := requestContextMapper.Get(req)
-		if !ok {
-			responsewriters.InternalError(w, req, errors.New("no context found for request"))
-			return
-		}
+		ctx := req.Context()
 		ae := request.AuditEventFrom(ctx)
 
 		attributes, err := GetAuthorizerAttributes(ctx)
@@ -73,14 +70,14 @@ func WithAuthorization(handler http.Handler, requestContextMapper request.Reques
 			return
 		}
 
-		glog.V(4).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
+		klog.V(4).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
 		audit.LogAnnotation(ae, decisionAnnotationKey, decisionForbid)
 		audit.LogAnnotation(ae, reasonAnnotationKey, reason)
 		responsewriters.Forbidden(ctx, attributes, w, req, reason, s)
 	})
 }
 
-func GetAuthorizerAttributes(ctx request.Context) (authorizer.Attributes, error) {
+func GetAuthorizerAttributes(ctx context.Context) (authorizer.Attributes, error) {
 	attribs := authorizer.AttributesRecord{}
 
 	user, ok := request.UserFrom(ctx)
