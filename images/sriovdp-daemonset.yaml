@@ -21,6 +21,8 @@ spec:
         tier: node
         app: sriovdp
     spec:
+      hostNetwork: true
+      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: amd64
       tolerations:
@@ -30,28 +32,38 @@ spec:
       serviceAccountName: sriov-device-plugin
       containers:
       - name: kube-sriovdp
-        image: nfvpe/sriov-device-plugin:latest
+        image: nfvpe/sriov-device-plugin
+        imagePullPolicy: Never
         args:
+        - --log-dir=sriovdp
         - --log-level=10
         securityContext:
-          privileged: false
+          privileged: true
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins/
           readOnly: false
-        - name: sysfs
-          mountPath: /sys
+        - name: log
+          mountPath: /var/log
+        - name: hwdata
+          mountPath: /usr/share/hwdata
           readOnly: true
-        - name: config
-          mountPath: /etc/pcidp/config.json
-          readOnly: true
+        - name: config-volume
+          mountPath: /etc/pcidp
       volumes:
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/
-        - name: sysfs
+        - name: log
           hostPath:
-            path: /sys
-        - name: config
+            path: /var/log
+        - name: hwdata
           hostPath:
-            path: /etc/pcidp/config.json
+            path: /usr/share/hwdata
+        - name: config-volume
+          configMap:
+            name: sriovdp-config
+            items:
+            - key: config.json
+              path: config.json
+            

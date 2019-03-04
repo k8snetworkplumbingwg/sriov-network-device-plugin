@@ -34,9 +34,7 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 
 - Handles SRIOV capable/not-capable devices (NICs and Accelerators alike)
 - Supports devices with both Kernel and userspace(uio and VFIO) drivers
-- Supports PF bound to DPDK driver to meet certain use-cases
-- Allow grouping together multiple PCI devices as one aggregated resource pool
-- Can represent each PF as a separately addressable resource pool to K8s
+- Allows resource grouping using "Selector"
 - User configurable resourceName
 - Detects Kubelet restarts and auto-re-register
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
@@ -71,8 +69,8 @@ The following  NICs were tested with this implementation. However, other SRIOV c
 	- VF driver: v3.2.2-k
 > please refer to Intel download center for installing latest [Intel-Â® 82599ES 10 Gigabit Ethernet](https://ark.intel.com/products/41282/Intel-82599ES-10-Gigabit-Ethernet-Controller) drivers
 
-- Mellanox ConnectX®-4 Lx EN Adapter
-- Mellanox ConnectX®-5 Adapter
+- Mellanox ConnectXÂ®-4 Lx EN Adapter
+- Mellanox ConnectXÂ®-5 Adapter
 > Network card drivers are available as a part of the various linux distributions and upstream.
 To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.com/page/software_overview_eth).
 
@@ -145,19 +143,21 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 ```json
 {
-    "resourceList":
-    [
-        {
-            "resourceName": "sriov_net_A",
-            "rootDevices": ["02:00.0", "02:00.2"],
-            "sriovMode": true,
-            "deviceType": "netdevice"
+    "resourceList": [{
+            "resourceName": "intel_sriov_netdevice",
+            "selectors": {
+                "vendors": ["8086"],
+                "devices": ["154c", "10ed"],
+                "drivers": ["i40evf", "ixgbevf"]
+            }
         },
         {
-            "resourceName": "sriov_net_B",
-            "rootDevices": ["02:00.1", "02:00.3"],
-            "sriovMode": true,
-            "deviceType": "vfio"
+            "resourceName": "intel_sriov_dpdk",
+            "selectors": {
+                "vendors": ["8086"],
+                "devices": ["154c", "10ed"],
+                "drivers": ["vfio-pci"]
+            }
         }
     ]
 }
@@ -165,12 +165,16 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 `"resourceList"` should contain a list of config objects. Each config object may consist of following fields:
 
-|     Field      | Required |                    Description                    |                       Type - Accepted values                        |         Example          |
-|----------------|----------|---------------------------------------------------|---------------------------------------------------------------------|--------------------------|
-| "resourceName" | Yes      | Endpoint resource name                            | `string` - must be unique and should not contain special characters | `"sriov_net_A"`          |
-| "rootDevices"  | Yes      | List of PCI address for a resource pool           | A list of `string` - in sysfs pci address format                    | `["02:00.0", "02:00.2"]` |
-| "sriovMode"    | No       | Whether the root devices are SRIOV capable or not | `bool` - true OR false[default]                                     | `true`                   |
-| "deviceType"   | No       | Device driver type                                | `string` - "netdevice"\|"uio"\|"vfio"                               | `"netdevice"`            |
+
+
+|     Field      | Required |        Description        |                       Type - Accepted values                        |                          Example/Accepted values                          |
+|----------------|----------|---------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|
+| "resourceName" | Yes      | Endpoint resource name    | `string` - must be unique and should not contain special characters | "sriov_net_A"                                                             |
+| "selectors"    | No       | A map of device selectors | Each selector is a map of  `string` list.                           | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"] |
+
+
+
+[//]: # (The table above generated using: https://ozh.github.io/ascii-tables/)
 
 ### Command line arguments
 
@@ -207,9 +211,13 @@ This plugin does not bind or unbind any driver to any device whether it's PFs or
 For exmaple, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
 Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
-The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list of device PCI addresses, whether the resources are physical functions or virtual functions(`"sriovMode": true`) and its type.
+The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
 
-If `"sriovMode": true` is given for a resource config then plugin will look for virtual functions(VFs) for all the devices listed in `"rootDevices"` and export the discovered VFs as allocatable extended resource list. Otherwise, plugin will export the root devices themsleves as the allocatable extended resources.
+The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". Each "resource pool" then applies its selectors on this list and add devices that satisfies the selectors constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
+
+1. "vendors" - The vendor hex code of device
+2. "devices" - The device hex code of device
+2. "drivers" - The driver name the device is registered with
 
 ### Workflow
 
@@ -242,6 +250,21 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 We assume that you have working K8s cluster configured with Multus meta plugin for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
 The [images](./images) directory contains example Docker file, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) building docker the image.
+
+````
+# Create ConfigMap
+$ kubectl create -f images/configMap.yaml
+configmap/sriovdp-config created
+
+# Create sriov-device-plugin-daemonset
+$ kubectl create -f images/sriovdp-daemonset.yaml
+daemonset.extensions/kube-sriov-device-plugin-amd64 created
+
+$kubectl get pods --all-namespaces
+NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
+kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0          4s
+
+````
 
 There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployments.
 

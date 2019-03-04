@@ -9,6 +9,8 @@ spec:
     imagePullPolicy: IfNotPresent
     command: [ "/bin/sh", "-c", "--" ]
     args: [ "sriovdp --logtostderr 10;" ]
+    securityContext:
+      privileged: true
     volumeMounts:
     - mountPath: /var/lib/kubelet/device-plugins/ 
       name: devicesock 
@@ -19,10 +21,14 @@ spec:
     - mountPath: /etc/pcidp/
       name: config
       readOnly: true
+    - name: hwdata
+      mountPath: /usr/share/hwdata
+      readOnly: true
+    - name: config-volume
+      mountPath: /etc/pcidp
   volumes:
   - name: devicesock 
     hostPath:
-     # directory location on host
      path: /var/lib/kubelet/device-plugins/
   - name: net
     hostPath:
@@ -30,5 +36,14 @@ spec:
   - name: config
     hostPath:
       path: /etc/pcidp/
+  - name: hwdata
+    hostPath:
+      path: /usr/share/hwdata
+  - name: config-volume
+    configMap:
+      name: sriovdp-config
+      items:
+      - key: config.json
+        path: config.json
   hostNetwork: true
   hostPID: true
