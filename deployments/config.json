@@ -1,17 +1,19 @@
 {
-    "resourceList":
-    [
-        {
-            "resourceName": "sriov_net_A",
-            "rootDevices": ["02:00.0", "02:00.2"],
-            "sriovMode": true,
-            "deviceType": "netdevice"
+    "resourceList": [{
+            "resourceName": "intel_sriov_netdevice",
+            "selectors": {
+                "vendors": ["8086"],
+                "devices": ["154c", "10ed"],
+                "drivers": ["i40evf", "ixgbevf"]
+            }
         },
         {
-            "resourceName": "sriov_net_B",
-            "rootDevices": ["02:00.1", "02:00.3"],
-            "sriovMode": true,
-            "deviceType": "netdevice"
+            "resourceName": "intel_sriov_dpdk",
+            "selectors": {
+                "vendors": ["8086"],
+                "devices": ["154c", "10ed"],
+                "drivers": ["vfio-pci"]
+            }
         }
     ]
 }
