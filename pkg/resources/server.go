@@ -32,6 +32,7 @@ import (
 type resourceServer struct {
 	resourcePool       types.ResourcePool
 	endPoint           string // Socket file
+	sockDir            string // Sockets directory
 	resourceNamePrefix string
 	grpcServer         *grpc.Server
 	termSignal         chan bool
@@ -45,6 +46,7 @@ func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.Resou
 	return &resourceServer{
 		resourcePool:       rp,
 		endPoint:           sockName,
+		sockDir:            types.SockDir,
 		resourceNamePrefix: prefix,
 		grpcServer:         grpc.NewServer(),
 		termSignal:         make(chan bool, 1),
@@ -55,7 +57,7 @@ func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.Resou
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := filepath.Join(types.SockDir, types.KubeEndPoint)
+	kubeletEndpoint := filepath.Join(rs.sockDir, types.KubeEndPoint)
 	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -159,7 +161,7 @@ func (rs *resourceServer) Start() error {
 	resourceName := rs.resourcePool.GetResourceName()
 	_ = rs.cleanUp() // try tp clean up and continue
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
-	sockPath := filepath.Join(types.SockDir, rs.endPoint)
+	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
 	lis, err := net.Listen("unix", sockPath)
 	if err != nil {
 		glog.Errorf("error starting %s device plugin endpoint: %v", resourceName, err)
@@ -231,7 +233,7 @@ func (rs *resourceServer) Stop() error {
 
 func (rs *resourceServer) Watch() {
 	// Watch for Kubelet socket file; if not present restart server
-	sockPath := filepath.Join(types.SockDir, rs.endPoint)
+	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
 	for {
 		select {
 		case stop := <-rs.stopWatcher:
@@ -257,7 +259,7 @@ func (rs *resourceServer) Watch() {
 }
 
 func (rs *resourceServer) cleanUp() error {
-	sockPath := filepath.Join(types.SockDir, rs.endPoint)
+	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
 	if err := os.Remove(sockPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
