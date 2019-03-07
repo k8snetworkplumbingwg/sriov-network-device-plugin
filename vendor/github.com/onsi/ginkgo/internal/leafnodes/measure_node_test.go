@@ -5,10 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/internal/leafnodes"
 	. "github.com/onsi/gomega"
 
+	"time"
+
 	"github.com/onsi/ginkgo/internal/codelocation"
 	Failer "github.com/onsi/ginkgo/internal/failer"
 	"github.com/onsi/ginkgo/types"
-	"time"
 )
 
 var _ = Describe("Measure Nodes", func() {
@@ -70,17 +71,62 @@ var _ = Describe("Measure Nodes", func() {
 			})
 		})
 
+		Describe("Value with precision", func() {
+			BeforeEach(func() {
+				measure = NewMeasureNode("the measurement", func(b Benchmarker) {
+					b.RecordValueWithPrecision("foo", 7, "ms", 7, "info!")
+					b.RecordValueWithPrecision("foo", 2, "ms", 6)
+					b.RecordValueWithPrecision("foo", 3, "ms", 5)
+					b.RecordValueWithPrecision("bar", 0.3, "ns", 4)
+					b.RecordValueWithPrecision("bar", 0.1, "ns", 3)
+					b.RecordValueWithPrecision("bar", 0.5, "ns", 2)
+					b.RecordValueWithPrecision("bar", 0.7, "ns", 1)
+				}, types.FlagTypeFocused, codelocation.New(0), 1, Failer.New(), 3)
+				Ω(measure.Run()).Should(Equal(types.SpecStatePassed))
+			})
+
+			It("records passed in values and reports on them", func() {
+				report := measure.MeasurementsReport()
+				Ω(report).Should(HaveLen(2))
+				Ω(report["foo"].Name).Should(Equal("foo"))
+				Ω(report["foo"].Info).Should(Equal("info!"))
+				Ω(report["foo"].Order).Should(Equal(0))
+				Ω(report["foo"].SmallestLabel).Should(Equal("Smallest"))
+				Ω(report["foo"].LargestLabel).Should(Equal(" Largest"))
+				Ω(report["foo"].AverageLabel).Should(Equal(" Average"))
+				Ω(report["foo"].Units).Should(Equal("ms"))
+				Ω(report["foo"].Results).Should(Equal([]float64{7, 2, 3}))
+				Ω(report["foo"].Smallest).Should(BeNumerically("==", 2))
+				Ω(report["foo"].Largest).Should(BeNumerically("==", 7))
+				Ω(report["foo"].Average).Should(BeNumerically("==", 4))
+				Ω(report["foo"].StdDeviation).Should(BeNumerically("~", 2.16, 0.01))
+
+				Ω(report["bar"].Name).Should(Equal("bar"))
+				Ω(report["bar"].Info).Should(BeNil())
+				Ω(report["bar"].SmallestLabel).Should(Equal("Smallest"))
+				Ω(report["bar"].Order).Should(Equal(1))
+				Ω(report["bar"].LargestLabel).Should(Equal(" Largest"))
+				Ω(report["bar"].AverageLabel).Should(Equal(" Average"))
+				Ω(report["bar"].Units).Should(Equal("ns"))
+				Ω(report["bar"].Results).Should(Equal([]float64{0.3, 0.1, 0.5, 0.7}))
+				Ω(report["bar"].Smallest).Should(BeNumerically("==", 0.1))
+				Ω(report["bar"].Largest).Should(BeNumerically("==", 0.7))
+				Ω(report["bar"].Average).Should(BeNumerically("==", 0.4))
+				Ω(report["bar"].StdDeviation).Should(BeNumerically("~", 0.22, 0.01))
+			})
+		})
+
 		Describe("Time", func() {
 			BeforeEach(func() {
 				measure = NewMeasureNode("the measurement", func(b Benchmarker) {
 					b.Time("foo", func() {
-						time.Sleep(100 * time.Millisecond)
+						time.Sleep(200 * time.Millisecond)
 					}, "info!")
 					b.Time("foo", func() {
-						time.Sleep(200 * time.Millisecond)
+						time.Sleep(300 * time.Millisecond)
 					})
 					b.Time("foo", func() {
-						time.Sleep(170 * time.Millisecond)
+						time.Sleep(250 * time.Millisecond)
 					})
 				}, types.FlagTypeFocused, codelocation.New(0), 1, Failer.New(), 3)
 				Ω(measure.Run()).Should(Equal(types.SpecStatePassed))
@@ -96,13 +142,13 @@ var _ = Describe("Measure Nodes", func() {
 				Ω(report["foo"].AverageLabel).Should(Equal("Average Time"))
 				Ω(report["foo"].Units).Should(Equal("s"))
 				Ω(report["foo"].Results).Should(HaveLen(3))
-				Ω(report["foo"].Results[0]).Should(BeNumerically("~", 0.1, 0.01))
-				Ω(report["foo"].Results[1]).Should(BeNumerically("~", 0.2, 0.01))
-				Ω(report["foo"].Results[2]).Should(BeNumerically("~", 0.17, 0.01))
-				Ω(report["foo"].Smallest).Should(BeNumerically("~", 0.1, 0.01))
-				Ω(report["foo"].Largest).Should(BeNumerically("~", 0.2, 0.01))
-				Ω(report["foo"].Average).Should(BeNumerically("~", 0.16, 0.01))
-				Ω(report["foo"].StdDeviation).Should(BeNumerically("~", 0.04, 0.01))
+				Ω(report["foo"].Results[0]).Should(BeNumerically("~", 0.2, 0.06))
+				Ω(report["foo"].Results[1]).Should(BeNumerically("~", 0.3, 0.06))
+				Ω(report["foo"].Results[2]).Should(BeNumerically("~", 0.25, 0.06))
+				Ω(report["foo"].Smallest).Should(BeNumerically("~", 0.2, 0.06))
+				Ω(report["foo"].Largest).Should(BeNumerically("~", 0.3, 0.06))
+				Ω(report["foo"].Average).Should(BeNumerically("~", 0.25, 0.06))
+				Ω(report["foo"].StdDeviation).Should(BeNumerically("~", 0.07, 0.04))
 			})
 		})
 	})
