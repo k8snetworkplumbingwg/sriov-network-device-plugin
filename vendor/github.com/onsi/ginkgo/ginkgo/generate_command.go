@@ -10,10 +10,11 @@ import (
 )
 
 func BuildGenerateCommand() *Command {
-	var agouti, noDot bool
+	var agouti, noDot, internal bool
 	flagSet := flag.NewFlagSet("generate", flag.ExitOnError)
 	flagSet.BoolVar(&agouti, "agouti", false, "If set, generate will generate a test file for writing Agouti tests")
 	flagSet.BoolVar(&noDot, "nodot", false, "If set, generate will generate a test file that does not . import ginkgo and gomega")
+	flagSet.BoolVar(&internal, "internal", false, "If set, generate will generate a test file that uses the regular package name")
 
 	return &Command{
 		Name:         "generate",
@@ -25,18 +26,18 @@ func BuildGenerateCommand() *Command {
 			"Accepts the following flags:",
 		},
 		Command: func(args []string, additionalArgs []string) {
-			generateSpec(args, agouti, noDot)
+			generateSpec(args, agouti, noDot, internal)
 		},
 	}
 }
 
-var specText = `package {{.Package}}_test
+var specText = `package {{.Package}}
 
 import (
-	. "{{.PackageImportPath}}"
-
 	{{if .IncludeImports}}. "github.com/onsi/ginkgo"{{end}}
 	{{if .IncludeImports}}. "github.com/onsi/gomega"{{end}}
+
+	{{if .DotImportPackage}}. "{{.PackageImportPath}}"{{end}}
 )
 
 var _ = Describe("{{.Subject}}", func() {
@@ -44,15 +45,15 @@ var _ = Describe("{{.Subject}}", func() {
 })
 `
 
-var agoutiSpecText = `package {{.Package}}_test
+var agoutiSpecText = `package {{.Package}}
 
 import (
-	. "{{.PackageImportPath}}"
-
 	{{if .IncludeImports}}. "github.com/onsi/ginkgo"{{end}}
 	{{if .IncludeImports}}. "github.com/onsi/gomega"{{end}}
-	. "github.com/sclevine/agouti/matchers"
 	"github.com/sclevine/agouti"
+	. "github.com/sclevine/agouti/matchers"
+
+	{{if .DotImportPackage}}. "{{.PackageImportPath}}"{{end}}
 )
 
 var _ = Describe("{{.Subject}}", func() {
@@ -75,11 +76,12 @@ type specData struct {
 	Subject           string
 	PackageImportPath string
 	IncludeImports    bool
+	DotImportPackage  bool
 }
 
-func generateSpec(args []string, agouti, noDot bool) {
+func generateSpec(args []string, agouti, noDot, internal bool) {
 	if len(args) == 0 {
-		err := generateSpecForSubject("", agouti, noDot)
+		err := generateSpecForSubject("", agouti, noDot, internal)
 		if err != nil {
 			fmt.Println(err.Error())
 			fmt.Println("")
@@ -91,7 +93,7 @@ func generateSpec(args []string, agouti, noDot bool) {
 
 	var failed bool
 	for _, arg := range args {
-		err := generateSpecForSubject(arg, agouti, noDot)
+		err := generateSpecForSubject(arg, agouti, noDot, internal)
 		if err != nil {
 			failed = true
 			fmt.Println(err.Error())
@@ -103,20 +105,19 @@ func generateSpec(args []string, agouti, noDot bool) {
 	}
 }
 
-func generateSpecForSubject(subject string, agouti, noDot bool) error {
+func generateSpecForSubject(subject string, agouti, noDot, internal bool) error {
 	packageName, specFilePrefix, formattedName := getPackageAndFormattedName()
 	if subject != "" {
-		subject = strings.Split(subject, ".go")[0]
-		subject = strings.Split(subject, "_test")[0]
-		specFilePrefix = subject
-		formattedName = prettifyPackageName(subject)
+		specFilePrefix = formatSubject(subject)
+		formattedName = prettifyPackageName(specFilePrefix)
 	}
 
 	data := specData{
-		Package:           packageName,
+		Package:           determinePackageName(packageName, internal),
 		Subject:           formattedName,
 		PackageImportPath: getPackageImportPath(),
 		IncludeImports:    !noDot,
+		DotImportPackage:  !internal,
 	}
 
 	targetFile := fmt.Sprintf("%s_test.go", specFilePrefix)
@@ -147,6 +148,14 @@ func generateSpecForSubject(subject string, agouti, noDot bool) error {
 	specTemplate.Execute(f, data)
 	goFmt(targetFile)
 	return nil
+}
+
+func formatSubject(name string) string {
+	name = strings.Replace(name, "-", "_", -1)
+	name = strings.Replace(name, " ", "_", -1)
+	name = strings.Split(name, ".go")[0]
+	name = strings.Split(name, "_test")[0]
+	return name
 }
 
 func getPackageImportPath() string {

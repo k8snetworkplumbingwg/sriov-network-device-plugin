@@ -1,3 +1,5 @@
+// +build go1.6
+
 package testsuite_test
 
 import (
@@ -23,6 +25,16 @@ var _ = Describe("TestSuite", func() {
 		ioutil.WriteFile(path, []byte(content), mode)
 	}
 
+	var origVendor string
+
+	BeforeSuite(func() {
+		origVendor = os.Getenv("GO15VENDOREXPERIMENT")
+	})
+
+	AfterSuite(func() {
+		os.Setenv("GO15VENDOREXPERIMENT", origVendor)
+	})
+
 	BeforeEach(func() {
 		var err error
 		tmpDir, err = ioutil.TempDir("/tmp", "ginkgo")
@@ -31,7 +43,6 @@ var _ = Describe("TestSuite", func() {
 		cwd, err := os.Getwd()
 		Ω(err).ShouldNot(HaveOccurred())
 		relTmpDir, err = filepath.Rel(cwd, tmpDir)
-		relTmpDir = "./" + relTmpDir
 		Ω(err).ShouldNot(HaveOccurred())
 
 		//go files in the root directory (no tests)
@@ -39,6 +50,10 @@ var _ = Describe("TestSuite", func() {
 
 		//non-go files in a nested directory
 		writeFile("/redherring", "big_test.jpg", "package ginkgo", 0666)
+
+		//ginkgo tests in ignored go files
+		writeFile("/ignored", ".ignore_dot_test.go", `import "github.com/onsi/ginkgo"`, 0666)
+		writeFile("/ignored", "_ignore_underscore_test.go", `import "github.com/onsi/ginkgo"`, 0666)
 
 		//non-ginkgo tests in a nested directory
 		writeFile("/professorplum", "professorplum_test.go", `import "testing"`, 0666)
@@ -48,6 +63,9 @@ var _ = Describe("TestSuite", func() {
 
 		//ginkgo tests in a deeply nested directory
 		writeFile("/colonelmustard/library", "library_test.go", `import "github.com/onsi/ginkgo"`, 0666)
+
+		//ginkgo tests deeply nested in a vendored dependency
+		writeFile("/vendor/mrspeacock/lounge", "lounge_test.go", `import "github.com/onsi/ginkgo"`, 0666)
 
 		//a precompiled ginkgo test
 		writeFile("/precompiled-dir", "precompiled.test", `fake-binary-file`, 0777)
@@ -126,6 +144,13 @@ var _ = Describe("TestSuite", func() {
 			})
 		})
 
+		Context("when there are ginkgo tests that are ignored by go in the specified directory ", func() {
+			It("should come up empty", func() {
+				suites := SuitesInDir(filepath.Join(tmpDir, "ignored"), false)
+				Ω(suites).Should(BeEmpty())
+			})
+		})
+
 		Context("when there are non-ginkgo tests in the specified directory", func() {
 			It("should return an appropriately configured suite", func() {
 				suites := SuitesInDir(filepath.Join(tmpDir, "professorplum"), false)
@@ -135,6 +160,26 @@ var _ = Describe("TestSuite", func() {
 				Ω(suites[0].PackageName).Should(Equal("professorplum"))
 				Ω(suites[0].IsGinkgo).Should(BeFalse())
 				Ω(suites[0].Precompiled).Should(BeFalse())
+			})
+		})
+
+		Context("given GO15VENDOREXPERIMENT disabled", func() {
+			BeforeEach(func() {
+				os.Setenv("GO15VENDOREXPERIMENT", "0")
+			})
+
+			AfterEach(func() {
+				os.Setenv("GO15VENDOREXPERIMENT", "")
+			})
+
+			It("should not skip vendor dirs", func() {
+				suites := SuitesInDir(filepath.Join(tmpDir+"/vendor"), true)
+				Ω(suites).Should(HaveLen(1))
+			})
+
+			It("should recurse into vendor dirs", func() {
+				suites := SuitesInDir(filepath.Join(tmpDir), true)
+				Ω(suites).Should(HaveLen(4))
 			})
 		})
 

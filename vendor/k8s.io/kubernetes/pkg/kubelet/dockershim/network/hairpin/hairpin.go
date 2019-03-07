@@ -25,7 +25,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/utils/exec"
 )
 
@@ -39,29 +39,6 @@ const (
 var (
 	ethtoolOutputRegex = regexp.MustCompile("peer_ifindex: (\\d+)")
 )
-
-func SetUpContainerPid(containerPid int, containerInterfaceName string) error {
-	pidStr := fmt.Sprintf("%d", containerPid)
-	nsenterArgs := []string{"-t", pidStr, "-n"}
-	return setUpContainerInternal(containerInterfaceName, pidStr, nsenterArgs)
-}
-
-func SetUpContainerPath(netnsPath string, containerInterfaceName string) error {
-	if netnsPath[0] != '/' {
-		return fmt.Errorf("netnsPath path '%s' was invalid", netnsPath)
-	}
-	nsenterArgs := []string{"--net=" + netnsPath}
-	return setUpContainerInternal(containerInterfaceName, netnsPath, nsenterArgs)
-}
-
-func setUpContainerInternal(containerInterfaceName, containerDesc string, nsenterArgs []string) error {
-	e := exec.New()
-	hostIfName, err := findPairInterfaceOfContainerInterface(e, containerInterfaceName, containerDesc, nsenterArgs)
-	if err != nil {
-		return err
-	}
-	return setUpInterface(hostIfName)
-}
 
 func findPairInterfaceOfContainerInterface(e exec.Interface, containerInterfaceName, containerDesc string, nsenterArgs []string) (string, error) {
 	nsenterPath, err := e.LookPath("nsenter")
@@ -95,7 +72,7 @@ func findPairInterfaceOfContainerInterface(e exec.Interface, containerInterfaceN
 }
 
 func setUpInterface(ifName string) error {
-	glog.V(3).Infof("Enabling hairpin on interface %s", ifName)
+	klog.V(3).Infof("Enabling hairpin on interface %s", ifName)
 	ifPath := path.Join(sysfsNetPath, ifName)
 	if _, err := os.Stat(ifPath); err != nil {
 		return err

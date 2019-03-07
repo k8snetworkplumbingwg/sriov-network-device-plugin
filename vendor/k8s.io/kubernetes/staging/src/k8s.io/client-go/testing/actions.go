@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func NewRootGetAction(resource schema.GroupVersionResource, name string) GetActionImpl {
@@ -58,6 +59,16 @@ func NewGetSubresourceAction(resource schema.GroupVersionResource, namespace, su
 	return action
 }
 
+func NewRootGetSubresourceAction(resource schema.GroupVersionResource, subresource, name string) GetActionImpl {
+	action := GetActionImpl{}
+	action.Verb = "get"
+	action.Resource = resource
+	action.Subresource = subresource
+	action.Name = name
+
+	return action
+}
+
 func NewRootListAction(resource schema.GroupVersionResource, kind schema.GroupVersionKind, opts interface{}) ListActionImpl {
 	action := ListActionImpl{}
 	action.Verb = "list"
@@ -75,20 +86,6 @@ func NewListAction(resource schema.GroupVersionResource, kind schema.GroupVersio
 	action.Resource = resource
 	action.Kind = kind
 	action.Namespace = namespace
-	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
-	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
-
-	return action
-}
-
-func NewListSubresourceAction(resource schema.GroupVersionResource, name, subresource string, kind schema.GroupVersionKind, namespace string, opts interface{}) ListActionImpl {
-	action := ListActionImpl{}
-	action.Verb = "list"
-	action.Resource = resource
-	action.Subresource = subresource
-	action.Kind = kind
-	action.Namespace = namespace
-	action.Name = name
 	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
 	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
 
@@ -114,12 +111,23 @@ func NewCreateAction(resource schema.GroupVersionResource, namespace string, obj
 	return action
 }
 
-func NewCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource string, namespace string, object runtime.Object) CreateActionImpl {
+func NewRootCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource string, object runtime.Object) CreateActionImpl {
 	action := CreateActionImpl{}
 	action.Verb = "create"
 	action.Resource = resource
 	action.Subresource = subresource
+	action.Name = name
+	action.Object = object
+
+	return action
+}
+
+func NewCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource, namespace string, object runtime.Object) CreateActionImpl {
+	action := CreateActionImpl{}
+	action.Verb = "create"
+	action.Resource = resource
 	action.Namespace = namespace
+	action.Subresource = subresource
 	action.Name = name
 	action.Object = object
 
@@ -145,45 +153,49 @@ func NewUpdateAction(resource schema.GroupVersionResource, namespace string, obj
 	return action
 }
 
-func NewRootPatchAction(resource schema.GroupVersionResource, name string, patch []byte) PatchActionImpl {
+func NewRootPatchAction(resource schema.GroupVersionResource, name string, pt types.PatchType, patch []byte) PatchActionImpl {
 	action := PatchActionImpl{}
 	action.Verb = "patch"
 	action.Resource = resource
 	action.Name = name
+	action.PatchType = pt
 	action.Patch = patch
 
 	return action
 }
 
-func NewPatchAction(resource schema.GroupVersionResource, namespace string, name string, patch []byte) PatchActionImpl {
+func NewPatchAction(resource schema.GroupVersionResource, namespace string, name string, pt types.PatchType, patch []byte) PatchActionImpl {
 	action := PatchActionImpl{}
 	action.Verb = "patch"
 	action.Resource = resource
 	action.Namespace = namespace
 	action.Name = name
+	action.PatchType = pt
 	action.Patch = patch
 
 	return action
 }
 
-func NewRootPatchSubresourceAction(resource schema.GroupVersionResource, name string, patch []byte, subresources ...string) PatchActionImpl {
+func NewRootPatchSubresourceAction(resource schema.GroupVersionResource, name string, pt types.PatchType, patch []byte, subresources ...string) PatchActionImpl {
 	action := PatchActionImpl{}
 	action.Verb = "patch"
 	action.Resource = resource
 	action.Subresource = path.Join(subresources...)
 	action.Name = name
+	action.PatchType = pt
 	action.Patch = patch
 
 	return action
 }
 
-func NewPatchSubresourceAction(resource schema.GroupVersionResource, namespace, name string, patch []byte, subresources ...string) PatchActionImpl {
+func NewPatchSubresourceAction(resource schema.GroupVersionResource, namespace, name string, pt types.PatchType, patch []byte, subresources ...string) PatchActionImpl {
 	action := PatchActionImpl{}
 	action.Verb = "patch"
 	action.Resource = resource
 	action.Subresource = path.Join(subresources...)
 	action.Namespace = namespace
 	action.Name = name
+	action.PatchType = pt
 	action.Patch = patch
 
 	return action
@@ -218,10 +230,31 @@ func NewRootDeleteAction(resource schema.GroupVersionResource, name string) Dele
 	return action
 }
 
+func NewRootDeleteSubresourceAction(resource schema.GroupVersionResource, subresource string, name string) DeleteActionImpl {
+	action := DeleteActionImpl{}
+	action.Verb = "delete"
+	action.Resource = resource
+	action.Subresource = subresource
+	action.Name = name
+
+	return action
+}
+
 func NewDeleteAction(resource schema.GroupVersionResource, namespace, name string) DeleteActionImpl {
 	action := DeleteActionImpl{}
 	action.Verb = "delete"
 	action.Resource = resource
+	action.Namespace = namespace
+	action.Name = name
+
+	return action
+}
+
+func NewDeleteSubresourceAction(resource schema.GroupVersionResource, subresource, namespace, name string) DeleteActionImpl {
+	action := DeleteActionImpl{}
+	action.Verb = "delete"
+	action.Resource = resource
+	action.Subresource = subresource
 	action.Namespace = namespace
 	action.Name = name
 
@@ -368,6 +401,7 @@ type DeleteCollectionAction interface {
 type PatchAction interface {
 	Action
 	GetName() string
+	GetPatchType() types.PatchType
 	GetPatch() []byte
 }
 
@@ -509,8 +543,9 @@ func (a UpdateActionImpl) DeepCopy() Action {
 
 type PatchActionImpl struct {
 	ActionImpl
-	Name  string
-	Patch []byte
+	Name      string
+	PatchType types.PatchType
+	Patch     []byte
 }
 
 func (a PatchActionImpl) GetName() string {
@@ -521,12 +556,17 @@ func (a PatchActionImpl) GetPatch() []byte {
 	return a.Patch
 }
 
+func (a PatchActionImpl) GetPatchType() types.PatchType {
+	return a.PatchType
+}
+
 func (a PatchActionImpl) DeepCopy() Action {
 	patch := make([]byte, len(a.Patch))
 	copy(patch, a.Patch)
 	return PatchActionImpl{
 		ActionImpl: a.ActionImpl.DeepCopy().(ActionImpl),
 		Name:       a.Name,
+		PatchType:  a.PatchType,
 		Patch:      patch,
 	}
 }

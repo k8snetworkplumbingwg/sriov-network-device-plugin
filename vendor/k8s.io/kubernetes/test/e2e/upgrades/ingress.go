@@ -24,12 +24,15 @@ import (
 	"reflect"
 
 	"github.com/davecgh/go-spew/spew"
-	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo"
 
 	compute "google.golang.org/api/compute/v1"
 	extensions "k8s.io/api/extensions/v1beta1"
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e/framework/ingress"
+	"k8s.io/kubernetes/test/e2e/framework/providers/gce"
 )
 
 // Dependent on "static-ip-2" manifests
@@ -38,13 +41,14 @@ const host = "ingress.test.com"
 
 // IngressUpgradeTest adapts the Ingress e2e for upgrade testing
 type IngressUpgradeTest struct {
-	gceController *framework.GCEIngressController
+	gceController *gce.GCEIngressController
 	// holds GCP resources pre-upgrade
 	resourceStore *GCPResourceStore
-	jig           *framework.IngressTestJig
+	jig           *ingress.TestJig
 	httpClient    *http.Client
 	ip            string
 	ipName        string
+	skipSSLCheck  bool
 }
 
 // GCPResourceStore keeps track of the GCP resources spun up by an ingress.
@@ -57,10 +61,11 @@ type GCPResourceStore struct {
 	TpsList []*compute.TargetHttpsProxy
 	SslList []*compute.SslCertificate
 	BeList  []*compute.BackendService
-	Ip      *compute.Address
+	IP      *compute.Address
 	IgList  []*compute.InstanceGroup
 }
 
+// Name returns the tracking name of the test.
 func (IngressUpgradeTest) Name() string { return "ingress-upgrade" }
 
 // Setup creates a GLBC, allocates an ip, and an ingress resource,
@@ -71,12 +76,12 @@ func (t *IngressUpgradeTest) Setup(f *framework.Framework) {
 	framework.SkipUnlessProviderIs("gce", "gke")
 
 	// jig handles all Kubernetes testing logic
-	jig := framework.NewIngressTestJig(f.ClientSet)
+	jig := ingress.NewIngressTestJig(f.ClientSet)
 
 	ns := f.Namespace
 
 	// gceController handles all cloud testing logic
-	gceController := &framework.GCEIngressController{
+	gceController := &gce.GCEIngressController{
 		Ns:     ns.Name,
 		Client: jig.Client,
 		Cloud:  framework.TestContext.CloudConfig,
@@ -85,33 +90,33 @@ func (t *IngressUpgradeTest) Setup(f *framework.Framework) {
 
 	t.gceController = gceController
 	t.jig = jig
-	t.httpClient = framework.BuildInsecureClient(framework.IngressReqTimeout)
+	t.httpClient = ingress.BuildInsecureClient(ingress.IngressReqTimeout)
 
 	// Allocate a static-ip for the Ingress, this IP is cleaned up via CleanupGCEIngressController
 	t.ipName = fmt.Sprintf("%s-static-ip", ns.Name)
 	t.ip = t.gceController.CreateStaticIP(t.ipName)
 
 	// Create a working basic Ingress
-	By(fmt.Sprintf("allocated static ip %v: %v through the GCE cloud provider", t.ipName, t.ip))
-	jig.CreateIngress(filepath.Join(framework.IngressManifestPath, "static-ip-2"), ns.Name, map[string]string{
-		framework.IngressStaticIPKey:  t.ipName,
-		framework.IngressAllowHTTPKey: "false",
+	ginkgo.By(fmt.Sprintf("allocated static ip %v: %v through the GCE cloud provider", t.ipName, t.ip))
+	jig.CreateIngress(filepath.Join(ingress.IngressManifestPath, "static-ip-2"), ns.Name, map[string]string{
+		ingress.IngressStaticIPKey:  t.ipName,
+		ingress.IngressAllowHTTPKey: "false",
 	}, map[string]string{})
 	t.jig.SetHTTPS("tls-secret", "ingress.test.com")
 
-	By("waiting for Ingress to come up with ip: " + t.ip)
+	ginkgo.By("waiting for Ingress to come up with ip: " + t.ip)
 	framework.ExpectNoError(framework.PollURL(fmt.Sprintf("https://%v/%v", t.ip, path), host, framework.LoadBalancerPollTimeout, t.jig.PollInterval, t.httpClient, false))
 
-	By("keeping track of GCP resources created by Ingress")
+	ginkgo.By("keeping track of GCP resources created by Ingress")
 	t.resourceStore = &GCPResourceStore{}
 	t.populateGCPResourceStore(t.resourceStore)
 }
 
 // Test waits for the upgrade to complete, and then verifies
-// with a connectvity check to the loadbalancer ip.
+// with a connectivity check to the loadbalancer ip.
 func (t *IngressUpgradeTest) Test(f *framework.Framework, done <-chan struct{}, upgrade UpgradeType) {
 	switch upgrade {
-	case MasterUpgrade:
+	case MasterUpgrade, ClusterUpgrade:
 		// Restarting the ingress controller shouldn't disrupt a steady state
 		// Ingress. Restarting the ingress controller and deleting ingresses
 		// while it's down will leak cloud resources, because the ingress
@@ -130,37 +135,57 @@ func (t *IngressUpgradeTest) Test(f *framework.Framework, done <-chan struct{}, 
 
 // Teardown cleans up any remaining resources.
 func (t *IngressUpgradeTest) Teardown(f *framework.Framework) {
-	if CurrentGinkgoTestDescription().Failed {
+	if ginkgo.CurrentGinkgoTestDescription().Failed {
 		framework.DescribeIng(t.gceController.Ns)
 	}
 
 	if t.jig.Ingress != nil {
-		By("Deleting ingress")
+		ginkgo.By("Deleting ingress")
 		t.jig.TryDeleteIngress()
 	} else {
-		By("No ingress created, no cleanup necessary")
+		ginkgo.By("No ingress created, no cleanup necessary")
 	}
 
-	By("Cleaning up cloud resources")
+	ginkgo.By("Cleaning up cloud resources")
 	framework.ExpectNoError(t.gceController.CleanupGCEIngressController())
+}
+
+// Skip checks if the test or part of the test should be skipped.
+func (t *IngressUpgradeTest) Skip(upgCtx UpgradeContext) bool {
+	sslNameChangeVersion, err := version.ParseGeneric("v1.10.0")
+	framework.ExpectNoError(err)
+	var hasVersionBelow, hasVersionAboveOrEqual bool
+	for _, v := range upgCtx.Versions {
+		if v.Version.LessThan(sslNameChangeVersion) {
+			hasVersionBelow = true
+			continue
+		}
+		hasVersionAboveOrEqual = true
+	}
+	// Skip SSL certificates check if k8s version changes between 1.10-
+	// and 1.10+ because the naming scheme has changed.
+	if hasVersionBelow && hasVersionAboveOrEqual {
+		t.skipSSLCheck = true
+	}
+	return false
 }
 
 func (t *IngressUpgradeTest) verify(f *framework.Framework, done <-chan struct{}, testDuringDisruption bool) {
 	if testDuringDisruption {
-		By("continuously hitting the Ingress IP")
+		ginkgo.By("continuously hitting the Ingress IP")
 		wait.Until(func() {
 			framework.ExpectNoError(framework.PollURL(fmt.Sprintf("https://%v/%v", t.ip, path), host, framework.LoadBalancerPollTimeout, t.jig.PollInterval, t.httpClient, false))
 		}, t.jig.PollInterval, done)
 	} else {
-		By("waiting for upgrade to finish without checking if Ingress remains up")
+		ginkgo.By("waiting for upgrade to finish without checking if Ingress remains up")
 		<-done
 	}
-	By("hitting the Ingress IP " + t.ip)
+	ginkgo.By("hitting the Ingress IP " + t.ip)
 	framework.ExpectNoError(framework.PollURL(fmt.Sprintf("https://%v/%v", t.ip, path), host, framework.LoadBalancerPollTimeout, t.jig.PollInterval, t.httpClient, false))
 
 	// We want to manually trigger a sync because then we can easily verify
 	// a correct sync completed after update.
-	By("updating ingress spec to manually trigger a sync")
+	ginkgo.By("updating ingress spec to manually trigger a sync")
 	t.jig.Update(func(ing *extensions.Ingress) {
 		ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths = append(
 			ing.Spec.Rules[0].IngressRuleValue.HTTP.Paths,
@@ -173,9 +198,26 @@ func (t *IngressUpgradeTest) verify(f *framework.Framework, done <-chan struct{}
 	// WaitForIngress() tests that all paths are pinged, which is how we know
 	// everything is synced with the cloud.
 	t.jig.WaitForIngress(false)
-	By("comparing GCP resources post-upgrade")
+	ginkgo.By("comparing GCP resources post-upgrade")
 	postUpgradeResourceStore := &GCPResourceStore{}
 	t.populateGCPResourceStore(postUpgradeResourceStore)
+
+	// Stub out the number of instances as that is out of Ingress controller's control.
+	for _, ig := range t.resourceStore.IgList {
+		ig.Size = 0
+	}
+	for _, ig := range postUpgradeResourceStore.IgList {
+		ig.Size = 0
+	}
+	// Stub out compute.SslCertificates in case we know it will change during an upgrade/downgrade.
+	if t.skipSSLCheck {
+		t.resourceStore.SslList = nil
+		postUpgradeResourceStore.SslList = nil
+	}
+
+	// TODO(rramkumar): Remove this when GLBC v1.2.0 is released.
+	t.resourceStore.BeList = nil
+	postUpgradeResourceStore.BeList = nil
 
 	framework.ExpectNoError(compareGCPResourceStores(t.resourceStore, postUpgradeResourceStore, func(v1 reflect.Value, v2 reflect.Value) error {
 		i1 := v1.Interface()
@@ -197,7 +239,7 @@ func (t *IngressUpgradeTest) populateGCPResourceStore(resourceStore *GCPResource
 	resourceStore.TpsList = cont.ListTargetHttpsProxies()
 	resourceStore.SslList = cont.ListSslCertificates()
 	resourceStore.BeList = cont.ListGlobalBackendServices()
-	resourceStore.Ip = cont.GetGlobalAddress(t.ipName)
+	resourceStore.IP = cont.GetGlobalAddress(t.ipName)
 	resourceStore.IgList = cont.ListInstanceGroups()
 }
 

@@ -18,19 +18,21 @@ package create
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/spf13/cobra"
 
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clientbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	batchv1client "k8s.io/client-go/kubernetes/typed/batch/v1"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/resource"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 var (
@@ -38,137 +40,204 @@ var (
 		Create a job with the specified name.`))
 
 	jobExample = templates.Examples(i18n.T(`
+		# Create a job
+		kubectl create job my-job --image=busybox
+
+		# Create a job with command
+		kubectl create job my-job --image=busybox -- date
+
 		# Create a job from a CronJob named "a-cronjob"
 		kubectl create job test-job --from=cronjob/a-cronjob`))
 )
 
+// CreateJobOptions is the command line options for 'create job'
 type CreateJobOptions struct {
-	PrintFlags *PrintFlags
+	PrintFlags *genericclioptions.PrintFlags
 
 	PrintObj func(obj runtime.Object) error
 
-	Name string
-	From string
+	Name    string
+	Image   string
+	From    string
+	Command []string
 
-	Namespace    string
-	OutputFormat string
-	Client       clientbatchv1.BatchV1Interface
-	Out          io.Writer
-	DryRun       bool
-	Builder      *resource.Builder
-	Cmd          *cobra.Command
+	Namespace string
+	Client    batchv1client.BatchV1Interface
+	DryRun    bool
+	Builder   *resource.Builder
+	Cmd       *cobra.Command
+
+	genericclioptions.IOStreams
+}
+
+// NewCreateJobOptions initializes and returns new CreateJobOptions instance
+func NewCreateJobOptions(ioStreams genericclioptions.IOStreams) *CreateJobOptions {
+	return &CreateJobOptions{
+		PrintFlags: genericclioptions.NewPrintFlags("created").WithTypeSetter(scheme.Scheme),
+		IOStreams:  ioStreams,
+	}
 }
 
 // NewCmdCreateJob is a command to ease creating Jobs from CronJobs.
-func NewCmdCreateJob(f cmdutil.Factory, cmdOut io.Writer) *cobra.Command {
-	c := &CreateJobOptions{
-		PrintFlags: NewPrintFlags("created"),
-		Out:        cmdOut,
-	}
+func NewCmdCreateJob(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
+	o := NewCreateJobOptions(ioStreams)
 	cmd := &cobra.Command{
-		Use:     "job NAME [--from=CRONJOB]",
+		Use:     "job NAME --image=image [--from=cronjob/name] -- [COMMAND] [args...]",
 		Short:   jobLong,
 		Long:    jobLong,
 		Example: jobExample,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(c.Complete(f, cmd, args))
-			cmdutil.CheckErr(c.RunCreateJob())
+			cmdutil.CheckErr(o.Complete(f, cmd, args))
+			cmdutil.CheckErr(o.Validate())
+			cmdutil.CheckErr(o.Run())
 		},
 	}
 
-	c.PrintFlags.AddFlags(cmd)
+	o.PrintFlags.AddFlags(cmd)
 
 	cmdutil.AddApplyAnnotationFlags(cmd)
 	cmdutil.AddValidateFlags(cmd)
 	cmdutil.AddDryRunFlag(cmd)
-	cmd.Flags().String("from", "", "The name of the resource to create a Job from (only cronjob is supported).")
+	cmd.Flags().StringVar(&o.Image, "image", o.Image, "Image name to run.")
+	cmd.Flags().StringVar(&o.From, "from", o.From, "The name of the resource to create a Job from (only cronjob is supported).")
 
 	return cmd
 }
 
-func (c *CreateJobOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string) (err error) {
-	if len(args) == 0 {
-		return cmdutil.UsageErrorf(cmd, "NAME is required")
+// Complete completes all the required options
+func (o *CreateJobOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
+	name, err := NameFromCommandArgs(cmd, args)
+	if err != nil {
+		return err
 	}
-	c.Name = args[0]
+	o.Name = name
+	if len(args) > 1 {
+		o.Command = args[1:]
+	}
 
-	c.From = cmdutil.GetFlagString(cmd, "from")
-	c.Namespace, _, err = f.DefaultNamespace()
+	clientConfig, err := f.ToRESTConfig()
+	if err != nil {
+		return err
+	}
+	o.Client, err = batchv1client.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
 
-	clientset, err := f.KubernetesClientSet()
+	o.Namespace, _, err = f.ToRawKubeConfigLoader().Namespace()
 	if err != nil {
 		return err
 	}
-	c.Client = clientset.BatchV1()
-	c.Builder = f.NewBuilder()
-	c.DryRun = cmdutil.GetDryRunFlag(cmd)
-	c.Cmd = cmd
-	c.OutputFormat = cmdutil.GetFlagString(cmd, "output")
+	o.Builder = f.NewBuilder()
+	o.Cmd = cmd
 
-	if c.DryRun {
-		c.PrintFlags.Complete("%s (dry run)")
+	o.DryRun = cmdutil.GetDryRunFlag(cmd)
+	if o.DryRun {
+		o.PrintFlags.Complete("%s (dry run)")
 	}
-	printer, err := c.PrintFlags.ToPrinter()
+	printer, err := o.PrintFlags.ToPrinter()
 	if err != nil {
 		return err
 	}
-
-	c.PrintObj = func(obj runtime.Object) error {
-		return printer.PrintObj(obj, c.Out)
+	o.PrintObj = func(obj runtime.Object) error {
+		return printer.PrintObj(obj, o.Out)
 	}
 
 	return nil
 }
 
-func (c *CreateJobOptions) RunCreateJob() error {
-	infos, err := c.Builder.
-		Unstructured().
-		NamespaceParam(c.Namespace).DefaultNamespace().
-		ResourceTypeOrNameArgs(false, c.From).
-		Flatten().
-		Latest().
-		Do().
-		Infos()
-	if err != nil {
-		return err
+// Validate makes sure provided values and valid Job options
+func (o *CreateJobOptions) Validate() error {
+	if (len(o.Image) == 0 && len(o.From) == 0) || (len(o.Image) != 0 && len(o.From) != 0) {
+		return fmt.Errorf("either --image or --from must be specified")
 	}
-	if len(infos) != 1 {
-		return fmt.Errorf("from must be an existing cronjob")
+	if o.Command != nil && len(o.Command) != 0 && len(o.From) != 0 {
+		return fmt.Errorf("cannot specify --from and command")
 	}
-	cronJob, ok := infos[0].AsVersioned().(*batchv1beta1.CronJob)
-	if !ok {
-		return fmt.Errorf("from must be an existing cronjob")
-	}
-
-	return c.createJob(cronJob)
+	return nil
 }
 
-func (c *CreateJobOptions) createJob(cronJob *batchv1beta1.CronJob) error {
-	annotations := make(map[string]string)
-	annotations["cronjob.kubernetes.io/instantiate"] = "manual"
-	for k, v := range cronJob.Spec.JobTemplate.Annotations {
-		annotations[k] = v
-	}
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        c.Name,
-			Namespace:   c.Namespace,
-			Annotations: annotations,
-			Labels:      cronJob.Spec.JobTemplate.Labels,
-		},
-		Spec: cronJob.Spec.JobTemplate.Spec,
-	}
+// Run performs the execution of 'create job' sub command
+func (o *CreateJobOptions) Run() error {
+	var job *batchv1.Job
+	if len(o.Image) > 0 {
+		job = o.createJob()
+	} else {
+		infos, err := o.Builder.
+			Unstructured().
+			NamespaceParam(o.Namespace).DefaultNamespace().
+			ResourceTypeOrNameArgs(false, o.From).
+			Flatten().
+			Latest().
+			Do().
+			Infos()
+		if err != nil {
+			return err
+		}
+		if len(infos) != 1 {
+			return fmt.Errorf("from must be an existing cronjob")
+		}
 
-	if !c.DryRun {
+		uncastVersionedObj, err := scheme.Scheme.ConvertToVersion(infos[0].Object, batchv1beta1.SchemeGroupVersion)
+		if err != nil {
+			return fmt.Errorf("from must be an existing cronjob: %v", err)
+		}
+		cronJob, ok := uncastVersionedObj.(*batchv1beta1.CronJob)
+		if !ok {
+			return fmt.Errorf("from must be an existing cronjob")
+		}
+
+		job = o.createJobFromCronJob(cronJob)
+	}
+	if !o.DryRun {
 		var err error
-		job, err = c.Client.Jobs(c.Namespace).Create(job)
+		job, err = o.Client.Jobs(o.Namespace).Create(job)
 		if err != nil {
 			return fmt.Errorf("failed to create job: %v", err)
 		}
 	}
 
-	return c.PrintObj(job)
+	return o.PrintObj(job)
+}
+
+func (o *CreateJobOptions) createJob() *batchv1.Job {
+	return &batchv1.Job{
+		// this is ok because we know exactly how we want to be serialized
+		TypeMeta: metav1.TypeMeta{APIVersion: batchv1.SchemeGroupVersion.String(), Kind: "Job"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: o.Name,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:    o.Name,
+							Image:   o.Image,
+							Command: o.Command,
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+}
+
+func (o *CreateJobOptions) createJobFromCronJob(cronJob *batchv1beta1.CronJob) *batchv1.Job {
+	annotations := make(map[string]string)
+	annotations["cronjob.kubernetes.io/instantiate"] = "manual"
+	for k, v := range cronJob.Spec.JobTemplate.Annotations {
+		annotations[k] = v
+	}
+	return &batchv1.Job{
+		// this is ok because we know exactly how we want to be serialized
+		TypeMeta: metav1.TypeMeta{APIVersion: batchv1.SchemeGroupVersion.String(), Kind: "Job"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        o.Name,
+			Annotations: annotations,
+			Labels:      cronJob.Spec.JobTemplate.Labels,
+		},
+		Spec: cronJob.Spec.JobTemplate.Spec,
+	}
 }
