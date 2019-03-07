@@ -6,7 +6,75 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func assertShouldFail(err error, shouldFail bool) {
+	if shouldFail {
+		Expect(err).To(HaveOccurred())
+	} else {
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
 var _ = Describe("In the utils package", func() {
+	DescribeTable("getting PF PCI address",
+		func(fs *FakeFilesystem, addr string, expected string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetPfAddr(addr)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("address of a PF is passed", &FakeFilesystem{}, "0000:00:00.0", "0000:00:00.0", false),
+		Entry("physfn is not a symlink",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.0/physfn": []byte("invalid content")},
+			},
+			"0000:00:00.0", "", true,
+		),
+		Entry("getting PF address of a VF",
+			&FakeFilesystem{
+				Dirs:     []string{"sys/bus/pci/devices/0000:00:00.0", "sys/bus/pci/devices/0000:00:00.1"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:00:00.1/physfn": "../0000:00:00.0"},
+			},
+			"0000:00:00.1", "0000:00:00.0", false,
+		),
+	)
+
+	DescribeTable("checking whether device is a SRIOV PF",
+		func(fs *FakeFilesystem, addr string, expected bool) {
+			defer fs.Use()()
+			actual := IsSriovPF(addr)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("sriov_totalvfs file exists",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.0/sriov_totalvfs": []byte("0")},
+			},
+			"0000:00:00.0", true,
+		),
+		Entry("sriov_totalvfs file doesn't exist",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:00:00.0"}}, "0000:00:00.0", false,
+		),
+	)
+
+	DescribeTable("checking whether device is a SRIOV VF",
+		func(fs *FakeFilesystem, addr string, expected bool) {
+			defer fs.Use()()
+			actual := IsSriovVF(addr)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("physfn file exists and is a symlink to PF",
+			&FakeFilesystem{
+				Dirs:     []string{"sys/bus/pci/devices/0000:00:00.0", "sys/bus/pci/devices/0000:00:00.1"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:00:00.1/physfn": "../0000:00:00.0"},
+			},
+			"0000:00:00.1", true,
+		),
+		Entry("physfn file doesn't exist",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:00:00.1"}}, "0000:00:00.1", false,
+		),
+	)
+
 	DescribeTable("getting number of configured VFs",
 		func(fs *FakeFilesystem, pf string, expected int) {
 			defer fs.Use()()
@@ -28,15 +96,12 @@ var _ = Describe("In the utils package", func() {
 			"0000:00:00.1", 32,
 		),
 	)
+
 	DescribeTable("getting VFs list",
 		func(fs *FakeFilesystem, pf string, expected []string, shouldFail bool) {
 			defer fs.Use()()
 			vfList, err := GetVFList(pf)
-			if shouldFail {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			assertShouldFail(err, shouldFail)
 			Expect(vfList).To(Equal(expected))
 		},
 		Entry("reading the PF path fails", &FakeFilesystem{}, "0000:00:00.1", []string{}, true),
@@ -59,11 +124,7 @@ var _ = Describe("In the utils package", func() {
 		func(fs *FakeFilesystem, pf string, vf int, expected string, shouldFail bool) {
 			defer fs.Use()()
 			pciAddr, err := GetPciAddrFromVFID(pf, vf)
-			if shouldFail {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			assertShouldFail(err, shouldFail)
 			Expect(pciAddr).To(Equal(expected))
 		},
 		Entry(
@@ -149,11 +210,7 @@ var _ = Describe("In the utils package", func() {
 			defer fs.Use()()
 			actual, err := ValidPciAddr(addr)
 			Expect(actual).To(Equal(expected))
-			if shouldFail {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			assertShouldFail(err, shouldFail)
 		},
 		Entry("long id is submitted and device exists",
 			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:00.0"}},
@@ -205,11 +262,7 @@ var _ = Describe("In the utils package", func() {
 			defer fs.Use()()
 			actual, err := GetVFIODeviceFile(device)
 			Expect(actual).To(Equal(expected))
-			if shouldFail {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			assertShouldFail(err, shouldFail)
 		},
 		Entry("could not get directory information for device",
 			&FakeFilesystem{},
@@ -237,14 +290,17 @@ var _ = Describe("In the utils package", func() {
 			defer fs.Use()()
 			actual, err := GetUIODeviceFile(device)
 			Expect(actual).To(Equal(expected))
-			if shouldFail {
-				Expect(err).To(HaveOccurred())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
-			}
+			assertShouldFail(err, shouldFail)
 		},
 		Entry("could not get directory information for device",
 			&FakeFilesystem{},
+			"0000:01:10.0", "", true,
+		),
+		Entry("uio is not a dir",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:01:10.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/uio": []byte("junk")},
+			},
 			"0000:01:10.0", "", true,
 		),
 		Entry("uio device file path is returned",
@@ -252,6 +308,53 @@ var _ = Describe("In the utils package", func() {
 				Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/uio/uio1"},
 			},
 			"0000:01:10.0", "/dev/uio1", false,
+		),
+	)
+
+	DescribeTable("getting driver name",
+		func(fs *FakeFilesystem, device, expected string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetDriverName(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("driver link doesn't exist",
+			&FakeFilesystem{},
+			"0000:01:10.0", "", true,
+		),
+		Entry("correct driver name is returned",
+			&FakeFilesystem{
+				Dirs:     []string{"sys/bus/pci/devices/0000:01:10.0/", "sys/bus/pci/drivers/fake"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:01:10.0/driver": "../../../../bus/pci/drivers/fake"},
+			},
+			"0000:01:10.0", "fake", false,
+		),
+	)
+
+	DescribeTable("getting interface names",
+		func(fs *FakeFilesystem, device string, expected []string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetNetNames(device)
+			Expect(actual).To(ConsistOf(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device doesn't exist", &FakeFilesystem{}, "0000:01:10.0", nil, true),
+		Entry("net is not a directory",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:01:10.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net": []byte("junk")},
+			},
+			"0000:01:10.0", nil, true,
+		),
+		Entry("single network interface",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"}},
+			"0000:01:10.0", []string{"fake0"}, false,
+		),
+		Entry("multiple network interfaces for single device",
+			&FakeFilesystem{
+				Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0", "sys/bus/pci/devices/0000:01:10.0/net/fake1"},
+			},
+			"0000:01:10.0", []string{"fake0", "fake1"}, false,
 		),
 	)
 })
