@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1beta1"
 )
 
 func TestSriovdp(t *testing.T) {
@@ -51,6 +53,31 @@ var _ = Describe("Device Plugin APIs", func() {
 		for _, dev := range devices {
 			sm.devices[dev] = pluginapi.Device{ID: dev, Health: pluginapi.Healthy}
 		}
+	})
+
+	It("Check GetInfo", func() {
+		giRqt := new(registerapi.InfoRequest)
+		response := new(registerapi.PluginInfo)
+
+		response, err = sm.GetInfo(ctx, giRqt)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*response).Should(BeAssignableToTypeOf(registerapi.PluginInfo{}))
+		Expect(response.Type).To(Equal(registerapi.DevicePlugin))
+		Expect(response.Name).To(Equal(resourceName))
+		Expect(response.Endpoint).To(Equal(filepath.Join(pluginMountPath, sm.socketFile)))
+		Expect(response.SupportedVersions).To(Equal([]string{"v1beta1"}))
+	})
+
+	It("Check NotifyRegistrationStatus", func() {
+		rStat := new(registerapi.RegistrationStatus)
+		rStat.PluginRegistered = true
+		response := new(registerapi.RegistrationStatusResponse)
+
+		response, err = sm.NotifyRegistrationStatus(ctx, rStat)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*response).Should(BeAssignableToTypeOf(registerapi.RegistrationStatusResponse{}))
 	})
 
 	It("Check PreStartContainer", func() {
