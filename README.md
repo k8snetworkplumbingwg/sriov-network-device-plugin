@@ -54,7 +54,7 @@ To deploy workloads with SRIOV VF this plugin needs to work together with the fo
 
   - On Pod deletion, reset and release the VF from the Pod
 
-This implementation follows the design discuessed in [this proposal document](https://docs.google.com/document/d/1Ewe9Of84GkP0b2Q2PC0y9RVZNkN2WeVEagX9m99Nrzc/).
+This implementation follows the design discussed in [this proposal document](https://docs.google.com/document/d/1Ewe9Of84GkP0b2Q2PC0y9RVZNkN2WeVEagX9m99Nrzc/).
 
 
 Please follow the Multus [Quick Start](#quick-start) for multi network interface support in Kubernetes.
@@ -62,17 +62,17 @@ Please follow the Multus [Quick Start](#quick-start) for multi network interface
 ### Supported SRIOV NICs
 
 The following  NICs were tested with this implementation. However, other SRIOV capable NICs should work as well.
--  Intel® Ethernet Controller X710 Series 4x10G
+-  IntelÂ® Ethernet Controller X710 Series 4x10G
 		- PF driver : v2.4.6
 		- VF driver: v3.5.6
 > please refer to Intel download center for installing latest [Intel Ethernet Controller-X710-Series](https://downloadcenter.intel.com/product/82947/Intel-Ethernet-Controller-X710-Series) drivers
- - Intel® 82599ES 10 Gigabit Ethernet Controller
+ - IntelÂ® 82599ES 10 Gigabit Ethernet Controller
 	- PF driver : v4.4.0-k
 	- VF driver: v3.2.2-k
-> please refer to Intel download center for installing latest [Intel-® 82599ES 10 Gigabit Ethernet](https://ark.intel.com/products/41282/Intel-82599ES-10-Gigabit-Ethernet-Controller) drivers
+> please refer to Intel download center for installing latest [Intel-Â® 82599ES 10 Gigabit Ethernet](https://ark.intel.com/products/41282/Intel-82599ES-10-Gigabit-Ethernet-Controller) drivers
 
-- Mellanox ConnectX�-4 Lx EN Adapter
-- Mellanox ConnectX�-5 Adapter
+- Mellanox ConnectX®-4 Lx EN Adapter
+- Mellanox ConnectX®-5 Adapter
 > Network card drivers are available as a part of the various linux distributions and upstream.
 To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.com/page/software_overview_eth).
 
@@ -305,4 +305,4 @@ For example, if 2 devices are allocated from `intel.com/sriov` extended resource
 
 We welcome your feedback and contributions to this project. Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines. 
 
-Copyright 2018 © Intel Corporation.
+Copyright 2018 Â© Intel Corporation.
