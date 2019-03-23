@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
-	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1beta1"
+	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1"
 )
 
 func TestSriovdp(t *testing.T) {

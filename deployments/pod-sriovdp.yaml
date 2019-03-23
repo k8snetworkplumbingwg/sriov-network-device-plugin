@@ -10,7 +10,7 @@ spec:
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "sriovdp --logtostderr 10;" ]
     volumeMounts:
-    - mountPath: /var/lib/kubelet/device-plugins/ 
+    - mountPath: /var/lib/kubelet/plugins_registry/
       name: devicesock 
       readOnly: false
     - mountPath: /sys/class/net
@@ -20,7 +20,7 @@ spec:
   - name: devicesock 
     hostPath:
      # directory location on host
-     path: /var/lib/kubelet/device-plugins/
+     path: /var/lib/kubelet/plugins_registry/
   - name: net
     hostPath:
       path: /sys/class/net

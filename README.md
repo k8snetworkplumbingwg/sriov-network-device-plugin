@@ -113,38 +113,83 @@ $ kubectl create -f pod-sriovdp.yaml
 ````
 $ kubectl logs sriov-device-plugin
 
-sriov-device-plugin.go:380] SRIOV Network Device Plugin started...
-sriov-device-plugin.go:190] Discovering SRIOV network device[s]
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp0s31f6/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp14s0/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f0/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f1/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f2/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp5s0f3/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp6s2/device/sriov_numvfs
-sriov-device-plugin.go:92] Checking for file /sys/class/net/enp6s2f1/device/sriov_numvfs
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f0/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f0 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f0
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f0 is 2
-sriov-device-plugin.go:171] PCI Address for device enp5s0f0, VF 0 is 0000:06:02.0
-sriov-device-plugin.go:171] PCI Address for device enp5s0f0, VF 1 is 0000:06:02.1
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f1/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f1 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f1
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f1 is 0
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f2/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f2 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f2
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f2 is 0
-sriov-device-plugin.go:121] Sriov Capable Path: /sys/class/net/enp5s0f3/device/sriov_totalvfs
-sriov-device-plugin.go:133] Total number of VFs for device enp5s0f3 is 32
-sriov-device-plugin.go:135] SRIOV capable device discovered: enp5s0f3
-sriov-device-plugin.go:148] Number of Configured VFs for device enp5s0f3 is 0
-sriov-device-plugin.go:195] Starting SRIOV Network Device Plugin server at: /var/lib/kubelet/device-plugins/sriovNet.sock
-sriov-device-plugin.go:220] SRIOV Network Device Plugin server started serving
-sriov-device-plugin.go:402] SRIOV Network Device Plugin registered with the Kubelet
-sriov-device-plugin.go:291] ListAndWatch: send devices &ListAndWatchResponse{Devices:[&Device{ID:0000:06:02.0,Health:Healthy,} &Device{ID:0000:06:02.1,Health:Healthy,}],}
+I0323 05:49:12.547174  324440 sriov-device-plugin.go:469] Starting SRIOV Network Device Plugin...
+I0323 05:49:12.550968  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/cni0
+I0323 05:49:12.551082  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/cni0/device/sriov_numvfs
+I0323 05:49:12.551159  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/docker0
+I0323 05:49:12.551224  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/docker0/device/sriov_numvfs
+I0323 05:49:12.551328  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/eno1
+I0323 05:49:12.551445  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/eno1/device/sriov_numvfs
+I0323 05:49:12.551846  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/eno2
+I0323 05:49:12.551922  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/eno2/device/sriov_numvfs
+I0323 05:49:12.551999  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s0f0
+I0323 05:49:12.552074  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s0f0/device/sriov_numvfs
+I0323 05:49:12.552152  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s0f1
+I0323 05:49:12.552225  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s0f1/device/sriov_numvfs
+I0323 05:49:12.552306  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2
+I0323 05:49:12.552382  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2/device/sriov_numvfs
+I0323 05:49:12.552463  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2f1
+I0323 05:49:12.552538  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2f1/device/sriov_numvfs
+I0323 05:49:12.552623  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2f2
+I0323 05:49:12.552698  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2f2/device/sriov_numvfs
+I0323 05:49:12.552777  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2f3
+I0323 05:49:12.552852  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2f3/device/sriov_numvfs
+I0323 05:49:12.552930  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2f4
+I0323 05:49:12.553010  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2f4/device/sriov_numvfs
+I0323 05:49:12.553090  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp135s2f5
+I0323 05:49:12.553165  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp135s2f5/device/sriov_numvfs
+I0323 05:49:12.553243  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp175s0f0
+I0323 05:49:12.553321  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp175s0f0/device/sriov_numvfs
+I0323 05:49:12.553403  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp175s0f1
+I0323 05:49:12.553478  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp175s0f1/device/sriov_numvfs
+I0323 05:49:12.553556  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp177s0f0
+I0323 05:49:12.553635  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp177s0f0/device/sriov_numvfs
+I0323 05:49:12.553714  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/enp177s0f1
+I0323 05:49:12.553791  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/enp177s0f1/device/sriov_numvfs
+I0323 05:49:12.553870  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/lo
+I0323 05:49:12.553942  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/lo/device/sriov_numvfs
+I0323 05:49:12.554015  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/veth389adcb
+I0323 05:49:12.554087  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/veth389adcb/device/sriov_numvfs
+I0323 05:49:12.554159  324440 sriov-device-plugin.go:106] Checking inside dir /sys/class/net/vethb391bc4b
+I0323 05:49:12.554231  324440 sriov-device-plugin.go:117] Checking for file /sys/class/net/vethb391bc4b/device/sriov_numvfs
+I0323 05:49:12.554307  324440 sriov-device-plugin.go:209] Discovering all capable and configured devices
+I0323 05:49:12.554340  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/eno1/device/sriov_totalvfs
+I0323 05:49:12.554489  324440 sriov-device-plugin.go:230] Total number of VFs for device eno1 is 32
+I0323 05:49:12.554523  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: eno1
+I0323 05:49:12.554641  324440 sriov-device-plugin.go:245] Number of Configured VFs for device eno1 is 0
+I0323 05:49:12.554675  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/eno2/device/sriov_totalvfs
+I0323 05:49:12.554780  324440 sriov-device-plugin.go:230] Total number of VFs for device eno2 is 32
+I0323 05:49:12.554812  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: eno2
+I0323 05:49:12.554916  324440 sriov-device-plugin.go:245] Number of Configured VFs for device eno2 is 0
+I0323 05:49:12.554944  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp135s0f0/device/sriov_totalvfs
+I0323 05:49:12.555044  324440 sriov-device-plugin.go:230] Total number of VFs for device enp135s0f0 is 64
+I0323 05:49:12.555075  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp135s0f0
+I0323 05:49:12.555204  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp135s0f0 is 6
+I0323 05:49:12.557289  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp135s0f1/device/sriov_totalvfs
+I0323 05:49:12.557439  324440 sriov-device-plugin.go:230] Total number of VFs for device enp135s0f1 is 64
+I0323 05:49:12.557485  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp135s0f1
+I0323 05:49:12.557645  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp135s0f1 is 0
+I0323 05:49:12.557690  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp175s0f0/device/sriov_totalvfs
+I0323 05:49:12.557819  324440 sriov-device-plugin.go:230] Total number of VFs for device enp175s0f0 is 8
+I0323 05:49:12.557861  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp175s0f0
+I0323 05:49:12.558021  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp175s0f0 is 0
+I0323 05:49:12.558075  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp175s0f1/device/sriov_totalvfs
+I0323 05:49:12.558230  324440 sriov-device-plugin.go:230] Total number of VFs for device enp175s0f1 is 8
+I0323 05:49:12.558276  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp175s0f1
+I0323 05:49:12.558421  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp175s0f1 is 0
+I0323 05:49:12.558470  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp177s0f0/device/sriov_totalvfs
+I0323 05:49:12.558635  324440 sriov-device-plugin.go:230] Total number of VFs for device enp177s0f0 is 6
+I0323 05:49:12.558680  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp177s0f0
+I0323 05:49:12.558821  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp177s0f0 is 0
+I0323 05:49:12.558861  324440 sriov-device-plugin.go:218] Sriov Capable Path: /sys/class/net/enp177s0f1/device/sriov_totalvfs
+I0323 05:49:12.558978  324440 sriov-device-plugin.go:230] Total number of VFs for device enp177s0f1 is 6
+I0323 05:49:12.559007  324440 sriov-device-plugin.go:232] SRIOV capable device discovered: enp177s0f1
+I0323 05:49:12.559092  324440 sriov-device-plugin.go:245] Number of Configured VFs for device enp177s0f1 is 0
+I0323 05:49:12.559119  324440 sriov-device-plugin.go:262] Discovered SR-IOV PF devices: [enp135s0f0]
+I0323 05:49:12.559166  324440 sriov-device-plugin.go:308] Starting SRIOV Network Device Plugin server at: /var/lib/kubelet/plugins_registry/sriovNet.sock
+I0323 05:49:12.560940  324440 sriov-device-plugin.go:333] SRIOV Network Device Plugin server started serving
+I0323 05:49:12.563297  324440 sriov-device-plugin.go:370] Plugin: sriovNet.sock gets registered successfully at Kubelet
+I0323 05:49:12.563499  324440 sriov-device-plugin.go:385] ListAndWatch: send initial devices &ListAndWatchResponse{Devices:[&Device{ID:0000:87:02.3,Health:Healthy,} &Device{ID:0000:87:02.4,Health:Healthy,} &Device{ID:0000:87:02.5,Health:Healthy,} &Device{ID:0000:87:02.0,Health:Healthy,} &Device{ID:0000:87:02.1,Health:Healthy,} &Device{ID:0000:87:02.2,Health:Healthy,}],}
 ````
 
 ### Testing SRIOV workloads

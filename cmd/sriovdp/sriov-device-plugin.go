@@ -33,7 +33,7 @@ import (
 	"google.golang.org/grpc"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
-	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1beta1"
+	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
 	sriovConfigured = "/sriov_numvfs"
 
 	// Device plugin settings.
-	pluginMountPath      = "/var/lib/kubelet/plugins"
+	pluginMountPath      = "/var/lib/kubelet/plugins_registry"
 	pluginEndpointPrefix = "sriovNet"
 	resourceName         = "netdev/sriov"
 )
