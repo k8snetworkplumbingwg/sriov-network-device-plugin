@@ -42,9 +42,16 @@ const (
 	sriovConfigured = "/sriov_numvfs"
 
 	// Device plugin settings.
-	pluginMountPath      = "/var/lib/kubelet/plugins_registry"
-	pluginEndpointPrefix = "sriovNet"
-	resourceName         = "netdev/sriov"
+	pluginMountPath           = "/var/lib/kubelet/plugins_registry"
+	deprecatedPluginMountPath = "/var/lib/kubelet/device-plugins"
+	kubeletEndpoint           = "kubelet.sock"
+	pluginEndpointPrefix      = "sriovNet"
+	resourceName              = "netdev/sriov"
+)
+
+var (
+	pluginWatchEnabled = true
+	pluginEndpoint     string
 )
 
 type arrayFlags []string
@@ -273,6 +280,14 @@ func IsNetlinkStatusUp(dev string) bool {
 	return true
 }
 
+// HasKubeletPluginRegistryDir returns 'false' if '{kubelet_root_dir}/plugin_registry' doesn't exist
+func HasKubeletPluginRegistryDir() bool {
+	if _, err := os.Stat(pluginMountPath); err != nil {
+		return false
+	}
+	return true
+}
+
 // Probe returns 'true' if device health changes 'false' otherwise
 func (sm *sriovManager) Probe() bool {
 	// Network device should check link status for each physical port and update health status for
@@ -303,8 +318,6 @@ func (sm *sriovManager) Probe() bool {
 
 // Discovers SRIOV capabable NIC devices.
 func (sm *sriovManager) Start() error {
-	pluginEndpoint := filepath.Join(pluginMountPath, sm.socketFile)
-
 	glog.Infof("Starting SRIOV Network Device Plugin server at: %s\n", pluginEndpoint)
 	lis, err := net.Listen("unix", pluginEndpoint)
 	if err != nil {
@@ -313,7 +326,9 @@ func (sm *sriovManager) Start() error {
 	sm.grpcServer = grpc.NewServer()
 
 	// Register SRIOV device plugin service
-	registerapi.RegisterRegistrationServer(sm.grpcServer, sm)
+	if pluginWatchEnabled {
+		registerapi.RegisterRegistrationServer(sm.grpcServer, sm)
+	}
 	pluginapi.RegisterDevicePluginServer(sm.grpcServer, sm)
 
 	go sm.grpcServer.Serve(lis)
@@ -332,7 +347,56 @@ func (sm *sriovManager) Start() error {
 	}
 	glog.Infoln("SRIOV Network Device Plugin server started serving")
 	conn.Close()
+
+	if !pluginWatchEnabled {
+		// Registers with Kubelet.
+		err = Register(filepath.Join(deprecatedPluginMountPath, kubeletEndpoint), sm.socketFile, resourceName)
+		if err != nil {
+			// Stop server
+			sm.grpcServer.Stop()
+			glog.Fatal(err)
+			return err
+		}
+		glog.Infof("SRIOV Network Device Plugin registered with the Kubelet")
+	}
 	return nil
+}
+
+func (sm *sriovManager) restart() error {
+	glog.Infof("Restarting SRIOV Network Device Plugin server..")
+	if sm.grpcServer == nil {
+		return nil
+	}
+	// Send terminate signal to ListAndWatch()
+	sm.termSignal <- true
+
+	sm.grpcServer.Stop()
+	sm.grpcServer = nil
+
+	return sm.Start()
+}
+
+func (sm *sriovManager) Watch() {
+	// Watch for socket file; if not present restart server
+	for {
+		select {
+		case stop := <-sm.stopWatcher:
+			if stop {
+				return
+			}
+		default:
+			_, err := os.Lstat(pluginEndpoint)
+			if err != nil {
+				// Socket file not found; restart server
+				glog.Warningf("Server endpoint not found %s", sm.socketFile)
+				glog.Warningf("Most likely Kubelet restarted")
+				if err := sm.restart(); err != nil {
+					glog.Fatalf("Unable to restart server %v", err)
+				}
+			}
+		}
+		time.Sleep(5 * time.Second)
+	}
 }
 
 func (sm *sriovManager) Stop() error {
@@ -342,6 +406,9 @@ func (sm *sriovManager) Stop() error {
 	}
 	// Send terminate signal to ListAndWatch()
 	sm.termSignal <- true
+	if !pluginWatchEnabled {
+		sm.stopWatcher <- true
+	}
 
 	sm.grpcServer.Stop()
 	sm.grpcServer = nil
@@ -352,11 +419,35 @@ func (sm *sriovManager) Stop() error {
 // Removes existing socket if exists
 // [adpoted from https://github.com/redhat-nfvpe/k8s-dummy-device-plugin/blob/master/dummy.go ]
 func (sm *sriovManager) cleanup() error {
-	pluginEndpoint := filepath.Join(pluginMountPath, sm.socketFile)
 	if err := os.Remove(pluginEndpoint); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+	return nil
+}
 
+// Register registers as a grpc client with the kubelet.
+func Register(kubeletEndpoint, pluginEndpoint, resourceName string) error {
+	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+			return net.DialTimeout("unix", addr, timeout)
+		}))
+	if err != nil {
+		glog.Errorf("SRIOV Network Device Plugin cannot connect to Kubelet service: %v", err)
+		return err
+	}
+	defer conn.Close()
+	client := pluginapi.NewRegistrationClient(conn)
+
+	request := &pluginapi.RegisterRequest{
+		Version:      pluginapi.Version,
+		Endpoint:     pluginEndpoint,
+		ResourceName: resourceName,
+	}
+
+	if _, err = client.Register(context.Background(), request); err != nil {
+		glog.Errorf("SRIOV Network Device Plugin cannot register to Kubelet service: %v", err)
+		return err
+	}
 	return nil
 }
 
@@ -477,7 +568,6 @@ func main() {
 		glog.Errorf("Unable to get instance of a SRIOV-Manager")
 		return
 	}
-	sm.cleanup()
 
 	// respond to syscalls for termination
 	sigCh := make(chan os.Signal, 1)
@@ -489,10 +579,25 @@ func main() {
 		return
 	}
 
+	if !HasKubeletPluginRegistryDir() {
+		glog.Infof("Error looking up kubelet plugin registry directory, using old registry path")
+		pluginWatchEnabled = false
+		pluginEndpoint = filepath.Join(deprecatedPluginMountPath, sm.socketFile)
+	} else {
+		glog.Infof("Using kubelet plugin registry mode")
+		pluginEndpoint = filepath.Join(pluginMountPath, sm.socketFile)
+	}
+	sm.cleanup()
+
 	// Start server
 	if err := sm.Start(); err != nil {
 		glog.Errorf("sriovManager.Start() failed: %v", err)
 		return
+	}
+
+	// Start plugin endpoint watcher
+	if !pluginWatchEnabled {
+		go sm.Watch()
 	}
 
 	// Catch termination signals
