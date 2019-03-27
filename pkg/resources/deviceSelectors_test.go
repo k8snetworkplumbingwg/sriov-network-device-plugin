@@ -87,4 +87,30 @@ var _ = Describe("DeviceSelectors", func() {
 			})
 		})
 	})
+	Describe("ifname selector", func() {
+		Context("initializing", func() {
+			It("should populate ifnames array", func() {
+				netDevs := []string{"ens0", "eth0"}
+				sel := newNetDevSelector(netDevs).(*netDevSelector)
+				Expect(sel.netDevs).To(ConsistOf(netDevs))
+			})
+		})
+		Context("filtering", func() {
+			It("should return devices matching interface PF name", func() {
+				netDevs := []string{"ens0"}
+				sel := newNetDevSelector(netDevs).(*netDevSelector)
+
+				dev0 := mocks.PciNetDevice{}
+				dev0.On("GetPFName").Return("ens0")
+				dev1 := mocks.PciNetDevice{}
+				dev1.On("GetPFName").Return("eth0")
+
+				in := []types.PciNetDevice{&dev0, &dev1}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).NotTo(ContainElement(&dev1))
+			})
+		})
+	})
 })

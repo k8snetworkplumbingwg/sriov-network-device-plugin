@@ -15,7 +15,7 @@ var _ = Describe("PciNetDevice", func() {
 			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
 					Dirs: []string{
-						"sys/bus/pci/devices/0000:00:00.1",
+						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
 						"sys/kernel/iommu_groups/0",
 						"sys/bus/pci/drivers/vfio-pci",
 					},

@@ -64,6 +64,26 @@ func (s *driverSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
+// newNetDevSelector returns a NetDevSelector interface for netDev list
+func newNetDevSelector(netDevs []string) types.DeviceSelector {
+	return &netDevSelector{netDevs: netDevs}
+}
+
+type netDevSelector struct {
+	netDevs []string
+}
+
+func (s *netDevSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
+	filteredList := make([]types.PciNetDevice, 0)
+	for _, dev := range inDevices {
+		if contains(s.netDevs, dev.GetPFName()) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+
+	return filteredList
+}
+
 func contains(hay []string, needle string) bool {
 	for _, s := range hay {
 		if s == needle {

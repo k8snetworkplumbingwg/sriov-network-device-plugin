@@ -71,6 +71,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return newDeviceSelector(values), nil
 	case "drivers":
 		return newDriverSelector(values), nil
+	case "netDevs":
+		return newNetDevSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
@@ -97,6 +99,13 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 	// filter by driver list
 	if rc.Selectors.Drivers != nil && len(rc.Selectors.Drivers) > 0 {
 		if selector, err := rf.GetSelector("drivers", rc.Selectors.Drivers); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by netDev list
+	if rc.Selectors.NetDevs != nil && len(rc.Selectors.NetDevs) > 0 {
+		if selector, err := rf.GetSelector("netDevs", rc.Selectors.NetDevs); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}

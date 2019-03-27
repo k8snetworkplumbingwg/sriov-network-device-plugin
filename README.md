@@ -148,7 +148,8 @@ This plugin creates device plugin endpoints based on the configurations given in
             "selectors": {
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed"],
-                "drivers": ["i40evf", "ixgbevf"]
+                "drivers": ["i40evf", "ixgbevf"],
+                "ifnames": ["ens0", "enp2s0f1"]
             }
         },
         {
@@ -156,7 +157,8 @@ This plugin creates device plugin endpoints based on the configurations given in
             "selectors": {
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed"],
-                "drivers": ["vfio-pci"]
+                "drivers": ["vfio-pci"],
+                "ifnames": ["enp0s0f0","enp2s2f1"]
             }
         }
     ]
@@ -167,10 +169,10 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 
 
-|     Field      | Required |        Description        |                       Type - Accepted values                        |                          Example/Accepted values                          |
+|     Field      | Required |        Description        |                       Type - Accepted values                        |                          Example/Accepted values                                                   |
 |----------------|----------|---------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|
-| "resourceName" | Yes      | Endpoint resource name    | `string` - must be unique and should not contain special characters | "sriov_net_A"                                                             |
-| "selectors"    | No       | A map of device selectors | Each selector is a map of  `string` list.                           | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"] |
+| "resourceName" | Yes      | Endpoint resource name    | `string` - must be unique and should not contain special characters | "sriov_net_A"                                                                                      |
+| "selectors"    | No       | A map of device selectors | Each selector is a map of  `string` list.                           | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"], "ifnames": ["enp2s2f0"] |
 
 
 

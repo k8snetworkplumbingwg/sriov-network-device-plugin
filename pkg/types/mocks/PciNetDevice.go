@@ -157,6 +157,20 @@ func (_m *PciNetDevice) GetPfPciAddr() string {
 	return r0
 }
 
+// GetNetName provides a mock function with given fields:
+func (_m *PciNetDevice) GetNetName() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetSubClass provides a mock function with given fields:
 func (_m *PciNetDevice) GetSubClass() string {
 	ret := _m.Called()

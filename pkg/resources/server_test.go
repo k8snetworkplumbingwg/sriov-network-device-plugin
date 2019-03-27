@@ -94,7 +94,8 @@ var _ = Describe("Server", func() {
 					Vendors []string `json:"vendors,omitempty"`
 					Devices []string `json:"devices,omitempty"`
 					Drivers []string `json:"drivers,omitempty"`
-				}{[]string{}, []string{"fakeid"}, []string{}},
+					NetDevs []string `json:"ifnames,omitempty"`
+				}{[]string{}, []string{"fakeid"}, []string{}, []string{}},
 			}
 			rp = mocks.ResourcePool{}
 			rp.On("GetConfig").Return(fakeConf).
