@@ -9,7 +9,7 @@ import (
 )
 
 func TestXfrmMonitorExpire(t *testing.T) {
-	defer setUpNetlinkTest(t)()
+	setUpNetlinkTest(t)()
 
 	ch := make(chan XfrmMsg)
 	done := make(chan struct{})
@@ -27,24 +27,13 @@ func TestXfrmMonitorExpire(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hardFound := false
-	softFound := false
-
 	msg := (<-ch).(*XfrmMsgExpire)
-	if msg.XfrmState.Spi != state.Spi {
-		t.Fatal("Received unexpected msg, spi does not match")
+	if msg.XfrmState.Spi != state.Spi || msg.Hard {
+		t.Fatal("Received unexpected msg")
 	}
-	hardFound = msg.Hard || hardFound
-	softFound = !msg.Hard || softFound
 
 	msg = (<-ch).(*XfrmMsgExpire)
-	if msg.XfrmState.Spi != state.Spi {
-		t.Fatal("Received unexpected msg, spi does not match")
-	}
-	hardFound = msg.Hard || hardFound
-	softFound = !msg.Hard || softFound
-
-	if !hardFound || !softFound {
-		t.Fatal("Missing expire msg: hard found:", hardFound, "soft found:", softFound)
+	if msg.XfrmState.Spi != state.Spi || !msg.Hard {
+		t.Fatal("Received unexpected msg")
 	}
 }

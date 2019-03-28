@@ -108,10 +108,6 @@ func LinkSetFlood(link Link, mode bool) error {
 	return ErrNotImplemented
 }
 
-func LinkSetTxQLen(link Link, qlen int) error {
-	return ErrNotImplemented
-}
-
 func LinkAdd(link Link) error {
 	return ErrNotImplemented
 }

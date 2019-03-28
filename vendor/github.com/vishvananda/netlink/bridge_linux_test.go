@@ -3,11 +3,14 @@ package netlink
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestBridgeVlan(t *testing.T) {
-	minKernelRequired(t, 3, 10)
+	if os.Getenv("TRAVIS_BUILD_DIR") != "" {
+		t.Skipf("Travis CI worker Linux kernel version (3.13) is too old for this test")
+	}
 
 	tearDown := setUpNetlinkTest(t)
 	defer tearDown()
@@ -35,7 +38,7 @@ func TestBridgeVlan(t *testing.T) {
 				t.Fatal()
 			} else {
 				if !vInfo[0].EngressUntag() || !vInfo[0].PortVID() || vInfo[0].Vid != 1 {
-					t.Fatalf("bridge vlan show get wrong return %s", vInfo[0].String())
+					t.Fatal("bridge vlan show get wrong return %s", vInfo[0].String())
 				}
 			}
 		}
