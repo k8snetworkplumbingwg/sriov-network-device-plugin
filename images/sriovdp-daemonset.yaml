@@ -46,7 +46,7 @@ spec:
           privileged: false
         volumeMounts:
         - name: devicesock
-          mountPath: /var/lib/kubelet/plugins_registry/
+          mountPath: /var/lib/kubelet/
           readOnly: false
         - name: net
           mountPath: /sys/class/net
@@ -54,7 +54,7 @@ spec:
       volumes:
         - name: devicesock
           hostPath:
-            path: /var/lib/kubelet/plugins_registry/
+            path: /var/lib/kubelet/
         - name: net
           hostPath:
             path: /sys/class/net
