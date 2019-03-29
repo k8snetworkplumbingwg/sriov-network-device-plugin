@@ -41,7 +41,7 @@ spec:
           privileged: true
         volumeMounts:
         - name: devicesock
-          mountPath: /var/lib/kubelet/device-plugins/
+          mountPath: /var/lib/kubelet/
           readOnly: false
         - name: log
           mountPath: /var/log
@@ -53,7 +53,7 @@ spec:
       volumes:
         - name: devicesock
           hostPath:
-            path: /var/lib/kubelet/device-plugins/
+            path: /var/lib/kubelet/
         - name: log
           hostPath:
             path: /var/log
@@ -66,4 +66,3 @@ spec:
             items:
             - key: config.json
               path: config.json
-            
