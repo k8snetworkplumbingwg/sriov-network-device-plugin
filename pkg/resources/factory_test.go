@@ -1,9 +1,8 @@
 package resources
 
 import (
-	"reflect"
-
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	"reflect"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
@@ -60,14 +59,15 @@ var _ = Describe("Factory", func() {
 
 				c := types.ResourceConfig{
 					ResourceName: "fake",
-					Selectors: struct {
+					Selectors: []struct {
 						Vendors []string `json:"vendors,omitempty"`
 						Devices []string `json:"devices,omitempty"`
 						Drivers []string `json:"drivers,omitempty"`
-					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}},
+					}{{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}}},
 				}
 
 				rp, err = f.GetResourcePool(&c, devs)
+
 			})
 			It("should return valid resource pool", func() {
 				Expect(rp).NotTo(BeNil())
