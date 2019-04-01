@@ -102,6 +102,10 @@ func (rp *resourcePool) GetMounts(deviceIDs []string) []*pluginapi.Mount {
 	for _, id := range deviceIDs {
 		if dev, ok := rp.devicePool[id]; ok {
 			mnt := dev.GetMounts()
+			if dev.IsRdma() && rp.config.IsRdma {
+				rdmaMounts := dev.GetRdmaMounts()
+				mnt = append(mnt, rdmaMounts...)
+			}
 			devMounts = append(devMounts, mnt...)
 		}
 	}

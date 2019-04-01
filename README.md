@@ -158,6 +158,15 @@ This plugin creates device plugin endpoints based on the configurations given in
                 "devices": ["154c", "10ed"],
                 "drivers": ["vfio-pci"]
             }
+        },
+        {
+            "resourceName": "mlnx_sriov_rdma",
+            "isRdma": true,
+            "selectors": {
+                "vendors": ["15b3"],
+                "devices": ["1018"],
+                "drivers": ["mlx5_core"]
+            }
         }
     ]
 }
@@ -171,10 +180,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 |----------------|----------|---------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|
 | "resourceName" | Yes      | Endpoint resource name    | `string` - must be unique and should not contain special characters | "sriov_net_A"                                                             |
 | "selectors"    | No       | A map of device selectors | Each selector is a map of  `string` list.                           | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"] |
-
-
-
-[//]: # (The table above generated using: https://ozh.github.io/ascii-tables/)
+| "isRdma"       | No       | Mount RDMA resources      | `bool` - boolean value true or false                                | "isRdma": true                                                            |
 
 ### Command line arguments
 

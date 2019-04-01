@@ -18,9 +18,14 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-const (
+var (
 	// SockDir is the default Kubelet device plugin socket directory
-	SockDir = "/var/lib/kubelet/device-plugins"
+	SockDir = "/var/lib/kubelet/plugins_registry"
+	// DeprecatedSockDir is the deprecated Kubelet device plugin socket directory
+	DeprecatedSockDir = "/var/lib/kubelet/device-plugins"
+)
+
+const (
 	// KubeEndPoint is kubelet socket name
 	KubeEndPoint = "kubelet.sock"
 )
@@ -28,6 +33,7 @@ const (
 // ResourceConfig contains cofiguration paremeters for a resource pool
 type ResourceConfig struct {
 	ResourceName string `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	IsRdma       bool   `json:"isRdma"`       // the resource support rdma
 	Selectors    struct {
 		Vendors []string `json:"vendors,omitempty"`
 		Devices []string `json:"devices,omitempty"`
@@ -59,6 +65,7 @@ type ResourceFactory interface {
 	GetInfoProvider(string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []PciNetDevice) (ResourcePool, error)
+	GetRdmaSpec(string, string) RdmaSpec
 }
 
 // ResourcePool represents a generic resource entity
@@ -87,6 +94,7 @@ type PciNetDevice interface {
 	GetEnvVal() string
 	GetMounts() []*pluginapi.Mount
 	GetAPIDevice() *pluginapi.Device
+	GetRdmaSpec() RdmaSpec
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
@@ -104,4 +112,10 @@ type DeviceSelector interface {
 // LinkWatcher in interface to watch Network link status
 type LinkWatcher interface { // This is not fully defined yet!!
 	Subscribe()
+}
+
+// RdmaSpec check if the given device is rdma device and get its mounts
+type RdmaSpec interface {
+	IsRdma() bool
+	GetDeviceSpec() []*pluginapi.DeviceSpec
 }

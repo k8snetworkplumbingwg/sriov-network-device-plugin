@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
@@ -18,6 +19,7 @@ var _ = Describe("PoolStub", func() {
 		devs   []string
 		d1, d2 types.PciNetDevice
 		rp     types.ResourcePool
+		vendor *pcidb.Vendor
 	)
 	BeforeEach(func() {
 		fs = &utils.FakeFilesystem{
@@ -35,7 +37,8 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/vfio-pci",
 			},
 		}
-		f = NewResourceFactory("fake", "fake")
+		f = NewResourceFactory("fake", "fake", true)
+		vendor = &pcidb.Vendor{ID: "fake"}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {
@@ -43,8 +46,8 @@ var _ = Describe("PoolStub", func() {
 			It("should return valid DeviceSpec array", func() {
 				defer fs.Use()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1", Vendor: vendor}, f)
+				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2", Vendor: vendor}, f)
 				rp = &resourcePool{
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,
@@ -68,8 +71,8 @@ var _ = Describe("PoolStub", func() {
 			It("should return valid envs array", func() {
 				defer fs.Use()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1", Vendor: vendor}, f)
+				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2", Vendor: vendor}, f)
 				rp = &resourcePool{
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,
@@ -89,8 +92,8 @@ var _ = Describe("PoolStub", func() {
 			It("should return valid mounts array", func() {
 				defer fs.Use()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1", Vendor: vendor}, f)
+				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2", Vendor: vendor}, f)
 				rp = &resourcePool{
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,

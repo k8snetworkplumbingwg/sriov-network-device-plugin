@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
@@ -26,8 +27,9 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				f := NewResourceFactory("fake", "fake", true)
+				vendor := &pcidb.Vendor{ID: "fake"}
+				in := &ghw.PCIDevice{Address: "0000:00:00.1", Vendor: vendor}
 
 				dev, err := NewPciNetDevice(in, f)
 				out := dev.(*pciNetDevice)
@@ -48,9 +50,11 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
+				vendor := &pcidb.Vendor{ID: "fake"}
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
+					Vendor:  vendor,
 				}
 
 				dev, err := NewPciNetDevice(in, f)

@@ -78,6 +78,7 @@ var _ = Describe("Resource manager", func() {
 				testErr = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 						"resourceList": [{
 								"resourceName": "intel_sriov_netdevice",
+								"isRdma": false,
 								"selectors": {
 									"vendors": ["8086"],
 									"devices": ["154c", "10ed"],
@@ -148,6 +149,7 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "invalid-name",
+						"isRdma": false,
 						"selectors": {
 							"vendors": ["8086"],
 							"devices": ["154c", "10ed"],
@@ -174,6 +176,7 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "duplicate",
+						"isRdma": true,
 						"selectors": {
 							"vendors": ["8086"],
 							"devices": ["154c", "10ed"],
@@ -291,7 +294,7 @@ var _ = Describe("Resource manager", func() {
 			os.Setenv("GHW_CHROOT", fs.RootDir)
 			defer os.Unsetenv("GHW_CHROOT")
 
-			rf := resources.NewResourceFactory("fake", "fake")
+			rf := resources.NewResourceFactory("fake", "fake", true)
 			rm := &resourceManager{
 				rFactory: rf,
 				configList: []*types.ResourceConfig{
@@ -384,7 +387,7 @@ var _ = Describe("Resource manager", func() {
 		func(fs *utils.FakeFilesystem, addr string, expected []types.LinkWatcher) {
 			defer fs.Use()()
 
-			rf := resources.NewResourceFactory("fake", "fake")
+			rf := resources.NewResourceFactory("fake", "fake", true)
 			rm := &resourceManager{
 				rFactory: rf,
 				configList: []*types.ResourceConfig{

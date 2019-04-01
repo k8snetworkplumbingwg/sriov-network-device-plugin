@@ -19,6 +19,7 @@ type pciNetDevice struct {
 	linkSpeed   string
 	env         string
 	numa        string
+	rdmaSpec    types.RdmaSpec
 	apiDevice   *pluginapi.Device
 	deviceSpecs []*pluginapi.DeviceSpec
 	mounts      []*pluginapi.Mount
@@ -41,6 +42,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	infoProvider := rFactory.GetInfoProvider(driverName)
 	dSpecs := infoProvider.GetDeviceSpecs(pciAddr)
 	mnt := infoProvider.GetMounts(pciAddr)
+	rdmaSpec := rFactory.GetRdmaSpec(pciDevice.Vendor.ID, pciAddr)
 	env := infoProvider.GetEnvVal(pciAddr)
 	apiDevice := &pluginapi.Device{
 		ID:     pciAddr,
@@ -55,6 +57,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		driver:      driverName,
 		vfID:        0,  // TO-DO: Get this using utils pkg if needed
 		linkSpeed:   "", // TO-DO: Get this using utils pkg
+		rdmaSpec:    rdmaSpec,
 		apiDevice:   apiDevice,
 		deviceSpecs: dSpecs,
 		mounts:      mnt,
@@ -108,6 +111,14 @@ func (nd *pciNetDevice) GetMounts() []*pluginapi.Mount {
 
 func (nd *pciNetDevice) GetAPIDevice() *pluginapi.Device {
 	return nd.apiDevice
+}
+
+func (nd *pciNetDevice) IsRdma() bool {
+	return nd.rdmaSpec.IsRdma()
+}
+
+func (nd *pciNetDevice) GetRdmaMounts() []*pluginapi.Mount {
+	return nd.rdmaSpec.GetMounts()
 }
 
 func getPFInfos(pciAddr string) (pfAddr, pfName string, err error) {

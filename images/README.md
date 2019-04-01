@@ -28,7 +28,7 @@ Note: The likely best practice here is to build your own image given the Dockerf
 Example docker run command:
 
 ```
-$ docker run -it -v /var/lib/kubelet/device-plugins/:/var/lib/kubelet/device-plugins/ -v /sys/class/net:/sys/class/net --entrypoint=/bin/bash nfvpe/sriovdp
+$ docker run -it -v /var/lib/kubelet/:/var/lib/kubelet/ -v /sys/class/net:/sys/class/net --entrypoint=/bin/bash nfvpe/sriovdp
 ```
 
 Originally inspired by and is a portmanteau of the [Flannel daemonset](https://github.com/coreos/flannel/blob/master/Documentation/kube-flannel.yml), the [Calico Daemonset](https://github.com/projectcalico/calico/blob/master/v2.0/getting-started/kubernetes/installation/hosted/k8s-backend-addon-manager/calico-daemonset.yaml), and the [Calico CNI install bash script](https://github.com/projectcalico/cni-plugin/blob/be4df4db2e47aa7378b1bdf6933724bac1f348d0/k8s-install/scripts/install-cni.sh#L104-L153).
