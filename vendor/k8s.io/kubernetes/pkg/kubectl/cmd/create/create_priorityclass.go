@@ -17,14 +17,14 @@ limitations under the License.
 package create
 
 import (
-	"io"
-
 	"github.com/spf13/cobra"
 
-	"k8s.io/kubernetes/pkg/kubectl"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/generate"
+	generateversioned "k8s.io/kubernetes/pkg/kubectl/generate/versioned"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 var (
@@ -33,35 +33,33 @@ var (
 
 	pcExample = templates.Examples(i18n.T(`
 		# Create a priorityclass named high-priority
-		kubectl create priorityclass default-priority --value=1000 --description="high priority"
+		kubectl create priorityclass high-priority --value=1000 --description="high priority"
 
 		# Create a priorityclass named default-priority that considered as the global default priority
 		kubectl create priorityclass default-priority --value=1000 --global-default=true --description="default priority"`))
 )
 
+// PriorityClassOpts holds the options for 'create priorityclass' sub command
 type PriorityClassOpts struct {
 	CreateSubcommandOptions *CreateSubcommandOptions
 }
 
 // NewCmdCreatePriorityClass is a macro command to create a new priorityClass.
-func NewCmdCreatePriorityClass(f cmdutil.Factory, cmdOut io.Writer) *cobra.Command {
+func NewCmdCreatePriorityClass(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cobra.Command {
 	options := &PriorityClassOpts{
-		CreateSubcommandOptions: &CreateSubcommandOptions{
-			PrintFlags: NewPrintFlags("created"),
-			CmdOut:     cmdOut,
-		},
+		CreateSubcommandOptions: NewCreateSubcommandOptions(ioStreams),
 	}
 
 	cmd := &cobra.Command{
-		Use: "priorityclass NAME --value=VALUE --global-default=BOOL [--dry-run]",
+		Use:                   "priorityclass NAME --value=VALUE --global-default=BOOL [--dry-run]",
 		DisableFlagsInUseLine: true,
 		Aliases:               []string{"pc"},
 		Short:                 i18n.T("Create a priorityclass with the specified name."),
 		Long:                  pcLong,
 		Example:               pcExample,
 		Run: func(cmd *cobra.Command, args []string) {
-			cmdutil.CheckErr(options.Complete(cmd, args))
-			cmdutil.CheckErr(options.Run(f))
+			cmdutil.CheckErr(options.Complete(f, cmd, args))
+			cmdutil.CheckErr(options.Run())
 		},
 	}
 
@@ -69,7 +67,7 @@ func NewCmdCreatePriorityClass(f cmdutil.Factory, cmdOut io.Writer) *cobra.Comma
 
 	cmdutil.AddApplyAnnotationFlags(cmd)
 	cmdutil.AddValidateFlags(cmd)
-	cmdutil.AddGeneratorFlags(cmd, cmdutil.PriorityClassV1Alpha1GeneratorName)
+	cmdutil.AddGeneratorFlags(cmd, generateversioned.PriorityClassV1Alpha1GeneratorName)
 
 	cmd.Flags().Int32("value", 0, i18n.T("the value of this priority class."))
 	cmd.Flags().Bool("global-default", false, i18n.T("global-default specifies whether this PriorityClass should be considered as the default priority."))
@@ -77,16 +75,17 @@ func NewCmdCreatePriorityClass(f cmdutil.Factory, cmdOut io.Writer) *cobra.Comma
 	return cmd
 }
 
-func (o *PriorityClassOpts) Complete(cmd *cobra.Command, args []string) error {
+// Complete completes all the required options
+func (o *PriorityClassOpts) Complete(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
 	name, err := NameFromCommandArgs(cmd, args)
 	if err != nil {
 		return err
 	}
 
-	var generator kubectl.StructuredGenerator
+	var generator generate.StructuredGenerator
 	switch generatorName := cmdutil.GetFlagString(cmd, "generator"); generatorName {
-	case cmdutil.PriorityClassV1Alpha1GeneratorName:
-		generator = &kubectl.PriorityClassV1Generator{
+	case generateversioned.PriorityClassV1Alpha1GeneratorName:
+		generator = &generateversioned.PriorityClassV1Generator{
 			Name:          name,
 			Value:         cmdutil.GetFlagInt32(cmd, "value"),
 			GlobalDefault: cmdutil.GetFlagBool(cmd, "global-default"),
@@ -96,10 +95,10 @@ func (o *PriorityClassOpts) Complete(cmd *cobra.Command, args []string) error {
 		return errUnsupportedGenerator(cmd, generatorName)
 	}
 
-	return o.CreateSubcommandOptions.Complete(cmd, args, generator)
+	return o.CreateSubcommandOptions.Complete(f, cmd, args, generator)
 }
 
-// CreatePriorityClass implements the behavior to run the create priorityClass command.
-func (o *PriorityClassOpts) Run(f cmdutil.Factory) error {
-	return RunCreateSubcommand(f, o.CreateSubcommandOptions)
+// Run calls the CreateSubcommandOptions.Run in the PriorityClassOpts instance
+func (o *PriorityClassOpts) Run() error {
+	return o.CreateSubcommandOptions.Run()
 }

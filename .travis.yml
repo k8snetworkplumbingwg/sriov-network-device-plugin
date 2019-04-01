@@ -2,8 +2,12 @@ language: go
 
 before_install:
   - sudo apt-get update -qq
+  # Install Glide
+  - mkdir -p "${GOPATH}/bin"
+  - curl https://glide.sh/get | bash
 
 script:
+  - make test
   - make build
   - make
   - make image

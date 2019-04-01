@@ -12,6 +12,7 @@ GOBIN=$(CURDIR)/bin
 BUILDDIR=$(CURDIR)/build
 BASE=$(GOPATH)/src/$(REPO_PATH)
 PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "^$(PACKAGE)/vendor/"))
+GOFILES = $(shell find . -name *.go | grep -vE "(\/vendor\/)|(_test.go)")
 TESTPKGS = $(shell env GOPATH=$(GOPATH) $(GO) list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 
 export GOPATH
@@ -28,6 +29,12 @@ ifdef HTTP_PROXY
 endif
 ifdef HTTPS_PROXY
 	DOCKERARGS += --build-arg https_proxy=$(HTTPS_PROXY)
+endif
+
+LDFLAGS=
+ifdef STATIC
+	export CGO_ENABLED=0
+	LDFLAGS=-a -ldflags '-extldflags \"-static\"'
 endif
 
 # Go tools
@@ -52,11 +59,11 @@ $(GOBIN):
 $(BUILDDIR): | $(BASE) ; $(info Creating build directory...)
 	@cd $(BASE) && mkdir -p $@
 
-build: vendor $(BUILDDIR)/$(BINARY_NAME) ; $(info Building $(BINARY_NAME)...)
+build: $(BUILDDIR)/$(BINARY_NAME) | vendor ; $(info Building $(BINARY_NAME)...)
 	$(info Done!)
 
-$(BUILDDIR)/$(BINARY_NAME): $(BUILDDIR)
-	@cd $(BASE)/cmd/$(BINARY_NAME) && $(GO) build -o $(BUILDDIR)/$(BINARY_NAME) -v
+$(BUILDDIR)/$(BINARY_NAME): $(GOFILES) | $(BUILDDIR)
+	@cd $(BASE)/cmd/$(BINARY_NAME) && $(GO) build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -v
 
 
 # Tools
@@ -92,10 +99,10 @@ test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage repo
 test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint vendor | $(BASE) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
+check test tests: fmt lint | $(BASE) vendor ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
 	$Q cd $(BASE) && $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
-test-xml: fmt lint vendor | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
+test-xml: fmt lint | $(BASE) $(GO2XUNIT) vendor ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
 	$Q cd $(BASE) && 2>&1 $(GO) test -timeout 20s -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
@@ -106,7 +113,7 @@ COVERAGE_HTML = $(COVERAGE_DIR)/index.html
 .PHONY: test-coverage test-coverage-tools
 test-coverage-tools: | $(GOCOVMERGE) $(GOCOV) $(GOCOVXML)
 test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage.$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-test-coverage: fmt lint vendor test-coverage-tools | $(BASE) ; $(info  running coverage tests...) @ ## Run coverage tests
+test-coverage: fmt lint test-coverage-tools | $(BASE) vendor ; $(info  running coverage tests...) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)/coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
 		$(GO) test \
@@ -121,7 +128,7 @@ test-coverage: fmt lint vendor test-coverage-tools | $(BASE) ; $(info  running c
 	$Q $(GOCOV) convert $(COVERAGE_PROFILE) | $(GOCOVXML) > $(COVERAGE_XML)
 
 .PHONY: lint
-lint: vendor | $(BASE) $(GOLINT) ; $(info  running golint...) @ ## Run golint
+lint: | $(BASE) $(GOLINT) vendor ; $(info  running golint...) @ ## Run golint
 	$Q cd $(BASE) && ret=0 && for pkg in $(PKGS); do \
 		test -z "$$($(GOLINT) $$pkg | tee /dev/stderr)" || ret=1 ; \
 	 done ; exit $$ret

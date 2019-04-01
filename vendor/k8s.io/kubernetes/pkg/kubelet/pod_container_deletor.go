@@ -19,8 +19,8 @@ package kubelet
 import (
 	"sort"
 
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
 
@@ -72,7 +72,7 @@ func getContainersToDeleteInPod(filterContainerID string, podStatus *kubecontain
 	}(filterContainerID, podStatus)
 
 	if filterContainerID != "" && matchedContainer == nil {
-		glog.Warningf("Container %q not found in pod's containers", filterContainerID)
+		klog.Warningf("Container %q not found in pod's containers", filterContainerID)
 		return containerStatusbyCreatedList{}
 	}
 
@@ -99,13 +99,14 @@ func (p *podContainerDeletor) deleteContainersInPod(filterContainerID string, po
 	containersToKeep := p.containersToKeep
 	if removeAll {
 		containersToKeep = 0
+		filterContainerID = ""
 	}
 
 	for _, candidate := range getContainersToDeleteInPod(filterContainerID, podStatus, containersToKeep) {
 		select {
 		case p.worker <- candidate.ID:
 		default:
-			glog.Warningf("Failed to issue the request to remove container %v", candidate.ID)
+			klog.Warningf("Failed to issue the request to remove container %v", candidate.ID)
 		}
 	}
 }

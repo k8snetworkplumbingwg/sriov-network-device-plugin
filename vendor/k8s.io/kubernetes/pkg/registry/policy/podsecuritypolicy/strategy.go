@@ -17,12 +17,14 @@ limitations under the License.
 package podsecuritypolicy
 
 import (
+	"context"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
+	psputil "k8s.io/kubernetes/pkg/api/podsecuritypolicy"
 	"k8s.io/kubernetes/pkg/apis/policy"
 	"k8s.io/kubernetes/pkg/apis/policy/validation"
 )
@@ -53,19 +55,26 @@ func (strategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
-func (strategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
+func (strategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+	psp := obj.(*policy.PodSecurityPolicy)
+
+	psputil.DropDisabledFields(&psp.Spec, nil)
 }
 
-func (strategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
+func (strategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+	newPsp := obj.(*policy.PodSecurityPolicy)
+	oldPsp := old.(*policy.PodSecurityPolicy)
+
+	psputil.DropDisabledFields(&newPsp.Spec, &oldPsp.Spec)
 }
 
 func (strategy) Canonicalize(obj runtime.Object) {
 }
 
-func (strategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
+func (strategy) Validate(ctx context.Context, obj runtime.Object) field.ErrorList {
 	return validation.ValidatePodSecurityPolicy(obj.(*policy.PodSecurityPolicy))
 }
 
-func (strategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
+func (strategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidatePodSecurityPolicyUpdate(old.(*policy.PodSecurityPolicy), obj.(*policy.PodSecurityPolicy))
 }

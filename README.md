@@ -242,7 +242,7 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 
 ## Example deployments
 
-We assume that you have working K8s cluster configured with Mutlus meta plugin for multi-network support. Please see [Additional information](#additional-information) section for more informaiton on required CNI plugins.
+We assume that you have working K8s cluster configured with Multus meta plugin for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
 The [images](./images) directory contains example Docker file, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) building docker the image.
 

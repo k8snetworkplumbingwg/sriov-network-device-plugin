@@ -21,10 +21,11 @@ import (
 
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apiextensions-apiserver/test/integration/testserver"
+	"k8s.io/apiextensions-apiserver/test/integration/fixtures"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -62,52 +63,52 @@ var _ = SIGDescribe("CustomResourceDefinition Watch", func() {
 				framework.Failf("failed to initialize apiExtensionClient: %v", err)
 			}
 
-			noxuDefinition := testserver.NewNoxuCustomResourceDefinition(apiextensionsv1beta1.ClusterScoped)
-			noxuVersionClient, err := testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, f.ClientPool)
+			noxuDefinition := fixtures.NewNoxuCustomResourceDefinition(apiextensionsv1beta1.ClusterScoped)
+			noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, f.DynamicClient)
 			if err != nil {
 				framework.Failf("failed to create CustomResourceDefinition: %v", err)
 			}
 
 			defer func() {
-				err = testserver.DeleteCustomResourceDefinition(noxuDefinition, apiExtensionClient)
+				err = fixtures.DeleteCustomResourceDefinition(noxuDefinition, apiExtensionClient)
 				if err != nil {
 					framework.Failf("failed to delete CustomResourceDefinition: %v", err)
 				}
 			}()
 
 			ns := ""
-			noxuResourceClient := newNamespacedCustomResourceClient(ns, noxuVersionClient, noxuDefinition)
+			noxuResourceClient := newNamespacedCustomResourceClient(ns, f.DynamicClient, noxuDefinition)
 
 			watchA, err := watchCRWithName(noxuResourceClient, watchCRNameA)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to watch custom resource: %s", watchCRNameA)
 
 			watchB, err := watchCRWithName(noxuResourceClient, watchCRNameB)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to watch custom resource: %s", watchCRNameB)
 
-			testCrA := testserver.NewNoxuInstance(ns, watchCRNameA)
-			testCrB := testserver.NewNoxuInstance(ns, watchCRNameB)
+			testCrA := fixtures.NewNoxuInstance(ns, watchCRNameA)
+			testCrB := fixtures.NewNoxuInstance(ns, watchCRNameB)
 
 			By("Creating first CR ")
 			testCrA, err = instantiateCustomResource(testCrA, noxuResourceClient, noxuDefinition)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to instantiate custom resource: %+v", testCrA)
 			expectEvent(watchA, watch.Added, testCrA)
 			expectNoEvent(watchB, watch.Added, testCrA)
 
 			By("Creating second CR")
 			testCrB, err = instantiateCustomResource(testCrB, noxuResourceClient, noxuDefinition)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to instantiate custom resource: %+v", testCrB)
 			expectEvent(watchB, watch.Added, testCrB)
 			expectNoEvent(watchA, watch.Added, testCrB)
 
 			By("Deleting first CR")
 			err = deleteCustomResource(noxuResourceClient, watchCRNameA)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to delete custom resource: %s", watchCRNameA)
 			expectEvent(watchA, watch.Deleted, nil)
 			expectNoEvent(watchB, watch.Deleted, nil)
 
 			By("Deleting second CR")
 			err = deleteCustomResource(noxuResourceClient, watchCRNameB)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred(), "failed to delete custom resource: %s", watchCRNameB)
 			expectEvent(watchB, watch.Deleted, nil)
 			expectNoEvent(watchA, watch.Deleted, nil)
 		})
@@ -124,7 +125,7 @@ func watchCRWithName(crdResourceClient dynamic.ResourceInterface, name string) (
 }
 
 func instantiateCustomResource(instanceToCreate *unstructured.Unstructured, client dynamic.ResourceInterface, definition *apiextensionsv1beta1.CustomResourceDefinition) (*unstructured.Unstructured, error) {
-	createdInstance, err := client.Create(instanceToCreate)
+	createdInstance, err := client.Create(instanceToCreate, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +154,13 @@ func deleteCustomResource(client dynamic.ResourceInterface, name string) error {
 	return client.Delete(name, &metav1.DeleteOptions{})
 }
 
-func newNamespacedCustomResourceClient(ns string, client dynamic.Interface, definition *apiextensionsv1beta1.CustomResourceDefinition) dynamic.ResourceInterface {
-	return client.Resource(&metav1.APIResource{
-		Name:       definition.Spec.Names.Plural,
-		Namespaced: definition.Spec.Scope == apiextensionsv1beta1.NamespaceScoped,
-	}, ns)
+func newNamespacedCustomResourceClient(ns string, client dynamic.Interface, crd *apiextensionsv1beta1.CustomResourceDefinition) dynamic.ResourceInterface {
+	gvr := schema.GroupVersionResource{Group: crd.Spec.Group, Version: crd.Spec.Version, Resource: crd.Spec.Names.Plural}
+
+	if crd.Spec.Scope != apiextensionsv1beta1.ClusterScoped {
+		return client.Resource(gvr).Namespace(ns)
+	} else {
+		return client.Resource(gvr)
+	}
+
 }

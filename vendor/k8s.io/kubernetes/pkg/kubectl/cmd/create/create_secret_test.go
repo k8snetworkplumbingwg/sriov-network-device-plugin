@@ -17,14 +17,13 @@ limitations under the License.
 package create
 
 import (
-	"bytes"
 	"net/http"
 	"testing"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest/fake"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	cmdtesting "k8s.io/kubernetes/pkg/kubectl/cmd/testing"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
@@ -37,11 +36,11 @@ func TestCreateSecretGeneric(t *testing.T) {
 		},
 	}
 	secretObject.Name = "my-secret"
-	tf := cmdtesting.NewTestFactory()
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
 	defer tf.Cleanup()
 
-	codec := legacyscheme.Codecs.LegacyCodec(scheme.Versions...)
-	ns := legacyscheme.Codecs
+	codec := scheme.Codecs.LegacyCodec(scheme.Scheme.PrioritizedVersionsAllGroups()...)
+	ns := scheme.Codecs
 
 	tf.Client = &fake.RESTClient{
 		GroupVersion:         schema.GroupVersion{Version: "v1"},
@@ -49,16 +48,15 @@ func TestCreateSecretGeneric(t *testing.T) {
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
 			case p == "/namespaces/test/secrets" && m == "POST":
-				return &http.Response{StatusCode: 201, Header: defaultHeader(), Body: objBody(codec, secretObject)}, nil
+				return &http.Response{StatusCode: 201, Header: cmdtesting.DefaultHeader(), Body: cmdtesting.ObjBody(codec, secretObject)}, nil
 			default:
 				t.Fatalf("unexpected request: %#v\n%#v", req.URL, req)
 				return nil, nil
 			}
 		}),
 	}
-	tf.Namespace = "test"
-	buf := bytes.NewBuffer([]byte{})
-	cmd := NewCmdCreateSecretGeneric(tf, buf)
+	ioStreams, _, buf, _ := genericclioptions.NewTestIOStreams()
+	cmd := NewCmdCreateSecretGeneric(tf, ioStreams)
 	cmd.Flags().Set("output", "name")
 	cmd.Flags().Set("from-literal", "password=includes,comma")
 	cmd.Flags().Set("from-literal", "username=test_user")
@@ -72,9 +70,9 @@ func TestCreateSecretGeneric(t *testing.T) {
 func TestCreateSecretDockerRegistry(t *testing.T) {
 	secretObject := &v1.Secret{}
 	secretObject.Name = "my-secret"
-	tf := cmdtesting.NewTestFactory()
-	codec := legacyscheme.Codecs.LegacyCodec(scheme.Versions...)
-	ns := legacyscheme.Codecs
+	tf := cmdtesting.NewTestFactory().WithNamespace("test")
+	codec := scheme.Codecs.LegacyCodec(scheme.Scheme.PrioritizedVersionsAllGroups()...)
+	ns := scheme.Codecs
 
 	tf.Client = &fake.RESTClient{
 		GroupVersion:         schema.GroupVersion{Version: "v1"},
@@ -82,16 +80,15 @@ func TestCreateSecretDockerRegistry(t *testing.T) {
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
 			case p == "/namespaces/test/secrets" && m == "POST":
-				return &http.Response{StatusCode: 201, Header: defaultHeader(), Body: objBody(codec, secretObject)}, nil
+				return &http.Response{StatusCode: 201, Header: cmdtesting.DefaultHeader(), Body: cmdtesting.ObjBody(codec, secretObject)}, nil
 			default:
 				t.Fatalf("unexpected request: %#v\n%#v", req.URL, req)
 				return nil, nil
 			}
 		}),
 	}
-	tf.Namespace = "test"
-	buf := bytes.NewBuffer([]byte{})
-	cmd := NewCmdCreateSecretDockerRegistry(tf, buf)
+	ioStreams, _, buf, _ := genericclioptions.NewTestIOStreams()
+	cmd := NewCmdCreateSecretDockerRegistry(tf, ioStreams)
 	cmd.Flags().Set("docker-username", "test-user")
 	cmd.Flags().Set("docker-password", "test-pass")
 	cmd.Flags().Set("docker-email", "test-email")
