@@ -55,6 +55,7 @@ type cliParams struct {
 
 type resourceManager struct {
 	cliParams
+	pluginWatchMode bool
 	socketSuffix    string
 	rFactory        types.ResourceFactory
 	configList      []*types.ResourceConfig // resourceName -> resourcePool
@@ -64,11 +65,18 @@ type resourceManager struct {
 }
 
 func newResourceManager(cp *cliParams) *resourceManager {
+	pluginWatchMode := utils.DetectPluginWatchMode(types.SockDir)
+	if pluginWatchMode {
+		glog.Infof("Using Kubelet Plugin Registry Mode")
+	} else {
+		glog.Infof("Using Deprecated Devie Plugin Registry Path")
+	}
 	return &resourceManager{
-		cliParams:     *cp,
-		rFactory:      resources.NewResourceFactory(cp.resourcePrefix, socketSuffix),
-		netDeviceList: make([]types.PciNetDevice, 0),
-		linkWatchList: make(map[string]types.LinkWatcher, 0),
+		cliParams:       *cp,
+		pluginWatchMode: pluginWatchMode,
+		rFactory:        resources.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode),
+		netDeviceList:   make([]types.PciNetDevice, 0),
+		linkWatchList:   make(map[string]types.LinkWatcher, 0),
 	}
 }
 
@@ -127,7 +135,9 @@ func (rm *resourceManager) startAllServers() error {
 		}
 
 		// start watcher
-		go rs.Watch()
+		if !rm.pluginWatchMode {
+			go rs.Watch()
+		}
 	}
 	return nil
 }
