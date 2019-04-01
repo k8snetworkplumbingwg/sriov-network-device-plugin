@@ -3,6 +3,7 @@
 package netlink
 
 import (
+	"os"
 	"testing"
 )
 
@@ -120,8 +121,9 @@ func TestProtinfo(t *testing.T) {
 		t.Fatalf("Set protinfo attrs for link without master is not supported, but err: %s", err)
 	}
 
-	// Setting kernel requirement for next tests which require BR_PROXYARP
-	minKernelRequired(t, 3, 19)
+	if os.Getenv("TRAVIS_BUILD_DIR") != "" {
+		t.Skipf("Skipped some tests because travis kernel is to old to support BR_PROXYARP.")
+	}
 
 	if err := LinkSetBrProxyArp(iface4, true); err != nil {
 		t.Fatal(err)

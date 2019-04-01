@@ -35,7 +35,7 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/vfio-pci",
 			},
 		}
-		f = NewResourceFactory("fake", "fake")
+		f = NewResourceFactory("fake", "fake", true)
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {
