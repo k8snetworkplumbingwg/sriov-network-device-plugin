@@ -11,7 +11,8 @@ data:
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c", "10ed"],
-                    "drivers": ["i40evf", "ixgbevf"]
+                    "drivers": ["i40evf", "ixgbevf"],
+                    "ifnames": ["ens0", "enp2s0f1"]
                 }
             },
             {
@@ -19,7 +20,8 @@ data:
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c", "10ed"],
-                    "drivers": ["vfio-pci"]
+                    "drivers": ["vfio-pci"],
+                    "ifnames": ["enp0s0f0","enp2s2f1"]
                 }
             }
         ]

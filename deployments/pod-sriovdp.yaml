@@ -12,7 +12,7 @@ spec:
     securityContext:
       privileged: true
     volumeMounts:
-    - mountPath: /var/lib/kubelet/device-plugins/ 
+    - mountPath: /var/lib/kubelet/
       name: devicesock 
       readOnly: false
     - mountPath: /sys
@@ -29,7 +29,7 @@ spec:
   volumes:
   - name: devicesock 
     hostPath:
-     path: /var/lib/kubelet/device-plugins/
+     path: /var/lib/kubelet/
   - name: net
     hostPath:
       path: /sys

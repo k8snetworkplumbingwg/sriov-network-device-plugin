@@ -25,6 +25,8 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.1/net/enp2s0f1",
 				"sys/bus/pci/devices/0000:00:00.1/physfn/net/enp2s0f0",
 				"sys/bus/pci/devices/0000:00:00.2/net/enp0s0f0",
+				"sys/bus/pci/devices/0000:00:00.1",
+				"sys/bus/pci/devices/0000:00:00.2",
 				"sys/kernel/iommu_groups/0",
 				"sys/kernel/iommu_groups/1",
 				"sys/bus/pci/drivers/vfio-pci",
@@ -36,7 +38,7 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/vfio-pci",
 			},
 		}
-		f = NewResourceFactory("fake", "fake")
+		f = NewResourceFactory("fake", "fake", true)
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {

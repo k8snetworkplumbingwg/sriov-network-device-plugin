@@ -30,6 +30,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 
 	// 			1. get PF details, add PF info in its pciNetDevice struct
 	// 			2. Get driver info
+	var ifName string
 	pciAddr := pciDevice.Address
 	driverName, err := utils.GetDriverName(pciAddr)
 	if err != nil {
@@ -38,6 +39,11 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	netDevs, err := utils.GetNetNames(pciAddr)
 	if err != nil {
 		return nil, err
+	}
+	if len(netDevs) == 0 {
+		ifName = ""
+	} else {
+		ifName = netDevs[0]
 	}
 	pfName, err := utils.GetPfName(pciAddr)
 	if err != nil {
@@ -58,7 +64,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	// 			4. Create pciNetDevice object with all relevent info
 	return &pciNetDevice{
 		pciDevice:   pciDevice,
-		ifName:      netDevs[0],
+		ifName:      ifName,
 		pfName:      pfName,
 		driver:      driverName,
 		vfID:        0,  // TO-DO: Get this using utils pkg if needed

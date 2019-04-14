@@ -2,6 +2,8 @@ package netlink
 
 import (
 	"fmt"
+
+	"github.com/vishvananda/netlink/nl"
 )
 
 type Filter interface {
@@ -17,7 +19,7 @@ type FilterAttrs struct {
 	Handle    uint32
 	Parent    uint32
 	Priority  uint16 // lower is higher priority
-	Protocol  uint16 // unix.ETH_P_*
+	Protocol  uint16 // syscall.ETH_P_*
 }
 
 func (q FilterAttrs) String() string {
@@ -182,19 +184,55 @@ func NewMirredAction(redirIndex int) *MirredAction {
 	}
 }
 
-// MatchAll filters match all packets
-type MatchAll struct {
-	FilterAttrs
-	ClassId uint32
-	Actions []Action
+// Constants used in TcU32Sel.Flags.
+const (
+	TC_U32_TERMINAL  = nl.TC_U32_TERMINAL
+	TC_U32_OFFSET    = nl.TC_U32_OFFSET
+	TC_U32_VAROFFSET = nl.TC_U32_VAROFFSET
+	TC_U32_EAT       = nl.TC_U32_EAT
+)
+
+// Sel of the U32 filters that contains multiple TcU32Key. This is the copy
+// and the frontend representation of nl.TcU32Sel. It is serialized into canonical
+// nl.TcU32Sel with the appropriate endianness.
+type TcU32Sel struct {
+	Flags    uint8
+	Offshift uint8
+	Nkeys    uint8
+	Pad      uint8
+	Offmask  uint16
+	Off      uint16
+	Offoff   int16
+	Hoff     int16
+	Hmask    uint32
+	Keys     []TcU32Key
 }
 
-func (filter *MatchAll) Attrs() *FilterAttrs {
+// TcU32Key contained of Sel in the U32 filters. This is the copy and the frontend
+// representation of nl.TcU32Key. It is serialized into chanonical nl.TcU32Sel
+// with the appropriate endianness.
+type TcU32Key struct {
+	Mask    uint32
+	Val     uint32
+	Off     int32
+	OffMask int32
+}
+
+// U32 filters on many packet related properties
+type U32 struct {
+	FilterAttrs
+	ClassId    uint32
+	RedirIndex int
+	Sel        *TcU32Sel
+	Actions    []Action
+}
+
+func (filter *U32) Attrs() *FilterAttrs {
 	return &filter.FilterAttrs
 }
 
-func (filter *MatchAll) Type() string {
-	return "matchall"
+func (filter *U32) Type() string {
+	return "u32"
 }
 
 type FilterFwAttrs struct {

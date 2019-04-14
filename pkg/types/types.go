@@ -18,9 +18,14 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-const (
+var (
 	// SockDir is the default Kubelet device plugin socket directory
-	SockDir = "/var/lib/kubelet/device-plugins"
+	SockDir = "/var/lib/kubelet/plugins_registry"
+	// DeprecatedSockDir is the deprecated Kubelet device plugin socket directory
+	DeprecatedSockDir = "/var/lib/kubelet/device-plugins"
+)
+
+const (
 	// KubeEndPoint is kubelet socket name
 	KubeEndPoint = "kubelet.sock"
 )

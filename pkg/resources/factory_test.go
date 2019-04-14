@@ -17,16 +17,16 @@ var _ = Describe("Factory", func() {
 	Describe("getting factory instance", func() {
 		Context("always", func() {
 			It("should return the same instance", func() {
-				f0 := NewResourceFactory("fake", "fake")
+				f0 := NewResourceFactory("fake", "fake", true)
 				Expect(f0).NotTo(BeNil())
-				f1 := NewResourceFactory("fake", "fake")
+				f1 := NewResourceFactory("fake", "fake", true)
 				Expect(f1).To(Equal(f0))
 			})
 		})
 	})
 	DescribeTable("getting info provider",
 		func(name string, expected reflect.Type) {
-			f := NewResourceFactory("fake", "fake")
+			f := NewResourceFactory("fake", "fake", true)
 			p := f.GetInfoProvider(name)
 			Expect(reflect.TypeOf(p)).To(Equal(expected))
 		},
@@ -42,7 +42,7 @@ var _ = Describe("Factory", func() {
 				devs []types.PciNetDevice
 			)
 			BeforeEach(func() {
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
 
 				devs = make([]types.PciNetDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "1234"}

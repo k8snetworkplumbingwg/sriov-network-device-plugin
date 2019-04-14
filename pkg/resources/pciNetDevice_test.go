@@ -16,6 +16,7 @@ var _ = Describe("PciNetDevice", func() {
 				fs := &utils.FakeFilesystem{
 					Dirs: []string{
 						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
+						"sys/bus/pci/devices/0000:00:00.1",
 						"sys/kernel/iommu_groups/0",
 						"sys/bus/pci/drivers/vfio-pci",
 					},
@@ -26,7 +27,7 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 
 				dev, err := NewPciNetDevice(in, f)
@@ -48,7 +49,7 @@ var _ = Describe("PciNetDevice", func() {
 				}
 				defer fs.Use()()
 
-				f := NewResourceFactory("fake", "fake")
+				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}

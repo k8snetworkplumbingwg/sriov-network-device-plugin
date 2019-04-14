@@ -34,8 +34,16 @@ const (
 	configuredVfFile = "sriov_numvfs"
 )
 
+// DetectPluginWatchMode returns true if plugins registry directory exist
+func DetectPluginWatchMode(sockDir string) bool {
+	if _, err := os.Stat(sockDir); err != nil {
+		return false
+	}
+	return true
+}
+
 // GetPfAddr returns SRIOV PF pci address if a device is VF given its pci address.
-// If device is not VF then this will return its own address as PF
+// If device it not VF then this will return its own address as PF
 func GetPfAddr(pciAddr string) (string, error) {
 	pfSymLink := filepath.Join(sysBusPci, pciAddr, "physfn")
 	pciinfo, err := os.Readlink(pfSymLink)
