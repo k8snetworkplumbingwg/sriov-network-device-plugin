@@ -27,12 +27,14 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	registerapi "k8s.io/kubernetes/pkg/kubelet/apis/pluginregistration/v1"
 )
 
 type resourceServer struct {
 	resourcePool       types.ResourcePool
+	pluginWatch        bool
 	endPoint           string // Socket file
-	sockDir            string // Sockets directory
+	sockPath           string // Socket file path
 	resourceNamePrefix string
 	grpcServer         *grpc.Server
 	termSignal         chan bool
@@ -41,12 +43,17 @@ type resourceServer struct {
 	checkIntervals     int // health check intervals in seconds
 }
 
-func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.ResourceServer {
+func newResourceServer(prefix, suffix string, pluginWatch bool, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s.%s", rp.GetResourceName(), suffix)
+	sockPath := filepath.Join(types.SockDir, sockName)
+	if !pluginWatch {
+		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
+	}
 	return &resourceServer{
 		resourcePool:       rp,
+		pluginWatch:        pluginWatch,
 		endPoint:           sockName,
-		sockDir:            types.SockDir,
+		sockPath:           sockPath,
 		resourceNamePrefix: prefix,
 		grpcServer:         grpc.NewServer(),
 		termSignal:         make(chan bool, 1),
@@ -57,7 +64,7 @@ func newResourceServer(prefix, suffix string, rp types.ResourcePool) types.Resou
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := filepath.Join(rs.sockDir, types.KubeEndPoint)
+	kubeletEndpoint := filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
 	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -81,6 +88,26 @@ func (rs *resourceServer) register() error {
 	}
 	glog.Infof("%s device plugin registered with Kubelet", rs.resourcePool.GetResourceName())
 	return nil
+}
+
+func (rs *resourceServer) GetInfo(ctx context.Context, rqt *registerapi.InfoRequest) (*registerapi.PluginInfo, error) {
+	pluginInfoResponse := &registerapi.PluginInfo{
+		Type:              registerapi.DevicePlugin,
+		Name:              fmt.Sprintf("%s/%s", rs.resourceNamePrefix, rs.resourcePool.GetResourceName()),
+		Endpoint:          filepath.Join(types.SockDir, rs.endPoint),
+		SupportedVersions: []string{"v1alpha1", "v1beta1"},
+	}
+	return pluginInfoResponse, nil
+}
+
+func (rs *resourceServer) NotifyRegistrationStatus(ctx context.Context, regstat *registerapi.RegistrationStatus) (*registerapi.RegistrationStatusResponse, error) {
+	if regstat.PluginRegistered {
+		glog.Infof("Plugin: %s gets registered successfully at Kubelet\n", rs.endPoint)
+	} else {
+		glog.Infof("Plugin: %s failed to be registered at Kubelet: %v; restarting.\n", rs.endPoint, regstat.Error)
+		rs.grpcServer.Stop()
+	}
+	return &registerapi.RegistrationStatusResponse{}, nil
 }
 
 func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
@@ -161,19 +188,21 @@ func (rs *resourceServer) Start() error {
 	resourceName := rs.resourcePool.GetResourceName()
 	_ = rs.cleanUp() // try tp clean up and continue
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
-	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
-	lis, err := net.Listen("unix", sockPath)
+	lis, err := net.Listen("unix", rs.sockPath)
 	if err != nil {
 		glog.Errorf("error starting %s device plugin endpoint: %v", resourceName, err)
 		return err
 	}
 
 	// Register all services
+	if rs.pluginWatch {
+		registerapi.RegisterRegistrationServer(rs.grpcServer, rs)
+	}
 	pluginapi.RegisterDevicePluginServer(rs.grpcServer, rs)
 
 	go rs.grpcServer.Serve(lis)
 	// Wait for server to start by launching a blocking connection
-	conn, err := grpc.Dial(sockPath, grpc.WithInsecure(), grpc.WithBlock(),
+	conn, err := grpc.Dial(rs.sockPath, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(5*time.Second),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -189,14 +218,17 @@ func (rs *resourceServer) Start() error {
 
 	rs.triggerUpdate()
 
-	// Register with Kubelet.
-	err = rs.register()
-	if err != nil {
-		// Stop server
-		rs.grpcServer.Stop()
-		glog.Fatal(err)
-		return err
+	if !rs.pluginWatch {
+		// Register with Kubelet.
+		err = rs.register()
+		if err != nil {
+			// Stop server
+			rs.grpcServer.Stop()
+			glog.Fatal(err)
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -223,7 +255,9 @@ func (rs *resourceServer) Stop() error {
 	}
 	// Send terminate signal to ListAndWatch()
 	rs.termSignal <- true
-	rs.stopWatcher <- true
+	if !rs.pluginWatch {
+		rs.stopWatcher <- true
+	}
 
 	rs.grpcServer.Stop()
 	rs.grpcServer = nil
@@ -233,7 +267,6 @@ func (rs *resourceServer) Stop() error {
 
 func (rs *resourceServer) Watch() {
 	// Watch for Kubelet socket file; if not present restart server
-	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
 	for {
 		select {
 		case stop := <-rs.stopWatcher:
@@ -242,7 +275,7 @@ func (rs *resourceServer) Watch() {
 				return
 			}
 		default:
-			_, err := os.Lstat(sockPath)
+			_, err := os.Lstat(rs.sockPath)
 			if err != nil {
 				// Socket file not found; restart server
 				glog.Warningf("server endpoint not found %s", rs.endPoint)
@@ -251,7 +284,6 @@ func (rs *resourceServer) Watch() {
 					glog.Fatalf("unable to restart server %v", err)
 				}
 			}
-
 		}
 		// Sleep for some intervals; TODO: investigate on suggested interval
 		time.Sleep(time.Second * time.Duration(5))
@@ -259,8 +291,7 @@ func (rs *resourceServer) Watch() {
 }
 
 func (rs *resourceServer) cleanUp() error {
-	sockPath := filepath.Join(rs.sockDir, rs.endPoint)
-	if err := os.Remove(sockPath); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(rs.sockPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil

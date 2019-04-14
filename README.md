@@ -159,11 +159,11 @@ This plugin creates device plugin endpoints based on the configurations given in
                     "devices": ["154c", "10ed"],
                     "drivers": ["vfio-pci"]
                 },
-                 {
+                {
                     "vendors": ["15b3"],
                     "devices": ["1014"],
                     "drivers": ["mlx5_core"]
-                },
+                }
             ]
        }
     ]

@@ -298,7 +298,7 @@ var _ = Describe("Resource manager", func() {
 			os.Setenv("GHW_CHROOT", fs.RootDir)
 			defer os.Unsetenv("GHW_CHROOT")
 
-			rf := resources.NewResourceFactory("fake", "fake")
+			rf := resources.NewResourceFactory("fake", "fake", true)
 			rm := &resourceManager{
 				rFactory: rf,
 				configList: []*types.ResourceConfig{
@@ -391,7 +391,7 @@ var _ = Describe("Resource manager", func() {
 		func(fs *utils.FakeFilesystem, addr string, expected []types.LinkWatcher) {
 			defer fs.Use()()
 
-			rf := resources.NewResourceFactory("fake", "fake")
+			rf := resources.NewResourceFactory("fake", "fake", true)
 			rm := &resourceManager{
 				rFactory: rf,
 				configList: []*types.ResourceConfig{

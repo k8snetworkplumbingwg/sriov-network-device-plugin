@@ -25,17 +25,19 @@ import (
 type resourceFactory struct {
 	endPointPrefix string
 	endPointSuffix string
+	pluginWatch    bool
 }
 
 var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
-func NewResourceFactory(prefix, suffix string) types.ResourceFactory {
+func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceFactory {
 
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
 			endPointSuffix: suffix,
+			pluginWatch:    pluginWatch,
 		}
 	}
 	return instance
@@ -44,7 +46,7 @@ func NewResourceFactory(prefix, suffix string) types.ResourceFactory {
 // GetResourceServer returns an instance of ResourceServer for a ResourcePool
 func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.ResourceServer, error) {
 	if rp != nil {
-		return newResourceServer(rf.endPointPrefix, rf.endPointSuffix, rp), nil
+		return newResourceServer(rf.endPointPrefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }

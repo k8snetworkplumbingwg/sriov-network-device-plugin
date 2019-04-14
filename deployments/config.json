@@ -1,19 +1,26 @@
 {
     "resourceList": [{
             "resourceName": "intel_sriov_netdevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed"],
                 "drivers": ["i40evf", "ixgbevf"]
-            }
+            }]
         },
         {
             "resourceName": "intel_sriov_dpdk",
-            "selectors": {
-                "vendors": ["8086"],
-                "devices": ["154c", "10ed"],
-                "drivers": ["vfio-pci"]
-            }
+            "selectors": [
+                {
+                    "vendors": ["8086"],
+                    "devices": ["154c", "10ed"],
+                    "drivers": ["vfio-pci"]
+                },
+                {
+                    "vendors": ["15b3"],
+                    "devices": ["1014"],
+                    "drivers": ["mlx5_core"]
+                }
+            ]
         }
     ]
 }

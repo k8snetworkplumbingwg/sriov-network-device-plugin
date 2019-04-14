@@ -2,6 +2,7 @@ package resources
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
@@ -19,49 +20,85 @@ var _ = Describe("Server", func() {
 	Describe("creating new instance of resource server", func() {
 		Context("valid arguments are passed", func() {
 			var rs *resourceServer
+			rp := mocks.ResourcePool{}
 			BeforeEach(func() {
 				fs := &utils.FakeFilesystem{}
 				defer fs.Use()()
-				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fakename")
-				obj := newResourceServer("fakeprefix", "fakesuffix", &rp)
-				rs = obj.(*resourceServer)
-				rs.sockDir = fs.RootDir
 			})
-			It("should have the properties correctly assigned", func() {
+			It("should have the properties correctly assigned when plugin watcher enabled", func() {
+				// Create ResourceServer with plugin watch mode enabled
+				obj := newResourceServer("fakeprefix", "fakesuffix", true, &rp)
+				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
 				Expect(rs.endPoint).To(Equal("fakename.fakesuffix"))
+				Expect(rs.pluginWatch).To(Equal(true))
+				Expect(rs.sockPath).To(Equal(filepath.Join(types.SockDir, "fakename.fakesuffix")))
+			})
+			It("should have the properties correctly assigned when plugin watcher disabled", func() {
+				// Create ResourceServer with plugin watch mode disabled
+				obj := newResourceServer("fakeprefix", "fakesuffix", false, &rp)
+				rs = obj.(*resourceServer)
+				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
+				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
+				Expect(rs.endPoint).To(Equal("fakename.fakesuffix"))
+				Expect(rs.pluginWatch).To(Equal(false))
+				Expect(rs.sockPath).To(Equal(filepath.Join(types.DeprecatedSockDir,
+					"fakename.fakesuffix")))
 			})
 		})
 	})
 	DescribeTable("registering with Kubelet",
-		func(shouldRunServer, shouldServerFail, shouldFail bool) {
+		func(shouldRunServer, shouldEnablePluginWatch, shouldServerFail, shouldFail bool) {
+			var err error
 			fs := &utils.FakeFilesystem{}
 			defer fs.Use()()
 			rp := mocks.ResourcePool{}
+			rp.On("Probe").Return(false)
 			rp.On("GetResourceName").Return("fakename")
-			obj := newResourceServer("fakeprefix", "fakesuffix", &rp)
+
+			// Use faked dir as socket dir
+			types.SockDir = fs.RootDir
+			types.DeprecatedSockDir = fs.RootDir
+
+			obj := newResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp)
 			rs := obj.(*resourceServer)
-			rs.sockDir = fs.RootDir
-			registrationServer := createFakeRegistrationServer(fs.RootDir, shouldServerFail)
+
+			registrationServer := createFakeRegistrationServer(fs.RootDir,
+				"fakename.fakesuffix", shouldServerFail, shouldEnablePluginWatch)
+
 			if shouldRunServer {
-				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
-				registrationServer.start()
+				if shouldEnablePluginWatch {
+					rs.Start()
+				} else {
+					os.MkdirAll(pluginapi.DevicePluginPath, 0755)
+					registrationServer.start()
+				}
 			}
-			err := rs.register()
+			if shouldEnablePluginWatch {
+				err = registrationServer.registerPlugin()
+			} else {
+				err = rs.register()
+			}
 			if shouldFail {
 				Expect(err).To(HaveOccurred())
 			} else {
 				Expect(err).NotTo(HaveOccurred())
 			}
 			if shouldRunServer {
-				registrationServer.stop()
+				if shouldEnablePluginWatch {
+					rs.grpcServer.Stop()
+				} else {
+					registrationServer.stop()
+				}
 			}
 		},
-		Entry("when can't connect to Kubelet should fail", false, true, true),
-		Entry("when device plugin unable to register with Kubelet should fail", true, true, true),
-		Entry("succesfully shouldn't fail", true, false, false),
+		Entry("when can't connect to Kubelet should fail", false, false, true, true),
+		Entry("when device plugin unable to register with Kubelet should fail", true, false, true, true),
+		Entry("when Kubelet unable to register with device plugin should fail", true, true, true, true),
+		Entry("successfully shouldn't fail", true, false, false, false),
+		Entry("successfully shouldn't fail with plugin watcher enabled", true, true, false, false),
 	)
 	Describe("initializating server", func() {
 		Context("in all scenarios", func() {
@@ -71,8 +108,7 @@ var _ = Describe("Server", func() {
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fake.com")
-				rs := newResourceServer("fakeprefix", "fakesuffix", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				rs := newResourceServer("fakeprefix", "fakesuffix", true, &rp).(*resourceServer)
 				err = rs.Init()
 			})
 			It("should never fail", func() {
@@ -107,10 +143,14 @@ var _ = Describe("Server", func() {
 		Context("starting, restarting and stopping the resource server", func() {
 			It("should not fail and messages should be received on the channels", func(done Done) {
 				defer fs.Use()()
-				rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				// Use faked dir as socket dir
+				types.DeprecatedSockDir = fs.RootDir
 
-				registrationServer := createFakeRegistrationServer(fs.RootDir, false)
+				// Create ResourceServer with plugin watch mode disabled
+				rs := newResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
+
+				registrationServer := createFakeRegistrationServer(fs.RootDir,
+					"fake.com.fake", false, false)
 				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 				registrationServer.start()
 				defer registrationServer.stop()
@@ -131,15 +171,44 @@ var _ = Describe("Server", func() {
 
 				close(done)
 			}, 12.0)
+			It("should not fail and messages should be received on the channels", func(done Done) {
+				defer fs.Use()()
+				// Use faked dir as socket dir
+				types.SockDir = fs.RootDir
+
+				// Create ResourceServer with plugin watch mode enabled
+				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+
+				registrationServer := createFakeRegistrationServer(fs.RootDir,
+					"fake.com.fake", false, true)
+				err := rs.Start()
+				Expect(err).NotTo(HaveOccurred())
+
+				err = registrationServer.registerPlugin()
+				Expect(err).NotTo(HaveOccurred())
+
+				go func() {
+					err := rs.Stop()
+					Expect(err).NotTo(HaveOccurred())
+				}()
+				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+
+				close(done)
+			}, 12.0)
 		})
 		Context("starting, watching and stopping the resource server", func() {
 			It("should not fail and messages should be received on the channels", func(done Done) {
 				defer fs.Use()()
-				rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				// Use faked dir as socket dir
+				types.DeprecatedSockDir = fs.RootDir
 
-				registrationServer := createFakeRegistrationServer(fs.RootDir, false)
+				// Create ResourceServer with plugin watch mode disabled
+				rs := newResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
+
+				registrationServer := createFakeRegistrationServer(fs.RootDir,
+					"fake.com.fake", false, false)
 				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
+
 				registrationServer.start()
 				defer registrationServer.stop()
 
@@ -176,7 +245,7 @@ var _ = Describe("Server", func() {
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
 
-			rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
+			rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 
 			resp, err := rs.Allocate(nil, req)
 
@@ -230,9 +299,9 @@ var _ = Describe("Server", func() {
 				On("GetResourceName").Return("fake").
 				On("GetEnvs", deviceIDs).Return(in)
 
-			obj := newResourceServer("fake.com", "fake", &rp)
+			obj := newResourceServer("fake.com", "fake", true, &rp)
 			rs := *obj.(*resourceServer)
-			rs.sockDir = fs.RootDir
+			rs.sockPath = fs.RootDir
 			actual := rs.getEnvs(deviceIDs)
 			for k, v := range expected {
 				Expect(actual).To(HaveKeyWithValue(k, v))
@@ -255,8 +324,8 @@ var _ = Describe("Server", func() {
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
 					resourceServer: rs,
@@ -276,8 +345,8 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
 					resourceServer: rs,
@@ -311,8 +380,8 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", &rp).(*resourceServer)
-				rs.sockDir = fs.RootDir
+				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
 					resourceServer: rs,
