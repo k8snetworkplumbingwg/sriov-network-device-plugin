@@ -112,6 +112,17 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 		}
 	}
 
+	// filter for rdma devices
+	if rc.IsRdma {
+		rdmaDevices := make([]types.PciNetDevice, 0)
+		for _, dev := range filteredDevice {
+			if dev.GetRdmaSpec().IsRdma() {
+				rdmaDevices = append(rdmaDevices, dev)
+			}
+		}
+		filteredDevice = rdmaDevices
+	}
+
 	devicePool := make(map[string]types.PciNetDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)
 	for _, dev := range filteredDevice {
@@ -127,4 +138,8 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 
 	rPool := newResourcePool(rc, apiDevices, devicePool)
 	return rPool, nil
+}
+
+func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
+	return NewRdmaSpec(pciAddrs)
 }

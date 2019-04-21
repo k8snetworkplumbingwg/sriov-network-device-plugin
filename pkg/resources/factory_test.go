@@ -83,4 +83,16 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+	Describe("getting rdma spec", func() {
+		Context("check c rdma spec", func() {
+			f := NewResourceFactory("fake", "fake", true)
+			rs := f.GetRdmaSpec("0000:00:00.1")
+			isRdma := rs.IsRdma()
+			deviceSpec := rs.GetRdmaDeviceSpec()
+			It("shoud return valid rdma spec", func() {
+				Expect(isRdma).ToNot(BeTrue())
+				Expect(deviceSpec).To(HaveLen(0))
+			})
+		})
+	})
 })

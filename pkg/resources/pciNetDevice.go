@@ -22,6 +22,7 @@ type pciNetDevice struct {
 	apiDevice   *pluginapi.Device
 	deviceSpecs []*pluginapi.DeviceSpec
 	mounts      []*pluginapi.Mount
+	rdmaSpec    types.RdmaSpec
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
@@ -53,6 +54,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	dSpecs := infoProvider.GetDeviceSpecs(pciAddr)
 	mnt := infoProvider.GetMounts(pciAddr)
 	env := infoProvider.GetEnvVal(pciAddr)
+	rdmaSpec := rFactory.GetRdmaSpec(pciDevice.Address)
 	apiDevice := &pluginapi.Device{
 		ID:     pciAddr,
 		Health: pluginapi.Healthy,
@@ -71,6 +73,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		mounts:      mnt,
 		env:         env,
 		numa:        "", // TO-DO: Get this using utils pkg
+		rdmaSpec:    rdmaSpec,
 	}, nil
 }
 
@@ -128,6 +131,10 @@ func (nd *pciNetDevice) GetMounts() []*pluginapi.Mount {
 
 func (nd *pciNetDevice) GetAPIDevice() *pluginapi.Device {
 	return nd.apiDevice
+}
+
+func (nd *pciNetDevice) GetRdmaSpec() types.RdmaSpec {
+	return nd.rdmaSpec
 }
 
 func getPFInfos(pciAddr string) (pfAddr, pfName string, err error) {
