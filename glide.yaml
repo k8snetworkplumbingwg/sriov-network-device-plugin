@@ -14,6 +14,7 @@ import:
 - package: github.com/jaypipes/ghw
   version: ^0.3.0
 - package: github.com/vishvananda/netlink
+- package: github.com/Mellanox/rdmamap
 testImport:
 - package: github.com/onsi/ginkgo
   subpackages:

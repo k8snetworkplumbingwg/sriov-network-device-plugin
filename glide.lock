@@ -47,6 +47,8 @@ imports:
   version: 6e453822d85ef5721799774b654d4d02fed62afb
   subpackages:
   - nl
+- name: github.com/Mellanox/rdmamap
+  version: 44bb586a78dd74f8951c3093e30703df652b75f0
 - name: github.com/vishvananda/netns
   version: 54f0e4339ce73702a0607f49922aaa1e749b418d
 - name: golang.org/x/net

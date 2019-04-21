@@ -26,6 +26,22 @@ func (_m *ResourceFactory) GetInfoProvider(_a0 string) types.DeviceInfoProvider 
 	return r0
 }
 
+// GetRdmaSpec provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetRdmaSpec(_a0 string) types.RdmaSpec {
+	ret := _m.Called(_a0)
+
+	var r0 types.RdmaSpec
+	if rf, ok := ret.Get(0).(func(string) types.RdmaSpec); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.RdmaSpec)
+		}
+	}
+
+	return r0
+}
+
 // GetResourcePool provides a mock function with given fields: rc, deviceList
 func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciNetDevice) (types.ResourcePool, error) {
 	ret := _m.Called(rc, deviceList)
