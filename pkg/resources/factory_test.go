@@ -48,11 +48,13 @@ var _ = Describe("Factory", func() {
 				vendors := []string{"8086", "8086", "8086", "1234"}
 				codes := []string{"1111", "1111", "1234", "4321"}
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
+				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
 				for i := range devs {
 					d := &mocks.PciNetDevice{}
 					d.On("GetVendor").Return(vendors[i]).
 						On("GetDeviceCode").Return(codes[i]).
 						On("GetDriver").Return(drivers[i]).
+						On("GetPFName").Return(pfNames[i]).
 						On("GetPciAddr").Return("fake").
 						On("GetAPIDevice").Return(&pluginapi.Device{})
 					devs[i] = d
@@ -64,7 +66,8 @@ var _ = Describe("Factory", func() {
 						Vendors []string `json:"vendors,omitempty"`
 						Devices []string `json:"devices,omitempty"`
 						Drivers []string `json:"drivers,omitempty"`
-					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}},
+						PfNames []string `json:"pfNames,omitempty"`
+					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}, []string{"enp2s0f2"}},
 				}
 
 				rp, err = f.GetResourcePool(&c, devs)
