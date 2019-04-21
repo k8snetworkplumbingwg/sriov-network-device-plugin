@@ -18,6 +18,7 @@ var _ = Describe("PoolStub", func() {
 		devs   []string
 		d1, d2 types.PciNetDevice
 		rp     types.ResourcePool
+		rc     *types.ResourceConfig
 	)
 	BeforeEach(func() {
 		fs = &utils.FakeFilesystem{
@@ -37,6 +38,7 @@ var _ = Describe("PoolStub", func() {
 			},
 		}
 		f = NewResourceFactory("fake", "fake", true)
+		rc = &types.ResourceConfig{IsRdma: false}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {
@@ -47,6 +49,7 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
 				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
 				rp = &resourcePool{
+					config: rc,
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
@@ -72,6 +75,7 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
 				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
 				rp = &resourcePool{
+					config: rc,
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
@@ -93,6 +97,7 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
 				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
 				rp = &resourcePool{
+					config: rc,
 					devicePool: map[string]types.PciNetDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,

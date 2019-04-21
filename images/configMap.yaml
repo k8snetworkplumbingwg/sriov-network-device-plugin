@@ -22,6 +22,15 @@ data:
                     "drivers": ["vfio-pci"],
                     "pfNames": ["enp0s0f0","enp2s2f1"]
                 }
+            },
+            {
+                "resourceName": "mlnx_sriov_rdma",
+                "isRdma": true,
+                "selectors": {
+                    "vendors": ["15b3"],
+                    "devices": ["1018"],
+                    "drivers": ["mlx5_ib"]
+                }
             }
         ]
     }
