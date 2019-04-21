@@ -144,21 +144,28 @@ This plugin creates device plugin endpoints based on the configurations given in
 ```json
 {
     "resourceList": [{
-            "resourceName": "intel_sriov_netdevice",
-            "selectors": {
-                "vendors": ["8086"],
-                "devices": ["154c", "10ed"],
-                "drivers": ["i40evf", "ixgbevf"]
-            }
+            "resourceName": "mlnx_sriov",
+            "selectors": [{
+                "vendors": ["15b3"],
+                "devices": ["1014"],
+                "drivers": ["mlx5_core"]
+            }]
         },
         {
-            "resourceName": "intel_sriov_dpdk",
-            "selectors": {
-                "vendors": ["8086"],
-                "devices": ["154c", "10ed"],
-                "drivers": ["vfio-pci"]
-            }
-        }
+            "resourceName": "intel_sriov",
+            "selectors": [
+                {
+                    "vendors": ["8086"],
+                    "devices": ["154c", "10ed"],
+                    "drivers": ["vfio-pci"]
+                },
+                {
+                    "vendors": ["8086"],
+                    "devices": ["154c"],
+                    "drivers": ["i40evf"]
+                }
+            ]
+       }
     ]
 }
 ```
@@ -167,10 +174,10 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 
 
-|     Field      | Required |        Description        |                       Type - Accepted values                        |                          Example/Accepted values                          |
-|----------------|----------|---------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|
-| "resourceName" | Yes      | Endpoint resource name    | `string` - must be unique and should not contain special characters | "sriov_net_A"                                                             |
-| "selectors"    | No       | A map of device selectors | Each selector is a map of  `string` list.                           | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"] |
+|     Field      | Required |        Description                 |                       Type - Accepted values                                                                                 |                          Example/Accepted values                          |
+|----------------|----------|------------------------------------|------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
+| "resourceName" | Yes      | Endpoint resource name             | `string` - must be unique and should not contain special characters                                                          | "sriov_net_A"                                                             |
+| "selectors"    | No       | A list of maps of device selectors | Each selector is a map of  `string` list, result of the filter will be the union of each selector result without duplication | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"] |
 
 
 

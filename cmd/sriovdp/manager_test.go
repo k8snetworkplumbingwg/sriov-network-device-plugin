@@ -78,19 +78,26 @@ var _ = Describe("Resource manager", func() {
 				testErr = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 						"resourceList": [{
 								"resourceName": "intel_sriov_netdevice",
-								"selectors": {
+								"selectors": [{
 									"vendors": ["8086"],
 									"devices": ["154c", "10ed"],
 									"drivers": ["i40evf", "ixgbevf"]
-								}
+								}]
 							},
 							{
 								"resourceName": "intel_sriov_dpdk",
-								"selectors": {
+								"selectors": [
+									{
 									"vendors": ["8086"],
 									"devices": ["154c", "10ed"],
 									"drivers": ["vfio-pci"]
-								}
+									},
+									{
+									"vendors": ["15b3"],
+									"devices": ["1014"],
+									"drivers": ["mlx5_core"]
+									}
+								]
 							}
 						]
 					}`), 0644)
@@ -148,11 +155,11 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "invalid-name",
-						"selectors": {
+						"selectors": [{
 							"vendors": ["8086"],
 							"devices": ["154c", "10ed"],
 							"drivers": ["i40evf", "ixgbevf"]
-						}
+						}]
 					}]
 				}`), 0644)
 				if err != nil {
@@ -174,18 +181,18 @@ var _ = Describe("Resource manager", func() {
 				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "duplicate",
-						"selectors": {
+						"selectors": [{
 							"vendors": ["8086"],
 							"devices": ["154c", "10ed"],
 							"drivers": ["i40evf", "ixgbevf"]
-						}
+						}]
 					},{
 						"resourceName": "duplicate",
-						"selectors": {
+						"selectors": [{
 							"vendors": ["8086"],
 							"devices": ["154c", "10ed"],
 							"drivers": ["vfio-pci"]
-						}
+						}]
 					}]
 				}`), 0644)
 				if err != nil {

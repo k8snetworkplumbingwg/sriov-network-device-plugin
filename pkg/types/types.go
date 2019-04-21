@@ -33,7 +33,7 @@ const (
 // ResourceConfig contains cofiguration paremeters for a resource pool
 type ResourceConfig struct {
 	ResourceName string `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	Selectors    struct {
+	Selectors    []struct {
 		Vendors []string `json:"vendors,omitempty"`
 		Devices []string `json:"devices,omitempty"`
 		Drivers []string `json:"drivers,omitempty"`

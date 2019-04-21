@@ -126,11 +126,11 @@ var _ = Describe("Server", func() {
 		BeforeEach(func() {
 			fakeConf = &types.ResourceConfig{
 				ResourceName: "fake",
-				Selectors: struct {
+				Selectors: []struct {
 					Vendors []string `json:"vendors,omitempty"`
 					Devices []string `json:"devices,omitempty"`
 					Drivers []string `json:"drivers,omitempty"`
-				}{[]string{}, []string{"fakeid"}, []string{}},
+				}{{[]string{}, []string{"fakeid"}, []string{}}},
 			}
 			rp = mocks.ResourcePool{}
 			rp.On("GetConfig").Return(fakeConf).

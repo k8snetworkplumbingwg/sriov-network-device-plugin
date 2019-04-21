@@ -7,20 +7,27 @@ data:
   config.json: |
     {
         "resourceList": [{
-                "resourceName": "intel_sriov_netdevice",
-                "selectors": {
-                    "vendors": ["8086"],
-                    "devices": ["154c", "10ed"],
-                    "drivers": ["i40evf", "ixgbevf"]
-                }
+                "resourceName": "mlx_sriov",
+                "selectors": [{
+                    "vendors": ["15b3"],
+                    "devices": ["1014"],
+                    "drivers": ["mlx5_core"]
+                }]
             },
             {
-                "resourceName": "intel_sriov_dpdk",
-                "selectors": {
-                    "vendors": ["8086"],
-                    "devices": ["154c", "10ed"],
-                    "drivers": ["vfio-pci"]
-                }
+                "resourceName": "intel_sriov",
+                "selectors": [
+                    {
+                        "vendors": ["8086"],
+                        "devices": ["154c", "10ed"],
+                        "drivers": ["vfio-pci"]
+                    },
+                    {
+                        "vendors": ["8086"],
+                        "devices": ["154c"],
+                        "drivers": ["i40evf"]
+                    }
+                ]
             }
         ]
     }

@@ -80,32 +80,40 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 
 // GetResourcePool returns an instance of resourcePool
 func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciNetDevice) (types.ResourcePool, error) {
-	filteredDevice := deviceList
-
-	// filter by vendor list
-	if rc.Selectors.Vendors != nil && len(rc.Selectors.Vendors) > 0 {
-		if selector, err := rf.GetSelector("vendors", rc.Selectors.Vendors); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
+	filteredDevices := make([]types.PciNetDevice, 0)
+	filteredDevicesSet := make(map[types.PciNetDevice]bool)
+	for _, selector := range rc.Selectors {
+		selectedDevices := deviceList
+		// filter by vendor  list
+		if selector.Vendors != nil && len(selector.Vendors) > 0 {
+			if vendorsSelector, err := rf.GetSelector("vendors", selector.Vendors); err == nil {
+				selectedDevices = vendorsSelector.Filter(selectedDevices)
+			}
 		}
-	}
-
-	// filter by device list
-	if rc.Selectors.Devices != nil && len(rc.Selectors.Devices) > 0 {
-		if selector, err := rf.GetSelector("devices", rc.Selectors.Devices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
+		// filter by device list
+		if selector.Devices != nil && len(selector.Devices) > 0 {
+			if devicesSelector, err := rf.GetSelector("devices", selector.Devices); err == nil {
+				selectedDevices = devicesSelector.Filter(selectedDevices)
+			}
 		}
-	}
+		// filter by driver list
+		if selector.Drivers != nil && len(selector.Drivers) > 0 {
+			if driversSelector, err := rf.GetSelector("drivers", selector.Drivers); err == nil {
+				selectedDevices = driversSelector.Filter(selectedDevices)
+			}
+		}
 
-	// filter by driver list
-	if rc.Selectors.Drivers != nil && len(rc.Selectors.Drivers) > 0 {
-		if selector, err := rf.GetSelector("drivers", rc.Selectors.Drivers); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
+		for _, dev := range selectedDevices {
+			if !filteredDevicesSet[dev] {
+				filteredDevices = append(filteredDevices, dev)
+				filteredDevicesSet[dev] = true
+			}
 		}
 	}
 
 	devicePool := make(map[string]types.PciNetDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)
-	for _, dev := range filteredDevice {
+	for _, dev := range filteredDevices {
 		pciAddr := dev.GetPciAddr()
 		devicePool[pciAddr] = dev
 		apiDevices[pciAddr] = dev.GetAPIDevice()
