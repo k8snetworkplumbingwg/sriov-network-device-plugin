@@ -30,8 +30,19 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 
 	// 			1. get PF details, add PF info in its pciNetDevice struct
 	// 			2. Get driver info
+	var ifName string
 	pciAddr := pciDevice.Address
 	driverName, err := utils.GetDriverName(pciAddr)
+	if err != nil {
+		return nil, err
+	}
+	netDevs, _ := utils.GetNetNames(pciAddr)
+	if len(netDevs) == 0 {
+		ifName = ""
+	} else {
+		ifName = netDevs[0]
+	}
+	pfName, err := utils.GetPfName(pciAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +61,8 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	// 			4. Create pciNetDevice object with all relevent info
 	return &pciNetDevice{
 		pciDevice:   pciDevice,
-		ifName:      "", // TO-DO: Get this using utils pkg
-		pfName:      "", // TO-DO: Get this using utils pkg
+		ifName:      ifName,
+		pfName:      pfName,
 		driver:      driverName,
 		vfID:        0,  // TO-DO: Get this using utils pkg if needed
 		linkSpeed:   "", // TO-DO: Get this using utils pkg
@@ -67,6 +78,10 @@ func (nd *pciNetDevice) GetPFName() string {
 	return nd.pfName
 }
 
+func (nd *pciNetDevice) GetNetName() string {
+	return nd.ifName
+}
+
 func (nd *pciNetDevice) GetPfPciAddr() string {
 	return nd.pfAddr
 }
@@ -78,18 +93,23 @@ func (nd *pciNetDevice) GetVendor() string {
 func (nd *pciNetDevice) GetDeviceCode() string {
 	return nd.pciDevice.Product.ID
 }
+
 func (nd *pciNetDevice) GetPciAddr() string {
 	return nd.pciDevice.Address
 }
+
 func (nd *pciNetDevice) GetDriver() string {
 	return nd.driver
 }
+
 func (nd *pciNetDevice) IsSriovPF() bool {
 	return false
 }
+
 func (nd *pciNetDevice) GetLinkSpeed() string {
 	return nd.linkSpeed
 }
+
 func (nd *pciNetDevice) GetSubClass() string {
 	return nd.pciDevice.Subclass.ID
 }

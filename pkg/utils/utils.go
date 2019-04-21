@@ -43,7 +43,7 @@ func DetectPluginWatchMode(sockDir string) bool {
 }
 
 // GetPfAddr returns SRIOV PF pci address if a device is VF given its pci address.
-// If device it not PF then this will return its own address as PF
+// If device it not VF then this will return its own address as PF
 func GetPfAddr(pciAddr string) (string, error) {
 	pfSymLink := filepath.Join(sysBusPci, pciAddr, "physfn")
 	pciinfo, err := os.Readlink(pfSymLink)
@@ -54,6 +54,24 @@ func GetPfAddr(pciAddr string) (string, error) {
 		return "", fmt.Errorf("error getting PF for PCI device %s %v", pciAddr, err)
 	}
 	return filepath.Base(pciinfo), nil
+}
+
+// GetPfName returns SRIOV PF name for the given VF
+// If device is not VF then it will return its own ifname if exist else empty string
+func GetPfName(pciAddr string) (string, error) {
+	path := filepath.Join(sysBusPci, pciAddr, "physfn/net")
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			path := filepath.Join(sysBusPci, pciAddr, "net")
+			files, err = ioutil.ReadDir(path)
+			if err == nil {
+				return files[0].Name(), nil
+			}
+		}
+		return "", err
+	}
+	return files[0].Name(), nil
 }
 
 // IsSriovPF check if a pci device SRIOV capable given its pci address
