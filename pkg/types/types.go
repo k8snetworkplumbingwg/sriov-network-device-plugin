@@ -37,6 +37,7 @@ type ResourceConfig struct {
 		Vendors []string `json:"vendors,omitempty"`
 		Devices []string `json:"devices,omitempty"`
 		Drivers []string `json:"drivers,omitempty"`
+		PfNames []string `json:"pfNames,omitempty"`
 	} `json:"selectors,omitempty"` // Whether devices have SRIOV virtual function capabilities or not
 }
 
@@ -85,6 +86,7 @@ type PciNetDevice interface {
 	GetDriver() string
 	GetDeviceCode() string
 	GetPciAddr() string
+	GetNetName() string
 	IsSriovPF() bool
 	GetLinkSpeed() string
 	GetSubClass() string

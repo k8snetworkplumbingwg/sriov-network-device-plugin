@@ -19,7 +19,8 @@ data:
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c", "10ed"],
-                    "drivers": ["vfio-pci"]
+                    "drivers": ["vfio-pci"],
+                    "pfNames": ["enp0s0f0","enp2s2f1"]
                 }
             }
         ]

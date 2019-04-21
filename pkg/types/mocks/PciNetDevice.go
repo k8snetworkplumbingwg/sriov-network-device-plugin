@@ -115,6 +115,20 @@ func (_m *PciNetDevice) GetMounts() []*v1beta1.Mount {
 	return r0
 }
 
+// GetNetName provides a mock function with given fields:
+func (_m *PciNetDevice) GetNetName() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetPFName provides a mock function with given fields:
 func (_m *PciNetDevice) GetPFName() string {
 	ret := _m.Called()
