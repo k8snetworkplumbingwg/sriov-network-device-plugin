@@ -209,7 +209,7 @@ func (rm *resourceManager) discoverHostDevices() error {
 			glog.Infof("discoverDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
 
 			// exclude device in-use in host
-			if isUsed, _ := isInUse(device.Address); !isUsed {
+			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
 
 				aPF := utils.IsSriovPF(device.Address)
 				aVF := utils.IsSriovVF(device.Address)
@@ -236,11 +236,9 @@ func (rm *resourceManager) discoverHostDevices() error {
 	return nil
 }
 
-// isInUse returns true if PCI network device appear to be in use by host system given its pci address as string.
-// Otherwise it is assumed not to be in used.
-func isInUse(pciAddr string) (bool, error) {
+// hasDefaultRoute returns true if PCI network device is default route interface
+func hasDefaultRoute(pciAddr string) (bool, error) {
 
-	// inUse := false
 	// Get net interface name
 	ifNames, err := utils.GetNetNames(pciAddr)
 	if err != nil {
@@ -255,9 +253,12 @@ func isInUse(pciAddr string) (bool, error) {
 			}
 
 			routes, err := netlink.RouteList(link, netlink.FAMILY_V4) // IPv6 routes: all interface has at least one link local route entry
-			if len(routes) > 0 {
-				glog.Infof("excluding interface %s:  route entry found: %+v", ifName, routes)
-				return true, nil
+			for _, r := range routes {
+				if r.Dst == nil {
+					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
+					return true, nil
+				}
+
 			}
 		}
 	}
