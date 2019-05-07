@@ -10,6 +10,7 @@ RUN apk add --update --virtual build-dependencies build-base linux-headers && \
     make build
 
 FROM alpine
+ADD https://pci-ids.ucw.cz/v2.2/pci.ids.gz /usr/share/misc/pci.ids/
 COPY --from=builder /usr/src/sriov-network-device-plugin/build/sriovdp /usr/bin/
 WORKDIR /
 
