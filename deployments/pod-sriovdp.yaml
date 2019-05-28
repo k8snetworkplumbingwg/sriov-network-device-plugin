@@ -21,9 +21,6 @@ spec:
     - mountPath: /etc/pcidp/
       name: config
       readOnly: true
-    - name: hwdata
-      mountPath: /usr/share/hwdata
-      readOnly: true
     - name: config-volume
       mountPath: /etc/pcidp
   volumes:
@@ -36,9 +33,6 @@ spec:
   - name: config
     hostPath:
       path: /etc/pcidp/
-  - name: hwdata
-    hostPath:
-      path: /usr/share/hwdata
   - name: config-volume
     configMap:
       name: sriovdp-config
