@@ -45,9 +45,6 @@ spec:
           readOnly: false
         - name: log
           mountPath: /var/log
-        - name: hwdata
-          mountPath: /usr/share/hwdata
-          readOnly: true
         - name: config-volume
           mountPath: /etc/pcidp
       volumes:
@@ -57,9 +54,6 @@ spec:
         - name: log
           hostPath:
             path: /var/log
-        - name: hwdata
-          hostPath:
-            path: /usr/share/hwdata
         - name: config-volume
           configMap:
             name: sriovdp-config
