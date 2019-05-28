@@ -10,6 +10,7 @@ RUN apk add --update --virtual build-dependencies build-base linux-headers && \
     make build
 
 FROM alpine
+RUN apk add hwdata-pci
 COPY --from=builder /usr/src/sriov-network-device-plugin/build/sriovdp /usr/bin/
 WORKDIR /
 
