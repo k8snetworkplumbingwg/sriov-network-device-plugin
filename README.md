@@ -35,6 +35,7 @@
       - [Deploy demo Pod connecting to pre-created SR-IOV networks](#deploy-demo-pod-connecting-to-pre-created-sr-iov-networks)
       - [Verify status and the network connections of the demo Pod](#verify-status-and-the-network-connections-of-the-demo-pod)
     - [Pod device information](#pod-device-information)
+- [Multi Architecture Support](#multi-architecture-support)
 - [Issues and Contributing](#issues-and-contributing)
 
 ## SRIOV Network Device Plugin
@@ -461,6 +462,22 @@ The allocated device information is exported in Container's environment variable
 
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
+
+## Multi Architecture Support
+
+The supported architectures:
+* AMD64
+* PPC64LE
+
+Buiding image for AMD64:
+```
+$ DOCKERFILE=Dockerfile make image 
+```
+
+Buiding image for PPC64LE:
+```
+$ DOCKERFILE=images/Dockerfile.ppc64le TAG=nfvpe/sriov-device-plugin:ppc64le make image        
+```
 
 ## Issues and Contributing
 
