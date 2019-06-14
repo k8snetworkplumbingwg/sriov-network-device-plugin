@@ -5,6 +5,8 @@ set -e
 SRIOV_DP_SYS_BINARY_DIR="/usr/bin/"
 LOG_DIR=""
 LOG_LEVEL=10
+RESOURCE_PREFIX=""
+CLI_PARAMS=""
 
 usage()
 {
@@ -14,6 +16,7 @@ usage()
     /bin/echo -e "\t-h --help"
     /bin/echo -e "\t--log-dir=$LOG_DIR"
     /bin/echo -e "\t--log-level=$LOG_LEVEL"
+    /bin/echo -e "\t--resource-prefix=$RESOURCE_PREFIX"
 }
 
 while [ "$1" != "" ]; do
@@ -30,6 +33,9 @@ while [ "$1" != "" ]; do
         --log-level)
             LOG_LEVEL=$VALUE
             ;;
+        --resource-prefix)
+            RESOURCE_PREFIX=$VALUE
+            ;;
         *)
             echo "ERROR: unknown parameter \"$PARAM\""
             usage
@@ -39,9 +45,17 @@ while [ "$1" != "" ]; do
     shift
 done
 
+CLI_PARAMS="-v $LOG_LEVEL"
+
 if [ "$LOG_DIR" != "" ]; then
     mkdir -p "/var/log/$LOG_DIR"
-    $SRIOV_DP_SYS_BINARY_DIR/sriovdp --log_dir "/var/log/$LOG_DIR" --alsologtostderr -v $LOG_LEVEL
+    CLI_PARAMS="$CLI_PARAMS --log_dir /var/log/$LOG_DIR --alsologtostderr"
 else
-    $SRIOV_DP_SYS_BINARY_DIR/sriovdp --logtostderr -v $LOG_LEVEL
+    CLI_PARAMS="$CLI_PARAMS --logtostderr"
 fi
+
+if [ "$RESOURCE_PREFIX" != "" ]; then
+    CLI_PARAMS="$CLI_PARAMS --resource-prefix $RESOURCE_PREFIX"
+fi
+
+$SRIOV_DP_SYS_BINARY_DIR/sriovdp $CLI_PARAMS
