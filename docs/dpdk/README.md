@@ -14,7 +14,8 @@ For more information on hugepage support in Kubernetes please see [here](https:/
 
 ### VF drivers
 DPDK applications require devices to be attached with supported dpdk backend driver.
-For Intel® x700 series NICs `igb_uio` or `vfio-pci` is required.
+* For Intel® x700 series NICs `igb_uio` or `vfio-pci` is required.
+* For Mellanox ConnectX®-4 Lx, ConnectX®-5 Adapters `mlx5_core` or `mlx5_ib` is required.
 
 ### Privileges 
 Certain privileges are required for dpdk application to function properly in Kubernetes Pod. The level of privileges depend on the application and the host device driver attached.
