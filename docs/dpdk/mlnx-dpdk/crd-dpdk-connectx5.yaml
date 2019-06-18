@@ -1,0 +1,11 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-dpdk-mlnx-connectx5
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: mellanox.com/mlnx_connectx5
+spec:
+  config: '{
+    "type": "sriov",
+    "name": "sriov-mlnx_connectx5"
+}'
