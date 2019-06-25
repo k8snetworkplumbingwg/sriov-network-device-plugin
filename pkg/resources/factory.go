@@ -56,7 +56,7 @@ func (rf *resourceFactory) GetInfoProvider(name string) types.DeviceInfoProvider
 	switch name {
 	case "vfio-pci":
 		return newVfioResourcePool()
-	case "uio":
+	case "uio", "igb_uio":
 		return newUioResourcePool()
 	default:
 		return newNetDevicePool()
