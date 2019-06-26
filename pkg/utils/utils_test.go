@@ -357,4 +357,37 @@ var _ = Describe("In the utils package", func() {
 			"0000:01:10.0", []string{"fake0", "fake1"}, false,
 		),
 	)
+
+	DescribeTable("getting PF names",
+		func(fs *FakeFilesystem, device string, expected string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetPfName(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device doesn't exist", &FakeFilesystem{}, "0000:01:10.0", nil, true),
+		Entry("device is a VF and interface name exists",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/physfn/net/fakePF"}},
+			"0000:01:10.0", "fakePF", false,
+		),
+		Entry("device is a VF and interface name does not exist",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/physfn/net/"}},
+			"0000:01:10.0", "", true,
+		),
+		Entry("device is a PF and interface name exists",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fakeIF"}},
+			"0000:01:10.0", "fakeIF", false,
+		),
+		Entry("device is a PF interface name does not exist",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fakeIF"}},
+			"0000:01:10.0", "fakeIF", false,
+		),
+		Entry("net is not a directory at all",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:01:10.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net": []byte("junk")},
+			},
+			"0000:01:10.0", "", true,
+		),
+	)
 })
