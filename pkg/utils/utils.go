@@ -74,6 +74,25 @@ func GetPfName(pciAddr string) (string, error) {
 	return files[0].Name(), nil
 }
 
+// BelongsToNamespace checks if the PCI network device link belongs to the current namespace.
+func BelongsToNamespace(pciAddr string) (bool, error) {
+	path := ""
+	if !IsSriovVF(pciAddr) {
+		path = filepath.Join(sysBusPci, pciAddr, "net")
+	} else {
+		path = filepath.Join(sysBusPci, pciAddr, "physfn/net")
+	}
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+	if len(files) == 0 { // devices that do not belong to the current namespace do not have the name under /net
+		return false, nil
+	}
+	return true, nil
+}
+
 // IsSriovPF check if a pci device SRIOV capable given its pci address
 func IsSriovPF(pciAddr string) bool {
 	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, totalVfFile)

@@ -357,4 +357,39 @@ var _ = Describe("In the utils package", func() {
 			"0000:01:10.0", []string{"fake0", "fake1"}, false,
 		),
 	)
+
+	DescribeTable("checking if belongs to ns",
+		func(fs *FakeFilesystem, device string, expected bool, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := BelongsToNamespace(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("pf device belongs to the current ns",
+			&FakeFilesystem{
+				Dirs: []string{"/sys/bus/pci/devices/0000:01:00.0/net/eno1"},
+			},
+			"0000:01:00.0", true, false,
+		),
+		Entry("vf device belongs to the current ns",
+			&FakeFilesystem{
+				Dirs:     []string{"/sys/bus/pci/devices/0000:01:00.0/net/eno1", "sys/bus/pci/devices/0000:01:10.0"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:01:10.0/physfn": "../0000:01:00.0"},
+			},
+			"0000:01:10.0", true, false,
+		),
+		Entry("ps device does not belong to the current ns",
+			&FakeFilesystem{
+				Dirs: []string{"/sys/bus/pci/devices/0000:01:00.0/net/"},
+			},
+			"0000:01:00.0", false, false,
+		),
+		Entry("vf device belongs to the current ns",
+			&FakeFilesystem{
+				Dirs:     []string{"/sys/bus/pci/devices/0000:01:00.0/net/", "sys/bus/pci/devices/0000:01:10.0"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:01:10.0/physfn": "../0000:01:00.0"},
+			},
+			"0000:01:10.0", false, false,
+		),
+	)
 })

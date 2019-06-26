@@ -207,9 +207,11 @@ func (rm *resourceManager) discoverHostDevices() error {
 				productName = string([]byte(productName)[0:37]) + "..."
 			}
 			glog.Infof("discoverDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
+			isUsed, _ := isInUse(device.Address)
+			belongsToNamespace, _ := utils.BelongsToNamespace(device.Address)
 
 			// exclude device in-use in host
-			if isUsed, _ := isInUse(device.Address); !isUsed {
+			if !isUsed && belongsToNamespace {
 
 				aPF := utils.IsSriovPF(device.Address)
 				aVF := utils.IsSriovVF(device.Address)

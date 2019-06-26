@@ -382,6 +382,12 @@ var _ = Describe("Resource manager", func() {
 				},
 			},
 		),
+		Entry("PF device with VF configured, not belonging to current ns",
+			&utils.FakeFilesystem{
+				Dirs:     []string{"/sys/bus/pci/devices/0000:01:00.0/net/", "sys/bus/pci/devices/0000:01:10.0"},
+				Symlinks: map[string]string{"sys/bus/pci/devices/0000:01:10.0/physfn": "../0000:01:00.0"},
+			},
+		),
 	)
 	DescribeTable("adding to link watch list",
 		func(fs *utils.FakeFilesystem, addr string, expected []types.LinkWatcher) {
