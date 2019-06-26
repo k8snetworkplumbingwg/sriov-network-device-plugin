@@ -65,13 +65,20 @@ func GetPfName(pciAddr string) (string, error) {
 		if os.IsNotExist(err) {
 			path := filepath.Join(sysBusPci, pciAddr, "net")
 			files, err = ioutil.ReadDir(path)
-			if err == nil {
-				return files[0].Name(), nil
+			if err != nil {
+				return "", err
 			}
+			if len(files) < 1 {
+				return "", fmt.Errorf("no interface name found for device %s", pciAddr)
+			}
+			return files[0].Name(), nil
 		}
 		return "", err
+	} else if len(files) > 0 {
+		return files[0].Name(), nil
 	}
-	return files[0].Name(), nil
+	return "", fmt.Errorf("no interface name found for device %s", pciAddr)
+
 }
 
 // IsSriovPF check if a pci device SRIOV capable given its pci address
