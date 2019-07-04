@@ -69,7 +69,7 @@ func newResourceManager(cp *cliParams) *resourceManager {
 	if pluginWatchMode {
 		glog.Infof("Using Kubelet Plugin Registry Mode")
 	} else {
-		glog.Infof("Using Deprecated Devie Plugin Registry Path")
+		glog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
 	return &resourceManager{
 		cliParams:       *cp,
