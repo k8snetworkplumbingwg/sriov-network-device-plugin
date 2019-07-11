@@ -75,6 +75,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return newDriverSelector(values), nil
 	case "pfNames":
 		return newPfNameSelector(values), nil
+	case "linkTypes":
+		return newLinkTypeSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
@@ -108,6 +110,16 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 	// filter by PfNames list
 	if rc.Selectors.PfNames != nil && len(rc.Selectors.PfNames) > 0 {
 		if selector, err := rf.GetSelector("pfNames", rc.Selectors.PfNames); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by linkTypes list
+	if rc.Selectors.LinkTypes != nil && len(rc.Selectors.LinkTypes) > 0 {
+		if len(rc.Selectors.LinkTypes) > 1 {
+			glog.Warningf("Link type selector should have a single value.")
+		}
+		if selector, err := rf.GetSelector("linkTypes", rc.Selectors.LinkTypes); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}

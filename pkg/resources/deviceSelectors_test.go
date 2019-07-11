@@ -113,4 +113,31 @@ var _ = Describe("DeviceSelectors", func() {
 			})
 		})
 	})
+
+	Describe("linkType selector", func() {
+		Context("initializing", func() {
+			It("should populate linkTypes array", func() {
+				linkTypes := []string{"ether"}
+				sel := newLinkTypeSelector(linkTypes).(*linkTypeSelector)
+				Expect(sel.linkTypes).To(ConsistOf(linkTypes))
+			})
+		})
+		Context("filtering", func() {
+			It("should return devices matching the correct link type", func() {
+				linkTypes := []string{"ether"}
+				sel := newLinkTypeSelector(linkTypes).(*linkTypeSelector)
+
+				dev0 := mocks.PciNetDevice{}
+				dev0.On("GetLinkType").Return("ether")
+				dev1 := mocks.PciNetDevice{}
+				dev1.On("GetLinkType").Return("infiniband")
+
+				in := []types.PciNetDevice{&dev0, &dev1}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).NotTo(ContainElement(&dev1))
+			})
+		})
+	})
 })

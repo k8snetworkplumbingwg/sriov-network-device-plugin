@@ -180,7 +180,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 |     Field      | Required |        Description        |                      Type - Accepted values                       |                                      Example/Accepted values                                       |
 |----------------|----------|---------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | "resourceName" | Yes      | Endpoint resource name    | string - must be unique and should not contain special characters | "sriov_net_A"                                                                                      |
-| "selectors"    | No       | A map of device selectors | Each selector is a map of string list.                            | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"], "pfNames": ["enp2s2f0"] |
+| "selectors"    | No       | A map of device selectors | Each selector is a map of string list.                            | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"], "pfNames": ["enp2s2f0"], "linkTypes": ["ether"] |
 | "isRdma"       | No       | Mount RDMA resources      | `bool` - boolean value true or false                              | "isRdma": true                                                                                     |
 
 
@@ -230,6 +230,7 @@ The device plugin will initially discover all PCI network resources in the host 
 2. "devices" - The device hex code of device
 3. "drivers" - The driver name the device is registered with
 4. "pfNames" - The Physical funtion name
+5. "linkTypes" - The link type of the net device associated with the PCI device.
 
 ### Workflow
 
