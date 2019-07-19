@@ -184,3 +184,12 @@ func (nd *pciNetDevice) GetLinkType() string {
 func (nd *pciNetDevice) GetVFID() int {
 	return nd.vfID
 }
+
+func (nd *pciNetDevice) GetDDPProfiles() string {
+	ddpProfile, err := utils.GetDDPProfiles(nd.pciDevice.Address)
+	if err != nil {
+		glog.Infof("GetDDPProfiles(): unable to get ddp profiles for device %s : %q", nd.pciDevice.Address, err)
+		return ""
+	}
+	return ddpProfile
+}

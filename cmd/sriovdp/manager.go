@@ -110,7 +110,8 @@ func (rm *resourceManager) initServers() error {
 		// Create new ResourcePool
 		glog.Infof("")
 		glog.Infof("Creating new ResourcePool: %s", rc.ResourceName)
-		rPool, err := rm.rFactory.GetResourcePool(rc, rm.netDeviceList)
+		filteredDevices := rm.getFilteredDevices(rc)
+		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
 			return err
@@ -290,6 +291,62 @@ func (rm *resourceManager) addToLinkWatchList(pciAddr string) {
 			}
 		}
 	}
+}
+
+// applyFilters returned a subset PciNetDevices by applying given selectors values in the following orders:
+// "vendors", "devices", "drivers", "pfNames", "ddpProfiles".
+// Each selector gets a new sub-set of devices from the result of previous one.
+func (rm *resourceManager) getFilteredDevices(rc *types.ResourceConfig) []types.PciNetDevice {
+	filteredDevice := rm.netDeviceList
+
+	rf := rm.rFactory
+	// filter by vendor list
+	if rc.Selectors.Vendors != nil && len(rc.Selectors.Vendors) > 0 {
+		if selector, err := rf.GetSelector("vendors", rc.Selectors.Vendors); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by device list
+	if rc.Selectors.Devices != nil && len(rc.Selectors.Devices) > 0 {
+		if selector, err := rf.GetSelector("devices", rc.Selectors.Devices); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by driver list
+	if rc.Selectors.Drivers != nil && len(rc.Selectors.Drivers) > 0 {
+		if selector, err := rf.GetSelector("drivers", rc.Selectors.Drivers); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by PfNames list
+	if rc.Selectors.PfNames != nil && len(rc.Selectors.PfNames) > 0 {
+		if selector, err := rf.GetSelector("pfNames", rc.Selectors.PfNames); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by DDP Profiles list
+	if rc.Selectors.DDPProfiles != nil && len(rc.Selectors.DDPProfiles) > 0 {
+		if selector, err := rf.GetSelector("ddpProfiles", rc.Selectors.DDPProfiles); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter for rdma devices
+	if rc.IsRdma {
+		rdmaDevices := make([]types.PciNetDevice, 0)
+		for _, dev := range filteredDevice {
+			if dev.GetRdmaSpec().IsRdma() {
+				rdmaDevices = append(rdmaDevices, dev)
+			}
+		}
+		filteredDevice = rdmaDevices
+	}
+
+	return filteredDevice
 }
 
 type linkWatcher struct {
