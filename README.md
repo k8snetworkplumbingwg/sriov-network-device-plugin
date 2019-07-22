@@ -168,6 +168,13 @@ This plugin creates device plugin endpoints based on the configurations given in
                 "devices": ["1018"],
                 "drivers": ["mlx5_ib"]
             }
+        },
+        {
+            "resourceName": "infiniband_rdma_netdevs",
+            "isRdma": true,
+            "selectors": {
+                "linkTypes": ["infiniband"]
+            }
         }
     ]
 }
