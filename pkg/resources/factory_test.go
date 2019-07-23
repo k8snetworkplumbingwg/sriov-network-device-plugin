@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	"reflect"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
@@ -36,6 +37,7 @@ var _ = Describe("Factory", func() {
 	)
 	Describe("getting resource pool", func() {
 		Context("with all types of selectors used", func() {
+			defer utils.UseFakeLinks()()
 			var (
 				rp   types.ResourcePool
 				err  error
@@ -49,6 +51,7 @@ var _ = Describe("Factory", func() {
 				codes := []string{"1111", "1111", "1234", "4321"}
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
 				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
+				linkTypes := []string{"ether", "infiniband", "other", "other2"}
 				for i := range devs {
 					d := &mocks.PciNetDevice{}
 					d.On("GetVendor").Return(vendors[i]).
@@ -56,18 +59,21 @@ var _ = Describe("Factory", func() {
 						On("GetDriver").Return(drivers[i]).
 						On("GetPFName").Return(pfNames[i]).
 						On("GetPciAddr").Return("fake").
-						On("GetAPIDevice").Return(&pluginapi.Device{})
+						On("GetAPIDevice").Return(&pluginapi.Device{}).
+						On("GetLinkType").Return(linkTypes[i])
 					devs[i] = d
 				}
 
 				c := types.ResourceConfig{
 					ResourceName: "fake",
 					Selectors: struct {
-						Vendors []string `json:"vendors,omitempty"`
-						Devices []string `json:"devices,omitempty"`
-						Drivers []string `json:"drivers,omitempty"`
-						PfNames []string `json:"pfNames,omitempty"`
-					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}, []string{"enp2s0f2"}},
+						Vendors   []string `json:"vendors,omitempty"`
+						Devices   []string `json:"devices,omitempty"`
+						Drivers   []string `json:"drivers,omitempty"`
+						PfNames   []string `json:"pfNames,omitempty"`
+						LinkTypes []string `json:"linkTypes,omitempty"`
+					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}, []string{"enp2s0f2"},
+						[]string{"ether"}},
 				}
 
 				rp, err = f.GetResourcePool(&c, devs)
@@ -95,4 +101,20 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+	DescribeTable("GetSelector with various inputs", func(attr string, values []string, expSel types.DeviceSelector) {
+		f := NewResourceFactory("fake", "fake", true)
+		s, _ := f.GetSelector(attr, values)
+
+		if reflect.TypeOf(expSel) == nil {
+			Expect(reflect.TypeOf(s)).To(BeNil())
+		} else {
+			Expect(reflect.TypeOf(s)).To(Equal(reflect.TypeOf(expSel)))
+		}
+	},
+		Entry("vendors selector", "vendors", []string{"15b3"}, &vendorSelector{vendors: []string{""}}),
+		Entry("devices selector", "devices", []string{"1014"}, &deviceSelector{devices: []string{""}}),
+		Entry("drivers selector", "drivers", []string{"mlx5_core"}, &driverSelector{drivers: []string{""}}),
+		Entry("pfNames selector", "pfNames", []string{"enp2s0f0"}, &pfNameSelector{pfNames: []string{""}}),
+		Entry("linkTypes selector", "linkTypes", []string{"ether"}, &linkTypeSelector{linkTypes: []string{""}}),
+		Entry("invalid input", "dummyAttr", []string{"dummyVal"}, nil))
 })

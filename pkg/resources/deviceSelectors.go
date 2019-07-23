@@ -84,6 +84,25 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
+// newLinkTypeSelector returns a interface for netDev list
+func newLinkTypeSelector(linkTypes []string) types.DeviceSelector {
+	return &linkTypeSelector{linkTypes: linkTypes}
+}
+
+type linkTypeSelector struct {
+	linkTypes []string
+}
+
+func (s *linkTypeSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
+	filteredList := make([]types.PciNetDevice, 0)
+	for _, dev := range inDevices {
+		if contains(s.linkTypes, dev.GetLinkType()) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+	return filteredList
+}
+
 func contains(hay []string, needle string) bool {
 	for _, s := range hay {
 		if s == needle {

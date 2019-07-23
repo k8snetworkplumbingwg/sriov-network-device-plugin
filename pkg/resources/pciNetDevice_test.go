@@ -25,6 +25,7 @@ var _ = Describe("PciNetDevice", func() {
 					},
 				}
 				defer fs.Use()()
+				defer utils.UseFakeLinks()()
 
 				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -38,6 +39,7 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(out.deviceSpecs).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
 				Expect(out.GetRdmaSpec().IsRdma()).To(BeFalse())
 				Expect(out.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(out.GetLinkType()).To(Equal("fakeLinkType"))
 
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -49,6 +51,7 @@ var _ = Describe("PciNetDevice", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/driver": []byte("not a symlink")},
 				}
 				defer fs.Use()()
+				defer utils.UseFakeLinks()()
 
 				f := NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
