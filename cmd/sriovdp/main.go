@@ -36,7 +36,7 @@ func flagInit(cp *cliParams) {
 }
 
 func main() {
-	cp := &cliParams2{}
+	cp := &cliParams{}
 	flagInit(cp)
 	flag.Parse()
 	rm := newResourceManager(cp)
