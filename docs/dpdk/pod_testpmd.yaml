@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpmd
+  annotations:
+    k8s.v1.cni.cncf.io/networks: sriov-dpdk-net2000
+spec:
+  containers:
+  - name: testpmd
+    image: <DPDK testpmd image>
+    imagePullPolicy: Never
+    securityContext:
+     capabilities:
+        add: ["IPC_LOCK"]
+    volumeMounts:
+    - mountPath: /dev/hugepages
+      name: hugepage
+    resources:
+      requests:
+        memory: 1Gi
+        hugepages-1Gi: 4Gi
+        intel.com/intel_x710vfio: 2
+      limits:
+        hugepages-1Gi: 4Gi
+        intel.com/intel_x710vfio: 2
+    command: ["sleep", "infinity"]
+  volumes:
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
