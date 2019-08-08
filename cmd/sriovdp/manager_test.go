@@ -273,11 +273,11 @@ var _ = Describe("Resource manager", func() {
 			})
 		})
 	})
-	DescribeTable("checking whether device is in use",
+	DescribeTable("checking whether device has default route",
 		func(fs *utils.FakeFilesystem, addr string, expected, shouldFail bool) {
 			defer fs.Use()()
 
-			actual, err := isInUse(addr)
+			actual, err := hasDefaultRoute(addr)
 			Expect(actual).To(Equal(expected))
 			assertShouldFail(err, shouldFail)
 		},
