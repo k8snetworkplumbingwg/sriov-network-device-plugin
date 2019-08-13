@@ -40,22 +40,20 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
 - Extensible to support new device types with minimal effort if not already supported
 
-To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI plugins:
+To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI components:
 
-- Multus CNI
+- A compatible CNI meta plugin (Multus CNI, or DANM)
 
   - Retrieves allocated network device information of a Pod
 
 - SRIOV CNI
 
-  - During Pod creation, plumbs allocated SRIOV VF to a Pods network namespace using VF information given by Multus
+  - During Pod creation, plumbs allocated SRIOV VF to a Pods network namespace using VF information given by the meta plugin
 
   - On Pod deletion, reset and release the VF from the Pod
 
-This implementation follows the design discuessed in [this proposal document](https://docs.google.com/document/d/1Ewe9Of84GkP0b2Q2PC0y9RVZNkN2WeVEagX9m99Nrzc/).
 
-
-Please follow the Multus [Quick Start](#quick-start) for multi network interface support in Kubernetes.
+Please follow the [Quick Start](#quick-start) for multi network interface support in Kubernetes.
 
 ### Supported SRIOV NICs
 
@@ -76,43 +74,14 @@ To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.co
 
 ## Quick Start
 
-This section explains an exmaple deployment of SRIOV Network device plugin in Kubernetes. Required YAML files can be found in [deployments/](deployments/) directory.
-
-### Network Object CRDs
-
-Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
-
-### Build and configure Multus
-
-1. Compile Multus executable:
-```
-$ git clone https://github.com/intel/multus-cni.git
-$ cd multus-cni
-$ ./build
-$ cp bin/multus /opt/cni/bin
-```
-2. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
-```
-$ cp deployments/cni-conf.json /etc/cni/net.d/
-```
-
-3. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
-```
-$ kubectl create -f deployments/crdnetwork.yaml
-```
-
 ### Build SRIOV CNI
 
-1. Compile SRIOV-CNI (dev/k8s-deviceid-model branch):
+1. Compile SRIOV-CNI (supported from release 2.0+):
 ```
 $ git clone https://github.com/intel/sriov-cni.git
 $ cd sriov-cni
 $ make
 $ cp build/sriov /opt/cni/bin
-```
-2. Create the SRIOV Network CRD
-```
-$ kubectl create -f deployments/sriov-crd.yaml
 ```
 
 ### Build and run SRIOV network device plugin
@@ -132,6 +101,50 @@ $ make
  ```
 $ make image
 ``` 
+
+### Install a compatible CNI meta plugin
+
+#### Multus
+This section explains an example deployment of SRIOV Network device plugin in Kubernetes with Multus.
+Required YAML files can be found in [deployments/](deployments/) directory.
+
+#### Build and configure Multus
+
+1. Compile Multus executable:
+```
+$ git clone https://github.com/intel/multus-cni.git
+$ cd multus-cni
+$ ./build
+$ cp bin/multus /opt/cni/bin
+```
+2. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
+```
+$ cp deployments/cni-conf.json /etc/cni/net.d/
+```
+
+3. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
+```
+$ kubectl create -f deployments/crdnetwork.yaml
+```
+
+#### Network Object CRDs
+
+Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
+1. Create the SRIOV Network CRD
+```
+$ kubectl create -f deployments/sriov-crd.yaml
+```
+
+#### DANM
+This section explains an example deployment of SRIOV Network device plugin in Kubernetes with DANM.
+
+#### Install DANM 
+Refer to [DANM documentation](https://github.com/nokia/danm#getting-started) for detailed instructions.
+
+#### Create SR-IOV type networks
+DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level.
+This means that all DANM API features seamlessly work together with the SR-IOV setup described above, whether you use the [lightweight](https://github.com/nokia/danm#lightweight-network-management-experience), or the [production grade](https://github.com/nokia/danm#production-grade-network-management-experience) network management APIs.
+For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
 
 > See following sections on how to configure and run SRIOV device plugin.
 
@@ -267,9 +280,9 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 
 ## Example deployments
 
-We assume that you have working K8s cluster configured with Multus meta plugin for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
+We assume that you have working K8s cluster configured with a meta plugin for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
-The [images](./images) directory contains example Docker file, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) building docker the image.
+The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
 
 ````
 # Create ConfigMap
@@ -286,7 +299,7 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 
 ````
 
-There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployments.
+There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployment with Multus.
 
 
 ### Testing SRIOV workloads
