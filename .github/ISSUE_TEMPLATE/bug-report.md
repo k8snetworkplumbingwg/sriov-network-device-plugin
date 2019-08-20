@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug with SR-IOV Device Plugin
+about: Report a bug with SR-IOV Network Device Plugin
 
 ---
 <!-- Please use this template while reporting a bug and provide as much relevant info as possible. Doing so give us the best chance to find a prompt resolution to your issue -->
@@ -17,12 +17,12 @@ about: Report a bug with SR-IOV Device Plugin
 Please fill in the below table with the version numbers of components used.
 
 Component | Version|
-----------------------|--------------------|
-|SR-IOV Device Plugin |<Input Version Here>|
-|SR-IOV CNI Plugin    |<Input Version Here>|
-|Multus               |<Input Version Here>|
-| Kubernetes          |<Input Version Here>| 
-| OS                  |<Input Version Here>|
+------------------------------|--------------------|
+|SR-IOV Network Device Plugin |<Input Version Here>|
+|SR-IOV CNI Plugin            |<Input Version Here>|
+|Multus                       |<Input Version Here>|
+| Kubernetes                  |<Input Version Here>| 
+| OS                          |<Input Version Here>|
 
 ### Config Files
 ##### Device pool config file location (default "/etc/pcidp/config.json")
@@ -38,7 +38,7 @@ Component | Version|
 ##### SR-IOV Network Custom Resource Definition
 
 ### Logs
-##### SR-IOV Device Plugin Logs (use `kubectl logs $PODNAME')
+##### SR-IOV Network Device Plugin Logs (use `kubectl logs $PODNAME')
 
 ##### Multus logs (default "/var/log/multus.log" )
 
