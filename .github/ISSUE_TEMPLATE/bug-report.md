@@ -5,16 +5,15 @@ about: Report a bug with SR-IOV Device Plugin
 ---
 <!-- Please use this template while reporting a bug and provide as much relevant info as possible. Doing so give us the best chance to find a prompt resolution to your issue -->
 
+**What happened?**
 
-**What happened?**:
+**What did you expect to happen?**
 
-**What did you expect to happen?**:
+**What are the minimal steps needed to reproduce the bug?**
 
-**What are the minimal steps needed to reproduce the bug?**:
+**Anything else we need to know?**
 
-**Anything else we need to know?**:
-
-**Environment**:
+**Environment**
 
 - SR-IOV Device Plugin Version
 - Device pool config file location (default "/etc/pcidp/config.json")
@@ -29,6 +28,6 @@ about: Report a bug with SR-IOV Device Plugin
 - SR-IOV Network Custom Resource Definition
 
 **Useful logs**
-- SR-IOV Device Plugin Logs (use `kubectl logs <Name of relevant device plugin pod>)
+- SR-IOV Device Plugin Logs (use `kubectl logs $PODNAME')
 - Multus logs (default "/var/log/multus.log" )
 - Kubelet logs (journalctl -u kubelet)
