@@ -38,7 +38,7 @@ Component | Version|
 ##### SR-IOV Network Custom Resource Definition
 
 ### Logs
-##### SR-IOV Network Device Plugin Logs (use `kubectl logs $PODNAME')
+##### SR-IOV Network Device Plugin Logs (use `kubectl logs $PODNAME`)
 
 ##### Multus logs (default "/var/log/multus.log" )
 
