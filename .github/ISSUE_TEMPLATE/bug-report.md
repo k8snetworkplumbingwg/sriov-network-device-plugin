@@ -15,15 +15,22 @@ about: Report a bug with SR-IOV Device Plugin
 
 **Environment**
 
-- SR-IOV Device Plugin Version
-- Device pool config file location (default "/etc/pcidp/config.json")
-- SR-IOV CNI Version
-- Multus version (If applicable)
+Please fill in the below table with the version numbers of components used.
+
+Component | Version|
+----------------------------|------------|
+|SR-IOV Device Plugin |       <input type="text" id="sriovDPVersion"/>    |
+|SR-IOV CNI Plugin |  <input type="text" id="sriovCNIVersion"/> 
+|Multus |<input type="text" id="multusVersion"/>
+| Kubernetes|<input type="text" id="k8sVersion"/>| 
+| OS|<input type="text" id="OSVersion"/>|
+
+Please paste config files below:
+-Device pool config file location (default "/etc/pcidp/config.json")
 - Multus config ('/etc/cni/multus/net.d)'
+
 - CNI config ('/etc/cni/net.d/')
-- Kubernetes version (use `kubectl version`):
 - Kubernetes deployment type ( Bare Metal, Kubeadm etc.)
-- OS (e.g. from /etc/os-release):
 - Kubeconfig file
 - SR-IOV Network Custom Resource Definition
 
