@@ -2,6 +2,8 @@ package resources
 
 import (
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"strconv"
+	"strings"
 )
 
 // newVendorSelector returns a DeviceSelector interface for vendor list
@@ -76,8 +78,38 @@ type pfNameSelector struct {
 func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
 	filteredList := make([]types.PciNetDevice, 0)
 	for _, dev := range inDevices {
-		if contains(s.pfNames, dev.GetPFName()) {
-			filteredList = append(filteredList, dev)
+		selector := getItem(s.pfNames, dev.GetPFName())
+		if selector != "" {
+			if strings.Contains(selector, "#"){
+				// Selector does contain VF index in next format:
+				// <PFName>#<VFIndexStart>-<VFIndexEnd>
+				// In this case both <VFIndexStart> and <VFIndexEnd>
+				// are included in range, for example: "netpf0#3-5"
+				// The VFs 3,4 and 5 of teh PF 'netpf0' will be included
+				// in selector pool
+				fields := strings.Split(selector,"#")
+				if len(fields) != 2 {
+					return filteredList
+				}
+				rng := strings.Split(fields[1],"-")
+				if len(rng) != 2 {
+					return filteredList
+				}
+				rngSt, err := strconv.Atoi(rng[0])
+				if err != nil {
+					return filteredList
+				}
+				rngEnd, err := strconv.Atoi(rng[1])
+				if err != nil {
+					return filteredList
+				}
+				vfId := dev.GetVFId()
+				if vfId >= rngSt && vfId <= rngEnd {
+					filteredList = append(filteredList, dev)
+				}
+			} else {
+				filteredList = append(filteredList, dev)
+			}
 		}
 	}
 
@@ -110,4 +142,14 @@ func contains(hay []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+
+func getItem(hay []string, needle string) string {
+	for _, item := range hay {
+		if strings.HasPrefix(item,needle) {
+			return  item
+		}
+	}
+	return ""
 }

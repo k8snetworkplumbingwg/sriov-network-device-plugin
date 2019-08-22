@@ -48,6 +48,10 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	if err != nil {
 		return nil, err
 	}
+	vfId, err := utils.GetVFId(pciAddr)
+	if err != nil {
+		return nil, err
+	}
 
 	// 			3. Get Device file info (e.g., uio, vfio specific)
 	// Get DeviceInfoProvider using device driver
@@ -76,7 +80,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		ifName:      ifName,
 		pfName:      pfName,
 		driver:      driverName,
-		vfID:        0,  // TO-DO: Get this using utils pkg if needed
+		vfID:        vfId,
 		linkSpeed:   "", // TO-DO: Get this using utils pkg
 		apiDevice:   apiDevice,
 		deviceSpecs: dSpecs,
@@ -154,4 +158,8 @@ func getPFInfos(pciAddr string) (pfAddr, pfName string, err error) {
 
 func (nd *pciNetDevice) GetLinkType() string {
 	return nd.linkType
+}
+
+func (nd *pciNetDevice) GetVFId() int {
+	return nd.vfID
 }
