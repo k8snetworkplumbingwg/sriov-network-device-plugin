@@ -355,7 +355,7 @@ func GetVFId(pciAddr string) (vfId int, err error) {
 	}
 
 	//Read all VF directory and get add VF ID
-	for ind, _ := range vfDirs {
+	for ind := range vfDirs {
 		dirN := fmt.Sprintf("%s/virtfn%d", pfDir, ind)
 		dirInfo, err := os.Lstat(dirN)
 		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
