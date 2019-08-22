@@ -3,10 +3,11 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: sriov-net1
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: intel.com/sriov
+    k8s.v1.cni.cncf.io/resourceName: intel.com/intel_sriov_netdevice
 spec:
   config: '{
   "type": "sriov",
+  "cniVersion": "0.3.1",
   "name": "sriov-network",
   "ipam": {
     "type": "host-local",

@@ -13,6 +13,6 @@ spec:
     args: [ "while true; do sleep 300000; done;" ]
     resources:
       requests:
-        intel.com/sriov: '1' 
+        intel.com/intel_sriov_netdevice: '1' 
       limits:
-        intel.com/sriov: '1'
+        intel.com/intel_sriov_netdevice: '1'
