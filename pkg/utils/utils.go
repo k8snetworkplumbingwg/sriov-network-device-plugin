@@ -335,35 +335,37 @@ func GetDriverName(pciAddr string) (string, error) {
 	return filepath.Base(driverInfo), nil
 }
 
-func GetVFId(pciAddr string) (vfId int, err error) {
+// GetVFID returns VF ID index (within specific PF) based on PCI address
+func GetVFID(pciAddr string) (vfID int, err error) {
 	pfDir := filepath.Join(sysBusPci, pciAddr, "physfn")
-	vfId = -1
+	vfID = -1
 	_, err = os.Lstat(pfDir)
 	if os.IsNotExist(err) {
-		return -1, nil
+		return vfID, nil
 	}
 	if err != nil {
 		err = fmt.Errorf("Error. Could not get PF directory information for VF device: %s, Err: %v", pciAddr, err)
-		return
+		return vfID, err
 	}
 
 	vfDirs, err := filepath.Glob(filepath.Join(pfDir, "virtfn*"))
-
 	if err != nil {
 		err = fmt.Errorf("error reading VF directories %v", err)
-		return
+		return vfID, err
 	}
 
-	//Read all VF directory and get add VF ID
-	for ind := range vfDirs {
-		dirN := fmt.Sprintf("%s/virtfn%d", pfDir, ind)
+	//Read all VF directory and get VF ID
+	for vfID := range vfDirs {
+		dirN := fmt.Sprintf("%s/virtfn%d", pfDir, vfID)
 		dirInfo, err := os.Lstat(dirN)
 		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
 			linkName, err := filepath.EvalSymlinks(dirN)
-			if err == nil && strings.Contains(linkName,pciAddr) {
-				return ind, err
+			if err == nil && strings.Contains(linkName, pciAddr) {
+				return vfID, err
 			}
 		}
 	}
-	return
+	// The requested VF not found
+	vfID = -1
+	return vfID, nil
 }

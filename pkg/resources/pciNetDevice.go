@@ -48,7 +48,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	if err != nil {
 		return nil, err
 	}
-	vfId, err := utils.GetVFId(pciAddr)
+	vfID, err := utils.GetVFID(pciAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		ifName:      ifName,
 		pfName:      pfName,
 		driver:      driverName,
-		vfID:        vfId,
+		vfID:        vfID,
 		linkSpeed:   "", // TO-DO: Get this using utils pkg
 		apiDevice:   apiDevice,
 		deviceSpecs: dSpecs,
@@ -160,6 +160,6 @@ func (nd *pciNetDevice) GetLinkType() string {
 	return nd.linkType
 }
 
-func (nd *pciNetDevice) GetVFId() int {
+func (nd *pciNetDevice) GetVFID() int {
 	return nd.vfID
 }

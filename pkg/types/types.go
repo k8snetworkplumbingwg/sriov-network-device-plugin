@@ -99,7 +99,7 @@ type PciNetDevice interface {
 	GetMounts() []*pluginapi.Mount
 	GetAPIDevice() *pluginapi.Device
 	GetRdmaSpec() RdmaSpec
-	GetVFId() int
+	GetVFID() int
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
