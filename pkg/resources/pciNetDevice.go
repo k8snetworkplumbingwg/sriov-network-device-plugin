@@ -5,6 +5,7 @@ import (
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	"strconv"
 )
 
 type pciNetDevice struct {
@@ -24,6 +25,15 @@ type pciNetDevice struct {
 	mounts      []*pluginapi.Mount
 	rdmaSpec    types.RdmaSpec
 	linkType    string
+}
+
+// Convert NUMA node number to string.
+// A node of -1 represents "unknown" and is converted to the empty string.
+func nodeToStr(nodeNum int) string {
+	if nodeNum >= 0 {
+		return strconv.Itoa(nodeNum)
+	}
+	return ""
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
@@ -56,9 +66,17 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 	mnt := infoProvider.GetMounts(pciAddr)
 	env := infoProvider.GetEnvVal(pciAddr)
 	rdmaSpec := rFactory.GetRdmaSpec(pciDevice.Address)
+	nodeNum := utils.GetDevNode(pciAddr)
 	apiDevice := &pluginapi.Device{
 		ID:     pciAddr,
 		Health: pluginapi.Healthy,
+	}
+	if nodeNum >= 0 {
+		apiDevice.Topology = &pluginapi.TopologyInfo{
+			Node: &pluginapi.NUMANode{
+				ID: int64(nodeNum),
+			},
+		}
 	}
 
 	linkType := ""
@@ -82,7 +100,7 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		deviceSpecs: dSpecs,
 		mounts:      mnt,
 		env:         env,
-		numa:        "", // TO-DO: Get this using utils pkg
+		numa:        nodeToStr(nodeNum),
 		rdmaSpec:    rdmaSpec,
 		linkType:    linkType,
 	}, nil
