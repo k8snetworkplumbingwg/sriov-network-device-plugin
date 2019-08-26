@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
@@ -35,7 +35,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/probe"
 	execprobe "k8s.io/kubernetes/pkg/probe/exec"
-	httprobe "k8s.io/kubernetes/pkg/probe/http"
+	httpprobe "k8s.io/kubernetes/pkg/probe/http"
 	tcprobe "k8s.io/kubernetes/pkg/probe/tcp"
 	"k8s.io/utils/exec"
 
@@ -50,8 +50,8 @@ type prober struct {
 	// probe types needs different httprobe instances so they don't
 	// share a connection pool which can cause collsions to the
 	// same host:port and transient failures. See #49740.
-	readinessHttp httprobe.Prober
-	livenessHttp  httprobe.Prober
+	readinessHTTP httpprobe.Prober
+	livenessHTTP  httpprobe.Prober
 	tcp           tcprobe.Prober
 	runner        kubecontainer.ContainerCommandRunner
 
@@ -66,10 +66,11 @@ func newProber(
 	refManager *kubecontainer.RefManager,
 	recorder record.EventRecorder) *prober {
 
+	const followNonLocalRedirects = false
 	return &prober{
 		exec:          execprobe.New(),
-		readinessHttp: httprobe.New(),
-		livenessHttp:  httprobe.New(),
+		readinessHTTP: httpprobe.New(followNonLocalRedirects),
+		livenessHTTP:  httpprobe.New(followNonLocalRedirects),
 		tcp:           tcprobe.New(),
 		runner:        runner,
 		refManager:    refManager,
@@ -96,7 +97,7 @@ func (pb *prober) probe(probeType probeType, pod *v1.Pod, status v1.PodStatus, c
 	}
 
 	result, output, err := pb.runProbeWithRetries(probeType, probeSpec, pod, status, container, containerID, maxProbeRetries)
-	if err != nil || result != probe.Success {
+	if err != nil || (result != probe.Success && result != probe.Warning) {
 		// Probe failed in one way or another.
 		ref, hasRef := pb.refManager.GetRef(containerID)
 		if !hasRef {
@@ -115,7 +116,14 @@ func (pb *prober) probe(probeType probeType, pod *v1.Pod, status v1.PodStatus, c
 		}
 		return results.Failure, err
 	}
-	klog.V(3).Infof("%s probe for %q succeeded", probeType, ctrName)
+	if result == probe.Warning {
+		if ref, hasRef := pb.refManager.GetRef(containerID); hasRef {
+			pb.recorder.Eventf(ref, v1.EventTypeWarning, events.ContainerProbeWarning, "%s probe warning: %s", probeType, output)
+		}
+		klog.V(3).Infof("%s probe for %q succeeded with a warning: %s", probeType, ctrName, output)
+	} else {
+		klog.V(3).Infof("%s probe for %q succeeded", probeType, ctrName)
+	}
 	return results.Success, nil
 }
 
@@ -167,10 +175,10 @@ func (pb *prober) runProbe(probeType probeType, p *v1.Probe, pod *v1.Pod, status
 		headers := buildHeader(p.HTTPGet.HTTPHeaders)
 		klog.V(4).Infof("HTTP-Probe Headers: %v", headers)
 		if probeType == liveness {
-			return pb.livenessHttp.Probe(url, headers, timeout)
-		} else { // readiness
-			return pb.readinessHttp.Probe(url, headers, timeout)
+			return pb.livenessHTTP.Probe(url, headers, timeout)
 		}
+		// readiness
+		return pb.readinessHTTP.Probe(url, headers, timeout)
 	}
 	if p.TCPSocket != nil {
 		port, err := extractPort(p.TCPSocket.Port, container)

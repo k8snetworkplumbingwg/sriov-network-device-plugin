@@ -27,9 +27,9 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/hash"
 	"k8s.io/kubernetes/pkg/kubectl/generate"
-	"k8s.io/kubernetes/pkg/kubectl/util"
-	"k8s.io/kubernetes/pkg/kubectl/util/hash"
 )
 
 // ConfigMapGeneratorV1 supports stable generation of a configMap.
@@ -289,10 +289,10 @@ func validateNewConfigMap(configMap *v1.ConfigMap, keyName string) error {
 	}
 
 	if _, exists := configMap.Data[keyName]; exists {
-		return fmt.Errorf("cannot add key %s, another key by that name already exists in data: %v", keyName, configMap.Data)
+		return fmt.Errorf("cannot add key %q, another key by that name already exists in Data for ConfigMap %q", keyName, configMap.Name)
 	}
 	if _, exists := configMap.BinaryData[keyName]; exists {
-		return fmt.Errorf("cannot add key %s, another key by that name already exists in binaryData: %v", keyName, configMap.BinaryData)
+		return fmt.Errorf("cannot add key %q, another key by that name already exists in BinaryData for ConfigMap %q", keyName, configMap.Name)
 	}
 	return nil
 }

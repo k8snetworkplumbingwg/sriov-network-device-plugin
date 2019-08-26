@@ -27,7 +27,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/klog"
 	kubeadmapi "k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -36,6 +35,7 @@ import (
 	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
 	staticpodutil "k8s.io/kubernetes/cmd/kubeadm/app/util/staticpod"
 	authzmodes "k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes"
+	utilsnet "k8s.io/utils/net"
 )
 
 // CreateInitStaticPodManifestFiles will write all static pod manifest files needed to bring up the control plane.
@@ -46,7 +46,7 @@ func CreateInitStaticPodManifestFiles(manifestDir string, cfg *kubeadmapi.InitCo
 
 // GetStaticPodSpecs returns all staticPodSpecs actualized to the context of the current configuration
 // NB. this methods holds the information about how kubeadm creates static pod manifests.
-func GetStaticPodSpecs(cfg *kubeadmapi.ClusterConfiguration, endpoint *kubeadmapi.APIEndpoint, k8sVersion *version.Version) map[string]v1.Pod {
+func GetStaticPodSpecs(cfg *kubeadmapi.ClusterConfiguration, endpoint *kubeadmapi.APIEndpoint) map[string]v1.Pod {
 	// Get the required hostpath mounts
 	mounts := getHostPathVolumesForTheControlPlane(cfg)
 
@@ -66,9 +66,9 @@ func GetStaticPodSpecs(cfg *kubeadmapi.ClusterConfiguration, endpoint *kubeadmap
 			Name:            kubeadmconstants.KubeControllerManager,
 			Image:           images.GetKubernetesImage(kubeadmconstants.KubeControllerManager, cfg),
 			ImagePullPolicy: v1.PullIfNotPresent,
-			Command:         getControllerManagerCommand(cfg, k8sVersion),
+			Command:         getControllerManagerCommand(cfg),
 			VolumeMounts:    staticpodutil.VolumeMountMapToSlice(mounts.GetVolumeMounts(kubeadmconstants.KubeControllerManager)),
-			LivenessProbe:   livenessProbe(staticpodutil.GetControllerManagerProbeAddress(cfg), 10252, v1.URISchemeHTTP),
+			LivenessProbe:   livenessProbe(staticpodutil.GetControllerManagerProbeAddress(cfg), kubeadmconstants.InsecureKubeControllerManagerPort, v1.URISchemeHTTP),
 			Resources:       staticpodutil.ComponentResources("200m"),
 			Env:             getProxyEnvVars(),
 		}, mounts.GetVolumes(kubeadmconstants.KubeControllerManager)),
@@ -78,7 +78,7 @@ func GetStaticPodSpecs(cfg *kubeadmapi.ClusterConfiguration, endpoint *kubeadmap
 			ImagePullPolicy: v1.PullIfNotPresent,
 			Command:         getSchedulerCommand(cfg),
 			VolumeMounts:    staticpodutil.VolumeMountMapToSlice(mounts.GetVolumeMounts(kubeadmconstants.KubeScheduler)),
-			LivenessProbe:   livenessProbe(staticpodutil.GetSchedulerProbeAddress(cfg), 10251, v1.URISchemeHTTP),
+			LivenessProbe:   livenessProbe(staticpodutil.GetSchedulerProbeAddress(cfg), kubeadmconstants.InsecureSchedulerPort, v1.URISchemeHTTP),
 			Resources:       staticpodutil.ComponentResources("100m"),
 			Env:             getProxyEnvVars(),
 		}, mounts.GetVolumes(kubeadmconstants.KubeScheduler)),
@@ -104,22 +104,16 @@ func livenessProbe(host string, port int, scheme v1.URIScheme) *v1.Probe {
 
 // CreateStaticPodFiles creates all the requested static pod files.
 func CreateStaticPodFiles(manifestDir string, cfg *kubeadmapi.ClusterConfiguration, endpoint *kubeadmapi.APIEndpoint, componentNames ...string) error {
-	// TODO: Move the "pkg/util/version".Version object into the internal API instead of always parsing the string
-	k8sVersion, err := version.ParseSemantic(cfg.KubernetesVersion)
-	if err != nil {
-		return err
-	}
-
 	// gets the StaticPodSpecs, actualized for the current ClusterConfiguration
 	klog.V(1).Infoln("[control-plane] getting StaticPodSpecs")
-	specs := GetStaticPodSpecs(cfg, endpoint, k8sVersion)
+	specs := GetStaticPodSpecs(cfg, endpoint)
 
 	// creates required static pod specs
 	for _, componentName := range componentNames {
-		// retrives the StaticPodSpec for given component
+		// retrieves the StaticPodSpec for given component
 		spec, exists := specs[componentName]
 		if !exists {
-			return errors.Errorf("couldn't retrive StaticPodSpec for %q", componentName)
+			return errors.Errorf("couldn't retrieve StaticPodSpec for %q", componentName)
 		}
 
 		// writes the StaticPodSpec to disk
@@ -137,6 +131,7 @@ func CreateStaticPodFiles(manifestDir string, cfg *kubeadmapi.ClusterConfigurati
 func getAPIServerCommand(cfg *kubeadmapi.ClusterConfiguration, localAPIEndpoint *kubeadmapi.APIEndpoint) []string {
 	defaultArguments := map[string]string{
 		"advertise-address":               localAPIEndpoint.AdvertiseAddress,
+		"insecure-port":                   "0",
 		"enable-admission-plugins":        "NodeRestriction",
 		"service-cluster-ip-range":        cfg.Networking.ServiceSubnet,
 		"service-account-key-file":        filepath.Join(cfg.CertificatesDir, kubeadmconstants.ServiceAccountPublicKeyName),
@@ -239,7 +234,7 @@ func getAuthzModes(authzModeExtraArgs string) string {
 func calcNodeCidrSize(podSubnet string) string {
 	maskSize := "24"
 	if ip, podCidr, err := net.ParseCIDR(podSubnet); err == nil {
-		if ip.To4() == nil {
+		if utilsnet.IsIPv6(ip) {
 			var nodeCidrSize int
 			podNetSize, totalBits := podCidr.Mask.Size()
 			switch {
@@ -260,7 +255,7 @@ func calcNodeCidrSize(podSubnet string) string {
 }
 
 // getControllerManagerCommand builds the right controller manager command from the given config object and version
-func getControllerManagerCommand(cfg *kubeadmapi.ClusterConfiguration, k8sVersion *version.Version) []string {
+func getControllerManagerCommand(cfg *kubeadmapi.ClusterConfiguration) []string {
 
 	kubeconfigFile := filepath.Join(kubeadmconstants.KubernetesDir, kubeadmconstants.ControllerManagerKubeConfigFileName)
 	caFile := filepath.Join(cfg.CertificatesDir, kubeadmconstants.CACertName)
@@ -295,6 +290,9 @@ func getControllerManagerCommand(cfg *kubeadmapi.ClusterConfiguration, k8sVersio
 		defaultArguments["allocate-node-cidrs"] = "true"
 		defaultArguments["cluster-cidr"] = cfg.Networking.PodSubnet
 		defaultArguments["node-cidr-mask-size"] = maskSize
+		if cfg.Networking.ServiceSubnet != "" {
+			defaultArguments["service-cluster-ip-range"] = cfg.Networking.ServiceSubnet
+		}
 	}
 
 	command := []string{"kube-controller-manager"}

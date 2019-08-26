@@ -24,6 +24,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 )
 
 const (
@@ -101,7 +102,7 @@ var _ = framework.KubeDescribe("ContainerLogPath [NodeConformance]", func() {
 
 			createAndWaitPod := func(pod *v1.Pod) error {
 				podClient.Create(pod)
-				return framework.WaitForPodSuccessInNamespace(f.ClientSet, pod.Name, f.Namespace.Name)
+				return e2epod.WaitForPodSuccessInNamespace(f.ClientSet, pod.Name, f.Namespace.Name)
 			}
 
 			var logPodName string
@@ -157,10 +158,12 @@ var _ = framework.KubeDescribe("ContainerLogPath [NodeConformance]", func() {
 
 				// get podID from created Pod
 				createdLogPod, err := podClient.Get(logPodName, metav1.GetOptions{})
+				podNs := createdLogPod.Namespace
+				podName := createdLogPod.Name
 				podID := string(createdLogPod.UID)
 
 				// build log cri file path
-				expectedCRILogFile := logCRIDir + "/" + podID + "/" + logContainerName + "/0.log"
+				expectedCRILogFile := logCRIDir + "/" + podNs + "_" + podName + "_" + podID + "/" + logContainerName + "/0.log"
 
 				logCRICheckPodName := "log-cri-check-" + string(uuid.NewUUID())
 				err = createAndWaitPod(makeLogCheckPod(logCRICheckPodName, logString, expectedCRILogFile))

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"runtime"
 	"strings"
 
@@ -33,16 +32,17 @@ import (
 	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/printers"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/kubernetes/pkg/kubectl"
+	"k8s.io/kubectl/pkg/rawhttp"
+	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
 	"k8s.io/kubernetes/pkg/kubectl/generate"
-	"k8s.io/kubernetes/pkg/kubectl/scheme"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // CreateOptions is the commandline options for 'create' sub command
@@ -146,6 +146,7 @@ func NewCmdCreate(f cmdutil.Factory, ioStreams genericclioptions.IOStreams) *cob
 	cmd.AddCommand(NewCmdCreatePodDisruptionBudget(f, ioStreams))
 	cmd.AddCommand(NewCmdCreatePriorityClass(f, ioStreams))
 	cmd.AddCommand(NewCmdCreateJob(f, ioStreams))
+	cmd.AddCommand(NewCmdCreateCronJob(f, ioStreams))
 	return cmd
 }
 
@@ -212,7 +213,11 @@ func (o *CreateOptions) RunCreate(f cmdutil.Factory, cmd *cobra.Command) error {
 	// raw only makes sense for a single file resource multiple objects aren't likely to do what you want.
 	// the validator enforces this, so
 	if len(o.Raw) > 0 {
-		return o.raw(f)
+		restClient, err := f.RESTClient()
+		if err != nil {
+			return err
+		}
+		return rawhttp.RawPost(restClient, o.IOStreams, o.Raw, o.FilenameOptions.Filenames[0])
 	}
 
 	if o.EditBeforeCreate {
@@ -247,7 +252,7 @@ func (o *CreateOptions) RunCreate(f cmdutil.Factory, cmd *cobra.Command) error {
 		if err != nil {
 			return err
 		}
-		if err := kubectl.CreateOrUpdateAnnotation(cmdutil.GetFlagBool(cmd, cmdutil.ApplyAnnotationsFlag), info.Object, scheme.DefaultJSONEncoder()); err != nil {
+		if err := util.CreateOrUpdateAnnotation(cmdutil.GetFlagBool(cmd, cmdutil.ApplyAnnotationsFlag), info.Object, scheme.DefaultJSONEncoder()); err != nil {
 			return cmdutil.AddSourceToErr("creating", info.Source, err)
 		}
 
@@ -271,37 +276,6 @@ func (o *CreateOptions) RunCreate(f cmdutil.Factory, cmd *cobra.Command) error {
 	if count == 0 {
 		return fmt.Errorf("no objects passed to create")
 	}
-	return nil
-}
-
-// raw makes a simple HTTP request to the provided path on the server using the default
-// credentials.
-func (o *CreateOptions) raw(f cmdutil.Factory) error {
-	restClient, err := f.RESTClient()
-	if err != nil {
-		return err
-	}
-
-	var data io.ReadCloser
-	if o.FilenameOptions.Filenames[0] == "-" {
-		data = os.Stdin
-	} else {
-		data, err = os.Open(o.FilenameOptions.Filenames[0])
-		if err != nil {
-			return err
-		}
-	}
-	// TODO post content with stream.  Right now it ignores body content
-	result := restClient.Post().RequestURI(o.Raw).Body(data).Do()
-	if err := result.Error(); err != nil {
-		return err
-	}
-	body, err := result.Raw()
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintf(o.Out, "%v", string(body))
 	return nil
 }
 
@@ -437,7 +411,7 @@ func (o *CreateSubcommandOptions) Run() error {
 			return err
 		}
 
-		if err := kubectl.CreateOrUpdateAnnotation(o.CreateAnnotation, obj, scheme.DefaultJSONEncoder()); err != nil {
+		if err := util.CreateOrUpdateAnnotation(o.CreateAnnotation, obj, scheme.DefaultJSONEncoder()); err != nil {
 			return err
 		}
 

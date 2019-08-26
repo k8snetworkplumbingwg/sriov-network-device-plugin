@@ -21,9 +21,10 @@ import (
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 
 	"github.com/onsi/ginkgo"
@@ -46,45 +47,36 @@ var _ = SIGDescribe("[Feature:Windows] [Feature:WindowsGMSA] GMSA [Slow]", func(
 				container2Name := "container2"
 				container2Domain := "contoso.org"
 
-				containers := make([]corev1.Container, 2)
-				for i, name := range []string{container1Name, container2Name} {
-					containers[i] = corev1.Container{
-						Name:  name,
-						Image: imageutils.GetPauseImageName(),
-					}
-				}
-
-				pod := &corev1.Pod{
+				pod := &v1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: podName,
-						Annotations: map[string]string{
-							"pod.alpha.windows.kubernetes.io/gmsa-credential-spec":                         generateDummyCredSpecs(podDomain),
-							container2Name + ".container.alpha.windows.kubernetes.io/gmsa-credential-spec": generateDummyCredSpecs(container2Domain),
-						},
 					},
-					Spec: corev1.PodSpec{
-						Containers: containers,
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name:  container1Name,
+								Image: imageutils.GetPauseImageName(),
+							},
+							{
+								Name:  container2Name,
+								Image: imageutils.GetPauseImageName(),
+								SecurityContext: &v1.SecurityContext{
+									WindowsOptions: &v1.WindowsSecurityContextOptions{
+										GMSACredentialSpec: generateDummyCredSpecs(container2Domain),
+									},
+								},
+							},
+						},
+						SecurityContext: &v1.PodSecurityContext{
+							WindowsOptions: &v1.WindowsSecurityContextOptions{
+								GMSACredentialSpec: generateDummyCredSpecs(podDomain),
+							},
+						},
 					},
 				}
 
 				ginkgo.By("creating a pod with correct GMSA annotations")
-				f.PodClient().Create(pod)
-
-				ginkgo.By("waiting for the pod and its containers to be running")
-				gomega.Eventually(func() bool {
-					pod, err := f.PodClient().Get(podName, metav1.GetOptions{})
-					if err != nil && pod.Status.Phase != corev1.PodRunning {
-						return false
-					}
-
-					for _, containerStatus := range pod.Status.ContainerStatuses {
-						if containerStatus.State.Running == nil {
-							return false
-						}
-					}
-
-					return true
-				}, 5*time.Minute, 1*time.Second).Should(gomega.BeTrue())
+				f.PodClient().CreateSync(pod)
 
 				ginkgo.By("checking the domain reported by nltest in the containers")
 				namespaceOption := fmt.Sprintf("--namespace=%s", f.Namespace.Name)
@@ -107,12 +99,12 @@ var _ = SIGDescribe("[Feature:Windows] [Feature:WindowsGMSA] GMSA [Slow]", func(
 					}, 1*time.Minute, 1*time.Second).Should(gomega.BeTrue())
 
 					if !strings.HasPrefix(output, domain) {
-						framework.Failf("Expected %q to start with %q", output, domain)
+						e2elog.Failf("Expected %q to start with %q", output, domain)
 					}
 
 					expectedSubstr := "The command completed successfully"
 					if !strings.Contains(output, expectedSubstr) {
-						framework.Failf("Expected %q to contain %q", output, expectedSubstr)
+						e2elog.Failf("Expected %q to contain %q", output, expectedSubstr)
 					}
 				}
 
@@ -124,10 +116,10 @@ var _ = SIGDescribe("[Feature:Windows] [Feature:WindowsGMSA] GMSA [Slow]", func(
 	})
 })
 
-func generateDummyCredSpecs(domain string) string {
+func generateDummyCredSpecs(domain string) *string {
 	shortName := strings.ToUpper(strings.Split(domain, ".")[0])
 
-	return fmt.Sprintf(`{
+	credSpecs := fmt.Sprintf(`{
        "ActiveDirectoryConfig":{
           "GroupManagedServiceAccounts":[
              {
@@ -152,4 +144,6 @@ func generateDummyCredSpecs(domain string) string {
           "Sid":"S-1-5-21-2126729477-2524175714-3194792973"
        }
     }`, shortName, domain, domain, domain, shortName)
+
+	return &credSpecs
 }

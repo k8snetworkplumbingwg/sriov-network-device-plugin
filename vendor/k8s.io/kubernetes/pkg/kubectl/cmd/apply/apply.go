@@ -40,22 +40,23 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/printers"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	oapi "k8s.io/kube-openapi/pkg/util/proto"
-	"k8s.io/kubernetes/pkg/kubectl"
+	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/kubectl/pkg/validation"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/delete"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/openapi"
-	"k8s.io/kubernetes/pkg/kubectl/scheme"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
-	"k8s.io/kubernetes/pkg/kubectl/validation"
 )
 
+// ApplyOptions defines flags and other configuration parameters for the `apply` command
 type ApplyOptions struct {
 	RecordFlags *genericclioptions.RecordFlags
 	Recorder    genericclioptions.Recorder
@@ -68,6 +69,7 @@ type ApplyOptions struct {
 
 	ServerSideApply bool
 	ForceConflicts  bool
+	FieldManager    string
 	Selector        string
 	DryRun          bool
 	ServerDryRun    bool
@@ -131,6 +133,7 @@ var (
 	warningNoLastAppliedConfigAnnotation = "Warning: %[1]s apply should be used on resource created by either %[1]s create --save-config or %[1]s apply\n"
 )
 
+// NewApplyOptions creates new ApplyOptions for the `apply` command
 func NewApplyOptions(ioStreams genericclioptions.IOStreams) *ApplyOptions {
 	return &ApplyOptions{
 		RecordFlags: genericclioptions.NewRecordFlags(),
@@ -193,17 +196,19 @@ func NewCmdApply(baseName string, f cmdutil.Factory, ioStreams genericclioptions
 	return cmd
 }
 
+// Complete verifies if ApplyOptions are valid and without conflicts.
 func (o *ApplyOptions) Complete(f cmdutil.Factory, cmd *cobra.Command) error {
 	o.ServerSideApply = cmdutil.GetServerSideApplyFlag(cmd)
 	o.ForceConflicts = cmdutil.GetForceConflictsFlag(cmd)
+	o.FieldManager = cmdutil.GetFieldManagerFlag(cmd)
 	o.DryRun = cmdutil.GetDryRunFlag(cmd)
 
 	if o.ForceConflicts && !o.ServerSideApply {
-		return fmt.Errorf("--force-conflicts only works with --server-side")
+		return fmt.Errorf("--experimental-force-conflicts only works with --experimental-server-side")
 	}
 
 	if o.DryRun && o.ServerSideApply {
-		return fmt.Errorf("--dry-run doesn't work with --server-side")
+		return fmt.Errorf("--dry-run doesn't work with --experimental-server-side (did you mean --server-dry-run instead?)")
 	}
 
 	if o.DryRun && o.ServerDryRun {
@@ -323,6 +328,7 @@ func isIncompatibleServerError(err error) bool {
 	return err.(*errors.StatusError).Status().Code == http.StatusUnsupportedMediaType
 }
 
+// Run executes the `apply` command.
 func (o *ApplyOptions) Run() error {
 	var openapiSchema openapi.Resources
 	if o.OpenAPIPatch {
@@ -392,12 +398,15 @@ func (o *ApplyOptions) Run() error {
 			if err != nil {
 				return cmdutil.AddSourceToErr("serverside-apply", info.Source, err)
 			}
+
 			options := metav1.PatchOptions{
-				Force: &o.ForceConflicts,
+				Force:        &o.ForceConflicts,
+				FieldManager: o.FieldManager,
 			}
 			if o.ServerDryRun {
 				options.DryRun = []string{metav1.DryRunAll}
 			}
+
 			obj, err := resource.NewHelper(info.Client, info.Mapping).Patch(
 				info.Namespace,
 				info.Name,
@@ -405,35 +414,39 @@ func (o *ApplyOptions) Run() error {
 				data,
 				&options,
 			)
-			if err == nil {
-				info.Refresh(obj, true)
-				metadata, err := meta.Accessor(info.Object)
-				if err != nil {
-					return err
+			if err != nil {
+				if isIncompatibleServerError(err) {
+					err = fmt.Errorf("Server-side apply not available on the server: (%v)", err)
 				}
-				visitedUids.Insert(string(metadata.GetUID()))
-				count++
-				if len(output) > 0 && !shortOutput {
-					objs = append(objs, info.Object)
-					return nil
-				}
-				printer, err := o.ToPrinter("serverside-applied")
-				if err != nil {
-					return err
-				}
-				return printer.PrintObj(info.Object, o.Out)
-			} else if !isIncompatibleServerError(err) {
+
 				return err
 			}
-			// If we're talking to a server which does not implement server-side apply,
-			// continue with the client side apply after this block.
-			klog.Warningf("serverside-apply incompatible server: %v", err)
+
+			info.Refresh(obj, true)
+			metadata, err := meta.Accessor(info.Object)
+			if err != nil {
+				return err
+			}
+
+			visitedUids.Insert(string(metadata.GetUID()))
+			count++
+			if len(output) > 0 && !shortOutput {
+				objs = append(objs, info.Object)
+				return nil
+			}
+
+			printer, err := o.ToPrinter("serverside-applied")
+			if err != nil {
+				return err
+			}
+
+			return printer.PrintObj(info.Object, o.Out)
 		}
 
 		// Get the modified configuration of the object. Embed the result
 		// as an annotation in the modified configuration, so that it will appear
 		// in the patch sent to the server.
-		modified, err := kubectl.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
+		modified, err := util.GetModifiedConfiguration(info.Object, true, unstructured.UnstructuredJSONScheme)
 		if err != nil {
 			return cmdutil.AddSourceToErr(fmt.Sprintf("retrieving modified configuration from:\n%s\nfor:", info.String()), info.Source, err)
 		}
@@ -448,7 +461,7 @@ func (o *ApplyOptions) Run() error {
 
 			// Create the resource if it doesn't exist
 			// First, update the annotation used by kubectl apply
-			if err := kubectl.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
+			if err := util.CreateApplyAnnotation(info.Object, unstructured.UnstructuredJSONScheme); err != nil {
 				return cmdutil.AddSourceToErr("creating", info.Source, err)
 			}
 
@@ -758,6 +771,7 @@ func (p *Patcher) delete(namespace, name string) error {
 	return runDelete(namespace, name, p.Mapping, p.DynamicClient, p.Cascade, p.GracePeriod, p.ServerDryRun)
 }
 
+// Patcher defines options to patch OpenAPI objects.
 type Patcher struct {
 	Mapping       *meta.RESTMapping
 	Helper        *resource.Helper
@@ -844,7 +858,7 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 	}
 
 	// Retrieve the original configuration of the object from the annotation.
-	original, err := kubectl.GetOriginalConfiguration(obj)
+	original, err := util.GetOriginalConfiguration(obj)
 	if err != nil {
 		return nil, nil, cmdutil.AddSourceToErr(fmt.Sprintf("retrieving original configuration from:\n%v\nfor:", obj), source, err)
 	}
@@ -923,6 +937,8 @@ func (p *Patcher) patchSimple(obj runtime.Object, modified []byte, source, names
 	return patch, patchedObj, err
 }
 
+// Patch tries to patch an OpenAPI resource. On success, returns the merge patch as well
+// the final patched object. On failure, returns an error.
 func (p *Patcher) Patch(current runtime.Object, modified []byte, source, namespace, name string, errOut io.Writer) ([]byte, runtime.Object, error) {
 	var getErr error
 	patchBytes, patchObject, err := p.patchSimple(current, modified, source, namespace, name, errOut)

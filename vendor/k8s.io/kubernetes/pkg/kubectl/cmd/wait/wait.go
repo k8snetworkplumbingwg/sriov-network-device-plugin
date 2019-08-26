@@ -36,12 +36,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/printers"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/dynamic"
 	watchtools "k8s.io/client-go/tools/watch"
+	"k8s.io/kubectl/pkg/util/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 var (
@@ -93,7 +93,7 @@ func NewWaitFlags(restClientGetter genericclioptions.RESTClientGetter, streams g
 			WithFieldSelector("").
 			WithAll(false).
 			WithAllNamespaces(false).
-			WithAll(false).
+			WithLocal(false).
 			WithLatest(),
 
 		Timeout: 30 * time.Second,
