@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sriovdp-mlnx-rdma
+  namespace: kube-system
+data:
+  config.json: |
+    {
+        "resourceList": [
+            {
+                "resourceName": "mlnx_rdma",
+                "isRdma": true,
+                "selectors": {
+                    "vendors": ["15b3"],
+                    "devices": ["1016", "1018"],
+                    "drivers": ["mlx5_ib", "mlx5_core"]
+                }
+            }
+        ]
+    }
