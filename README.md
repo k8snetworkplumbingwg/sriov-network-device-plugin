@@ -42,7 +42,7 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 
 To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI components:
 
-- A compatible CNI meta plugin (Multus CNI, or DANM)
+- Any CNI meta plugin supporting Device Plugin based network provisioning (Multus CNI, or DANM)
 
   - Retrieves allocated network device information of a Pod
 
@@ -102,10 +102,10 @@ $ make
 $ make image
 ``` 
 
-### Install a compatible CNI meta plugin
+### Install one compatible CNI meta plugin 
 
-#### Multus
-This section explains an example deployment of SRIOV Network device plugin in Kubernetes with Multus.
+#### Option 1 - Multus
+This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose Multus as your meta plugin.
 Required YAML files can be found in [deployments/](deployments/) directory.
 
 #### Build and configure Multus
@@ -135,8 +135,8 @@ Multus uses Custom Resource Definitions(CRDs) for defining additional network at
 $ kubectl create -f deployments/sriov-crd.yaml
 ```
 
-#### DANM
-This section explains an example deployment of SRIOV Network device plugin in Kubernetes with DANM.
+#### Option 2 - DANM
+This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
 
 #### Install DANM 
 Refer to [DANM documentation](https://github.com/nokia/danm#getting-started) for detailed instructions.
@@ -239,7 +239,7 @@ Usage of ./sriovdp:
 
 This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
-For exmaple, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
+For example, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
 Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
 The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
@@ -280,8 +280,9 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 
 ## Example deployments
 
-We assume that you have working K8s cluster configured with a meta plugin for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
+We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
+### Deploy the Device Plugin
 The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
 
 ````
@@ -299,14 +300,12 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 
 ````
 
+### Deploy SR-IOV workloads when Multus is used
 There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployment with Multus.
-
-
-### Testing SRIOV workloads
 
 Leave the sriov device plugin running and open a new terminal session for following steps.
 
-#### Deploy test Pod
+#### Deploy test Pod connecting to pre-created SR-IOV network
 
 ````
 $ kubectl create -f pod-tc1.yaml
@@ -350,9 +349,85 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 192.168.74.0    0.0.0.0         255.255.255.0   U     0      0        0 eth0
 ````
 
+### Deploy SR-IOV workloads when DANM is used
+#### Verify the existence of the example SR-IOV networks
+
+````
+[cloudadmin@controller-1 ~]$ kubectl get dnet -n example-sriov
+NAME         AGE
+management   6s
+sriov-a      14m
+sriov-b      13m
+````
+
+#### Connect your networks to existing SR-IOV Device Pools
+The Spec.Options.device_pool mandatory parameter denotes the Device Pool used by the network.
+Make sure this parameter is set to the name(s) of your existing SR-IOV Device Pool(s)!
+
+````
+[cloudadmin@controller-1 ~]$ kubectl describe node 172.31.3.154 | grep -A8 Allocatable
+Allocatable:
+ cpu:                          6
+ ephemeral-storage:            50189Mi
+ hugepages-1Gi:                0
+ hugepages-2Mi:                0
+ memory:                       249150992Ki
+ nokia.k8s.io/exclusive_caas:  16
+ nokia.k8s.io/shared_caas:     32k
+ nokia.k8s.io/sriov_ens2f1:    32
+ 
+[cloudadmin@controller-1 ~]$ kubectl describe dnet sriov-a -n example-sriov | grep device_pool
+    device_pool:       nokia.k8s.io/sriov_ens2f1
+[cloudadmin@controller-1 ~]$ kubectl describe dnet sriov-b -n example-sriov | grep device_pool
+    device_pool:       nokia.k8s.io/sriov_ens2f1
+
+````
+
+#### Deploy demo Pod connecting to pre-created SR-IOV networks
+First, make sure that your Pod asks appropriate number of Devices from the right Device Pools:
+
+````
+[cloudadmin@controller-1 ~]$ grep -B1 sriov_ sriov_pod.yaml
+      requests:
+        nokia.k8s.io/sriov_ens2f1: '2'
+      limits:
+        nokia.k8s.io/sriov_ens2f1: '2'
+````
+
+Then instantiate the Pod:
+
+````
+[cloudadmin@controller-1 ~]$ kubectl create -f sriov_pod.yaml
+pod/sriov-pod created
+````
+
+#### Verify status and the network connections of the demo Pod
+
+````
+[cloudadmin@controller-1 ~]$ kubectl get pod sriov-pod -n example-sriov
+NAME        READY   STATUS    RESTARTS   AGE
+sriov-pod   1/1     Running   0          111s
+
+[cloudadmin@controller-1 ~]$ kubectl exec -n example-sriov -it sriov-pod -- ip addr show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+3: eth0@if49: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 8950 qdisc noqueue
+    link/ether 8a:74:fd:e0:ee:fa brd ff:ff:ff:ff:ff:ff
+    inet 10.244.3.8/24 brd 10.244.3.255 scope global eth0
+       valid_lft forever preferred_lft forever
+9: second_path2: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq qlen 1000
+    link/ether e2:19:e0:1b:91:44 brd ff:ff:ff:ff:ff:ff
+26: first_path1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq qlen 1000
+    link/ether 7e:0d:fa:eb:83:8c brd ff:ff:ff:ff:ff:ff
+````
+
 ### Pod device information
 
-The allocated device information are exported in Container's environment variable. The variable name is `PCIDEVICE_` appended with full extended resource name(i.e. intel.com/sriov) which is capitailzed and any special characters(".", "/") are replaced with underscore("_"). In case of multiple devices from same extended resource pool, the device IDs are delimited with commas(",").
+The allocated device information are exported in Container's environment variable. The variable name is `PCIDEVICE_` appended with full extended resource name(e.g. intel.com/sriov etc.) which is capitailzed and any special characters(".", "/") are replaced with underscore("_"). In case of multiple devices from same extended resource pool, the device IDs are delimited with commas(",").
 
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
