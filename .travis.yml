@@ -1,12 +1,20 @@
 language: go
 
+go:
+  - 1.11.x
+  - 1.12.x
+
+env:
+  - GO111MODULE=on
+  - GO111MODULE=off
+
 before_install:
   - sudo apt-get update -qq
 
 script:
+  - make lint
   - make test
   - make build
-  - make
   - make image
 
 before_deploy:
