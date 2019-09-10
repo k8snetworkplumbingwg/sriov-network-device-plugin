@@ -48,7 +48,6 @@ package unix
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <linux/errqueue.h>
-#include <linux/fanotify.h>
 #include <linux/filter.h>
 #include <linux/icmpv6.h>
 #include <linux/if_pppox.h>
@@ -494,8 +493,6 @@ type Ucred C.struct_ucred
 
 type TCPInfo C.struct_tcp_info
 
-type CanFilter C.struct_can_filter
-
 const (
 	SizeofSockaddrInet4     = C.sizeof_struct_sockaddr_in
 	SizeofSockaddrInet6     = C.sizeof_struct_sockaddr_in6
@@ -525,7 +522,6 @@ const (
 	SizeofICMPv6Filter      = C.sizeof_struct_icmp6_filter
 	SizeofUcred             = C.sizeof_struct_ucred
 	SizeofTCPInfo           = C.sizeof_struct_tcp_info
-	SizeofCanFilter         = C.sizeof_struct_can_filter
 )
 
 // Netlink routing and interface messages
@@ -663,7 +659,6 @@ const (
 	SizeofIfAddrmsg      = C.sizeof_struct_ifaddrmsg
 	SizeofRtMsg          = C.sizeof_struct_rtmsg
 	SizeofRtNexthop      = C.sizeof_struct_rtnexthop
-	SizeofNdUseroptmsg   = C.sizeof_struct_nduseroptmsg
 )
 
 type NlMsghdr C.struct_nlmsghdr
@@ -683,8 +678,6 @@ type IfAddrmsg C.struct_ifaddrmsg
 type RtMsg C.struct_rtmsg
 
 type RtNexthop C.struct_rtnexthop
-
-type NdUseroptmsg C.struct_nduseroptmsg
 
 // Linux socket filter
 
@@ -1115,9 +1108,6 @@ const (
 	SizeofTpacketHdr  = C.sizeof_struct_tpacket_hdr
 	SizeofTpacket2Hdr = C.sizeof_struct_tpacket2_hdr
 	SizeofTpacket3Hdr = C.sizeof_struct_tpacket3_hdr
-
-	SizeofTpacketStats   = C.sizeof_struct_tpacket_stats
-	SizeofTpacketStatsV3 = C.sizeof_struct_tpacket_stats_v3
 )
 
 // netfilter
@@ -1684,9 +1674,3 @@ const (
 // Socket error queue
 
 type SockExtendedErr C.struct_sock_extended_err
-
-// Fanotify
-
-type FanotifyEventMetadata C.struct_fanotify_event_metadata
-
-type FanotifyResponse C.struct_fanotify_response

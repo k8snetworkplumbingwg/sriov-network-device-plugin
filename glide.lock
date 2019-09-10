@@ -1,8 +1,8 @@
-hash: 0784e816d6f5215b38bf808e67dd475265c849fad443d8e1094c92831d8c8578
-updated: 2019-03-08T04:52:12.61998557-05:00
+hash: 8f2c305f88055aeef31c9eb4711f47d317915d6fe073f5e15ea4eac8cb6e77b0
+updated: 2019-09-09T20:56:01.167919968-04:00
 imports:
 - name: github.com/gogo/protobuf
-  version: c5a62797aee0054613cc578653a16c6237fef080
+  version: ba06b47c162d49f2af050fb4c75bcbc86a159d5c
   subpackages:
   - gogoproto
   - proto
@@ -11,15 +11,16 @@ imports:
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: b5d812f8a3706043e23a9cd5babf2e5423744d30
+  version: 6c65a5562fc06764971b7c5d05c76c75e84bdbf7
   subpackages:
   - proto
+  - protoc-gen-go
   - ptypes
   - ptypes/any
   - ptypes/duration
   - ptypes/timestamp
 - name: golang.org/x/net
-  version: 16b79f2e4e95ea23b2bf9903c9809ff7b013ce85
+  version: 65e2d4e15006aab9813ff8769e768bbf4bb667a0
   subpackages:
   - context
   - html
@@ -32,11 +33,11 @@ imports:
   - internal/timeseries
   - trace
 - name: golang.org/x/sys
-  version: b294cbcfc56d2a65a30c02c78722b5df061e99b8
+  version: 3b5209105503162ded1863c307ac66fec31120dd
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 5d731a35f4867878fc89f7744f7b6debb3beded6
+  version: e6919f6577db79269a6443b9dc46d18f2238fb5d
   subpackages:
   - encoding
   - encoding/charmap
@@ -59,11 +60,11 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: 6e86cb5d2f12401bdd82a5eccbd701b5a697e63e
+  version: 92dd089d5514cecde7a465f807541f83dfd486d5
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 79c9bc679419ff2f57deccc996e33477a64b6762
+  version: 6eaf6f47437a6b4e2153a190160ef39a92c7eceb
   subpackages:
   - balancer
   - balancer/base
@@ -78,6 +79,7 @@ imports:
   - grpclog
   - internal
   - internal/backoff
+  - internal/balancerload
   - internal/binarylog
   - internal/channelz
   - internal/envconfig
@@ -92,14 +94,15 @@ imports:
   - resolver
   - resolver/dns
   - resolver/passthrough
+  - serviceconfig
   - stats
   - status
   - tap
 - name: k8s.io/kubernetes
-  version: 6dbe98980f97d966cb940cffb3e371b9e43da400
+  version: 6348200c92dec8848e55552f3e8039b3da95bd91
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
-  - pkg/kubelet/apis/pluginregistration/v1beta1
+  - pkg/kubelet/apis/pluginregistration/v1
 testImports:
 - name: github.com/hpcloud/tail
   version: a1dbeea552b7c8df4b542c66073e393de198a800
@@ -109,7 +112,7 @@ testImports:
   - watch
   - winfile
 - name: github.com/onsi/ginkgo
-  version: dbaca8e5ae554fdc9905dabc83fa43d806f5d7ab
+  version: 974566c482abc93ffd3df6f4626e79076c7ed290
   subpackages:
   - config
   - internal/codelocation
@@ -129,7 +132,7 @@ testImports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: 5533ce8a0da374da682cd53d70ddcc54adf1a710
+  version: bdebf9e0ece900259084cfa4121b97ce1a540939
   subpackages:
   - format
   - internal/assertion
@@ -147,4 +150,4 @@ testImports:
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
-  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183

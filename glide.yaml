@@ -5,9 +5,17 @@ import:
   subpackages:
   - context
 - package: google.golang.org/grpc
+  version: ^1.23.0
 - package: k8s.io/kubernetes
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
+- package: golang.org/x/sys
+  subpackages:
+  - unix
+- package: github.com/golang/protobuf
+  version: ^1.3.2
+  subpackages:
+  - protoc-gen-go
 testImport:
 - package: github.com/onsi/ginkgo
 - package: github.com/onsi/gomega

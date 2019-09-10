@@ -439,6 +439,9 @@ func (p *parser) resetInsertionMode() {
 		case a.Select:
 			if !last {
 				for ancestor, first := n, p.oe[0]; ancestor != first; {
+					if ancestor == first {
+						break
+					}
 					ancestor = p.oe[p.oe.index(ancestor)-1]
 					switch ancestor.DataAtom {
 					case a.Template:
