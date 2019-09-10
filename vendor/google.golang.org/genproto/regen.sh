@@ -24,7 +24,6 @@ set -e
 PKG=google.golang.org/genproto
 PROTO_REPO=https://github.com/google/protobuf
 GOOGLEAPIS_REPO=https://github.com/googleapis/googleapis
-API_COMMON_REPO=https://github.com/googleapis/api-common-protos.git
 
 function die() {
   echo 1>&2 $*
@@ -63,23 +62,23 @@ else
   apidir="$GOOGLEAPIS"
 fi
 
-if [ -z "$COMMONPROTOS" ]; then
-  commondir=$(mktemp -d -t regen-cds-common.XXXXXX)
-  git clone $API_COMMON_REPO $commondir
-  remove_dirs="$remove_dirs $commondir"
-else
-  commondir="$COMMONPROTOS"
-fi
-
 wait
 
 # Nuke everything, we'll generate them back
 rm -r googleapis/ protobuf/
 
-go run regen.go -go_out "$root/src" -pkg_prefix "$PKG" "$commondir" "$apidir" "$protodir"
+go run regen.go -go_out "$root/src" -pkg_prefix "$PKG" "$apidir" "$protodir"
+
+# throw away changes to some special libs
+for d in "googleapis/grafeas/v1" "googleapis/devtools/containeranalysis/v1"; do
+  git checkout $d
+  git clean -df $d
+done
 
 # Sanity check the build.
 echo 1>&2 "Checking that the libraries build..."
 go build -v ./...
+
+gofmt -s -l -w . && goimports -w .
 
 echo 1>&2 "All done!"

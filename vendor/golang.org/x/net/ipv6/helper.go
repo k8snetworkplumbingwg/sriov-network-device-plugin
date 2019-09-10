@@ -7,7 +7,6 @@ package ipv6
 import (
 	"errors"
 	"net"
-	"runtime"
 )
 
 var (
@@ -17,7 +16,6 @@ var (
 	errInvalidConnType = errors.New("invalid conn type")
 	errOpNoSupport     = errors.New("operation not supported")
 	errNoSuchInterface = errors.New("no such interface")
-	errNotImplemented  = errors.New("not implemented on " + runtime.GOOS + "/" + runtime.GOARCH)
 )
 
 func boolint(b bool) int {

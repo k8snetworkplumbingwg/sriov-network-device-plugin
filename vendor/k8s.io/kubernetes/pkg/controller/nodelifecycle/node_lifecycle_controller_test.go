@@ -23,13 +23,12 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	coordv1beta1 "k8s.io/api/coordination/v1beta1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	utilfeaturetesting "k8s.io/apiserver/pkg/util/feature/testing"
 	"k8s.io/client-go/informers"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
 	coordinformers "k8s.io/client-go/informers/coordination/v1beta1"
@@ -37,11 +36,13 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	testcore "k8s.io/client-go/testing"
+	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/nodelifecycle/scheduler"
 	"k8s.io/kubernetes/pkg/controller/testutil"
 	nodeutil "k8s.io/kubernetes/pkg/controller/util/node"
 	"k8s.io/kubernetes/pkg/features"
+	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/api"
 	"k8s.io/kubernetes/pkg/util/node"
 	taintutils "k8s.io/kubernetes/pkg/util/taints"
@@ -1653,7 +1654,7 @@ func TestMonitorNodeHealthUpdateStatus(t *testing.T) {
 }
 
 func TestMonitorNodeHealthUpdateNodeAndPodStatusWithLease(t *testing.T) {
-	defer utilfeaturetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.NodeLease, true)()
+	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.NodeLease, true)()
 
 	nodeCreationTime := metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC)
 	fakeNow := metav1.Date(2015, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -2908,5 +2909,396 @@ func TestNodeEventGeneration(t *testing.T) {
 		if actualUID != "1234567890" {
 			t.Fatalf("unexpected event uid: %v", actualUID)
 		}
+	}
+}
+
+func TestReconcileNodeLabels(t *testing.T) {
+	fakeNow := metav1.Date(2017, 1, 1, 12, 0, 0, 0, time.UTC)
+	evictionTimeout := 10 * time.Minute
+
+	fakeNodeHandler := &testutil.FakeNodeHandler{
+		Existing: []*v1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC),
+					Labels: map[string]string{
+						v1.LabelZoneRegion:        "region1",
+						v1.LabelZoneFailureDomain: "zone1",
+					},
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionTrue,
+							LastHeartbeatTime:  metav1.Date(2015, 1, 1, 12, 0, 0, 0, time.UTC),
+							LastTransitionTime: metav1.Date(2015, 1, 1, 12, 0, 0, 0, time.UTC),
+						},
+					},
+				},
+			},
+		},
+		Clientset: fake.NewSimpleClientset(&v1.PodList{Items: []v1.Pod{*testutil.NewPod("pod0", "node0")}}),
+	}
+
+	nodeController, _ := newNodeLifecycleControllerFromClient(
+		fakeNodeHandler,
+		evictionTimeout,
+		testRateLimiterQPS,
+		testRateLimiterQPS,
+		testLargeClusterThreshold,
+		testUnhealthyThreshold,
+		testNodeMonitorGracePeriod,
+		testNodeStartupGracePeriod,
+		testNodeMonitorPeriod,
+		true)
+	nodeController.now = func() metav1.Time { return fakeNow }
+	nodeController.recorder = testutil.NewFakeRecorder()
+
+	tests := []struct {
+		Name           string
+		Node           *v1.Node
+		ExpectedLabels map[string]string
+	}{
+		{
+			Name: "No-op if node has no labels",
+			Node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			ExpectedLabels: nil,
+		},
+		{
+			Name: "No-op if no target labels present",
+			Node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC),
+					Labels: map[string]string{
+						v1.LabelZoneRegion: "region1",
+					},
+				},
+			},
+			ExpectedLabels: map[string]string{
+				v1.LabelZoneRegion: "region1",
+			},
+		},
+		{
+			Name: "Create OS/arch stable labels when they don't exist",
+			Node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC),
+					Labels: map[string]string{
+						kubeletapis.LabelOS:   "linux",
+						kubeletapis.LabelArch: "amd64",
+					},
+				},
+			},
+			ExpectedLabels: map[string]string{
+				kubeletapis.LabelOS:   "linux",
+				kubeletapis.LabelArch: "amd64",
+				v1.LabelOSStable:      "linux",
+				v1.LabelArchStable:    "amd64",
+			},
+		},
+		{
+			Name: "Reconcile OS/arch stable labels to match beta labels",
+			Node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: metav1.Date(2012, 1, 1, 0, 0, 0, 0, time.UTC),
+					Labels: map[string]string{
+						kubeletapis.LabelOS:   "linux",
+						kubeletapis.LabelArch: "amd64",
+						v1.LabelOSStable:      "windows",
+						v1.LabelArchStable:    "arm",
+					},
+				},
+			},
+			ExpectedLabels: map[string]string{
+				kubeletapis.LabelOS:   "linux",
+				kubeletapis.LabelArch: "amd64",
+				v1.LabelOSStable:      "linux",
+				v1.LabelArchStable:    "amd64",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		fakeNodeHandler.Update(test.Node)
+		if err := nodeController.syncNodeStore(fakeNodeHandler); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		nodeController.reconcileNodeLabels(test.Node.Name)
+		if err := nodeController.syncNodeStore(fakeNodeHandler); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		node0, err := nodeController.nodeLister.Get("node0")
+		if err != nil {
+			t.Fatalf("Can't get current node0...")
+		}
+		if len(node0.Labels) != len(test.ExpectedLabels) {
+			t.Errorf("%s: Unexpected number of taints: expected %d, got %d",
+				test.Name, len(test.ExpectedLabels), len(node0.Labels))
+		}
+		for key, expectedValue := range test.ExpectedLabels {
+			actualValue, ok := node0.Labels[key]
+			if !ok {
+				t.Errorf("%s: Can't find label %v in %v", test.Name, key, node0.Labels)
+			}
+			if actualValue != expectedValue {
+				t.Errorf("%s: label %q: expected value %q, got value %q", test.Name, key, expectedValue, actualValue)
+			}
+
+		}
+	}
+}
+
+func TestTryUpdateNodeHealth(t *testing.T) {
+	fakeNow := metav1.Date(2017, 1, 1, 12, 0, 0, 0, time.UTC)
+	fakeOld := metav1.Date(2016, 1, 1, 12, 0, 0, 0, time.UTC)
+	evictionTimeout := 10 * time.Minute
+
+	fakeNodeHandler := &testutil.FakeNodeHandler{
+		Existing: []*v1.Node{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeNow,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionTrue,
+							LastHeartbeatTime:  fakeNow,
+							LastTransitionTime: fakeNow,
+						},
+					},
+				},
+			},
+		},
+		Clientset: fake.NewSimpleClientset(&v1.PodList{Items: []v1.Pod{*testutil.NewPod("pod0", "node0")}}),
+	}
+
+	nodeController, _ := newNodeLifecycleControllerFromClient(
+		fakeNodeHandler,
+		evictionTimeout,
+		testRateLimiterQPS,
+		testRateLimiterQPS,
+		testLargeClusterThreshold,
+		testUnhealthyThreshold,
+		testNodeMonitorGracePeriod,
+		testNodeStartupGracePeriod,
+		testNodeMonitorPeriod,
+		true)
+	nodeController.now = func() metav1.Time { return fakeNow }
+	nodeController.recorder = testutil.NewFakeRecorder()
+
+	getStatus := func(cond *v1.NodeCondition) *v1.ConditionStatus {
+		if cond == nil {
+			return nil
+		}
+		return &cond.Status
+	}
+
+	tests := []struct {
+		name string
+		node *v1.Node
+	}{
+		{
+			name: "Status true",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeNow,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionTrue,
+							LastHeartbeatTime:  fakeNow,
+							LastTransitionTime: fakeNow,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status false",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeNow,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionFalse,
+							LastHeartbeatTime:  fakeNow,
+							LastTransitionTime: fakeNow,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status unknown",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeNow,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionUnknown,
+							LastHeartbeatTime:  fakeNow,
+							LastTransitionTime: fakeNow,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status nil",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeNow,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{},
+				},
+			},
+		},
+		{
+			name: "Status true - after grace period",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeOld,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionTrue,
+							LastHeartbeatTime:  fakeOld,
+							LastTransitionTime: fakeOld,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status false - after grace period",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeOld,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionFalse,
+							LastHeartbeatTime:  fakeOld,
+							LastTransitionTime: fakeOld,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status unknown - after grace period",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeOld,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{
+						{
+							Type:               v1.NodeReady,
+							Status:             v1.ConditionUnknown,
+							LastHeartbeatTime:  fakeOld,
+							LastTransitionTime: fakeOld,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Status nil - after grace period",
+			node: &v1.Node{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "node0",
+					CreationTimestamp: fakeOld,
+				},
+				Status: v1.NodeStatus{
+					Conditions: []v1.NodeCondition{},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			nodeController.nodeHealthMap[test.node.Name] = &nodeHealthData{
+				status:                   &test.node.Status,
+				probeTimestamp:           test.node.CreationTimestamp,
+				readyTransitionTimestamp: test.node.CreationTimestamp,
+			}
+			_, _, currentReadyCondition, err := nodeController.tryUpdateNodeHealth(test.node)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			_, savedReadyCondition := nodeutil.GetNodeCondition(nodeController.nodeHealthMap[test.node.Name].status, v1.NodeReady)
+			savedStatus := getStatus(savedReadyCondition)
+			currentStatus := getStatus(currentReadyCondition)
+			if currentStatus != savedStatus {
+				t.Errorf("expected %v, got %v", savedStatus, currentStatus)
+			}
+		})
+	}
+}
+
+func Test_isNodeExcludedFromDisruptionChecks(t *testing.T) {
+	validNodeStatus := v1.NodeStatus{Conditions: []v1.NodeCondition{{Type: "Test"}}}
+	tests := []struct {
+		name string
+
+		enableExclusion bool
+		enableLegacy    bool
+		input           *v1.Node
+		want            bool
+	}{
+		{want: false, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{}}}},
+		{want: false, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Name: "master-abc"}}},
+		{want: false, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{labelNodeDisruptionExclusion: ""}}}},
+
+		{want: false, enableExclusion: true, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Name: "master-abc"}}},
+		{want: false, enableLegacy: true, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{labelNodeDisruptionExclusion: ""}}}},
+
+		{want: true, enableLegacy: true, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Name: "master-abc"}}},
+		{want: true, enableExclusion: true, input: &v1.Node{Status: validNodeStatus, ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{labelNodeDisruptionExclusion: ""}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.NodeDisruptionExclusion, tt.enableExclusion)()
+			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.LegacyNodeRoleBehavior, tt.enableLegacy)()
+
+			if result := isNodeExcludedFromDisruptionChecks(tt.input); result != tt.want {
+				t.Errorf("isNodeExcludedFromDisruptionChecks() = %v, want %v", result, tt.want)
+			}
+		})
 	}
 }

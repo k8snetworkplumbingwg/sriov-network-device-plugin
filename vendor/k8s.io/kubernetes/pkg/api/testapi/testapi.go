@@ -44,10 +44,12 @@ import (
 	"k8s.io/kubernetes/pkg/apis/certificates"
 	"k8s.io/kubernetes/pkg/apis/coordination"
 	api "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/apis/discovery"
 	"k8s.io/kubernetes/pkg/apis/events"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/imagepolicy"
 	"k8s.io/kubernetes/pkg/apis/networking"
+	"k8s.io/kubernetes/pkg/apis/node"
 	"k8s.io/kubernetes/pkg/apis/policy"
 	"k8s.io/kubernetes/pkg/apis/rbac"
 	"k8s.io/kubernetes/pkg/apis/scheduling"
@@ -66,10 +68,12 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/certificates/install"
 	_ "k8s.io/kubernetes/pkg/apis/coordination/install"
 	_ "k8s.io/kubernetes/pkg/apis/core/install"
+	_ "k8s.io/kubernetes/pkg/apis/discovery/install"
 	_ "k8s.io/kubernetes/pkg/apis/events/install"
 	_ "k8s.io/kubernetes/pkg/apis/extensions/install"
 	_ "k8s.io/kubernetes/pkg/apis/imagepolicy/install"
 	_ "k8s.io/kubernetes/pkg/apis/networking/install"
+	_ "k8s.io/kubernetes/pkg/apis/node/install"
 	_ "k8s.io/kubernetes/pkg/apis/policy/install"
 	_ "k8s.io/kubernetes/pkg/apis/rbac/install"
 	_ "k8s.io/kubernetes/pkg/apis/scheduling/install"
@@ -257,6 +261,12 @@ func init() {
 			externalGroupVersion: externalGroupVersion,
 		}
 	}
+	if _, ok := Groups[node.GroupName]; !ok {
+		externalGroupVersion := schema.GroupVersion{Group: node.GroupName, Version: legacyscheme.Scheme.PrioritizedVersionsForGroup(node.GroupName)[0].Version}
+		Groups[node.GroupName] = TestGroup{
+			externalGroupVersion: externalGroupVersion,
+		}
+	}
 	if _, ok := Groups[events.GroupName]; !ok {
 		externalGroupVersion := schema.GroupVersion{Group: events.GroupName, Version: legacyscheme.Scheme.PrioritizedVersionsForGroup(events.GroupName)[0].Version}
 		Groups[events.GroupName] = TestGroup{
@@ -272,6 +282,12 @@ func init() {
 	if _, ok := Groups[auditregistration.GroupName]; !ok {
 		externalGroupVersion := schema.GroupVersion{Group: auditregistration.GroupName, Version: legacyscheme.Scheme.PrioritizedVersionsForGroup(auditregistration.GroupName)[0].Version}
 		Groups[auditregistration.GroupName] = TestGroup{
+			externalGroupVersion: externalGroupVersion,
+		}
+	}
+	if _, ok := Groups[discovery.GroupName]; !ok {
+		externalGroupVersion := schema.GroupVersion{Group: discovery.GroupName, Version: legacyscheme.Scheme.PrioritizedVersionsForGroup(discovery.GroupName)[0].Version}
+		Groups[discovery.GroupName] = TestGroup{
 			externalGroupVersion: externalGroupVersion,
 		}
 	}

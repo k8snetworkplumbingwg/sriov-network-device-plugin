@@ -17,7 +17,7 @@ import (
 var _ = Describe("JUnit Reporter", func() {
 	var (
 		outputFile string
-		reporter   Reporter
+		reporter   *reporters.JUnitReporter
 	)
 	testSuiteTime := 12456999 * time.Microsecond
 	reportedSuiteTime := 12.456
@@ -61,8 +61,12 @@ var _ = Describe("JUnit Reporter", func() {
 			}
 			reporter.AfterSuiteDidRun(afterSuite)
 
+			// Set the ReportPassed config flag, in order to show captured output when tests have passed.
+			reporter.ReporterConfig.ReportPassed = true
+
 			spec := &types.SpecSummary{
 				ComponentTexts: []string{"[Top Level]", "A", "B", "C"},
+				CapturedOutput: "Test scenario...",
 				State:          types.SpecStatePassed,
 				RunTime:        5 * time.Second,
 			}
@@ -89,6 +93,7 @@ var _ = Describe("JUnit Reporter", func() {
 			Ω(output.TestCases[0].FailureMessage).Should(BeNil())
 			Ω(output.TestCases[0].Skipped).Should(BeNil())
 			Ω(output.TestCases[0].Time).Should(Equal(5.0))
+			Ω(output.TestCases[0].PassedMessage.Message).Should(ContainSubstring("Test scenario"))
 		})
 	})
 
@@ -175,10 +180,13 @@ var _ = Describe("JUnit Reporter", func() {
 	specStateCases := []struct {
 		state   types.SpecState
 		message string
+
+		// Only for SpecStatePanicked.
+		forwardedPanic string
 	}{
-		{types.SpecStateFailed, "Failure"},
-		{types.SpecStateTimedOut, "Timeout"},
-		{types.SpecStatePanicked, "Panic"},
+		{types.SpecStateFailed, "Failure", ""},
+		{types.SpecStateTimedOut, "Timeout", ""},
+		{types.SpecStatePanicked, "Panic", "artifical panic"},
 	}
 
 	for _, specStateCase := range specStateCases {
@@ -194,6 +202,7 @@ var _ = Describe("JUnit Reporter", func() {
 						ComponentCodeLocation: codelocation.New(0),
 						Location:              codelocation.New(2),
 						Message:               "I failed",
+						ForwardedPanic:        specStateCase.forwardedPanic,
 					},
 				}
 				reporter.SpecWillRun(spec)
@@ -220,6 +229,10 @@ var _ = Describe("JUnit Reporter", func() {
 				Ω(output.TestCases[0].FailureMessage.Message).Should(ContainSubstring(spec.Failure.ComponentCodeLocation.String()))
 				Ω(output.TestCases[0].FailureMessage.Message).Should(ContainSubstring(spec.Failure.Location.String()))
 				Ω(output.TestCases[0].Skipped).Should(BeNil())
+				if specStateCase.state == types.SpecStatePanicked {
+					Ω(output.TestCases[0].FailureMessage.Message).Should(ContainSubstring("\nPanic: " + specStateCase.forwardedPanic + "\n"))
+					Ω(output.TestCases[0].FailureMessage.Message).Should(ContainSubstring("\nFull stack:\n" + spec.Failure.Location.FullStackTrace))
+				}
 			})
 		})
 	}
