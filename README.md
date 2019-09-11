@@ -1,3 +1,4 @@
+
 # SRIOV Network device plugin for Kubernetes
 
 [![Travis CI](https://travis-ci.org/intel/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/intel/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/intel/sriov-network-device-plugin)
@@ -6,29 +7,39 @@
 
 - [SRIOV Network device plugin](#sriov-network-device-plugin)
 - [Features](#features)
-- [Prerequisites](#prerequisites)
   - [Supported SRIOV NICs](#supported-sriov-nics)
 - [Quick Start](#quick-start)
-  - [Network Object CRDs](#network-object-crds)
-  - [Build and configure Multus](#build-and-configure-multus)
   - [Build SRIOV CNI](#build-sriov-cni)
   - [Build and run SRIOV network device plugin](#build-and-run-sriov-network-device-plugin)
-  - [Configurations](#configurations)
-    - [Config parameters](#config-parameters)
-    - [Command line arguments](#command-line-arguments)
-    - [Assumptions](#assumptions)
-    - [Workflow](#workflow)
-  - [Example deployments](#example-deployments)
-    - [Testing SRIOV workloads](#testing-sriov-workloads)
-      - [Deploy test Pod](#deploy-test-pod)
+  - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
+      - [Option 1 - Multus](#option-1---multus)
+        - [Build and configure Multus](#build-and-configure-multus)
+        - [Network Object CRDs](#network-object-crds)
+      - [Option 2 - DANM](#option-2---danm)
+        - [Install DANM](#install-danm)
+        - [Create SR-IOV type networks](#create-sr-iov-type-networks)
+- [Configurations](#configurations)
+  - [Config parameters](#config-parameters)
+  - [Command line arguments](#command-line-arguments)
+  - [Assumptions](#assumptions)
+  - [Workflow](#workflow)
+- [Example deployments](#example-deployments)
+    - [Deploy the Device Plugin](#deploy-the-device-plugin)
+    - [Deploy SR-IOV workloads when Multus is used](#deploy-sr-iov-workloads-when-multus-is-used)
+      - [Deploy test Pod connecting to pre-created SR-IOV network](#deploy-test-pod-connecting-to-pre-created-sr-iov-network)
       - [Verify Pod network interfaces](#verify-pod-network-interfaces)
       - [Verify Pod routing table](#verify-pod-routing-table)
+    - [Deploy SR-IOV workloads when DANM is used](#deploy-sr-iov-workloads-when-danm-is-used)
+      - [Verify the existence of the example SR-IOV networks](#verify-the-existence-of-the-example-sr-iov-networks)
+      - [Connect your networks to existing SR-IOV Device Pools](#connect-your-networks-to-existing-sr-iov-device-pools)
+      - [Deploy demo Pod connecting to pre-created SR-IOV networks](#deploy-demo-pod-connecting-to-pre-created-sr-iov-networks)
+      - [Verify status and the network connections of the demo Pod](#verify-status-and-the-network-connections-of-the-demo-pod)
     - [Pod device information](#pod-device-information)
 - [Issues and Contributing](#issues-and-contributing)
 
 ## SRIOV Network Device Plugin
 
-The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) in a Kubernetes host. 
+The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) in a Kubernetes host.
 
 ## Features
 
@@ -90,25 +101,25 @@ $ cp build/sriov /opt/cni/bin
  ```
 $ git clone https://github.com/intel/sriov-network-device-plugin.git
 $ cd sriov-network-device-plugin
- ```  
- 2. Build executable binary using `make` 
- ``` 
+ ```
+ 2. Build executable binary using `make`
+ ```
 $ make
-```      
+```
 > On successful build the `sriovdp` executable can be found in `./build` directory. It is recommended to run the plugin in a container or K8s Pod. The follow on steps cover how to build and run the Docker image of the plugin.
 
  3. Build docker image
  ```
 $ make image
-``` 
+```
 
-### Install one compatible CNI meta plugin 
+### Install one compatible CNI meta plugin
 
 #### Option 1 - Multus
 This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose Multus as your meta plugin.
 Required YAML files can be found in [deployments/](deployments/) directory.
 
-#### Build and configure Multus
+##### Build and configure Multus
 
 1. Compile Multus executable:
 ```
@@ -127,7 +138,7 @@ $ cp deployments/cni-conf.json /etc/cni/net.d/
 $ kubectl create -f deployments/crdnetwork.yaml
 ```
 
-#### Network Object CRDs
+##### Network Object CRDs
 
 Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
 1. Create the SRIOV Network CRD
@@ -138,10 +149,10 @@ $ kubectl create -f deployments/sriov-crd.yaml
 #### Option 2 - DANM
 This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
 
-#### Install DANM 
+##### Install DANM
 Refer to [DANM documentation](https://github.com/nokia/danm#getting-started) for detailed instructions.
 
-#### Create SR-IOV type networks
+##### Create SR-IOV type networks
 DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level.
 This means that all DANM API features seamlessly work together with the SR-IOV setup described above, whether you use the [lightweight](https://github.com/nokia/danm#lightweight-network-management-experience), or the [production grade](https://github.com/nokia/danm#production-grade-network-management-experience) network management APIs.
 For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
@@ -239,7 +250,7 @@ Usage of ./sriovdp:
 
 This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
-For example, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device 
+For example, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device
 Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
 The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
@@ -375,7 +386,7 @@ Allocatable:
  nokia.k8s.io/exclusive_caas:  16
  nokia.k8s.io/shared_caas:     32k
  nokia.k8s.io/sriov_ens2f1:    32
- 
+
 [cloudadmin@controller-1 ~]$ kubectl describe dnet sriov-a -n example-sriov | grep device_pool
     device_pool:       nokia.k8s.io/sriov_ens2f1
 [cloudadmin@controller-1 ~]$ kubectl describe dnet sriov-b -n example-sriov | grep device_pool
@@ -434,6 +445,6 @@ For example, if 2 devices are allocated from `intel.com/sriov` extended resource
 
 ## Issues and Contributing
 
-We welcome your feedback and contributions to this project. Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines. 
+We welcome your feedback and contributions to this project. Please see the [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 Copyright 2018 © Intel Corporation.
