@@ -30,6 +30,7 @@ const (
 
 	RdmaNodeGuidFile = "node_guid"
 	RdmaUcmDevice    = "/dev/infiniband/rdma_cm"
+	RdmaDeviceDir    = "/dev/infiniband"
 
 	RdmaCountersDir   = "counters"
 	RdmaHwCountersDir = "hw_counters"
@@ -340,6 +341,9 @@ func IsRDmaDeviceForNetdevice(netdevName string) bool {
 
 //Get list of RDMA devices for a pci device.
 //When switchdev mode is used, there may be more than one rdma device.
+//Example pcidevName: 0000:05:00:00,
+//when found, returns list of devices one or more devices names such as
+//mlx5_0, mlx5_10
 func GetRdmaDevicesForPcidev(pcidevName string) []string {
 
 	var rdmadevs []string
@@ -352,7 +356,7 @@ func GetRdmaDevicesForPcidev(pcidevName string) []string {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() == false || entry.Name() == "." || entry.Name() == ".." {
+		if entry.IsDir() == false {
 			continue
 		}
 		rdmadevs = append(rdmadevs, entry.Name())
