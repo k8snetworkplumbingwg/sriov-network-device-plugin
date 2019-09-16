@@ -64,5 +64,32 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
+		Context("device's PF name is not available", func() {
+			It("device should be added", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{"sys/bus/pci/devices/0000:00:00.1"},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
+						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+					},
+				}
+				defer fs.Use()()
+				defer utils.UseFakeLinks()()
+
+				f := NewResourceFactory("fake", "fake", true)
+				in := &ghw.PCIDevice{
+					Address: "0000:00:00.1",
+				}
+
+				dev, err := NewPciNetDevice(in, f)
+				Expect(err).NotTo(HaveOccurred())
+
+				out := dev.(*pciNetDevice)
+
+				Expect(dev).NotTo(BeNil())
+
+				Expect(out.env).To(Equal("0000:00:00.1"))
+			})
+		})
 	})
 })

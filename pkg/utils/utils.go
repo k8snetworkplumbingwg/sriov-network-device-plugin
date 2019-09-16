@@ -77,7 +77,7 @@ func GetPfName(pciAddr string) (string, error) {
 	} else if len(files) > 0 {
 		return files[0].Name(), nil
 	}
-	return "", fmt.Errorf("no interface name found for device %s", pciAddr)
+	return "", fmt.Errorf("the PF name is not found for device %s", pciAddr)
 
 }
 
