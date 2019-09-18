@@ -15,6 +15,15 @@ word of the words agnostic and host.
 The image was created for testing purposes, reducing the need for having different test
 cases for the same tested behaviour.
 
+
+## Developer notes
+
+We've introduced versioning into the `agnhost` binary for debugging purposes (e.g.: if the
+image and binary versions do not match, see [here](https://github.com/kubernetes/kubernetes/pull/79667#discussion_r304198370)).
+
+Whenever the image `VERSION` is bumped, the `Version` in `agnhost.go` will also have to be bumped.
+
+
 ## Usage
 
 The `agnhost` binary has several subcommands which are can be used to test different
@@ -164,9 +173,14 @@ Usage:
 
 ### fake-gitserver
 
-Fakes a git server. When doing `git clone localhost:8000`, you will clone an empty git
-repo named `8000` on local. You can also use `git clone localhost:8000 my-repo-name` to
-rename that repo.
+Fakes a git server. When doing `git clone http://localhost:8000`, you will clone an empty git
+repo named `localhost` on local. You can also use `git clone http://localhost:8000 my-repo-name` to
+rename that repo. Access to the service with the backing pod will show you below information.
+
+```console
+curl -w "\n" http://localhost:8000
+I am a fake git server
+```
 
 Usage:
 
@@ -491,20 +505,18 @@ Usage:
     kubectl exec test-agnhost -- /agnhost serve-hostname [--tcp] [--udp] [--http] [--close] [--port <port>]
 ```
 
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/contrib/for-demos/serve_hostname/README.md
-?pixel)]()
+[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/contrib/for-demos/serve_hostname/README.md?pixel)]()
 
-[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/serve_hostname/README.md?pixel
-)]()
+[![Analytics](https://kubernetes-site.appspot.com/UA-36037335-10/GitHub/test/images/serve_hostname/README.md?pixel)]()
 
 
 ### webhook (Kubernetes External Admission Webhook)
 
 The subcommand tests MutatingAdmissionWebhook and ValidatingAdmissionWebhook. After deploying
-it to kubernetes cluster, administrator needs to create a ValidatingWebhookConfiguration
-in kubernetes cluster to register remote webhook admission controllers.
+it to kubernetes cluster, administrator needs to create a MutatingWebhookConfiguration or
+ValidatingWebhookConfiguration in kubernetes cluster to register remote webhook admission controllers.
 
-TODO: add the reference when the document for admission webhook v1beta1 API is done.
+More details on the configuration can be found from here [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/).
 
 Check the [MutatingAdmissionWebhook](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#mutatingwebhookconfiguration-v1beta1-admissionregistration-k8s-io) and [ValidatingAdmissionWebhook](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.14/#validatingwebhookconfiguration-v1beta1-admissionregistration-k8s-io) documentations for more information about them.
 

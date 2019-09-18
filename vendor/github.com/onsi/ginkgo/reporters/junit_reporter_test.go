@@ -19,8 +19,7 @@ var _ = Describe("JUnit Reporter", func() {
 		outputFile string
 		reporter   Reporter
 	)
-	testSuiteTime := 12456999 * time.Microsecond
-	reportedSuiteTime := 12.456
+	testSuiteTime := 12345 * time.Millisecond
 
 	readOutputFile := func() reporters.JUnitTestSuite {
 		bytes, err := ioutil.ReadFile(outputFile)
@@ -81,7 +80,7 @@ var _ = Describe("JUnit Reporter", func() {
 			Ω(output.Name).Should(Equal("My test suite"))
 			Ω(output.Tests).Should(Equal(1))
 			Ω(output.Failures).Should(Equal(0))
-			Ω(output.Time).Should(Equal(reportedSuiteTime))
+			Ω(output.Time).Should(Equal(12.0))
 			Ω(output.Errors).Should(Equal(0))
 			Ω(output.TestCases).Should(HaveLen(1))
 			Ω(output.TestCases[0].Name).Should(Equal("A B C"))
@@ -119,7 +118,7 @@ var _ = Describe("JUnit Reporter", func() {
 			Ω(output.Name).Should(Equal("My test suite"))
 			Ω(output.Tests).Should(Equal(1))
 			Ω(output.Failures).Should(Equal(1))
-			Ω(output.Time).Should(Equal(reportedSuiteTime))
+			Ω(output.Time).Should(Equal(12.0))
 			Ω(output.Errors).Should(Equal(0))
 			Ω(output.TestCases[0].Name).Should(Equal("BeforeSuite"))
 			Ω(output.TestCases[0].Time).Should(Equal(3.0))
@@ -159,7 +158,7 @@ var _ = Describe("JUnit Reporter", func() {
 			Ω(output.Name).Should(Equal("My test suite"))
 			Ω(output.Tests).Should(Equal(1))
 			Ω(output.Failures).Should(Equal(1))
-			Ω(output.Time).Should(Equal(reportedSuiteTime))
+			Ω(output.Time).Should(Equal(12.0))
 			Ω(output.Errors).Should(Equal(0))
 			Ω(output.TestCases[0].Name).Should(Equal("AfterSuite"))
 			Ω(output.TestCases[0].Time).Should(Equal(3.0))
@@ -211,7 +210,7 @@ var _ = Describe("JUnit Reporter", func() {
 				Ω(output.Name).Should(Equal("My test suite"))
 				Ω(output.Tests).Should(Equal(1))
 				Ω(output.Failures).Should(Equal(1))
-				Ω(output.Time).Should(Equal(reportedSuiteTime))
+				Ω(output.Time).Should(Equal(12.0))
 				Ω(output.Errors).Should(Equal(0))
 				Ω(output.TestCases[0].Name).Should(Equal("A B C"))
 				Ω(output.TestCases[0].ClassName).Should(Equal("My test suite"))
@@ -248,7 +247,7 @@ var _ = Describe("JUnit Reporter", func() {
 				output := readOutputFile()
 				Ω(output.Tests).Should(Equal(1))
 				Ω(output.Failures).Should(Equal(0))
-				Ω(output.Time).Should(Equal(reportedSuiteTime))
+				Ω(output.Time).Should(Equal(12.0))
 				Ω(output.Errors).Should(Equal(0))
 				Ω(output.TestCases[0].Name).Should(Equal("A B C"))
 				Ω(output.TestCases[0].Skipped).ShouldNot(BeNil())

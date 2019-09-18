@@ -221,6 +221,8 @@ func TestAttacherAttach(t *testing.T) {
 				status.AttachError = &storage.VolumeError{
 					Message: "attacher error",
 				}
+				errStatus := apierrs.NewInternalError(fmt.Errorf("we got an error")).Status()
+				fakeWatcher.Error(&errStatus)
 			} else {
 				status.Attached = true
 			}
@@ -340,9 +342,9 @@ func TestAttacherWithCSIDriver(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			fakeClient := fakeclient.NewSimpleClientset(
-				getTestCSIDriver("not-attachable", nil, &bFalse),
-				getTestCSIDriver("attachable", nil, &bTrue),
-				getTestCSIDriver("nil", nil, nil),
+				getTestCSIDriver("not-attachable", nil, &bFalse, nil),
+				getTestCSIDriver("attachable", nil, &bTrue, nil),
+				getTestCSIDriver("nil", nil, nil, nil),
 			)
 			plug, fakeWatcher, tmpDir, _ := newTestWatchPlugin(t, fakeClient)
 			defer os.RemoveAll(tmpDir)
@@ -428,9 +430,9 @@ func TestAttacherWaitForVolumeAttachmentWithCSIDriver(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			fakeClient := fakeclient.NewSimpleClientset(
-				getTestCSIDriver("not-attachable", nil, &bFalse),
-				getTestCSIDriver("attachable", nil, &bTrue),
-				getTestCSIDriver("nil", nil, nil),
+				getTestCSIDriver("not-attachable", nil, &bFalse, nil),
+				getTestCSIDriver("attachable", nil, &bTrue, nil),
+				getTestCSIDriver("nil", nil, nil, nil),
 			)
 			plug, tmpDir := newTestPlugin(t, fakeClient)
 			defer os.RemoveAll(tmpDir)

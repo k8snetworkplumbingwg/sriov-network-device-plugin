@@ -11,8 +11,18 @@ We currently [test](https://travis-ci.org/jaypipes/pcidb/) `pcidb` on Linux, Win
 developers to query for information about hardware device classes, vendor and
 product information.
 
-The `pcidb.New()` function returns a `pcidb.PCIDB` struct. The `pcidb.PCIDB`
-struct contains a number of fields that may be queried for PCI information:
+The `pcidb.New()` function returns a `pcidb.PCIDB` struct or an error if the
+PCI database could not be loaded.
+
+> `pcidb`'s default behaviour is to first search for pci-ids DB files on the
+> local host system in well-known filesystem paths. If `pcidb` cannot find a
+> pci-ids DB file on the local host system, it will then fetch a current
+> pci-ids DB file from the network. You can disable this network-fetching
+> behaviour with the `pcidb.WithDisableNetworkFetch()` function or set the
+> `PCIDB_DISABLE_NETWORK_FETCH` to a non-0 value.
+
+The `pcidb.PCIDB` struct contains a number of fields that may be queried for
+PCI information:
 
 * `pcidb.PCIDB.Classes` is a map, keyed by the PCI class ID (a hex-encoded
   string) of pointers to `pcidb.Class` structs, one for each class of PCI

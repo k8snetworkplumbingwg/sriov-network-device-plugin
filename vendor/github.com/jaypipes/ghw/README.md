@@ -1,6 +1,8 @@
 # `ghw` - Golang HardWare discovery/inspection library [![Build Status](https://travis-ci.org/jaypipes/ghw.svg?branch=master)](https://travis-ci.org/jaypipes/ghw)
 
-`ghw` is a small Golang library providing hardware inspection and discovery.
+`ghw` is a small Golang library providing hardware inspection and discovery
+for Linux. There currently exists partial support for MacOSX and Windows
+support is planned for a future release.
 
 ## Design Principles
 
@@ -250,10 +252,15 @@ Each `ghw.Disk` struct contains the following fields:
 * `ghw.Disk.SizeBytes` contains the amount of storage the disk provides
 * `ghw.Disk.PhysicalBlockSizeBytes` contains the size of the physical blocks
   used on the disk, in bytes
-* `ghw.Disk.BusType` is the type of bus used for the disk. It is of type
-  `ghw.BusType` which has a `ghw.BusType.String()` method that can be called to
-  return a string representation of the bus. This string will be "SCSI", "IDE",
-  "Virtio", or "NVMe"
+* `ghw.Disk.DriveType` is the type of drive. It is of type `ghw.DriveType`
+  which has a `ghw.DriveType.String()` method that can be called to return a
+  string representation of the bus. This string will be "HDD", "FDD", "ODD",
+  or "SSD", which correspond to a hard disk drive (rotational), floppy drive,
+  optical (CD/DVD) drive and solid-state drive.
+* `ghw.Disk.StorageController` is the type of storage controller/drive. It is
+  of type `ghw.StorageController` which has a `ghw.StorageController.String()`
+  method that can be called to return a string representation of the bus. This
+  string will be "SCSI", "IDE", "virtio", "MMC", or "NVMe"
 * `ghw.Disk.NUMANodeID` is the numeric index of the NUMA node this disk is
   local to, or -1
 * `ghw.Disk.Vendor` contains a string with the name of the hardware vendor for
@@ -310,7 +317,7 @@ Example output from my personal workstation:
 
 ```
 block storage (1 disk, 2TB physical storage)
- /dev/sda (2TB) [SCSI]  LSI - SN #3600508e000000000f8253aac9a1abd0c
+ /dev/sda HDD (2TB) SCSI [@pci-0000:04:00.0-scsi-0:1:0:0 (node #0)] vendor=LSI model=Logical_Volume serial=600508e000000000f8253aac9a1abd0c WWN=0x600508e000000000f8253aac9a1abd0c
   /dev/sda1 (100MB)
   /dev/sda2 (187GB)
   /dev/sda3 (449MB)
@@ -318,6 +325,11 @@ block storage (1 disk, 2TB physical storage)
   /dev/sda5 (15GB)
   /dev/sda6 (2TB) [ext4] mounted@/
 ```
+
+> Note that `ghw` looks in the udev runtime database for some information. If
+> you are using `ghw` in a container, remember to bind mount `/dev/disk` and
+> `/run` into your container, otherwise `ghw` won't be able to query the udev
+> DB or sysfs paths for information.
 
 ### Topology
 

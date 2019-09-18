@@ -48,8 +48,8 @@ import (
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
 	"k8s.io/kubernetes/test/e2e_node/perftype"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 const (
@@ -109,7 +109,7 @@ func (r *ResourceCollector) Start() {
 		return false, err
 	})
 
-	Expect(r.client).NotTo(BeNil(), "cadvisor client not ready")
+	gomega.Expect(r.client).NotTo(gomega.BeNil(), "cadvisor client not ready")
 
 	r.request = &cadvisorapiv2.RequestOptions{IdType: "name", Count: 1, Recursive: false}
 	r.stopCh = make(chan struct{})
@@ -191,15 +191,15 @@ func computeContainerResourceUsage(name string, oldStats, newStats *cadvisorapiv
 func (r *ResourceCollector) GetLatest() (e2ekubelet.ResourceUsagePerContainer, error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	kubeletstatsv1alpha1 := make(e2ekubelet.ResourceUsagePerContainer)
+	resourceUsage := make(e2ekubelet.ResourceUsagePerContainer)
 	for key, name := range systemContainers {
 		contStats, ok := r.buffers[name]
 		if !ok || len(contStats) == 0 {
 			return nil, fmt.Errorf("No resource usage data for %s container (%s)", key, name)
 		}
-		kubeletstatsv1alpha1[key] = contStats[len(contStats)-1]
+		resourceUsage[key] = contStats[len(contStats)-1]
 	}
-	return kubeletstatsv1alpha1, nil
+	return resourceUsage, nil
 }
 
 type resourceUsageByCPU []*e2ekubelet.ContainerResourceUsage
@@ -272,7 +272,7 @@ func formatCPUSummary(summary e2ekubelet.ContainersCPUSummary) string {
 	w := tabwriter.NewWriter(buf, 1, 0, 1, ' ', 0)
 	fmt.Fprintf(w, "%s\n", strings.Join(header, "\t"))
 
-	for _, containerName := range framework.TargetContainers() {
+	for _, containerName := range e2ekubelet.TargetContainers() {
 		var s []string
 		s = append(s, fmt.Sprintf("%q", containerName))
 		data, ok := summary[containerName]
@@ -371,14 +371,14 @@ func deletePodsSync(f *framework.Framework, pods []*v1.Pod) {
 	for _, pod := range pods {
 		wg.Add(1)
 		go func(pod *v1.Pod) {
-			defer GinkgoRecover()
+			defer ginkgo.GinkgoRecover()
 			defer wg.Done()
 
 			err := f.PodClient().Delete(pod.ObjectMeta.Name, metav1.NewDeleteOptions(30))
 			framework.ExpectNoError(err)
 
-			Expect(e2epod.WaitForPodToDisappear(f.ClientSet, f.Namespace.Name, pod.ObjectMeta.Name, labels.Everything(),
-				30*time.Second, 10*time.Minute)).NotTo(HaveOccurred())
+			gomega.Expect(e2epod.WaitForPodToDisappear(f.ClientSet, f.Namespace.Name, pod.ObjectMeta.Name, labels.Everything(),
+				30*time.Second, 10*time.Minute)).NotTo(gomega.HaveOccurred())
 		}(pod)
 	}
 	wg.Wait()

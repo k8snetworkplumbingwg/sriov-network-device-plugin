@@ -24,7 +24,6 @@ set -e
 PKG=google.golang.org/genproto
 PROTO_REPO=https://github.com/google/protobuf
 GOOGLEAPIS_REPO=https://github.com/googleapis/googleapis
-API_COMMON_REPO=https://github.com/googleapis/api-common-protos.git
 
 function die() {
   echo 1>&2 $*
@@ -36,14 +35,6 @@ for tool in go git protoc protoc-gen-go; do
   q=$(which $tool) || die "didn't find $tool"
   echo 1>&2 "$tool: $q"
 done
-
-root=$(go list -f '{{.Root}}' $PKG/... | head -n1)
-if [ -z "$root" ]; then
-  die "cannot find root of $PKG"
-fi
-
-remove_dirs=
-trap 'rm -rf $remove_dirs' EXIT
 
 if [ -z "$PROTOBUF" ]; then
   proto_repo_dir=$(mktemp -d -t regen-cds-proto.XXXXXX)
@@ -63,23 +54,27 @@ else
   apidir="$GOOGLEAPIS"
 fi
 
-if [ -z "$COMMONPROTOS" ]; then
-  commondir=$(mktemp -d -t regen-cds-common.XXXXXX)
-  git clone $API_COMMON_REPO $commondir
-  remove_dirs="$remove_dirs $commondir"
-else
-  commondir="$COMMONPROTOS"
-fi
-
 wait
 
 # Nuke everything, we'll generate them back
-rm -r googleapis/ protobuf/
+rm -r googleapis protobuf generated || true
 
-go run regen.go -go_out "$root/src" -pkg_prefix "$PKG" "$commondir" "$apidir" "$protodir"
+mkdir generated
+go run regen.go -go_out generated -pkg_prefix "$PKG" "$apidir" "$protodir"
+mv generated/google.golang.org/genproto/googleapis googleapis
+mv generated/google.golang.org/genproto/protobuf protobuf
+rm -rf generated
+
+# throw away changes to some special libs
+for d in "googleapis/grafeas/v1" "googleapis/devtools/containeranalysis/v1"; do
+  git checkout $d
+  git clean -df $d
+done
 
 # Sanity check the build.
 echo 1>&2 "Checking that the libraries build..."
 go build -v ./...
+
+gofmt -s -l -w . && goimports -w .
 
 echo 1>&2 "All done!"

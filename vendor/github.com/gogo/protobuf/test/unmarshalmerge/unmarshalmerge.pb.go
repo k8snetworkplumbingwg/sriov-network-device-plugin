@@ -25,7 +25,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Big struct {
 	Sub                  *Sub     `protobuf:"bytes,1,opt,name=Sub" json:"Sub,omitempty"`
@@ -741,10 +741,10 @@ func valueToGoStringUnmarshalmerge(v interface{}, typ string) string {
 }
 func NewPopulatedBig(r randyUnmarshalmerge, easy bool) *Big {
 	this := &Big{}
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		this.Sub = NewPopulatedSub(r, easy)
 	}
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		v1 := int64(r.Int63())
 		if r.Intn(2) == 0 {
 			v1 *= -1
@@ -759,10 +759,10 @@ func NewPopulatedBig(r randyUnmarshalmerge, easy bool) *Big {
 
 func NewPopulatedBigUnsafe(r randyUnmarshalmerge, easy bool) *BigUnsafe {
 	this := &BigUnsafe{}
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		this.Sub = NewPopulatedSub(r, easy)
 	}
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		v2 := int64(r.Int63())
 		if r.Intn(2) == 0 {
 			v2 *= -1
@@ -777,7 +777,7 @@ func NewPopulatedBigUnsafe(r randyUnmarshalmerge, easy bool) *BigUnsafe {
 
 func NewPopulatedSub(r randyUnmarshalmerge, easy bool) *Sub {
 	this := &Sub{}
-	if r.Intn(10) != 0 {
+	if r.Intn(5) != 0 {
 		v3 := int64(r.Int63())
 		if r.Intn(2) == 0 {
 			v3 *= -1
@@ -904,7 +904,7 @@ func (this *Big) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Big{`,
-		`Sub:` + strings.Replace(fmt.Sprintf("%v", this.Sub), "Sub", "Sub", 1) + `,`,
+		`Sub:` + strings.Replace(this.Sub.String(), "Sub", "Sub", 1) + `,`,
 		`Number:` + valueToStringUnmarshalmerge(this.Number) + `,`,
 		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
 		`}`,
@@ -916,7 +916,7 @@ func (this *BigUnsafe) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&BigUnsafe{`,
-		`Sub:` + strings.Replace(fmt.Sprintf("%v", this.Sub), "Sub", "Sub", 1) + `,`,
+		`Sub:` + strings.Replace(this.Sub.String(), "Sub", "Sub", 1) + `,`,
 		`Number:` + valueToStringUnmarshalmerge(this.Number) + `,`,
 		`XXX_unrecognized:` + fmt.Sprintf("%v", this.XXX_unrecognized) + `,`,
 		`}`,

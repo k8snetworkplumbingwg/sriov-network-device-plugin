@@ -41,11 +41,6 @@ import (
 	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
-var (
-	// BusyBoxImage is the image URI of BusyBox.
-	BusyBoxImage = imageutils.GetE2EImage(imageutils.BusyBox)
-)
-
 // TODO: Move to its own subpkg.
 // expectNoErrorWithRetries to their own subpackages within framework.
 // expectNoError checks if "err" is set, and if so, fails assertion while logging the error.
@@ -61,20 +56,6 @@ func expectNoErrorWithOffset(offset int, err error, explain ...interface{}) {
 		e2elog.Logf("Unexpected error occurred: %v", err)
 	}
 	gomega.ExpectWithOffset(1+offset, err).NotTo(gomega.HaveOccurred(), explain...)
-}
-
-// TODO: Move to its own subpkg.
-// expectNoErrorWithRetries checks if an error occurs with the given retry count.
-func expectNoErrorWithRetries(fn func() error, maxRetries int, explain ...interface{}) {
-	var err error
-	for i := 0; i < maxRetries; i++ {
-		err = fn()
-		if err == nil {
-			return
-		}
-		e2elog.Logf("(Attempt %d of %d) Unexpected error occurred: %v", i+1, maxRetries, err)
-	}
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred(), explain...)
 }
 
 func isElementOf(podUID types.UID, pods *v1.PodList) bool {
@@ -564,13 +545,6 @@ func CreatePodOrFail(c clientset.Interface, ns, name string, labels map[string]s
 	}
 	_, err := c.CoreV1().Pods(ns).Create(pod)
 	expectNoError(err, "failed to create pod %s in namespace %s", name, ns)
-}
-
-// DeletePodOrFail deletes the pod of the specified namespace and name.
-func DeletePodOrFail(c clientset.Interface, ns, name string) {
-	ginkgo.By(fmt.Sprintf("Deleting pod %s in namespace %s", name, ns))
-	err := c.CoreV1().Pods(ns).Delete(name, nil)
-	expectNoError(err, "failed to delete pod %s in namespace %s", name, ns)
 }
 
 // CheckPodsRunningReady returns whether all pods whose names are listed in

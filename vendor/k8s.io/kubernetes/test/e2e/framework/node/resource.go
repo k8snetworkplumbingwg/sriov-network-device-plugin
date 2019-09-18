@@ -27,12 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	nodectlr "k8s.io/kubernetes/pkg/controller/nodelifecycle"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
-	"k8s.io/kubernetes/pkg/util/system"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	"k8s.io/kubernetes/test/e2e/system"
 	testutils "k8s.io/kubernetes/test/utils"
 )
 
@@ -47,9 +46,6 @@ const (
 
 	// ssh port
 	sshPort = "22"
-
-	// timeout for proxy requests.
-	proxyTimeout = 2 * time.Minute
 )
 
 // PodNode is a pod-node pair indicating which node a given pod is running on
@@ -100,9 +96,10 @@ func isNodeConditionSetAsExpected(node *v1.Node, conditionType v1.NodeConditionT
 					if !hasNodeControllerTaints {
 						msg = fmt.Sprintf("Condition %s of node %s is %v instead of %t. Reason: %v, message: %v",
 							conditionType, node.Name, cond.Status == v1.ConditionTrue, wantTrue, cond.Reason, cond.Message)
+					} else {
+						msg = fmt.Sprintf("Condition %s of node %s is %v, but Node is tainted by NodeController with %v. Failure",
+							conditionType, node.Name, cond.Status == v1.ConditionTrue, taints)
 					}
-					msg = fmt.Sprintf("Condition %s of node %s is %v, but Node is tainted by NodeController with %v. Failure",
-						conditionType, node.Name, cond.Status == v1.ConditionTrue, taints)
 					if !silent {
 						e2elog.Logf(msg)
 					}
@@ -250,30 +247,6 @@ func GetPortURL(client clientset.Interface, ns, name string, svcPort int) (strin
 	return "", fmt.Errorf("Failed to find external address for service %v", name)
 }
 
-// ProxyRequest performs a get on a node proxy endpoint given the nodename and rest client.
-func ProxyRequest(c clientset.Interface, node, endpoint string, port int) (restclient.Result, error) {
-	// proxy tends to hang in some cases when Node is not ready. Add an artificial timeout for this call.
-	// This will leak a goroutine if proxy hangs. #22165
-	var result restclient.Result
-	finished := make(chan struct{})
-	go func() {
-		result = c.CoreV1().RESTClient().Get().
-			Resource("nodes").
-			SubResource("proxy").
-			Name(fmt.Sprintf("%v:%v", node, port)).
-			Suffix(endpoint).
-			Do()
-
-		finished <- struct{}{}
-	}()
-	select {
-	case <-finished:
-		return result, nil
-	case <-time.After(proxyTimeout):
-		return restclient.Result{}, nil
-	}
-}
-
 // GetExternalIP returns node external IP concatenated with port 22 for ssh
 // e.g. 1.2.3.4:22
 func GetExternalIP(node *v1.Node) (string, error) {
@@ -398,7 +371,7 @@ func GetMasterAndWorkerNodes(c clientset.Interface) (sets.String, *v1.NodeList, 
 		return nil, nil, fmt.Errorf("get nodes error: %s", err)
 	}
 	for _, n := range all.Items {
-		if system.IsMasterNode(n.Name) {
+		if system.DeprecatedMightBeMasterNode(n.Name) {
 			masters.Insert(n.Name)
 		} else if isNodeSchedulable(&n) && isNodeUntainted(&n) {
 			nodes.Items = append(nodes.Items, n)

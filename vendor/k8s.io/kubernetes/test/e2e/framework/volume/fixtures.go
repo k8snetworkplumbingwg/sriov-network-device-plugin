@@ -186,7 +186,7 @@ func NewGlusterfsServer(cs clientset.Interface, namespace string) (config TestCo
 			},
 		},
 	}
-	endpoints, err := cs.CoreV1().Endpoints(namespace).Create(endpoints)
+	_, err := cs.CoreV1().Endpoints(namespace).Create(endpoints)
 	framework.ExpectNoError(err, "failed to create endpoints for Gluster server")
 
 	return config, pod, ip
@@ -249,7 +249,7 @@ func NewRBDServer(cs clientset.Interface, namespace string) (config TestConfig, 
 
 	secret, err := cs.CoreV1().Secrets(config.Namespace).Create(secret)
 	if err != nil {
-		e2elog.Failf("Failed to create secrets for Ceph RBD: %v", err)
+		framework.Failf("Failed to create secrets for Ceph RBD: %v", err)
 	}
 
 	return config, pod, secret, ip
@@ -263,7 +263,7 @@ func CreateStorageServer(cs clientset.Interface, config TestConfig) (pod *v1.Pod
 	gomega.Expect(pod).NotTo(gomega.BeNil(), "storage server pod should not be nil")
 	ip = pod.Status.PodIP
 	gomega.Expect(len(ip)).NotTo(gomega.BeZero(), fmt.Sprintf("pod %s's IP should not be empty", pod.Name))
-	e2elog.Logf("%s server pod IP address: %s", config.Prefix, ip)
+	framework.Logf("%s server pod IP address: %s", config.Prefix, ip)
 	return pod, ip
 }
 
@@ -357,7 +357,7 @@ func StartVolumeServer(client clientset.Interface, config TestConfig) *v1.Pod {
 	// ok if the server pod already exists. TODO: make this controllable by callers
 	if err != nil {
 		if apierrs.IsAlreadyExists(err) {
-			e2elog.Logf("Ignore \"already-exists\" error, re-get pod...")
+			framework.Logf("Ignore \"already-exists\" error, re-get pod...")
 			ginkgo.By(fmt.Sprintf("re-getting the %q server pod", serverPodName))
 			serverPod, err = podClient.Get(serverPodName, metav1.GetOptions{})
 			framework.ExpectNoError(err, "Cannot re-get the server pod %q: %v", serverPodName, err)
@@ -395,17 +395,17 @@ func CleanUpVolumeServerWithSecret(f *framework.Framework, serverPod *v1.Pod, se
 	ns := f.Namespace
 
 	if secret != nil {
-		e2elog.Logf("Deleting server secret %q...", secret.Name)
+		framework.Logf("Deleting server secret %q...", secret.Name)
 		err := cs.CoreV1().Secrets(ns.Name).Delete(secret.Name, &metav1.DeleteOptions{})
 		if err != nil {
-			e2elog.Logf("Delete secret failed: %v", err)
+			framework.Logf("Delete secret failed: %v", err)
 		}
 	}
 
 	e2elog.Logf("Deleting server pod %q...", serverPod.Name)
-	err := framework.DeletePodWithWait(f, cs, serverPod)
+	err := e2epod.DeletePodWithWait(cs, serverPod)
 	if err != nil {
-		e2elog.Logf("Server pod delete failed: %v", err)
+		framework.Logf("Server pod delete failed: %v", err)
 	}
 }
 
@@ -417,11 +417,11 @@ func TestCleanup(f *framework.Framework, config TestConfig) {
 
 	cs := f.ClientSet
 
-	err := framework.DeletePodWithWaitByName(f, cs, config.Prefix+"-client", config.Namespace)
+	err := e2epod.DeletePodWithWaitByName(cs, config.Prefix+"-client", config.Namespace)
 	gomega.Expect(err).To(gomega.BeNil(), "Failed to delete pod %v in namespace %v", config.Prefix+"-client", config.Namespace)
 
 	if config.ServerImage != "" {
-		err := framework.DeletePodWithWaitByName(f, cs, config.Prefix+"-server", config.Namespace)
+		err := e2epod.DeletePodWithWaitByName(cs, config.Prefix+"-server", config.Namespace)
 		gomega.Expect(err).To(gomega.BeNil(), "Failed to delete pod %v in namespace %v", config.Prefix+"-server", config.Namespace)
 	}
 }
@@ -549,7 +549,7 @@ func testVolumeContent(client clientset.Interface, pod *v1.Pod, fsGroup *int64, 
 func TestVolumeClient(client clientset.Interface, config TestConfig, fsGroup *int64, fsType string, tests []Test) {
 	clientPod, err := runVolumeTesterPod(client, config, "client", fsGroup, tests)
 	if err != nil {
-		e2elog.Failf("Failed to create client pod: %v", err)
+		framework.Failf("Failed to create client pod: %v", err)
 
 	}
 	framework.ExpectNoError(e2epod.WaitForPodRunningInNamespace(client, clientPod))
@@ -562,7 +562,7 @@ func TestVolumeClient(client clientset.Interface, config TestConfig, fsGroup *in
 func InjectContent(client clientset.Interface, config TestConfig, fsGroup *int64, fsType string, tests []Test) {
 	injectorPod, err := runVolumeTesterPod(client, config, "injector", fsGroup, tests)
 	if err != nil {
-		e2elog.Failf("Failed to create injector pod: %v", err)
+		framework.Failf("Failed to create injector pod: %v", err)
 		return
 	}
 	defer func() {
@@ -676,7 +676,7 @@ func GenerateWriteandExecuteScriptFileCmd(content, fileName, filePath string) []
 		fullPath := filepath.Join(filePath, scriptName)
 
 		cmd := "echo \"" + content + "\" > " + fullPath + "; .\\" + fullPath
-		e2elog.Logf("generated pod command %s", cmd)
+		framework.Logf("generated pod command %s", cmd)
 		return []string{"powershell", "/c", cmd}
 	}
 	scriptName := fmt.Sprintf("%s.sh", fileName)

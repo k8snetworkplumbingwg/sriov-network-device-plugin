@@ -1,13 +1,15 @@
+// +build linux
+
 package netlink
 
 import (
 	"fmt"
 	"net"
 	"runtime"
-	"syscall"
 	"testing"
 
 	"github.com/vishvananda/netns"
+	"golang.org/x/sys/unix"
 )
 
 func CheckErrorFail(t *testing.T, err error) {
@@ -75,11 +77,13 @@ func applyFilter(flowList []ConntrackFlow, ipv4Filter *ConntrackFilter, ipv6Filt
 // TestConntrackSocket test the opening of a NETFILTER family socket
 func TestConntrackSocket(t *testing.T) {
 	skipUnlessRoot(t)
+	setUpNetlinkTestWithKModule(t, "nf_conntrack")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_netlink")
 
-	h, err := NewHandle(syscall.NETLINK_NETFILTER)
+	h, err := NewHandle(unix.NETLINK_NETFILTER)
 	CheckErrorFail(t, err)
 
-	if h.SupportsNetlinkFamily(syscall.NETLINK_NETFILTER) != true {
+	if h.SupportsNetlinkFamily(unix.NETLINK_NETFILTER) != true {
 		t.Fatal("ERROR not supporting the NETFILTER family")
 	}
 }
@@ -88,6 +92,10 @@ func TestConntrackSocket(t *testing.T) {
 // Creates some flows and checks that they are correctly fetched from the conntrack table
 func TestConntrackTableList(t *testing.T) {
 	skipUnlessRoot(t)
+	setUpNetlinkTestWithKModule(t, "nf_conntrack")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_netlink")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_ipv4")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_ipv6")
 
 	// Creates a new namespace and bring up the loopback interface
 	origns, ns, h := nsCreateAndEnter(t)
@@ -95,6 +103,8 @@ func TestConntrackTableList(t *testing.T) {
 	defer origns.Close()
 	defer ns.Close()
 	defer runtime.UnlockOSThread()
+
+	setUpF(t, "/proc/sys/net/netfilter/nf_conntrack_acct", "1")
 
 	// Flush the table to start fresh
 	err := h.ConntrackTableFlush(ConntrackTable)
@@ -104,7 +114,7 @@ func TestConntrackTableList(t *testing.T) {
 	udpFlowCreateProg(t, 5, 2000, "127.0.0.10", 3000)
 
 	// Fetch the conntrack table
-	flows, err := h.ConntrackTableList(ConntrackTable, syscall.AF_INET)
+	flows, err := h.ConntrackTableList(ConntrackTable, unix.AF_INET)
 	CheckErrorFail(t, err)
 
 	// Check that it is able to find the 5 flows created
@@ -116,13 +126,17 @@ func TestConntrackTableList(t *testing.T) {
 			(flow.Forward.SrcPort >= 2000 && flow.Forward.SrcPort <= 2005) {
 			found++
 		}
+
+		if flow.Forward.Bytes == 0 && flow.Forward.Packets == 0 && flow.Reverse.Bytes == 0 && flow.Reverse.Packets == 0 {
+			t.Error("No traffic statistics are collected")
+		}
 	}
 	if found != 5 {
 		t.Fatalf("Found only %d flows over 5", found)
 	}
 
 	// Give a try also to the IPv6 version
-	_, err = h.ConntrackTableList(ConntrackTable, syscall.AF_INET6)
+	_, err = h.ConntrackTableList(ConntrackTable, unix.AF_INET6)
 	CheckErrorFail(t, err)
 
 	// Switch back to the original namespace
@@ -133,6 +147,9 @@ func TestConntrackTableList(t *testing.T) {
 // Creates some flows and then call the table flush
 func TestConntrackTableFlush(t *testing.T) {
 	skipUnlessRoot(t)
+	setUpNetlinkTestWithKModule(t, "nf_conntrack")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_netlink")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_ipv4")
 
 	// Creates a new namespace and bring up the loopback interface
 	origns, ns, h := nsCreateAndEnter(t)
@@ -145,7 +162,7 @@ func TestConntrackTableFlush(t *testing.T) {
 	udpFlowCreateProg(t, 5, 3000, "127.0.0.10", 4000)
 
 	// Fetch the conntrack table
-	flows, err := h.ConntrackTableList(ConntrackTable, syscall.AF_INET)
+	flows, err := h.ConntrackTableList(ConntrackTable, unix.AF_INET)
 	CheckErrorFail(t, err)
 
 	// Check that it is able to find the 5 flows created
@@ -167,7 +184,7 @@ func TestConntrackTableFlush(t *testing.T) {
 	CheckErrorFail(t, err)
 
 	// Fetch again the flows to validate the flush
-	flows, err = h.ConntrackTableList(ConntrackTable, syscall.AF_INET)
+	flows, err = h.ConntrackTableList(ConntrackTable, unix.AF_INET)
 	CheckErrorFail(t, err)
 
 	// Check if it is still able to find the 5 flows created
@@ -192,6 +209,9 @@ func TestConntrackTableFlush(t *testing.T) {
 // Creates 2 group of flows then deletes only one group and validates the result
 func TestConntrackTableDelete(t *testing.T) {
 	skipUnlessRoot(t)
+	setUpNetlinkTestWithKModule(t, "nf_conntrack")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_netlink")
+	setUpNetlinkTestWithKModule(t, "nf_conntrack_ipv4")
 
 	// Creates a new namespace and bring up the loopback interface
 	origns, ns, h := nsCreateAndEnter(t)
@@ -205,7 +225,7 @@ func TestConntrackTableDelete(t *testing.T) {
 	udpFlowCreateProg(t, 5, 7000, "127.0.0.20", 8000)
 
 	// Fetch the conntrack table
-	flows, err := h.ConntrackTableList(ConntrackTable, syscall.AF_INET)
+	flows, err := h.ConntrackTableList(ConntrackTable, unix.AF_INET)
 	CheckErrorFail(t, err)
 
 	// Check that it is able to find the 5 flows created for each group
@@ -235,7 +255,7 @@ func TestConntrackTableDelete(t *testing.T) {
 
 	// Flush entries of groupB
 	var deleted uint
-	if deleted, err = h.ConntrackDeleteFilter(ConntrackTable, syscall.AF_INET, filter); err != nil {
+	if deleted, err = h.ConntrackDeleteFilter(ConntrackTable, unix.AF_INET, filter); err != nil {
 		t.Fatalf("Error during the erase: %s", err)
 	}
 	if deleted != 5 {
@@ -243,7 +263,7 @@ func TestConntrackTableDelete(t *testing.T) {
 	}
 
 	// Check again the table to verify that are gone
-	flows, err = h.ConntrackTableList(ConntrackTable, syscall.AF_INET)
+	flows, err = h.ConntrackTableList(ConntrackTable, unix.AF_INET)
 	CheckErrorFail(t, err)
 
 	// Check if it is able to find the 5 flows of groupA but none of groupB
@@ -274,7 +294,7 @@ func TestConntrackTableDelete(t *testing.T) {
 func TestConntrackFilter(t *testing.T) {
 	var flowList []ConntrackFlow
 	flowList = append(flowList, ConntrackFlow{
-		FamilyType: syscall.AF_INET,
+		FamilyType: unix.AF_INET,
 		Forward: ipTuple{
 			SrcIP:   net.ParseIP("10.0.0.1"),
 			DstIP:   net.ParseIP("20.0.0.1"),
@@ -289,7 +309,7 @@ func TestConntrackFilter(t *testing.T) {
 		},
 	},
 		ConntrackFlow{
-			FamilyType: syscall.AF_INET,
+			FamilyType: unix.AF_INET,
 			Forward: ipTuple{
 				SrcIP:   net.ParseIP("10.0.0.2"),
 				DstIP:   net.ParseIP("20.0.0.2"),
@@ -304,7 +324,7 @@ func TestConntrackFilter(t *testing.T) {
 			},
 		},
 		ConntrackFlow{
-			FamilyType: syscall.AF_INET6,
+			FamilyType: unix.AF_INET6,
 			Forward: ipTuple{
 				SrcIP:   net.ParseIP("eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee"),
 				DstIP:   net.ParseIP("dddd:dddd:dddd:dddd:dddd:dddd:dddd:dddd"),
@@ -351,10 +371,10 @@ func TestConntrackFilter(t *testing.T) {
 
 	// SrcIP for NAT
 	filterV4 = &ConntrackFilter{}
-	filterV4.AddIP(ConntrackNatSrcIP, net.ParseIP("20.0.0.1"))
+	filterV4.AddIP(ConntrackReplySrcIP, net.ParseIP("20.0.0.1"))
 
 	filterV6 = &ConntrackFilter{}
-	filterV6.AddIP(ConntrackNatSrcIP, net.ParseIP("dddd:dddd:dddd:dddd:dddd:dddd:dddd:dddd"))
+	filterV6.AddIP(ConntrackReplySrcIP, net.ParseIP("dddd:dddd:dddd:dddd:dddd:dddd:dddd:dddd"))
 
 	v4Match, v6Match = applyFilter(flowList, filterV4, filterV6)
 	if v4Match != 1 || v6Match != 1 {
@@ -363,10 +383,10 @@ func TestConntrackFilter(t *testing.T) {
 
 	// DstIP for NAT
 	filterV4 = &ConntrackFilter{}
-	filterV4.AddIP(ConntrackNatDstIP, net.ParseIP("192.168.1.1"))
+	filterV4.AddIP(ConntrackReplyDstIP, net.ParseIP("192.168.1.1"))
 
 	filterV6 = &ConntrackFilter{}
-	filterV6.AddIP(ConntrackNatDstIP, net.ParseIP("dddd:dddd:dddd:dddd:dddd:dddd:dddd:dddd"))
+	filterV6.AddIP(ConntrackReplyDstIP, net.ParseIP("dddd:dddd:dddd:dddd:dddd:dddd:dddd:dddd"))
 
 	v4Match, v6Match = applyFilter(flowList, filterV4, filterV6)
 	if v4Match != 2 || v6Match != 0 {
@@ -375,10 +395,10 @@ func TestConntrackFilter(t *testing.T) {
 
 	// AnyIp for Nat
 	filterV4 = &ConntrackFilter{}
-	filterV4.AddIP(ConntrackNatAnyIP, net.ParseIP("192.168.1.1"))
+	filterV4.AddIP(ConntrackReplyAnyIP, net.ParseIP("192.168.1.1"))
 
 	filterV6 = &ConntrackFilter{}
-	filterV6.AddIP(ConntrackNatAnyIP, net.ParseIP("eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee"))
+	filterV6.AddIP(ConntrackReplyAnyIP, net.ParseIP("eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee"))
 
 	v4Match, v6Match = applyFilter(flowList, filterV4, filterV6)
 	if v4Match != 2 || v6Match != 1 {
