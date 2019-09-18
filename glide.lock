@@ -133,7 +133,7 @@ imports:
 - name: howett.net/plist
   version: 591f970eefbbeb04d7b37f334a0c4c3256e32876
 - name: k8s.io/kubernetes
-  version: 6dbe98980f97d966cb940cffb3e371b9e43da400
+  version: 674ecba935da543b80502f023640dfb226a8a642
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
   - pkg/kubelet/apis/pluginregistration/v1

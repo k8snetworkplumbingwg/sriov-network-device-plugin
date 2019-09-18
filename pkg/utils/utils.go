@@ -185,6 +185,21 @@ func GetSriovVFcapacity(pf string) int {
 	return numvfs
 }
 
+// GetDevNode returns the numa node of a PCI device, -1 if none is specified or error.
+func GetDevNode(pciAddr string) int {
+	devNodePath := filepath.Join(sysBusPci, pciAddr, "numa_node")
+	node, err := ioutil.ReadFile(devNodePath)
+	if err != nil {
+		return -1
+	}
+	node = bytes.TrimSpace(node)
+	numNode, err := strconv.Atoi(string(node))
+	if err != nil {
+		return -1
+	}
+	return numNode
+}
+
 // IsNetlinkStatusUp returns 'false' if 'operstate' is not "up" for a Linux network device.
 // This function will only return 'false' if the 'operstate' file of the device is readable
 // and holds value anything other than "up". Or else we assume link is up.

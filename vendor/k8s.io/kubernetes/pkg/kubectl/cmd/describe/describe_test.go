@@ -24,12 +24,12 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/rest/fake"
+	"k8s.io/kubectl/pkg/scheme"
 	cmdtesting "k8s.io/kubernetes/pkg/kubectl/cmd/testing"
 	"k8s.io/kubernetes/pkg/kubectl/describe"
 	versioneddescribe "k8s.io/kubernetes/pkg/kubectl/describe/versioned"
-	"k8s.io/kubernetes/pkg/kubectl/scheme"
 )
 
 // Verifies that schemas that are not in the master tree of Kubernetes can be retrieved via Get.

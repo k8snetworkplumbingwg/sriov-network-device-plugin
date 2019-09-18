@@ -172,6 +172,42 @@ var _ = Describe("In the utils package", func() {
 		),
 	)
 
+	DescribeTable("getting NUMA node of device",
+		func(fs *FakeFilesystem, pciAddr string, expected int) {
+			defer fs.Use()()
+			Expect(GetDevNode(pciAddr)).To(Equal(expected))
+		},
+		Entry("reading the device path fails", &FakeFilesystem{}, "0000:00:00.0", -1),
+		Entry("converting the NUMA node to integer fails",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.1"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("invalid content")},
+			},
+			"0000:00:00.1", -1,
+		),
+		Entry("finding positive NUMA node",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.1"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("1")},
+			},
+			"0000:00:00.1", 1,
+		),
+		Entry("finding zero NUMA node",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.1"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+			},
+			"0000:00:00.1", 0,
+		),
+		Entry("finding negative NUMA node",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:00:00.1"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
+			},
+			"0000:00:00.1", -1,
+		),
+	)
+
 	DescribeTable("checking that device status is up",
 		func(fs *FakeFilesystem, dev string, expected bool) {
 			defer fs.Use()()

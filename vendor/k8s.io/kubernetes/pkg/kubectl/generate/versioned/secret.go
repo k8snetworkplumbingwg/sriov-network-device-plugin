@@ -26,9 +26,9 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/hash"
 	"k8s.io/kubernetes/pkg/kubectl/generate"
-	"k8s.io/kubernetes/pkg/kubectl/util"
-	"k8s.io/kubernetes/pkg/kubectl/util/hash"
 )
 
 // SecretGeneratorV1 supports stable generation of an opaque secret
@@ -265,7 +265,7 @@ func addKeyFromLiteralToSecret(secret *v1.Secret, keyName string, data []byte) e
 	}
 
 	if _, entryExists := secret.Data[keyName]; entryExists {
-		return fmt.Errorf("cannot add key %s, another key by that name already exists: %v", keyName, secret.Data)
+		return fmt.Errorf("cannot add key %s, another key by that name already exists", keyName)
 	}
 	secret.Data[keyName] = data
 	return nil

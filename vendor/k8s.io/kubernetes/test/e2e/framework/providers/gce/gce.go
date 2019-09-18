@@ -26,13 +26,15 @@ import (
 
 	compute "google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
-	gcecloud "k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
+	gcecloud "k8s.io/legacy-cloud-providers/gce"
 )
 
 func init() {
@@ -41,7 +43,7 @@ func init() {
 }
 
 func factory() (framework.ProviderInterface, error) {
-	framework.Logf("Fetching cloud provider for %q\r", framework.TestContext.Provider)
+	e2elog.Logf("Fetching cloud provider for %q\r", framework.TestContext.Provider)
 	zone := framework.TestContext.CloudConfig.Zone
 	region := framework.TestContext.CloudConfig.Region
 
@@ -58,7 +60,7 @@ func factory() (framework.ProviderInterface, error) {
 	}
 
 	gceCloud, err := gcecloud.CreateGCECloud(&gcecloud.CloudConfig{
-		APIEndpoint:        framework.TestContext.CloudConfig.ApiEndpoint,
+		APIEndpoint:        framework.TestContext.CloudConfig.APIEndpoint,
 		ProjectID:          framework.TestContext.CloudConfig.ProjectID,
 		Region:             region,
 		Zone:               zone,
@@ -89,17 +91,20 @@ func factory() (framework.ProviderInterface, error) {
 	return NewProvider(gceCloud), nil
 }
 
+// NewProvider returns a cloud provider interface for GCE
 func NewProvider(gceCloud *gcecloud.Cloud) framework.ProviderInterface {
 	return &Provider{
 		gceCloud: gceCloud,
 	}
 }
 
+// Provider is a structure to handle GCE clouds for e2e testing
 type Provider struct {
 	framework.NullProvider
 	gceCloud *gcecloud.Cloud
 }
 
+// ResizeGroup resizes an instance group
 func (p *Provider) ResizeGroup(group string, size int32) error {
 	// TODO: make this hit the compute API directly instead of shelling out to gcloud.
 	// TODO: make gce/gke implement InstanceGroups, so we can eliminate the per-provider logic
@@ -116,6 +121,7 @@ func (p *Provider) ResizeGroup(group string, size int32) error {
 	return nil
 }
 
+// GetGroupNodes returns a node name for the specified node group
 func (p *Provider) GetGroupNodes(group string) ([]string, error) {
 	// TODO: make this hit the compute API directly instead of shelling out to gcloud.
 	// TODO: make gce/gke implement InstanceGroups, so we can eliminate the per-provider logic
@@ -137,6 +143,7 @@ func (p *Provider) GetGroupNodes(group string) ([]string, error) {
 	return lines, nil
 }
 
+// GroupSize returns the size of an instance group
 func (p *Provider) GroupSize(group string) (int, error) {
 	// TODO: make this hit the compute API directly instead of shelling out to gcloud.
 	// TODO: make gce/gke implement InstanceGroups, so we can eliminate the per-provider logic
@@ -154,6 +161,7 @@ func (p *Provider) GroupSize(group string) (int, error) {
 	return len(re.FindAllString(string(output), -1)), nil
 }
 
+// EnsureLoadBalancerResourcesDeleted ensures that cloud load balancer resources that were created
 func (p *Provider) EnsureLoadBalancerResourcesDeleted(ip, portRange string) error {
 	project := framework.TestContext.CloudConfig.ProjectID
 	region, err := gcecloud.GetGCERegion(framework.TestContext.CloudConfig.Zone)
@@ -162,14 +170,14 @@ func (p *Provider) EnsureLoadBalancerResourcesDeleted(ip, portRange string) erro
 	}
 
 	return wait.Poll(10*time.Second, 5*time.Minute, func() (bool, error) {
-		service := p.gceCloud.ComputeServices().GA
-		list, err := service.ForwardingRules.List(project, region).Do()
+		e2eservice := p.gceCloud.ComputeServices().GA
+		list, err := e2eservice.ForwardingRules.List(project, region).Do()
 		if err != nil {
 			return false, err
 		}
 		for _, item := range list.Items {
 			if item.PortRange == portRange && item.IPAddress == ip {
-				framework.Logf("found a load balancer: %v", item)
+				e2elog.Logf("found a load balancer: %v", item)
 				return false, nil
 			}
 		}
@@ -178,18 +186,15 @@ func (p *Provider) EnsureLoadBalancerResourcesDeleted(ip, portRange string) erro
 }
 
 func getGCEZoneForGroup(group string) (string, error) {
-	zone := framework.TestContext.CloudConfig.Zone
-	if framework.TestContext.CloudConfig.MultiZone {
-		output, err := exec.Command("gcloud", "compute", "instance-groups", "managed", "list",
-			"--project="+framework.TestContext.CloudConfig.ProjectID, "--format=value(zone)", "--filter=name="+group).CombinedOutput()
-		if err != nil {
-			return "", fmt.Errorf("Failed to get zone for node group %s: %s", group, output)
-		}
-		zone = strings.TrimSpace(string(output))
+	output, err := exec.Command("gcloud", "compute", "instance-groups", "managed", "list",
+		"--project="+framework.TestContext.CloudConfig.ProjectID, "--format=value(zone)", "--filter=name="+group).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get zone for node group %s: %s", group, output)
 	}
-	return zone, nil
+	return strings.TrimSpace(string(output)), nil
 }
 
+// DeleteNode deletes a node which is specified as the argument
 func (p *Provider) DeleteNode(node *v1.Node) error {
 	zone := framework.TestContext.CloudConfig.Zone
 	project := framework.TestContext.CloudConfig.ProjectID
@@ -197,6 +202,7 @@ func (p *Provider) DeleteNode(node *v1.Node) error {
 	return p.gceCloud.DeleteInstance(project, zone, node.Name)
 }
 
+// CreatePD creates a persistent volume
 func (p *Provider) CreatePD(zone string) (string, error) {
 	pdName := fmt.Sprintf("%s-%s", framework.TestContext.Prefix, string(uuid.NewUUID()))
 
@@ -215,6 +221,7 @@ func (p *Provider) CreatePD(zone string) (string, error) {
 	return pdName, nil
 }
 
+// DeletePD deletes a persistent volume
 func (p *Provider) DeletePD(pdName string) error {
 	err := p.gceCloud.DeleteDisk(pdName)
 
@@ -224,11 +231,12 @@ func (p *Provider) DeletePD(pdName string) error {
 			return nil
 		}
 
-		framework.Logf("error deleting PD %q: %v", pdName, err)
+		e2elog.Logf("error deleting PD %q: %v", pdName, err)
 	}
 	return err
 }
 
+// CreatePVSource creates a persistent volume source
 func (p *Provider) CreatePVSource(zone, diskName string) (*v1.PersistentVolumeSource, error) {
 	return &v1.PersistentVolumeSource{
 		GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
@@ -239,22 +247,23 @@ func (p *Provider) CreatePVSource(zone, diskName string) (*v1.PersistentVolumeSo
 	}, nil
 }
 
+// DeletePVSource deletes a persistent volume source
 func (p *Provider) DeletePVSource(pvSource *v1.PersistentVolumeSource) error {
 	return framework.DeletePDWithRetry(pvSource.GCEPersistentDisk.PDName)
 }
 
-// CleanupResources cleans up GCE Service Type=LoadBalancer resources with
+// CleanupServiceResources cleans up GCE Service Type=LoadBalancer resources with
 // the given name. The name is usually the UUID of the Service prefixed with an
 // alpha-numeric character ('a') to work around cloudprovider rules.
 func (p *Provider) CleanupServiceResources(c clientset.Interface, loadBalancerName, region, zone string) {
-	if pollErr := wait.Poll(5*time.Second, framework.LoadBalancerCleanupTimeout, func() (bool, error) {
+	if pollErr := wait.Poll(5*time.Second, e2eservice.LoadBalancerCleanupTimeout, func() (bool, error) {
 		if err := p.cleanupGCEResources(c, loadBalancerName, region, zone); err != nil {
-			framework.Logf("Still waiting for glbc to cleanup: %v", err)
+			e2elog.Logf("Still waiting for glbc to cleanup: %v", err)
 			return false, nil
 		}
 		return true, nil
 	}); pollErr != nil {
-		framework.Failf("Failed to cleanup service GCE resources.")
+		e2elog.Failf("Failed to cleanup service GCE resources.")
 	}
 }
 
@@ -301,10 +310,13 @@ func (p *Provider) cleanupGCEResources(c clientset.Interface, loadBalancerName, 
 	return
 }
 
+// LoadBalancerSrcRanges contains the ranges of ips used by the GCE load balancers (l4 & L7)
+// for proxying client requests and performing health checks.
 func (p *Provider) LoadBalancerSrcRanges() []string {
 	return gcecloud.LoadBalancerSrcRanges()
 }
 
+// EnableAndDisableInternalLB returns functions for both enabling and disabling internal Load Balancer
 func (p *Provider) EnableAndDisableInternalLB() (enable, disable func(svc *v1.Service)) {
 	enable = func(svc *v1.Service) {
 		svc.ObjectMeta.Annotations = map[string]string{gcecloud.ServiceAnnotationLoadBalancerType: string(gcecloud.LBTypeInternal)}
@@ -321,7 +333,7 @@ func GetInstanceTags(cloudConfig framework.CloudConfig, instanceName string) *co
 	res, err := gceCloud.ComputeServices().GA.Instances.Get(cloudConfig.ProjectID, cloudConfig.Zone,
 		instanceName).Do()
 	if err != nil {
-		framework.Failf("Failed to get instance tags for %v: %v", instanceName, err)
+		e2elog.Failf("Failed to get instance tags for %v: %v", instanceName, err)
 	}
 	return res.Tags
 }
@@ -335,9 +347,9 @@ func SetInstanceTags(cloudConfig framework.CloudConfig, instanceName, zone strin
 		cloudConfig.ProjectID, zone, instanceName,
 		&compute.Tags{Fingerprint: resTags.Fingerprint, Items: tags}).Do()
 	if err != nil {
-		framework.Failf("failed to set instance tags: %v", err)
+		e2elog.Failf("failed to set instance tags: %v", err)
 	}
-	framework.Logf("Sent request to set tags %v on instance: %v", tags, instanceName)
+	e2elog.Logf("Sent request to set tags %v on instance: %v", tags, instanceName)
 	return resTags.Items
 }
 
@@ -345,19 +357,20 @@ func SetInstanceTags(cloudConfig framework.CloudConfig, instanceName, zone strin
 func GetNodeTags(c clientset.Interface, cloudConfig framework.CloudConfig) []string {
 	nodes := framework.GetReadySchedulableNodesOrDie(c)
 	if len(nodes.Items) == 0 {
-		framework.Logf("GetNodeTags: Found 0 node.")
+		e2elog.Logf("GetNodeTags: Found 0 node.")
 		return []string{}
 	}
 	return GetInstanceTags(cloudConfig, nodes.Items[0].Name).Items
 }
 
-// IsHTTPErrorCode returns true if the error is a google api
+// IsGoogleAPIHTTPErrorCode returns true if the error is a google api
 // error matching the corresponding HTTP error code.
 func IsGoogleAPIHTTPErrorCode(err error, code int) bool {
 	apiErr, ok := err.(*googleapi.Error)
 	return ok && apiErr.Code == code
 }
 
+// GetGCECloud returns GCE cloud provider
 func GetGCECloud() (*gcecloud.Cloud, error) {
 	p, ok := framework.TestContext.CloudConfig.Provider.(*Provider)
 	if !ok {
@@ -366,6 +379,7 @@ func GetGCECloud() (*gcecloud.Cloud, error) {
 	return p.gceCloud, nil
 }
 
+// GetClusterID returns cluster ID
 func GetClusterID(c clientset.Interface) (string, error) {
 	cm, err := c.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(gcecloud.UIDConfigMapName, metav1.GetOptions{})
 	if err != nil || cm == nil {

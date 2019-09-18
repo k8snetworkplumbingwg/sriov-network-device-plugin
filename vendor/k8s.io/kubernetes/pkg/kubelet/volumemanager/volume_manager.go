@@ -52,10 +52,6 @@ const (
 	// between successive executions
 	reconcilerLoopSleepPeriod = 100 * time.Millisecond
 
-	// reconcilerSyncStatesSleepPeriod is the amount of time the reconciler reconstruct process
-	// waits between successive executions
-	reconcilerSyncStatesSleepPeriod = 3 * time.Minute
-
 	// desiredStateOfWorldPopulatorLoopSleepPeriod is the amount of time the
 	// DesiredStateOfWorldPopulator loop waits between successive executions
 	desiredStateOfWorldPopulatorLoopSleepPeriod = 100 * time.Millisecond
@@ -155,6 +151,7 @@ func NewVolumeManager(
 	volumePluginMgr *volume.VolumePluginMgr,
 	kubeContainerRuntime container.Runtime,
 	mounter mount.Interface,
+	hostutil mount.HostUtils,
 	kubeletPodsDir string,
 	recorder record.EventRecorder,
 	checkNodeCapabilitiesBeforeMount bool,
@@ -187,7 +184,6 @@ func NewVolumeManager(
 		kubeClient,
 		controllerAttachDetachEnabled,
 		reconcilerLoopSleepPeriod,
-		reconcilerSyncStatesSleepPeriod,
 		waitForAttachTimeout,
 		nodeName,
 		vm.desiredStateOfWorld,
@@ -195,6 +191,7 @@ func NewVolumeManager(
 		vm.desiredStateOfWorldPopulator.HasAddedPods,
 		vm.operationExecutor,
 		mounter,
+		hostutil,
 		volumePluginMgr,
 		kubeletPodsDir)
 
@@ -249,6 +246,11 @@ func (vm *volumeManager) Run(sourcesReady config.SourcesReady, stopCh <-chan str
 	go vm.reconciler.Run(stopCh)
 
 	metrics.Register(vm.actualStateOfWorld, vm.desiredStateOfWorld, vm.volumePluginMgr)
+
+	if vm.kubeClient != nil {
+		// start informer for CSIDriver
+		vm.volumePluginMgr.Run(stopCh)
+	}
 
 	<-stopCh
 	klog.Infof("Shutting down Kubelet Volume Manager")

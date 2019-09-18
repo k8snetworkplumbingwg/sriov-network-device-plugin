@@ -40,18 +40,21 @@ import (
 	"math/rand"
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	"k8s.io/kubernetes/test/e2e/storage/testpatterns"
 	"k8s.io/kubernetes/test/e2e/storage/testsuites"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
 )
 
 const (
+	// GCEPDCSIProvisionerName is the name of GCE Persistent Disk CSI provisioner
 	GCEPDCSIProvisionerName = "pd.csi.storage.gke.io"
+	// GCEPDCSIZoneTopologyKey is the key of GCE Persistent Disk CSI zone topology
 	GCEPDCSIZoneTopologyKey = "topology.gke.io/zone"
 )
 
@@ -127,7 +130,7 @@ func (h *hostpathCSIDriver) GetClaimSize() string {
 }
 
 func (h *hostpathCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTestConfig, func()) {
-	By(fmt.Sprintf("deploying %s driver", h.driverInfo.Name))
+	ginkgo.By(fmt.Sprintf("deploying %s driver", h.driverInfo.Name))
 	cancelLogging := testsuites.StartPodLogs(f)
 	cs := f.ClientSet
 
@@ -141,8 +144,6 @@ func (h *hostpathCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.Per
 		ClientNodeName: nodeName,
 	}
 
-	// TODO (?): the storage.csi.image.version and storage.csi.image.registry
-	// settings are ignored for this test. We could patch the image definitions.
 	o := utils.PatchCSIOptions{
 		OldDriverName:            h.driverInfo.Name,
 		NewDriverName:            config.GetUniqueDriverName(),
@@ -157,11 +158,11 @@ func (h *hostpathCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.Per
 	},
 		h.manifests...)
 	if err != nil {
-		framework.Failf("deploying %s driver: %v", h.driverInfo.Name, err)
+		e2elog.Failf("deploying %s driver: %v", h.driverInfo.Name, err)
 	}
 
 	return config, func() {
-		By(fmt.Sprintf("uninstalling %s driver", h.driverInfo.Name))
+		ginkgo.By(fmt.Sprintf("uninstalling %s driver", h.driverInfo.Name))
 		cleanup()
 		cancelLogging()
 	}
@@ -169,34 +170,50 @@ func (h *hostpathCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.Per
 
 // mockCSI
 type mockCSIDriver struct {
-	driverInfo  testsuites.DriverInfo
-	manifests   []string
-	podInfo     *bool
-	attachable  bool
-	attachLimit int
+	driverInfo          testsuites.DriverInfo
+	manifests           []string
+	podInfo             *bool
+	attachable          bool
+	attachLimit         int
+	enableNodeExpansion bool
+}
+
+// CSIMockDriverOpts defines options used for csi driver
+type CSIMockDriverOpts struct {
+	RegisterDriver      bool
+	DisableAttach       bool
+	PodInfo             *bool
+	AttachLimit         int
+	EnableResizing      bool
+	EnableNodeExpansion bool
 }
 
 var _ testsuites.TestDriver = &mockCSIDriver{}
 var _ testsuites.DynamicPVTestDriver = &mockCSIDriver{}
 
 // InitMockCSIDriver returns a mockCSIDriver that implements TestDriver interface
-func InitMockCSIDriver(registerDriver, driverAttachable bool, podInfo *bool, attachLimit int) testsuites.TestDriver {
+func InitMockCSIDriver(driverOpts CSIMockDriverOpts) testsuites.TestDriver {
 	driverManifests := []string{
 		"test/e2e/testing-manifests/storage-csi/cluster-driver-registrar/rbac.yaml",
 		"test/e2e/testing-manifests/storage-csi/driver-registrar/rbac.yaml",
 		"test/e2e/testing-manifests/storage-csi/external-attacher/rbac.yaml",
 		"test/e2e/testing-manifests/storage-csi/external-provisioner/rbac.yaml",
+		"test/e2e/testing-manifests/storage-csi/external-resizer/rbac.yaml",
 		"test/e2e/testing-manifests/storage-csi/mock/csi-mock-rbac.yaml",
 		"test/e2e/testing-manifests/storage-csi/mock/csi-storageclass.yaml",
 		"test/e2e/testing-manifests/storage-csi/mock/csi-mock-driver.yaml",
 	}
 
-	if registerDriver {
+	if driverOpts.RegisterDriver {
 		driverManifests = append(driverManifests, "test/e2e/testing-manifests/storage-csi/mock/csi-mock-cluster-driver-registrar.yaml")
 	}
 
-	if driverAttachable {
+	if !driverOpts.DisableAttach {
 		driverManifests = append(driverManifests, "test/e2e/testing-manifests/storage-csi/mock/csi-mock-driver-attacher.yaml")
+	}
+
+	if driverOpts.EnableResizing {
+		driverManifests = append(driverManifests, "test/e2e/testing-manifests/storage-csi/mock/csi-mock-driver-resizer.yaml")
 	}
 
 	return &mockCSIDriver{
@@ -213,10 +230,11 @@ func InitMockCSIDriver(registerDriver, driverAttachable bool, podInfo *bool, att
 				testsuites.CapExec:        false,
 			},
 		},
-		manifests:   driverManifests,
-		podInfo:     podInfo,
-		attachable:  driverAttachable,
-		attachLimit: attachLimit,
+		manifests:           driverManifests,
+		podInfo:             driverOpts.PodInfo,
+		attachable:          !driverOpts.DisableAttach,
+		attachLimit:         driverOpts.AttachLimit,
+		enableNodeExpansion: driverOpts.EnableNodeExpansion,
 	}
 }
 
@@ -241,7 +259,7 @@ func (m *mockCSIDriver) GetClaimSize() string {
 }
 
 func (m *mockCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTestConfig, func()) {
-	By("deploying csi mock driver")
+	ginkgo.By("deploying csi mock driver")
 	cancelLogging := testsuites.StartPodLogs(f)
 	cs := f.ClientSet
 
@@ -264,8 +282,10 @@ func (m *mockCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTest
 		containerArgs = append(containerArgs, "--attach-limit", strconv.Itoa(m.attachLimit))
 	}
 
-	// TODO (?): the storage.csi.image.version and storage.csi.image.registry
-	// settings are ignored for this test. We could patch the image definitions.
+	if m.enableNodeExpansion {
+		containerArgs = append(containerArgs, "--node-expand-required=true")
+	}
+
 	o := utils.PatchCSIOptions{
 		OldDriverName:                 "csi-mock",
 		NewDriverName:                 "csi-mock-" + f.UniqueName,
@@ -281,11 +301,11 @@ func (m *mockCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTest
 	},
 		m.manifests...)
 	if err != nil {
-		framework.Failf("deploying csi mock driver: %v", err)
+		e2elog.Failf("deploying csi mock driver: %v", err)
 	}
 
 	return config, func() {
-		By("uninstalling csi mock driver")
+		ginkgo.By("uninstalling csi mock driver")
 		cleanup()
 		cancelLogging()
 	}
@@ -327,6 +347,7 @@ func InitGcePDCSIDriver() testsuites.TestDriver {
 				"ext4",
 				"xfs",
 			),
+			SupportedMountOption: sets.NewString("debug", "nouid32"),
 			Capabilities: map[testsuites.Capability]bool{
 				testsuites.CapPersistence: true,
 				testsuites.CapFsGroup:     true,
@@ -346,6 +367,9 @@ func (g *gcePDCSIDriver) SkipUnsupportedTest(pattern testpatterns.TestPattern) {
 	if pattern.FsType == "xfs" {
 		framework.SkipUnlessNodeOSDistroIs("ubuntu", "custom")
 	}
+	if pattern.FeatureTag == "[sig-windows]" {
+		framework.Skipf("Skipping tests for windows since CSI does not support it yet")
+	}
 }
 
 func (g *gcePDCSIDriver) GetDynamicProvisionStorageClass(config *testsuites.PerTestConfig, fsType string) *storagev1.StorageClass {
@@ -357,8 +381,9 @@ func (g *gcePDCSIDriver) GetDynamicProvisionStorageClass(config *testsuites.PerT
 	if fsType != "" {
 		parameters["csi.storage.k8s.io/fstype"] = fsType
 	}
+	delayedBinding := storagev1.VolumeBindingWaitForFirstConsumer
 
-	return testsuites.GetStorageClass(provisioner, parameters, nil, ns, suffix)
+	return testsuites.GetStorageClass(provisioner, parameters, &delayedBinding, ns, suffix)
 }
 
 func (g *gcePDCSIDriver) GetClaimSize() string {
@@ -366,7 +391,7 @@ func (g *gcePDCSIDriver) GetClaimSize() string {
 }
 
 func (g *gcePDCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTestConfig, func()) {
-	By("deploying csi gce-pd driver")
+	ginkgo.By("deploying csi gce-pd driver")
 	cancelLogging := testsuites.StartPodLogs(f)
 	// It would be safer to rename the gcePD driver, but that
 	// hasn't been done before either and attempts to do so now led to
@@ -393,7 +418,7 @@ func (g *gcePDCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTes
 
 	cleanup, err := f.CreateFromManifests(nil, manifests...)
 	if err != nil {
-		framework.Failf("deploying csi gce-pd driver: %v", err)
+		e2elog.Failf("deploying csi gce-pd driver: %v", err)
 	}
 
 	return &testsuites.PerTestConfig{
@@ -401,79 +426,8 @@ func (g *gcePDCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTes
 			Prefix:    "gcepd",
 			Framework: f,
 		}, func() {
-			By("uninstalling gce-pd driver")
+			ginkgo.By("uninstalling gce-pd driver")
 			cleanup()
 			cancelLogging()
 		}
-}
-
-// gcePd-external
-type gcePDExternalCSIDriver struct {
-	driverInfo testsuites.DriverInfo
-}
-
-var _ testsuites.TestDriver = &gcePDExternalCSIDriver{}
-var _ testsuites.DynamicPVTestDriver = &gcePDExternalCSIDriver{}
-
-// InitGcePDExternalCSIDriver returns gcePDExternalCSIDriver that implements TestDriver interface
-func InitGcePDExternalCSIDriver() testsuites.TestDriver {
-	return &gcePDExternalCSIDriver{
-		driverInfo: testsuites.DriverInfo{
-			Name: GCEPDCSIProvisionerName,
-			// TODO(#70258): this is temporary until we can figure out how to make e2e tests a library
-			FeatureTag:  "[Feature: gcePD-external]",
-			MaxFileSize: testpatterns.FileSizeMedium,
-			SupportedFsType: sets.NewString(
-				"", // Default fsType
-				"ext2",
-				"ext3",
-				"ext4",
-				"xfs",
-			),
-			Capabilities: map[testsuites.Capability]bool{
-				testsuites.CapPersistence: true,
-				testsuites.CapFsGroup:     true,
-				testsuites.CapExec:        true,
-				testsuites.CapMultiPODs:   true,
-			},
-		},
-	}
-}
-
-func (g *gcePDExternalCSIDriver) GetDriverInfo() *testsuites.DriverInfo {
-	return &g.driverInfo
-}
-
-func (g *gcePDExternalCSIDriver) SkipUnsupportedTest(pattern testpatterns.TestPattern) {
-	framework.SkipUnlessProviderIs("gce", "gke")
-	if pattern.FsType == "xfs" {
-		framework.SkipUnlessNodeOSDistroIs("ubuntu", "custom")
-	}
-}
-
-func (g *gcePDExternalCSIDriver) GetDynamicProvisionStorageClass(config *testsuites.PerTestConfig, fsType string) *storagev1.StorageClass {
-	ns := config.Framework.Namespace.Name
-	provisioner := g.driverInfo.Name
-	suffix := fmt.Sprintf("%s-sc", g.driverInfo.Name)
-
-	parameters := map[string]string{"type": "pd-standard"}
-	if fsType != "" {
-		parameters["csi.storage.k8s.io/fstype"] = fsType
-	}
-
-	return testsuites.GetStorageClass(provisioner, parameters, nil, ns, suffix)
-}
-
-func (g *gcePDExternalCSIDriver) GetClaimSize() string {
-	return "5Gi"
-}
-
-func (g *gcePDExternalCSIDriver) PrepareTest(f *framework.Framework) (*testsuites.PerTestConfig, func()) {
-	framework.SkipIfMultizone(f.ClientSet)
-
-	return &testsuites.PerTestConfig{
-		Driver:    g,
-		Prefix:    "gcepdext",
-		Framework: f,
-	}, func() {}
 }

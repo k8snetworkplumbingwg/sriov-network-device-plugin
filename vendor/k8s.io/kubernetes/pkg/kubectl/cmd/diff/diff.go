@@ -32,17 +32,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
-	"k8s.io/kubernetes/pkg/kubectl"
+	"k8s.io/kubectl/pkg/scheme"
+	"k8s.io/kubectl/pkg/util"
+	"k8s.io/kubectl/pkg/util/templates"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/apply"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/openapi"
-	"k8s.io/kubernetes/pkg/kubectl/scheme"
 	"k8s.io/kubernetes/pkg/kubectl/util/i18n"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 	"k8s.io/utils/exec"
 	"sigs.k8s.io/yaml"
 )
@@ -308,7 +308,7 @@ func (obj InfoObject) Merged() (runtime.Object, error) {
 		resourceVersion = &str
 	}
 
-	modified, err := kubectl.GetModifiedConfiguration(obj.LocalObj, false, unstructured.UnstructuredJSONScheme)
+	modified, err := util.GetModifiedConfiguration(obj.LocalObj, false, unstructured.UnstructuredJSONScheme)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (o *DiffOptions) Complete(f cmdutil.Factory, cmd *cobra.Command) error {
 	o.ServerSideApply = cmdutil.GetServerSideApplyFlag(cmd)
 	o.ForceConflicts = cmdutil.GetForceConflictsFlag(cmd)
 	if o.ForceConflicts && !o.ServerSideApply {
-		return fmt.Errorf("--force-conflicts only works with --server-side")
+		return fmt.Errorf("--experimental-force-conflicts only works with --experimental-server-side")
 	}
 
 	if !o.ServerSideApply {

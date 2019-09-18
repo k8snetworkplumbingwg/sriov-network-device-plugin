@@ -32,6 +32,7 @@ import (
 	"k8s.io/api/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	utilpod "k8s.io/kubernetes/pkg/api/v1/pod"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
@@ -134,9 +135,12 @@ func MarkAllPodsNotReady(kubeClient clientset.Interface, node *v1.Node) error {
 			continue
 		}
 
-		for i, cond := range pod.Status.Conditions {
+		for _, cond := range pod.Status.Conditions {
 			if cond.Type == v1.PodReady {
-				pod.Status.Conditions[i].Status = v1.ConditionFalse
+				cond.Status = v1.ConditionFalse
+				if !utilpod.UpdatePodCondition(&pod.Status, &cond) {
+					break
+				}
 				klog.V(2).Infof("Updating ready status of pod %v to false", pod.Name)
 				_, err := kubeClient.CoreV1().Pods(pod.Namespace).UpdateStatus(&pod)
 				if err != nil {
@@ -211,6 +215,23 @@ func SwapNodeControllerTaint(kubeClient clientset.Interface, taintsToAdd, taints
 	}
 	klog.V(4).Infof("Made sure that Node %+v has no %v Taint", node.Name, taintsToRemove)
 
+	return true
+}
+
+// AddOrUpdateLabelsOnNode updates the labels on the node and returns true on
+// success and false on failure.
+func AddOrUpdateLabelsOnNode(kubeClient clientset.Interface, labelsToUpdate map[string]string, node *v1.Node) bool {
+	err := controller.AddOrUpdateLabelsOnNode(kubeClient, node.Name, labelsToUpdate)
+	if err != nil {
+		utilruntime.HandleError(
+			fmt.Errorf(
+				"unable to update labels %+v for Node %q: %v",
+				labelsToUpdate,
+				node.Name,
+				err))
+		return false
+	}
+	klog.V(4).Infof("Updated labels %+v to Node %v", labelsToUpdate, node.Name)
 	return true
 }
 
