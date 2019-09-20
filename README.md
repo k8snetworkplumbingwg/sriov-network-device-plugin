@@ -211,7 +211,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 |     Field      | Required |        Description        |                      Type - Accepted values                       |                                      Example/Accepted values                                       |
 |----------------|----------|---------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
 | "resourceName" | Yes      | Endpoint resource name    | string - must be unique and should not contain special characters | "sriov_net_A"                                                                                      |
-| "selectors"    | No       | A map of device selectors | Each selector is a map of string list.                            | "vendors": ["8086"], "devices": ["154c", "10ed"], "drivers": ["vfio-pci"], "pfNames": ["enp2s2f0"], "linkTypes": ["ether"] |
+| "selectors"    | No       | A map of device selectors | Each selector is a map of string list.                            | "vendors": ["8086"],"devices": ["154c", "10ed"],"drivers": ["vfio-pci"],"pfNames": ["enp2s2f0"],"linkTypes": ["ether"] |
 | "isRdma"       | No       | Mount RDMA resources      | `bool` - boolean value true or false                              | "isRdma": true                                                                                     |
 
 
@@ -262,6 +262,26 @@ The device plugin will initially discover all PCI network resources in the host 
 3. "drivers" - The driver name the device is registered with
 4. "pfNames" - The Physical funtion name
 5. "linkTypes" - The link type of the net device associated with the PCI device.
+
+The "pfName" selector can be used to specify a range of VFs for a pool in the next format:
+````
+"<PFName>#<FirstVF>-<LastVF>"
+````
+
+Where:
+
+    `<PFName>`  - is the PF interface name
+    `<FirstVF>` - is the first VF index (0-based) that included into the range
+    `<LastVF>`  - is the last VF index (0-based) that included into the range
+
+Example:
+
+The selector for interface named `netpf0` and VF range from 2 upto 7 (included 2 and 7) will look like:
+````
+"pfName": ["netpf0#2-7"]
+````
+If only PF network interface specified in the selector, then assuming that all VFs of this interface are going to the pool.
+
 
 ### Workflow
 
