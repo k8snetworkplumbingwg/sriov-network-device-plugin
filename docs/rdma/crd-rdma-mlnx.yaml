@@ -1,0 +1,11 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-rdma-mlnx
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: mellanox.com/mlnx_rdma
+spec:
+  config: '{
+    "type": "sriov",
+    "name": "sriov-rdma"
+}'
