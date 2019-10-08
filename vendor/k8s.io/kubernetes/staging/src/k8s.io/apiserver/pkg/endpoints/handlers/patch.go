@@ -59,7 +59,7 @@ const (
 func PatchResource(r rest.Patcher, scope *RequestScope, admit admission.Interface, patchTypes []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// For performance tracking purposes.
-		trace := utiltrace.New("Patch " + req.URL.Path)
+		trace := utiltrace.New("Patch", utiltrace.Field{"url", req.URL.Path})
 		defer trace.LogIfLong(500 * time.Millisecond)
 
 		if isDryRun(req.URL) && !utilfeature.DefaultFeatureGate.Enabled(features.DryRun) {
@@ -93,7 +93,8 @@ func PatchResource(r rest.Patcher, scope *RequestScope, admit admission.Interfac
 			return
 		}
 
-		ctx := req.Context()
+		ctx, cancel := context.WithTimeout(req.Context(), timeout)
+		defer cancel()
 		ctx = request.WithNamespace(ctx, namespace)
 
 		outputMediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, scope)
@@ -224,12 +225,7 @@ func PatchResource(r rest.Patcher, scope *RequestScope, admit admission.Interfac
 		}
 		trace.Step("Object stored in database")
 
-		requestInfo, ok := request.RequestInfoFrom(ctx)
-		if !ok {
-			scope.err(fmt.Errorf("missing requestInfo"), w, req)
-			return
-		}
-		if err := setSelfLink(result, requestInfo, scope.Namer); err != nil {
+		if err := setObjectSelfLink(ctx, result, req, scope.Namer); err != nil {
 			scope.err(err, w, req)
 			return
 		}
@@ -243,7 +239,7 @@ func PatchResource(r rest.Patcher, scope *RequestScope, admit admission.Interfac
 	}
 }
 
-type mutateObjectUpdateFunc func(obj, old runtime.Object) error
+type mutateObjectUpdateFunc func(ctx context.Context, obj, old runtime.Object) error
 
 // patcher breaks the process of patch application and retries into smaller
 // pieces of functionality.
@@ -425,7 +421,7 @@ func (p *applyPatcher) applyPatchToCurrentObject(obj runtime.Object) (runtime.Ob
 func (p *applyPatcher) createNewObject() (runtime.Object, error) {
 	obj, err := p.creater.New(p.kind)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create new object: %v", obj)
+		return nil, fmt.Errorf("failed to create new object: %v", err)
 	}
 	return p.applyPatchToCurrentObject(obj)
 }
@@ -519,7 +515,7 @@ func (p *patcher) applyAdmission(ctx context.Context, patchedObject runtime.Obje
 	}
 	if p.admissionCheck != nil && p.admissionCheck.Handles(operation) {
 		attributes := p.admissionAttributes(ctx, patchedObject, currentObject, operation, options)
-		return patchedObject, p.admissionCheck.Admit(attributes, p.objectInterfaces)
+		return patchedObject, p.admissionCheck.Admit(ctx, attributes, p.objectInterfaces)
 	}
 	return patchedObject, nil
 }

@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	cacheOnlyTrue = true
+	ERR_NO_DB = fmt.Errorf("No pci-ids DB files found (and network fetch disabled)")
+	trueVar   = true
 )
 
 // ProgrammingInterface is the PCI programming interface for a class of PCI
@@ -87,6 +88,11 @@ type WithOption struct {
 	// looking for any non ~/.cache/pci.ids filepaths (which is useful when we
 	// want to test the fetch-from-network code paths
 	CacheOnly *bool
+	// Disables the default behaviour of fetching a pci-ids from a known
+	// location on the network if no local pci-ids DB files can be found.
+	// Useful for secure environments or environments with no network
+	// connectivity.
+	DisableNetworkFetch *bool
 }
 
 func WithChroot(dir string) *WithOption {
@@ -94,7 +100,11 @@ func WithChroot(dir string) *WithOption {
 }
 
 func WithCacheOnly() *WithOption {
-	return &WithOption{CacheOnly: &cacheOnlyTrue}
+	return &WithOption{CacheOnly: &trueVar}
+}
+
+func WithDisableNetworkFetch() *WithOption {
+	return &WithOption{DisableNetworkFetch: &trueVar}
 }
 
 func mergeOptions(opts ...*WithOption) *WithOption {
@@ -116,6 +126,20 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 			defaultCacheOnly = parsed
 		}
 	}
+	defaultDisableNetworkFetch := false
+	if val, exists := os.LookupEnv("PCIDB_DISABLE_NETWORK_FETCH"); exists {
+		if parsed, err := strconv.ParseBool(val); err != nil {
+			fmt.Fprintf(
+				os.Stderr,
+				"Failed parsing a bool from PCIDB_DISABLE_NETWORK_FETCH "+
+					"environ value of %s",
+				val,
+			)
+		} else if parsed {
+			defaultDisableNetworkFetch = parsed
+		}
+	}
+
 	merged := &WithOption{}
 	for _, opt := range opts {
 		if opt.Chroot != nil {
@@ -124,6 +148,9 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 		if opt.CacheOnly != nil {
 			merged.CacheOnly = opt.CacheOnly
 		}
+		if opt.DisableNetworkFetch != nil {
+			merged.DisableNetworkFetch = opt.DisableNetworkFetch
+		}
 	}
 	// Set the default value if missing from merged
 	if merged.Chroot == nil {
@@ -131,6 +158,9 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 	}
 	if merged.CacheOnly == nil {
 		merged.CacheOnly = &defaultCacheOnly
+	}
+	if merged.DisableNetworkFetch == nil {
+		merged.DisableNetworkFetch = &defaultDisableNetworkFetch
 	}
 	return merged
 }
@@ -144,6 +174,8 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 func New(opts ...*WithOption) (*PCIDB, error) {
 	ctx := contextFromOptions(mergeOptions(opts...))
 	db := &PCIDB{}
-	err := db.load(ctx)
-	return db, err
+	if err := db.load(ctx); err != nil {
+		return nil, err
+	}
+	return db, nil
 }

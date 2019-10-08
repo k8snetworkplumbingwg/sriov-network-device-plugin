@@ -204,7 +204,7 @@ const (
 
 func initImageConfigs() map[int]Config {
 	configs := map[int]Config{}
-	configs[Agnhost] = Config{e2eRegistry, "agnhost", "2.4"}
+	configs[Agnhost] = Config{e2eRegistry, "agnhost", "2.6"}
 	configs[Alpine] = Config{dockerLibraryRegistry, "alpine", "3.7"}
 	configs[AuthenticatedAlpine] = Config{gcAuthenticatedRegistry, "alpine", "3.7"}
 	configs[AuthenticatedWindowsNanoServer] = Config{gcAuthenticatedRegistry, "windows-nanoserver", "v1"}
@@ -217,7 +217,7 @@ func initImageConfigs() map[int]Config {
 	configs[Dnsutils] = Config{e2eRegistry, "dnsutils", "1.1"}
 	configs[DebianBase] = Config{googleContainerRegistry, "debian-base", "0.4.1"}
 	configs[EchoServer] = Config{e2eRegistry, "echoserver", "2.2"}
-	configs[Etcd] = Config{gcRegistry, "etcd", "3.3.10"}
+	configs[Etcd] = Config{gcRegistry, "etcd", "3.3.15"}
 	configs[GBFrontend] = Config{sampleRegistry, "gb-frontend", "v6"}
 	configs[Httpd] = Config{dockerLibraryRegistry, "httpd", "2.4.38-alpine"}
 	configs[HttpdNew] = Config{dockerLibraryRegistry, "httpd", "2.4.39-alpine"}
@@ -236,8 +236,8 @@ func initImageConfigs() map[int]Config {
 	// Pause - when these values are updated, also update cmd/kubelet/app/options/container_runtime.go
 	configs[Pause] = Config{gcRegistry, "pause", "3.1"}
 	configs[Perl] = Config{dockerLibraryRegistry, "perl", "5.26"}
-	configs[PrometheusDummyExporter] = Config{e2eRegistry, "prometheus-dummy-exporter", "v0.1.0"}
-	configs[PrometheusToSd] = Config{e2eRegistry, "prometheus-to-sd", "v0.5.0"}
+	configs[PrometheusDummyExporter] = Config{gcRegistry, "prometheus-dummy-exporter", "v0.1.0"}
+	configs[PrometheusToSd] = Config{gcRegistry, "prometheus-to-sd", "v0.5.0"}
 	configs[Redis] = Config{dockerLibraryRegistry, "redis", "5.0.5-alpine"}
 	configs[ResourceConsumer] = Config{e2eRegistry, "resource-consumer", "1.5"}
 	configs[ResourceController] = Config{e2eRegistry, "resource-consumer-controller", "1.0"}

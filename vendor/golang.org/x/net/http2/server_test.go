@@ -1160,6 +1160,32 @@ func TestServer_Ping(t *testing.T) {
 	}
 }
 
+func TestServer_MaxQueuedControlFrames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in short mode")
+	}
+
+	st := newServerTester(t, nil)
+	defer st.Close()
+	st.greet()
+
+	const extraPings = 500000 // enough to fill the TCP buffers
+
+	for i := 0; i < maxQueuedControlFrames+extraPings; i++ {
+		pingData := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+		if err := st.fr.WritePing(false, pingData); err != nil {
+			if i == 0 {
+				t.Fatal(err)
+			}
+			// We expect the connection to get closed by the server when the TCP
+			// buffer fills up and the write queue reaches MaxQueuedControlFrames.
+			t.Logf("sent %d PING frames", i)
+			return
+		}
+	}
+	t.Errorf("unexpected success sending all PING frames")
+}
+
 func TestServer_RejectsLargeFrames(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("see golang.org/issue/13434")
@@ -2708,6 +2734,26 @@ func TestServerDoS_MaxHeaderListSize(t *testing.T) {
 	}
 }
 
+func TestServer_Response_Stream_With_Missing_Trailer(t *testing.T) {
+	testServerResponse(t, func(w http.ResponseWriter, r *http.Request) error {
+		w.Header().Set("Trailer", "test-trailer")
+		return nil
+	}, func(st *serverTester) {
+		getSlash(st)
+		hf := st.wantHeaders()
+		if !hf.HeadersEnded() {
+			t.Fatal("want END_HEADERS flag")
+		}
+		df := st.wantData()
+		if len(df.data) != 0 {
+			t.Fatal("did not want data")
+		}
+		if !df.StreamEnded() {
+			t.Fatal("want END_STREAM flag")
+		}
+	})
+}
+
 func TestCompressionErrorOnWrite(t *testing.T) {
 	const maxStrLen = 8 << 10
 	var serverConfig *http.Server
@@ -3173,6 +3219,26 @@ func (c *issue53Conn) RemoteAddr() net.Addr {
 func (c *issue53Conn) SetDeadline(t time.Time) error      { return nil }
 func (c *issue53Conn) SetReadDeadline(t time.Time) error  { return nil }
 func (c *issue53Conn) SetWriteDeadline(t time.Time) error { return nil }
+
+// golang.org/issue/33839
+func TestServeConnOptsNilReceiverBehavior(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("got a panic that should not happen: %v", r)
+		}
+	}()
+
+	var o *ServeConnOpts
+	if o.context() == nil {
+		t.Error("o.context should not return nil")
+	}
+	if o.baseConfig() == nil {
+		t.Error("o.baseConfig should not return nil")
+	}
+	if o.handler() == nil {
+		t.Error("o.handler should not return nil")
+	}
+}
 
 // golang.org/issue/12895
 func TestConfigureServer(t *testing.T) {

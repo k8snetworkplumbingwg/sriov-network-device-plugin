@@ -28,6 +28,9 @@ func (db *PCIDB) load(ctx *context) error {
 		}
 	}
 	if foundPath == "" {
+		if ctx.disableNetworkFetch {
+			return ERR_NO_DB
+		}
 		// OK, so we didn't find any host-local copy of the pci-ids DB file. Let's
 		// try fetching it from the network and storing it
 		if err := cacheDBFile(ctx.cachePath); err != nil {

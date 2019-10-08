@@ -41,7 +41,7 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(out.GetRdmaSpec().IsRdma()).To(BeFalse())
 				Expect(out.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
 				Expect(out.GetLinkType()).To(Equal("fakeLinkType"))
-				Expect(out.GetAPIDevice().Topology.Node.ID).To(Equal(int64(0)))
+				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(out.numa).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})

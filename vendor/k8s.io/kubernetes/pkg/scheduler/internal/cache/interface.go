@@ -17,7 +17,7 @@ limitations under the License.
 package cache
 
 import (
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
@@ -101,7 +101,7 @@ type Cache interface {
 	// UpdateNodeInfoSnapshot updates the passed infoSnapshot to the current contents of Cache.
 	// The node info contains aggregated information of pods scheduled (including assumed to be)
 	// on this node.
-	UpdateNodeInfoSnapshot(nodeSnapshot *NodeInfoSnapshot) error
+	UpdateNodeInfoSnapshot(nodeSnapshot *schedulernodeinfo.Snapshot) error
 
 	// AddCSINode adds overall CSI-related information about node.
 	AddCSINode(csiNode *storagev1beta1.CSINode) error
@@ -115,6 +115,9 @@ type Cache interface {
 	// GetNodeInfo returns the node object with node string.
 	GetNodeInfo(nodeName string) (*v1.Node, error)
 
+	// GetCSINodeInfo returns the csinode object with the given name.
+	GetCSINodeInfo(nodeName string) (*storagev1beta1.CSINode, error)
+
 	// Snapshot takes a snapshot on current cache
 	Snapshot() *Snapshot
 
@@ -126,12 +129,4 @@ type Cache interface {
 type Snapshot struct {
 	AssumedPods map[string]bool
 	Nodes       map[string]*schedulernodeinfo.NodeInfo
-}
-
-// NodeInfoSnapshot is a snapshot of cache NodeInfo. The scheduler takes a
-// snapshot at the beginning of each scheduling cycle and uses it for its
-// operations in that cycle.
-type NodeInfoSnapshot struct {
-	NodeInfoMap map[string]*schedulernodeinfo.NodeInfo
-	Generation  int64
 }

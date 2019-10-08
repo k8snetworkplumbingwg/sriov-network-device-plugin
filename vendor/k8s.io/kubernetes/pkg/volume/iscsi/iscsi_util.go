@@ -60,6 +60,11 @@ const (
 	// 'iscsiadm' error code stating that a session is logged in
 	// See https://github.com/open-iscsi/open-iscsi/blob/7d121d12ad6ba7783308c25ffd338a9fa0cc402b/include/iscsi_err.h#L37-L38
 	iscsiadmErrorSessExists = 15
+
+	// iscsiadm exit code for "session could not be found"
+	exit_ISCSI_ERR_SESS_NOT_FOUND = 2
+	// iscsiadm exit code for "no records/targets/sessions/portals found to execute operation on."
+	exit_ISCSI_ERR_NO_OBJS_FOUND = 21
 )
 
 var (
@@ -91,7 +96,7 @@ func updateISCSIDiscoverydb(b iscsiDiskMounter, tp string) error {
 		if len(v) > 0 {
 			out, err := b.exec.Run("iscsiadm", "-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "-o", "update", "-n", k, "-v", v)
 			if err != nil {
-				return fmt.Errorf("iscsi: failed to update discoverydb key %q with value %q error: %v", k, v, string(out))
+				return fmt.Errorf("iscsi: failed to update discoverydb key %q error: %v", k, string(out))
 			}
 		}
 	}
@@ -113,7 +118,7 @@ func updateISCSINode(b iscsiDiskMounter, tp string) error {
 		if len(v) > 0 {
 			out, err := b.exec.Run("iscsiadm", "-m", "node", "-p", tp, "-T", b.Iqn, "-I", b.Iface, "-o", "update", "-n", k, "-v", v)
 			if err != nil {
-				return fmt.Errorf("iscsi: failed to update node session key %q with value %q error: %v", k, v, string(out))
+				return fmt.Errorf("iscsi: failed to update node session key %q error: %v", k, string(out))
 			}
 		}
 	}
@@ -723,14 +728,18 @@ func (util *ISCSIUtil) detachISCSIDisk(exec mount.Exec, portals []string, iqn, i
 		}
 		klog.Infof("iscsi: log out target %s iqn %s iface %s", portal, iqn, iface)
 		out, err := exec.Run("iscsiadm", logoutArgs...)
+		err = ignoreExitCodes(err, exit_ISCSI_ERR_NO_OBJS_FOUND, exit_ISCSI_ERR_SESS_NOT_FOUND)
 		if err != nil {
 			klog.Errorf("iscsi: failed to detach disk Error: %s", string(out))
+			return err
 		}
 		// Delete the node record
 		klog.Infof("iscsi: delete node record target %s iqn %s", portal, iqn)
 		out, err = exec.Run("iscsiadm", deleteArgs...)
+		err = ignoreExitCodes(err, exit_ISCSI_ERR_NO_OBJS_FOUND, exit_ISCSI_ERR_SESS_NOT_FOUND)
 		if err != nil {
 			klog.Errorf("iscsi: failed to delete node record Error: %s", string(out))
+			return err
 		}
 	}
 	// Delete the iface after all sessions have logged out
@@ -738,8 +747,10 @@ func (util *ISCSIUtil) detachISCSIDisk(exec mount.Exec, portals []string, iqn, i
 	if initiatorName != "" && found && iface == (portals[0]+":"+volName) {
 		deleteArgs := []string{"-m", "iface", "-I", iface, "-o", "delete"}
 		out, err := exec.Run("iscsiadm", deleteArgs...)
+		err = ignoreExitCodes(err, exit_ISCSI_ERR_NO_OBJS_FOUND, exit_ISCSI_ERR_SESS_NOT_FOUND)
 		if err != nil {
 			klog.Errorf("iscsi: failed to delete iface Error: %s", string(out))
+			return err
 		}
 	}
 
@@ -932,4 +943,18 @@ func getVolCount(dir, portal, iqn string) (int, error) {
 	}
 
 	return counter, nil
+}
+
+func ignoreExitCodes(err error, ignoredExitCodes ...int) error {
+	exitError, ok := err.(utilexec.ExitError)
+	if !ok {
+		return err
+	}
+	for _, code := range ignoredExitCodes {
+		if exitError.ExitStatus() == code {
+			klog.V(4).Infof("ignored iscsiadm exit code %d", code)
+			return nil
+		}
+	}
+	return err
 }

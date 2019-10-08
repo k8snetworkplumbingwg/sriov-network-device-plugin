@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestXfrmStateAddGetDel(t *testing.T) {
@@ -62,7 +63,7 @@ func testXfrmStateAddGetDel(t *testing.T, state *XfrmState) {
 }
 
 func TestXfrmStateAllocSpi(t *testing.T) {
-	setUpNetlinkTest(t)()
+	defer setUpNetlinkTest(t)()
 
 	state := getBaseState()
 	state.Spi = 0
@@ -82,7 +83,7 @@ func TestXfrmStateAllocSpi(t *testing.T) {
 }
 
 func TestXfrmStateFlush(t *testing.T) {
-	setUpNetlinkTest(t)()
+	defer setUpNetlinkTest(t)()
 
 	state1 := getBaseState()
 	state2 := getBaseState()
@@ -133,7 +134,7 @@ func TestXfrmStateFlush(t *testing.T) {
 }
 
 func TestXfrmStateUpdateLimits(t *testing.T) {
-	setUpNetlinkTest(t)()
+	defer setUpNetlinkTest(t)()
 
 	// Program state with limits
 	state := getBaseState()
@@ -177,6 +178,68 @@ func TestXfrmStateUpdateLimits(t *testing.T) {
 	}
 	if s.Limits.TimeHard != 1800 || s.Limits.TimeSoft != 30 {
 		t.Fatalf("Incorrect time hard retrieved: (%d, %d)", s.Limits.TimeHard, s.Limits.TimeSoft)
+	}
+}
+
+func TestXfrmStateStats(t *testing.T) {
+	defer setUpNetlinkTest(t)()
+
+	// Program state and record time
+	state := getBaseState()
+	now := time.Now()
+	if err := XfrmStateAdd(state); err != nil {
+		t.Fatal(err)
+	}
+	// Retrieve state
+	s, err := XfrmStateGet(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify stats: We expect zero counters, same second add time and unset use time
+	if s.Statistics.Bytes != 0 || s.Statistics.Packets != 0 || s.Statistics.AddTime != uint64(now.Unix()) || s.Statistics.UseTime != 0 {
+		t.Fatalf("Unexpected statistics (addTime: %s) for state:\n%s", now.Format(time.UnixDate), s.Print(true))
+	}
+}
+
+func TestXfrmStateWithIfid(t *testing.T) {
+	minKernelRequired(t, 4, 19)
+	defer setUpNetlinkTest(t)()
+
+	state := getBaseState()
+	state.Ifid = 54321
+	if err := XfrmStateAdd(state); err != nil {
+		t.Fatal(err)
+	}
+	s, err := XfrmStateGet(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !compareStates(state, s) {
+		t.Fatalf("unexpected state returned.\nExpected: %v.\nGot %v", state, s)
+	}
+	if err = XfrmStateDel(s); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestXfrmStateWithOutputMark(t *testing.T) {
+	minKernelRequired(t, 4, 14)
+	defer setUpNetlinkTest(t)()
+
+	state := getBaseState()
+	state.OutputMark = 10
+	if err := XfrmStateAdd(state); err != nil {
+		t.Fatal(err)
+	}
+	s, err := XfrmStateGet(state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !compareStates(state, s) {
+		t.Fatalf("unexpected state returned.\nExpected: %v.\nGot %v", state, s)
+	}
+	if err = XfrmStateDel(s); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -230,6 +293,8 @@ func compareStates(a, b *XfrmState) bool {
 	}
 	return a.Src.Equal(b.Src) && a.Dst.Equal(b.Dst) &&
 		a.Mode == b.Mode && a.Spi == b.Spi && a.Proto == b.Proto &&
+		a.Ifid == b.Ifid &&
+		a.OutputMark == b.OutputMark &&
 		compareAlgo(a.Auth, b.Auth) &&
 		compareAlgo(a.Crypt, b.Crypt) &&
 		compareAlgo(a.Aead, b.Aead) &&

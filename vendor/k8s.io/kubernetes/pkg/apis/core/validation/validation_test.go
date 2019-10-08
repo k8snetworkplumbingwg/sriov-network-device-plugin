@@ -3659,16 +3659,12 @@ func TestValidateVolumes(t *testing.T) {
 				Name: "quobyte",
 				VolumeSource: core.VolumeSource{
 					Quobyte: &core.QuobyteVolumeSource{
-						Registry: "registry:7861,reg2",
+						Registry: "registry:7861",
 						Volume:   "/test",
 						Tenant:   "",
 					},
 				},
 			},
-			errs: []verr{{
-				etype: field.ErrorTypeRequired,
-				field: "quobyte.tenant",
-			}},
 		},
 		{
 			name: "too long tenant quobyte",
@@ -3676,7 +3672,7 @@ func TestValidateVolumes(t *testing.T) {
 				Name: "quobyte",
 				VolumeSource: core.VolumeSource{
 					Quobyte: &core.QuobyteVolumeSource{
-						Registry: "registry:7861,reg2",
+						Registry: "registry:7861",
 						Volume:   "/test",
 						Tenant:   "this is too long to be a valid uuid so this test has to fail on the maximum length validation of the tenant.",
 					},
@@ -5528,8 +5524,6 @@ func getResourceLimits(cpu, memory string) core.ResourceList {
 }
 
 func TestValidateEphemeralContainers(t *testing.T) {
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.EphemeralContainers, true)()
-
 	containers := []core.Container{{Name: "ctr", Image: "image", ImagePullPolicy: "IfNotPresent", TerminationMessagePolicy: "File"}}
 	initContainers := []core.Container{{Name: "ictr", Image: "iimage", ImagePullPolicy: "IfNotPresent", TerminationMessagePolicy: "File"}}
 	vols := map[string]core.VolumeSource{"vol": {EmptyDir: &core.EmptyDirVolumeSource{}}}
@@ -6567,10 +6561,6 @@ func TestValidatePodSpec(t *testing.T) {
 	minGroupID := int64(0)
 	maxGroupID := int64(2147483647)
 
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.EphemeralContainers, true)()
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.RuntimeClass, true)()
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.PodOverhead, true)()
-
 	successCases := []core.PodSpec{
 		{ // Populate basic fields, leave defaults for most.
 			Volumes:       []core.Volume{{Name: "vol", VolumeSource: core.VolumeSource{EmptyDir: &core.EmptyDirVolumeSource{}}}},
@@ -6908,34 +6898,6 @@ func TestValidatePodSpec(t *testing.T) {
 	for k, v := range failureCases {
 		if errs := ValidatePodSpec(&v, field.NewPath("field")); len(errs) == 0 {
 			t.Errorf("expected failure for %q", k)
-		}
-	}
-
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.EphemeralContainers, false)()
-
-	featuregatedCases := map[string]core.PodSpec{
-		"disabled by EphemeralContainers feature-gate": {
-			Containers: []core.Container{{Name: "ctr", Image: "image", ImagePullPolicy: "IfNotPresent", TerminationMessagePolicy: "File"}},
-			EphemeralContainers: []core.EphemeralContainer{
-				{
-					EphemeralContainerCommon: core.EphemeralContainerCommon{
-						Name:                     "debug",
-						Image:                    "image",
-						ImagePullPolicy:          "IfNotPresent",
-						TerminationMessagePolicy: "File",
-					},
-				},
-			},
-			RestartPolicy: core.RestartPolicyAlways,
-			DNSPolicy:     core.DNSClusterFirst,
-		},
-	}
-	for expectedErr, spec := range featuregatedCases {
-		errs := ValidatePodSpec(&spec, field.NewPath("field"))
-		if len(errs) == 0 {
-			t.Errorf("expected failure due to gated feature: %s\n%+v", expectedErr, spec)
-		} else if actualErr := errs.ToAggregate().Error(); !strings.Contains(actualErr, expectedErr) {
-			t.Errorf("unexpected error message for gated feature. Expected error: %s\nActual error: %s", expectedErr, actualErr)
 		}
 	}
 }
@@ -9172,6 +9134,7 @@ func TestValidatePodStatusUpdate(t *testing.T) {
 }
 
 func makeValidService() core.Service {
+	serviceIPFamily := core.IPv4Protocol
 	return core.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "valid",
@@ -9185,13 +9148,12 @@ func makeValidService() core.Service {
 			SessionAffinity: "None",
 			Type:            core.ServiceTypeClusterIP,
 			Ports:           []core.ServicePort{{Name: "p", Protocol: "TCP", Port: 8675, TargetPort: intstr.FromInt(8675)}},
+			IPFamily:        &serviceIPFamily,
 		},
 	}
 }
 
 func TestValidatePodEphemeralContainersUpdate(t *testing.T) {
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.EphemeralContainers, true)()
-
 	tests := []struct {
 		new  []core.EphemeralContainer
 		old  []core.EphemeralContainer
@@ -10112,6 +10074,29 @@ func TestValidateService(t *testing.T) {
 			},
 			numErrs: 1,
 		},
+		{
+			name: "valid, nil service IPFamily",
+			tweakSvc: func(s *core.Service) {
+				s.Spec.IPFamily = nil
+			},
+			numErrs: 0,
+		},
+		{
+			name: "valid, service with valid IPFamily",
+			tweakSvc: func(s *core.Service) {
+				ipv4Service := core.IPv4Protocol
+				s.Spec.IPFamily = &ipv4Service
+			},
+			numErrs: 0,
+		},
+		{
+			name: "invalid, service with invalid IPFamily",
+			tweakSvc: func(s *core.Service) {
+				invalidServiceIPFamily := core.IPFamily("not-a-valid-ip-family")
+				s.Spec.IPFamily = &invalidServiceIPFamily
+			},
+			numErrs: 1,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -10559,8 +10544,6 @@ func TestValidateReplicationControllerUpdate(t *testing.T) {
 }
 
 func TestValidateReplicationController(t *testing.T) {
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.EphemeralContainers, true)()
-
 	validSelector := map[string]string{"a": "b"}
 	validPodTemplate := core.PodTemplate{
 		Template: core.PodTemplateSpec{
@@ -11961,6 +11944,80 @@ func TestValidateServiceUpdate(t *testing.T) {
 
 				oldSvc.Spec.ClusterIP = ""
 				newSvc.Spec.ClusterIP = "None"
+			},
+			numErrs: 1,
+		},
+		/* Service IP Family */
+		{
+			name: "same ServiceIPFamily",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				ipv4Service := core.IPv4Protocol
+				oldSvc.Spec.Type = core.ServiceTypeClusterIP
+				oldSvc.Spec.IPFamily = &ipv4Service
+
+				newSvc.Spec.Type = core.ServiceTypeClusterIP
+				newSvc.Spec.IPFamily = &ipv4Service
+			},
+			numErrs: 0,
+		},
+		{
+			name: "ExternalName while changing Service IPFamily",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				ipv4Service := core.IPv4Protocol
+				oldSvc.Spec.ExternalName = "somename"
+				oldSvc.Spec.Type = core.ServiceTypeExternalName
+				oldSvc.Spec.IPFamily = &ipv4Service
+
+				ipv6Service := core.IPv6Protocol
+				newSvc.Spec.ExternalName = "somename"
+				newSvc.Spec.Type = core.ServiceTypeExternalName
+				newSvc.Spec.IPFamily = &ipv6Service
+			},
+			numErrs: 0,
+		},
+		{
+			name: "setting ipfamily from nil to v4",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				oldSvc.Spec.IPFamily = nil
+
+				ipv4Service := core.IPv4Protocol
+				newSvc.Spec.ExternalName = "somename"
+				newSvc.Spec.IPFamily = &ipv4Service
+			},
+			numErrs: 0,
+		},
+		{
+			name: "setting ipfamily from nil to v6",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				oldSvc.Spec.IPFamily = nil
+
+				ipv6Service := core.IPv6Protocol
+				newSvc.Spec.ExternalName = "somename"
+				newSvc.Spec.IPFamily = &ipv6Service
+			},
+			numErrs: 0,
+		},
+		{
+			name: "remove ipfamily",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				ipv6Service := core.IPv6Protocol
+				oldSvc.Spec.IPFamily = &ipv6Service
+
+				newSvc.Spec.IPFamily = nil
+			},
+			numErrs: 1,
+		},
+
+		{
+			name: "change ServiceIPFamily",
+			tweakSvc: func(oldSvc, newSvc *core.Service) {
+				ipv4Service := core.IPv4Protocol
+				oldSvc.Spec.Type = core.ServiceTypeClusterIP
+				oldSvc.Spec.IPFamily = &ipv4Service
+
+				ipv6Service := core.IPv6Protocol
+				newSvc.Spec.Type = core.ServiceTypeClusterIP
+				newSvc.Spec.IPFamily = &ipv6Service
 			},
 			numErrs: 1,
 		},
@@ -14147,9 +14204,9 @@ func TestValidateWindowsSecurityContextOptions(t *testing.T) {
 		{
 			testName: "RunAsUserName's User is too long",
 			windowsOptions: &core.WindowsSecurityContextOptions{
-				RunAsUserName: toPtr(strings.Repeat("a", maxRunAsUserNameUserLength)),
+				RunAsUserName: toPtr(strings.Repeat("a", maxRunAsUserNameUserLength+1)),
 			},
-			expectedErrorSubstring: "runAsUserName's User length must be under",
+			expectedErrorSubstring: "runAsUserName's User length must not be longer than",
 		},
 		{
 			testName: "RunAsUserName's User cannot contain only spaces or periods",
@@ -14379,8 +14436,6 @@ func TestValidateTopologySpreadConstraints(t *testing.T) {
 }
 
 func TestValidateOverhead(t *testing.T) {
-	defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.PodOverhead, true)()
-
 	successCase := []struct {
 		Name     string
 		overhead core.ResourceList

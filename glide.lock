@@ -1,5 +1,5 @@
-hash: b0f2a392941d728008d6e2cc3af7b7ef3cbc0e95e9a3fffe676e818bf8cd370c
-updated: 2019-03-28T22:16:58.308291229+08:00
+hash: bd74eab6e57e433eb20b558eb9ca600efb4be342a3a8897d7f9ca20b31e1b7fe
+updated: 2019-09-19T09:56:57.784008541+01:00
 imports:
 - name: github.com/davecgh/go-spew
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
@@ -8,7 +8,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 25d852aebe32c875e9c044af3eef9c7dc6bc777f
 - name: github.com/gogo/protobuf
-  version: c5a62797aee0054613cc578653a16c6237fef080
+  version: 8a5ed79f688836cf007ca23aefe0299791e7bea5
   subpackages:
   - gogoproto
   - proto
@@ -17,7 +17,7 @@ imports:
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: b5d812f8a3706043e23a9cd5babf2e5423744d30
+  version: 822fe56949f5d56c9e2f02367c657e0e9b4d27d1
   subpackages:
   - proto
   - ptypes
@@ -25,9 +25,11 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/jaypipes/ghw
-  version: 032dfb1f8cb2b9b5c0e894855833e23ff1fe24a9
+  version: 29869ac89830376f4997b823e455dac004acce4e
 - name: github.com/jaypipes/pcidb
-  version: adf5a9192458392195b34ec0677172bd69e95b82
+  version: 98ef3ee36c69f20650fe7855047ad042338c6983
+- name: github.com/Mellanox/rdmamap
+  version: 3a54d061a5e71a4a5e76a3fa9257108cbbffa0b1
 - name: github.com/mitchellh/go-homedir
   version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/pkg/errors
@@ -37,22 +39,20 @@ imports:
   subpackages:
   - difflib
 - name: github.com/stretchr/objx
-  version: c61a9dfcced1815e7d40e214d00d1a8669a9f58c
+  version: 35313a95ee26395aa17d366c71a2ccf788fa69b6
 - name: github.com/stretchr/testify
-  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
+  version: 85f2b59c4459e5bf57488796be8c3667cb8246d6
   subpackages:
   - assert
   - mock
 - name: github.com/vishvananda/netlink
-  version: 6e453822d85ef5721799774b654d4d02fed62afb
+  version: 205a160d2eb0fadbfcf7c39d7223a7eee20e1b97
   subpackages:
   - nl
-- name: github.com/Mellanox/rdmamap
-  version: 44bb586a78dd74f8951c3093e30703df652b75f0
 - name: github.com/vishvananda/netns
-  version: 54f0e4339ce73702a0607f49922aaa1e749b418d
+  version: 7109fa855b0ff1ebef7fbd2f6aa613e8db7cfbc0
 - name: golang.org/x/net
-  version: 16b79f2e4e95ea23b2bf9903c9809ff7b013ce85
+  version: a8b05e9114ab0cb08faec337c959aed24b68bf50
   subpackages:
   - context
   - html
@@ -65,11 +65,11 @@ imports:
   - internal/timeseries
   - trace
 - name: golang.org/x/sys
-  version: b294cbcfc56d2a65a30c02c78722b5df061e99b8
+  version: 0c1ff786ef13daa914a3351c5e6b0321aed5960e
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 5d731a35f4867878fc89f7744f7b6debb3beded6
+  version: 3d0f7978add91030e5e8976ff65ccdd828286cba
   subpackages:
   - encoding
   - encoding/charmap
@@ -92,11 +92,11 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/genproto
-  version: 6e86cb5d2f12401bdd82a5eccbd701b5a697e63e
+  version: f660b865573183437d2d868f703fe88bb8af0b55
   subpackages:
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 79c9bc679419ff2f57deccc996e33477a64b6762
+  version: a5e64ec425533f3212fb53add0c4c45c4f9a3890
   subpackages:
   - balancer
   - balancer/base
@@ -111,6 +111,7 @@ imports:
   - grpclog
   - internal
   - internal/backoff
+  - internal/balancerload
   - internal/binarylog
   - internal/channelz
   - internal/envconfig
@@ -125,6 +126,7 @@ imports:
   - resolver
   - resolver/dns
   - resolver/passthrough
+  - serviceconfig
   - stats
   - status
   - tap
@@ -133,7 +135,7 @@ imports:
 - name: howett.net/plist
   version: 591f970eefbbeb04d7b37f334a0c4c3256e32876
 - name: k8s.io/kubernetes
-  version: 674ecba935da543b80502f023640dfb226a8a642
+  version: 2bd9643cee5b3b3a5ecbd3af49d09018f0773c77
   subpackages:
   - pkg/kubelet/apis/deviceplugin/v1beta1
   - pkg/kubelet/apis/pluginregistration/v1
@@ -146,7 +148,7 @@ testImports:
   - watch
   - winfile
 - name: github.com/onsi/ginkgo
-  version: dbaca8e5ae554fdc9905dabc83fa43d806f5d7ab
+  version: 3774a09d95489ccaa16032e0770d08ea77ba6184
   subpackages:
   - config
   - extensions/table
@@ -167,7 +169,7 @@ testImports:
   - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: 5533ce8a0da374da682cd53d70ddcc54adf1a710
+  version: bdebf9e0ece900259084cfa4121b97ce1a540939
   subpackages:
   - format
   - internal/assertion

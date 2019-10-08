@@ -100,6 +100,10 @@ type Manager interface {
 	// triggers a status update.
 	SetContainerReadiness(podUID types.UID, containerID kubecontainer.ContainerID, ready bool)
 
+	// SetContainerStartup updates the cached container status with the given startup, and
+	// triggers a status update.
+	SetContainerStartup(podUID types.UID, containerID kubecontainer.ContainerID, started bool)
+
 	// TerminatePod resets the container status for the provided pod to terminated and triggers
 	// a status update.
 	TerminatePod(pod *v1.Pod)
@@ -150,6 +154,7 @@ func (m *manager) Start() {
 	}
 
 	klog.Info("Starting to sync pod status with apiserver")
+	//lint:ignore SA1015 Ticker can link since this is only called once and doesn't handle termination.
 	syncTicker := time.Tick(syncPeriod)
 	// syncPod and syncBatch share the same go routine to avoid sync races.
 	go wait.Forever(func() {
@@ -244,6 +249,45 @@ func (m *manager) SetContainerReadiness(podUID types.UID, containerID kubecontai
 	}
 	updateConditionFunc(v1.PodReady, GeneratePodReadyCondition(&pod.Spec, status.Conditions, status.ContainerStatuses, status.Phase))
 	updateConditionFunc(v1.ContainersReady, GenerateContainersReadyCondition(&pod.Spec, status.ContainerStatuses, status.Phase))
+	m.updateStatusInternal(pod, status, false)
+}
+
+func (m *manager) SetContainerStartup(podUID types.UID, containerID kubecontainer.ContainerID, started bool) {
+	m.podStatusesLock.Lock()
+	defer m.podStatusesLock.Unlock()
+
+	pod, ok := m.podManager.GetPodByUID(podUID)
+	if !ok {
+		klog.V(4).Infof("Pod %q has been deleted, no need to update startup", string(podUID))
+		return
+	}
+
+	oldStatus, found := m.podStatuses[pod.UID]
+	if !found {
+		klog.Warningf("Container startup changed before pod has synced: %q - %q",
+			format.Pod(pod), containerID.String())
+		return
+	}
+
+	// Find the container to update.
+	containerStatus, _, ok := findContainerStatus(&oldStatus.status, containerID.String())
+	if !ok {
+		klog.Warningf("Container startup changed for unknown container: %q - %q",
+			format.Pod(pod), containerID.String())
+		return
+	}
+
+	if containerStatus.Started != nil && *containerStatus.Started == started {
+		klog.V(4).Infof("Container startup unchanged (%v): %q - %q", started,
+			format.Pod(pod), containerID.String())
+		return
+	}
+
+	// Make sure we're not updating the cached version.
+	status := *oldStatus.status.DeepCopy()
+	containerStatus, _, _ = findContainerStatus(&status, containerID.String())
+	containerStatus.Started = &started
+
 	m.updateStatusInternal(pod, status, false)
 }
 
@@ -559,7 +603,7 @@ func (m *manager) needsReconcile(uid types.UID, status v1.PodStatus) bool {
 		return false
 	}
 	// If the pod is a static pod, we should check its mirror pod, because only status in mirror pod is meaningful to us.
-	if kubepod.IsStaticPod(pod) {
+	if kubetypes.IsStaticPod(pod) {
 		mirrorPod, ok := m.podManager.GetMirrorPodByPod(pod)
 		if !ok {
 			klog.V(4).Infof("Static pod %q has no corresponding mirror pod, no need to reconcile", format.Pod(pod))

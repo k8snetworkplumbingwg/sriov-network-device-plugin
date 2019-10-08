@@ -511,7 +511,12 @@ func checkInPayload(t *testing.T, d *gotData, e *expectedData) {
 			t.Fatalf("st.Lenght = %v, want %v", st.Length, len(b))
 		}
 	}
-	// TODO check WireLength and ReceivedTime.
+	// Below are sanity checks that WireLength and RecvTime are populated.
+	// TODO: check values of WireLength and RecvTime.
+	if len(st.Data) > 0 && st.WireLength == 0 {
+		t.Fatalf("st.WireLength = %v with non-empty data, want <non-zero>",
+			st.WireLength)
+	}
 	if st.RecvTime.IsZero() {
 		t.Fatalf("st.ReceivedTime = %v, want <non-zero>", st.RecvTime)
 	}
@@ -603,7 +608,12 @@ func checkOutPayload(t *testing.T, d *gotData, e *expectedData) {
 			t.Fatalf("st.Lenght = %v, want %v", st.Length, len(b))
 		}
 	}
-	// TODO check WireLength and ReceivedTime.
+	// Below are sanity checks that WireLength and SentTime are populated.
+	// TODO: check values of WireLength and SentTime.
+	if len(st.Data) > 0 && st.WireLength == 0 {
+		t.Fatalf("st.WireLength = %v with non-empty data, want <non-zero>",
+			st.WireLength)
+	}
 	if st.SentTime.IsZero() {
 		t.Fatalf("st.SentTime = %v, want <non-zero>", st.SentTime)
 	}
@@ -651,6 +661,16 @@ func checkEnd(t *testing.T, d *gotData, e *expectedData) {
 	expectedStatus, _ := status.FromError(e.err)
 	if actual.Code() != expectedStatus.Code() || actual.Message() != expectedStatus.Message() {
 		t.Fatalf("st.Error = %v, want %v", st.Error, e.err)
+	}
+
+	if st.Client {
+		if !reflect.DeepEqual(st.Trailer, testTrailerMetadata) {
+			t.Fatalf("st.Trailer = %v, want %v", st.Trailer, testTrailerMetadata)
+		}
+	} else {
+		if st.Trailer != nil {
+			t.Fatalf("st.Trailer = %v, want nil", st.Trailer)
+		}
 	}
 }
 

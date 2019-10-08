@@ -1,12 +1,13 @@
 package resources
 
 import (
+	"strconv"
+
 	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
-	"strconv"
 )
 
 type pciNetDevice struct {
@@ -77,10 +78,11 @@ func NewPciNetDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (
 		Health: pluginapi.Healthy,
 	}
 	if nodeNum >= 0 {
+		numaInfo := &pluginapi.NUMANode{
+			ID: int64(nodeNum),
+		}
 		apiDevice.Topology = &pluginapi.TopologyInfo{
-			Node: &pluginapi.NUMANode{
-				ID: int64(nodeNum),
-			},
+			Nodes: []*pluginapi.NUMANode{numaInfo},
 		}
 	}
 
