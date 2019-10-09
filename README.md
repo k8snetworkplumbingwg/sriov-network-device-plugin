@@ -44,7 +44,7 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 ## Features
 
 - Handles SRIOV capable/not-capable devices (NICs and Accelerators alike)
-- Supports devices with both Kernel and userspace(uio and VFIO) drivers
+- Supports devices with both Kernel and userspace(UIO and VFIO) drivers
 - Allows resource grouping using "Selector"
 - User configurable resourceName
 - Detects Kubelet restarts and auto-re-register
@@ -128,7 +128,7 @@ $ cd multus-cni
 $ ./build
 $ cp bin/multus /opt/cni/bin
 ```
-2. Copy the multus Configuration file from the Deployments folder to the CNI Configuration diectory
+2. Copy the Multus Configuration file from the Deployments folder to the CNI Configuration directory
 ```
 $ cp deployments/cni-conf.json /etc/cni/net.d/
 ```
@@ -163,7 +163,7 @@ For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/dan
 
 ### Config parameters
 
-This plugin creates device plugin endpoints based on the configurations given in file `/etc/pcidp/config.json`. This configuration file is in json format as shown below:
+This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SRIOV device plugin. In json format as this files appears as shown below:
 
 ```json
 {
@@ -260,7 +260,7 @@ The device plugin will initially discover all PCI network resources in the host 
 1. "vendors" - The vendor hex code of device
 2. "devices" - The device hex code of device
 3. "drivers" - The driver name the device is registered with
-4. "pfNames" - The Physical funtion name
+4. "pfNames" - The Physical function name
 5. "linkTypes" - The link type of the net device associated with the PCI device.
 
 The "pfName" selector can be used to specify a range of VFs for a pool in the next format:
@@ -285,13 +285,13 @@ If only PF network interface specified in the selector, then assuming that all V
 
 ### Workflow
 
-- Load device's (Physical funtion if it is SRIOV capable) kernel module and bind the driver to the PF
+- Load device's (Physical function if it is SRIOV capable) kernel module and bind the driver to the PF
 - Create required Virtual functions
 - Bind all VF with right drivers
-- Create resource config entry in `/etc/pcidp/config.json`
+- Create a resource config map
 - Run SRIOV device plugin (as daemonset)
 
-On successfull run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
+On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
 
 ```json
 $ kubectl get node node1 -o json | jq '.status.allocatable'
@@ -334,7 +334,7 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 ### Deploy SR-IOV workloads when Multus is used
 There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployment with Multus.
 
-Leave the sriov device plugin running and open a new terminal session for following steps.
+Leave the SRIOV device plugin running and open a new terminal session for following steps.
 
 #### Deploy test Pod connecting to pre-created SR-IOV network
 
