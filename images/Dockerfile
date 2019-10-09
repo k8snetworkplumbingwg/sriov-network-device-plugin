@@ -1,7 +1,7 @@
 FROM golang:alpine as builder
 
 ADD . /usr/src/sriov-network-device-plugin
-ADD extras/ddptool-1.0.0.0 /tmp/ddptool
+ADD https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz /tmp/ddptool/
 
 ENV HTTP_PROXY $http_proxy
 ENV HTTPS_PROXY $https_proxy
@@ -9,7 +9,7 @@ RUN apk add --update --virtual build-dependencies build-base linux-headers && \
     cd /usr/src/sriov-network-device-plugin && \
     make clean && \
     make build && \
-    cd /tmp/ddptool && make
+    cd /tmp/ddptool && tar zxvf ddptool-1.0.0.0.tar.gz && make
 
 FROM alpine
 RUN apk add hwdata-pci
