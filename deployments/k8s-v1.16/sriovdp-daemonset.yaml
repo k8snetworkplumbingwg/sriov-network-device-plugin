@@ -6,7 +6,7 @@ metadata:
   namespace: kube-system
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: kube-sriov-device-plugin-amd64
@@ -15,9 +15,13 @@ metadata:
     tier: node
     app: sriovdp
 spec:
+  selector:
+    matchLabels:
+      name: sriov-device-plugin
   template:
     metadata:
       labels:
+        name: sriov-device-plugin
         tier: node
         app: sriovdp
     spec:
@@ -37,7 +41,6 @@ spec:
         args:
         - --log-dir=sriovdp
         - --log-level=10
-        - --resource-prefix=mellanox.com
         securityContext:
           privileged: true
         volumeMounts:
@@ -57,7 +60,7 @@ spec:
             path: /var/log
         - name: config-volume
           configMap:
-            name: sriovdp-mlnx-rdma
+            name: sriovdp-config
             items:
             - key: config.json
               path: config.json

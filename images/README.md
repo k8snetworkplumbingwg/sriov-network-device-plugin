@@ -5,7 +5,7 @@ This is used for distribution of SR-IOV Device Plugin binary in a Docker image.
 Typically you'd build this from the root of your SR-IOV network device plugin clone, and you'd set the `-f` flag to specify the Dockerfile during build time. This allows the addition of the entirety of the SR-IOV network device plugin git clone as part of the Docker context. Use the `-f` flag with the root of the clone as the context (e.g. your current work directory would be root of git clone), such as:
 
 ```
-$ docker build -t nfvpe/sriov-device-plugin -f ./Dockerfile .
+$ docker build -t nfvpe/sriov-device-plugin -f ./images/Dockerfile .
 ```
 You can run `make image` to build the docker image as well.
 
@@ -16,8 +16,9 @@ You can run `make image` to build the docker image as well.
 You may wish to deploy SR-IOV device plugin as a daemonset, you can do so by starting with the example Daemonset shown here:
 
 ```
-$ kubectl create -f ./images/sriovdp-daemonset.yaml
+$ kubectl create -f ./deployments/k8s-v1.16/sriovdp-daemonset.yaml
 ```
+> For K8s version v1.15 or older use `deployments/k8s-v1.10-v1.15/sriovdp-daemonset.yaml` instead.
 
 Note: The likely best practice here is to build your own image given the Dockerfile, and then push it to your preferred registry, and change the `image` fields in the Daemonset YAML to reference that image.
 

@@ -13,7 +13,7 @@
   - [Build and run SRIOV network device plugin](#build-and-run-sriov-network-device-plugin)
   - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
       - [Option 1 - Multus](#option-1---multus)
-        - [Build and configure Multus](#build-and-configure-multus)
+        - [Install Multus](#install-multus)
         - [Network Object CRDs](#network-object-crds)
       - [Option 2 - DANM](#option-2---danm)
         - [Install DANM](#install-danm)
@@ -102,41 +102,30 @@ $ cp build/sriov /opt/cni/bin
 $ git clone https://github.com/intel/sriov-network-device-plugin.git
 $ cd sriov-network-device-plugin
  ```
- 2. Build executable binary using `make`
+ 2. Build docker image binary using `make`
  ```
 $ make
 ```
-> On successful build the `sriovdp` executable can be found in `./build` directory. It is recommended to run the plugin in a container or K8s Pod. The follow on steps cover how to build and run the Docker image of the plugin.
+> On a successful build, a docker image with tag `nfvpe/sriov-device-plugin:latest` will be created. You will need to build this image on each node. Alternatively, you could use a local docker registry to host this image.
 
- 3. Build docker image
+ 3. Create a ConfigMap that defines SR-IOV resrouce pool configuration
  ```
-$ make image
+$ kubectl create -f deployments/configMap.yaml
 ```
+ 4. Deploy SRIOV network device plugin Daemonset
+```
+$ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
+```
+> For K8s version v1.15 or older use `deployments/k8s-v1.10-v1.15/sriovdp-daemonset.yaml` instead.
+
 
 ### Install one compatible CNI meta plugin
+A compatible CNI meta-plugin installation is required for SR-IOV CNI plugin to be able to get allocated VF's deviceID in order to configure it.  
 
 #### Option 1 - Multus
-This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose Multus as your meta plugin.
-Required YAML files can be found in [deployments/](deployments/) directory.
 
-##### Build and configure Multus
-
-1. Compile Multus executable:
-```
-$ git clone https://github.com/intel/multus-cni.git
-$ cd multus-cni
-$ ./build
-$ cp bin/multus /opt/cni/bin
-```
-2. Copy the Multus Configuration file from the Deployments folder to the CNI Configuration directory
-```
-$ cp deployments/cni-conf.json /etc/cni/net.d/
-```
-
-3. Configure Kubernetes network CRD with [Multus](https://github.com/intel/multus-cni/tree/dev/network-plumbing-working-group-crd-change#creating-network-resources-in-kubernetes)
-```
-$ kubectl create -f deployments/crdnetwork.yaml
-```
+##### Install Multus
+Please refer to Multus [Quickstart Installation Guide](https://github.com/intel/multus-cni#quickstart-installation-guide) to install Multus.
 
 ##### Network Object CRDs
 
@@ -318,14 +307,15 @@ The [images](./images) directory contains example Dockerfile, sample specs along
 
 ````
 # Create ConfigMap
-$ kubectl create -f images/configMap.yaml
+$ kubectl create -f deployments/configMap.yaml
 configmap/sriovdp-config created
 
 # Create sriov-device-plugin-daemonset
-$ kubectl create -f images/sriovdp-daemonset.yaml
-daemonset.extensions/kube-sriov-device-plugin-amd64 created
+$ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
+serviceaccount/sriov-device-plugin created
+daemonset.apps/kube-sriov-device-plugin-amd64 created
 
-$kubectl get pods --all-namespaces
+$ kubectl -n kube-system get pods
 NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
 kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0          4s
 
@@ -344,7 +334,6 @@ pod "testpod1" created
 
 $ kubectl get pods
 NAME                  READY     STATUS    RESTARTS   AGE
-sriov-device-plugin   1/1       Running   0          7h
 testpod1        	  1/1       Running   0          3s
 ````
 
