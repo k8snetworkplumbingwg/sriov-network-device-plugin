@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod-pppoe
+  labels:
+    env: test
+  annotations:
+    k8s.v1.cni.cncf.io/networks: sriov-net-pppoe
+spec:
+  containers:
+  - name: pppoecntr1
+    image: centos/tools 
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    resources:
+      requests:
+        intel.com/x700_pppoe: 1
+      limits:
+        intel.com/x700_pppoe: 1
