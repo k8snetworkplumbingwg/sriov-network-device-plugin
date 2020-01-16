@@ -39,12 +39,12 @@
 
 ## SRIOV Network Device Plugin
 
-The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) in a Kubernetes host.
+The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) available on a Kubernetes host.
 
 ## Features
 
 - Handles SRIOV capable/not-capable devices (NICs and Accelerators alike)
-- Supports devices with both Kernel and userspace(UIO and VFIO) drivers
+- Supports devices with both Kernel and userspace (UIO and VFIO) drivers
 - Allows resource grouping using "Selector"
 - User configurable resourceName
 - Detects Kubelet restarts and auto-re-register
@@ -152,7 +152,7 @@ For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/dan
 
 ### Config parameters
 
-This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SRIOV device plugin. In json format as this files appears as shown below:
+This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SRIOV device plugin. In json format this file appears as shown below:
 
 ```json
 {
@@ -237,14 +237,13 @@ Usage of ./sriovdp:
 
 ### Assumptions
 
-This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources(i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
+This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by white-listing/black-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
-For example, if the driver type is uio(i.e. igb_uio.ko) then there are specific device files to add in Device
-Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
+For example, if the driver type is uio (i.e. igb_uio.ko) then there are specific device files to add in Device Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
 The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
 
-The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". Each "resource pool" then applies its selectors on this list and add devices that satisfies the selectors constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
+The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". Each "resource pool" then applies its selectors on this list and add devices that satisfies the selector's constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
 
 1. "vendors" - The vendor hex code of device
 2. "devices" - The device hex code of device
@@ -252,7 +251,7 @@ The device plugin will initially discover all PCI network resources in the host 
 4. "pfNames" - The Physical function name
 5. "linkTypes" - The link type of the net device associated with the PCI device.
 
-The "pfName" selector can be used to specify a range of VFs for a pool in the next format:
+The "pfName" selector can be used to specify a range of VFs for a pool in the below format:
 ````
 "<PFName>#<FirstVF>-<LastVF>"
 ````
@@ -260,8 +259,8 @@ The "pfName" selector can be used to specify a range of VFs for a pool in the ne
 Where:
 
     `<PFName>`  - is the PF interface name
-    `<FirstVF>` - is the first VF index (0-based) that included into the range
-    `<LastVF>`  - is the last VF index (0-based) that included into the range
+    `<FirstVF>` - is the first VF index (0-based) that is included into the range
+    `<LastVF>`  - is the last VF index (0-based) that is included into the range
 
 Example:
 
@@ -280,7 +279,7 @@ If only PF network interface specified in the selector, then assuming that all V
 - Create a resource config map
 - Run SRIOV device plugin (as daemonset)
 
-On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
+On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name is appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
 
 ```json
 $ kubectl get node node1 -o json | jq '.status.allocatable'
@@ -322,7 +321,7 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 ````
 
 ### Deploy SR-IOV workloads when Multus is used
-There are some example Pod specs and related network CRD yaml files can be found in [deployments](./deployments) directory for a sample deployment with Multus.
+There are some example Pod specs and related network CRD yaml files in [deployments](./deployments) directory for a sample deployment with Multus.
 
 Leave the SRIOV device plugin running and open a new terminal session for following steps.
 
@@ -447,7 +446,7 @@ sriov-pod   1/1     Running   0          111s
 
 ### Pod device information
 
-The allocated device information are exported in Container's environment variable. The variable name is `PCIDEVICE_` appended with full extended resource name(e.g. intel.com/sriov etc.) which is capitailzed and any special characters(".", "/") are replaced with underscore("_"). In case of multiple devices from same extended resource pool, the device IDs are delimited with commas(",").
+The allocated device information is exported in Container's environment variable. The variable name is `PCIDEVICE_` appended with full extended resource name (e.g. intel.com/sriov etc.) which is capitailzed and any special characters (".", "/") are replaced with underscore ("_"). In case of multiple devices from same extended resource pool, the device IDs are delimited with commas (",").
 
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
