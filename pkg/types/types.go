@@ -32,9 +32,10 @@ const (
 
 // ResourceConfig contains cofiguration paremeters for a resource pool
 type ResourceConfig struct {
-	ResourceName string `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	IsRdma       bool   // the resource support rdma
-	Selectors    struct {
+	ResourcePrefix string `json:"resourcePrefix,omitempty"` // optional resource prefix that will ovewrite global prefix specified in cli params
+	ResourceName   string `json:"resourceName"`             // the resource name will be added with resource prefix in K8s api
+	IsRdma         bool   // the resource support rdma
+	Selectors      struct {
 		Vendors   []string `json:"vendors,omitempty"`
 		Devices   []string `json:"devices,omitempty"`
 		Drivers   []string `json:"drivers,omitempty"`
@@ -74,6 +75,7 @@ type ResourceFactory interface {
 type ResourcePool interface {
 	// extended API for internal use
 	GetResourceName() string
+	GetResourcePrefix() string
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec

@@ -46,7 +46,11 @@ func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceF
 // GetResourceServer returns an instance of ResourceServer for a ResourcePool
 func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.ResourceServer, error) {
 	if rp != nil {
-		return newResourceServer(rf.endPointPrefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		prefix := rf.endPointPrefix
+		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
+			prefix = prefixOverride
+		}
+		return newResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }
