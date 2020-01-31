@@ -31,8 +31,9 @@ import (
 
 const (
 	socketSuffix = "sock"
-	netClass     = 0x02 // Device class - Network controller.	 ref: https://pci-ids.ucw.cz/read/PD/02 (for Sub-Classes)
-	fecClass     = 0x12 // Device class - Processing accelerator
+	netClass     = 0x02   // Device class - Network controller.	 ref: https://pci-ids.ucw.cz/read/PD/02 (for Sub-Classes)
+	accClass     = 0x12   // Device class - Processing accelerator
+	rsuDevice    = 0x0b30 // RSU device - only used for programming the FPGA
 )
 
 /*
@@ -47,7 +48,7 @@ Network controller subclasses. ref: https://pci-ids.ucw.cz/read/PD/02
 		07	Infiniband controller
 		08	Fabric controller
 		80	Network controller
-		12  Processing Accelerator
+		12	Processing Accelerator
 */
 
 type cliParams struct {
@@ -196,8 +197,8 @@ func (rm *resourceManager) discoverHostDevices() error {
 			continue
 		}
 
-		// only interested in network class + patch for detecting FEC processing accelerator
-		if devClass == netClass || devClass == fecClass {
+		// only interested in network class and accelerator class
+		if devClass == netClass || devClass == accClass {
 			vendor := device.Vendor
 			vendorName := vendor.Name
 			if len(vendor.Name) > 20 {
@@ -212,55 +213,12 @@ func (rm *resourceManager) discoverHostDevices() error {
 
 			// Network devices
 			if devClass == netClass {
-				// exclude device in-use in host
-				if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
-
-					aPF := utils.IsSriovPF(device.Address)
-					aVF := utils.IsSriovVF(device.Address)
-
-					if aPF || !aVF {
-						// add to linkWatchList
-						rm.addToLinkWatchList(device.Address)
-					}
-
-					if aPF && utils.SriovConfigured(device.Address) {
-						// do not add this device in net device list
-						continue
-					}
-
-					if newDevice, err := resources.NewPciNetDevice(device, rm.rFactory); err == nil {
-						rm.netDeviceList = append(rm.netDeviceList, newDevice)
-					} else {
-						glog.Errorf("discoverDevices() error adding new device: %q", err)
-					}
-
-				}
+				rm.netDevHandler(device)
 			}
 
-			// FEC processing accelerators
-			if devClass == fecClass {
-				//Check if device is a physical function (PF)
-				aPF := utils.IsSriovPF(device.Address)
-
-				//If dev ID = 0b30 it means it is a RSU device and not FEC
-				if device.Product.ID != "0b30" {
-					if aPF && utils.SriovConfigured(device.Address) {
-						// If it is a PF and SRIOV is configured do not add to device list
-						continue
-					}
-
-					if newDevice, err := resources.NewPciNetDevice(device, rm.rFactory); err == nil {
-						if newDevice.GetDriver() == "igb_uio" || newDevice.GetDriver() == "vfio-pci" {
-							rm.netDeviceList = append(rm.netDeviceList, newDevice)
-						} else {
-							glog.Infof("Excluding FEC device %-12s because it is not bound to userspace driver.", device.Address)
-						}
-					} else {
-						glog.Errorf("discoverDevices() error adding new device: %q", err)
-					}
-				} else {
-					glog.Infof("Excluding device %-12s , it is a RSU device.", device.Address)
-				}
+			// Processing accelerators
+			if devClass == accClass {
+				rm.accDevHandler(device)
 			}
 		}
 	}
@@ -320,4 +278,59 @@ type linkWatcher struct {
 
 func (lw *linkWatcher) Subscribe() {
 
+}
+
+func (rm *resourceManager) netDevHandler(dev *ghw.PCIDevice) {
+	// exclude device in-use in host
+	if isDefaultRoute, _ := hasDefaultRoute(dev.Address); !isDefaultRoute {
+
+		aPF := utils.IsSriovPF(dev.Address)
+		aVF := utils.IsSriovVF(dev.Address)
+
+		if aPF || !aVF {
+			// add to linkWatchList
+			rm.addToLinkWatchList(dev.Address)
+		}
+
+		if aPF && utils.SriovConfigured(dev.Address) {
+			// do not add this device in net device list
+			return
+		}
+
+		if newDevice, err := resources.NewPciNetDevice(dev, rm.rFactory); err == nil {
+			rm.netDeviceList = append(rm.netDeviceList, newDevice)
+		} else {
+			glog.Errorf("discoverDevices() error adding new device: %q", err)
+		}
+
+	}
+}
+
+func (rm *resourceManager) accDevHandler(dev *ghw.PCIDevice) {
+	//Check if device is a physical function (PF)
+	aPF := utils.IsSriovPF(dev.Address)
+	devID, err := strconv.ParseInt(dev.Product.ID, 16, 64)
+	if err != nil {
+		glog.Warningf("discoverDevices(): unable to parse device ID for device %+v %q", dev, err)
+		return
+	}
+	//Check if device ID = 0b30, it means it is a RSU (Remote System Update) device and not accelerator
+	if devID != rsuDevice {
+		if aPF && utils.SriovConfigured(dev.Address) {
+			// If it is a PF and SRIOV is configured do not add to device list
+			return
+		}
+
+		if newDevice, err := resources.NewPciNetDevice(dev, rm.rFactory); err == nil {
+			if newDevice.GetDriver() == "igb_uio" || newDevice.GetDriver() == "vfio-pci" {
+				rm.netDeviceList = append(rm.netDeviceList, newDevice)
+			} else {
+				glog.Infof("Excluding FEC device %-12s because it is not bound to userspace driver.", dev.Address)
+			}
+		} else {
+			glog.Errorf("discoverDevices() error adding new device: %q", err)
+		}
+	} else {
+		glog.Infof("Excluding device %-12s , it is a RSU device.", dev.Address)
+	}
 }
