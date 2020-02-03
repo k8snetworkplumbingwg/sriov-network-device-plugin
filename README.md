@@ -252,22 +252,23 @@ The device plugin will initially discover all PCI network resources in the host 
 4. "pfNames" - The Physical function name
 5. "linkTypes" - The link type of the net device associated with the PCI device.
 
-The "pfName" selector can be used to specify a range of VFs for a pool in the next format:
+The "pfName" selector can be used to specify a list and/or range of VFs for a pool in the next format:
 ````
-"<PFName>#<FirstVF>-<LastVF>"
+"<PFName>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
 ````
 
 Where:
 
-    `<PFName>`  - is the PF interface name
-    `<FirstVF>` - is the first VF index (0-based) that included into the range
-    `<LastVF>`  - is the last VF index (0-based) that included into the range
+    `<PFName>`   - is the PF interface name
+    `<SingleVF>` - is a single VF index (0-based) that included into the pool
+    `<FirstVF>`  - is the first VF index (0-based) that included into the range
+    `<LastVF>`   - is the last VF index (0-based) that included into the range
 
 Example:
 
-The selector for interface named `netpf0` and VF range from 2 upto 7 (included 2 and 7) will look like:
+The selector for interface named `netpf0` and VF 0, 2 upto 7 (included 2 and 7) and 9 will look like:
 ````
-"pfName": ["netpf0#2-7"]
+"pfName": ["netpf0#0,2-7,9"]
 ````
 If only PF network interface specified in the selector, then assuming that all VFs of this interface are going to the pool.
 
