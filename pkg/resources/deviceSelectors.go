@@ -93,24 +93,40 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 					fmt.Printf("Failed to parse %s PF name selector, probably incorrect separator character usage\n", dev.GetPFName())
 					continue
 				}
-				rng := strings.Split(fields[1], "-")
-				if len(rng) != 2 {
-					fmt.Printf("Failed to parse %s PF name selector, probably incorrect range character usage\n", dev.GetPFName())
-					continue
-				}
-				rngSt, err := strconv.Atoi(rng[0])
-				if err != nil {
-					fmt.Printf("Failed to parse %s PF name selector, start range is incorrect\n", dev.GetPFName())
-					continue
-				}
-				rngEnd, err := strconv.Atoi(rng[1])
-				if err != nil {
-					fmt.Printf("Failed to parse %s PF name selector, end range is incorrect\n", dev.GetPFName())
-					continue
-				}
-				vfID := dev.GetVFID()
-				if vfID >= rngSt && vfID <= rngEnd {
-					filteredList = append(filteredList, dev)
+				entries := strings.Split(fields[1], ",")
+				for i := 0; i < len(entries); i++ {
+					if strings.Contains(entries[i], "-") {
+						rng := strings.Split(entries[i], "-")
+						if len(rng) != 2 {
+							fmt.Printf("Failed to parse %s PF name selector, probably incorrect range character usage\n", dev.GetPFName())
+							continue
+						}
+						rngSt, err := strconv.Atoi(rng[0])
+						if err != nil {
+							fmt.Printf("Failed to parse %s PF name selector, start range is incorrect\n", dev.GetPFName())
+							continue
+						}
+						rngEnd, err := strconv.Atoi(rng[1])
+						if err != nil {
+							fmt.Printf("Failed to parse %s PF name selector, end range is incorrect\n", dev.GetPFName())
+							continue
+						}
+						vfID := dev.GetVFID()
+						if vfID >= rngSt && vfID <= rngEnd {
+							filteredList = append(filteredList, dev)
+						}
+					} else {
+						vfid, err := strconv.Atoi(entries[i])
+						if err != nil {
+							fmt.Printf("Failed to parse %s PF name selector, index is incorrect\n", dev.GetPFName())
+							continue
+						}
+						vfID := dev.GetVFID()
+						if vfID == vfid {
+							filteredList = append(filteredList, dev)
+						}
+
+					}
 				}
 			} else {
 				filteredList = append(filteredList, dev)
