@@ -328,6 +328,16 @@ func (rm *resourceManager) getFilteredDevices(rc *types.ResourceConfig) []types.
 		}
 	}
 
+	// filter by linkTypes list
+	if rc.Selectors.LinkTypes != nil && len(rc.Selectors.LinkTypes) > 0 {
+		if len(rc.Selectors.LinkTypes) > 1 {
+			glog.Warningf("Link type selector should have a single value.")
+		}
+		if selector, err := rf.GetSelector("linkTypes", rc.Selectors.LinkTypes); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
 	// filter by DDP Profiles list
 	if rc.Selectors.DDPProfiles != nil && len(rc.Selectors.DDPProfiles) > 0 {
 		if selector, err := rf.GetSelector("ddpProfiles", rc.Selectors.DDPProfiles); err == nil {

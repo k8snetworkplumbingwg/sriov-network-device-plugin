@@ -5,9 +5,9 @@ Dynamic Device Personalization aka DDP allows dynamic reconfiguration of the pac
 
 (ref: [Dynamic Device Personalization for Intel® Ethernet 700 Series](https://software.intel.com/en-us/articles/dynamic-device-personalization-for-intel-ethernet-700-series))
 
-The SR-IOV network device plugin could be used to identify currently running DDP *profiles*, thus allow it to filter Virtual Functions by their DDP profile names.
+The SR-IOV network device plugin can be used to identify currently running DDP *profiles*, allowing it to filter Virtual Functions by their DDP profile names.
 
-The Intel Ethernet 700 Series, a DDP profiles can be loaded/unloaded into the NIC using i40e kernel module(v2.7.26+) and ethtool OR using DPDK i40e pollmode driver & DPDK api. In this documentation we will cover i40e Kernel driver mode.
+The Intel Ethernet 700 Series, a DDP profile can be loaded/unloaded into the NIC using i40e kernel module(v2.7.26+) and ethtool OR using DPDK i40e pollmode driver & DPDK api. In this documentation we will cover i40e Kernel driver mode.
 
 ## Pre-requisites
  * Firmware: v6.01 or newer
@@ -62,7 +62,7 @@ $ echo 2 > /sys/class/net/enp2s0f0/device/sriov_numvfs
 ```
 
 ## 4. Verify that correct profile is loaded
-You can use another Linux utility for Intel 700 Series called `ddptool` to query current DDP profile information. This tool can downloaded from [here]( https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz).
+You can use another Linux utility for Intel 700 Series called `ddptool` to query current DDP profile information. This tool can be downloaded from [here]( https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz).
 
 ```
 [root@silpixa00396659 ~]# ddptool -a
