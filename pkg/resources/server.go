@@ -44,7 +44,7 @@ type resourceServer struct {
 }
 
 func newResourceServer(prefix, suffix string, pluginWatch bool, rp types.ResourcePool) types.ResourceServer {
-	sockName := fmt.Sprintf("%s.%s", rp.GetResourceName(), suffix)
+	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
 	sockPath := filepath.Join(types.SockDir, sockName)
 	if !pluginWatch {
 		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)

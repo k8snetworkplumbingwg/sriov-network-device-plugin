@@ -32,9 +32,9 @@ var _ = Describe("Server", func() {
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
-				Expect(rs.endPoint).To(Equal("fakename.fakesuffix"))
+				Expect(rs.endPoint).To(Equal("fakeprefix_fakename.fakesuffix"))
 				Expect(rs.pluginWatch).To(Equal(true))
-				Expect(rs.sockPath).To(Equal(filepath.Join(types.SockDir, "fakename.fakesuffix")))
+				Expect(rs.sockPath).To(Equal(filepath.Join(types.SockDir, "fakeprefix_fakename.fakesuffix")))
 			})
 			It("should have the properties correctly assigned when plugin watcher disabled", func() {
 				// Create ResourceServer with plugin watch mode disabled
@@ -42,10 +42,10 @@ var _ = Describe("Server", func() {
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
-				Expect(rs.endPoint).To(Equal("fakename.fakesuffix"))
+				Expect(rs.endPoint).To(Equal("fakeprefix_fakename.fakesuffix"))
 				Expect(rs.pluginWatch).To(Equal(false))
 				Expect(rs.sockPath).To(Equal(filepath.Join(types.DeprecatedSockDir,
-					"fakename.fakesuffix")))
+					"fakeprefix_fakename.fakesuffix")))
 			})
 		})
 	})
@@ -66,7 +66,7 @@ var _ = Describe("Server", func() {
 			rs := obj.(*resourceServer)
 
 			registrationServer := createFakeRegistrationServer(fs.RootDir,
-				"fakename.fakesuffix", shouldServerFail, shouldEnablePluginWatch)
+				"fakeprefix_fakename.fakesuffix", shouldServerFail, shouldEnablePluginWatch)
 
 			if shouldRunServer {
 				if shouldEnablePluginWatch {
@@ -149,10 +149,10 @@ var _ = Describe("Server", func() {
 				types.DeprecatedSockDir = fs.RootDir
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := newResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
+				rs := newResourceServer("fake", "fake", false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
-					"fake.com.fake", false, false)
+					"fake_fake.com.fake", false, false)
 				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 				registrationServer.start()
 				defer registrationServer.stop()
@@ -179,10 +179,10 @@ var _ = Describe("Server", func() {
 				types.SockDir = fs.RootDir
 
 				// Create ResourceServer with plugin watch mode enabled
-				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := newResourceServer("fake", "fake", true, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
-					"fake.com.fake", false, true)
+					"fake_fake.com.fake", false, true)
 				err := rs.Start()
 				Expect(err).NotTo(HaveOccurred())
 
@@ -208,7 +208,7 @@ var _ = Describe("Server", func() {
 				rs := newResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
-					"fake.com.fake", false, false)
+					"fake_fake.com.fake", false, false)
 				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 
 				registrationServer.start()

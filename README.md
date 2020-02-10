@@ -173,6 +173,7 @@ This plugin creates device plugin endpoints based on the configurations given in
         },
         {
             "resourceName": "intel_sriov_dpdk",
+            "resourcePrefix": "intel.com",
             "selectors": {
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed"],
@@ -182,6 +183,7 @@ This plugin creates device plugin endpoints based on the configurations given in
         },
         {
             "resourceName": "mlnx_sriov_rdma",
+            "resourcePrefix": "mellanox.com",
             "isRdma": true,
             "selectors": {
                 "vendors": ["15b3"],
@@ -204,13 +206,14 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 
 
-|     Field      | Required |        Description        |                      Type - Accepted values                       |                                      Example/Accepted values                                       |
-|----------------|----------|---------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| "resourceName" | Yes      | Endpoint resource name    | string - must be unique and should not contain special characters | "sriov_net_A"                                                                                      |
-| "selectors"    | No       | A map of device selectors | Each selector is a map of string list.                            | "vendors": ["8086"],"devices": ["154c", "10ed"],"drivers": ["vfio-pci"],"pfNames": ["enp2s2f0"],"linkTypes": ["ether"] |
-| "isRdma"       | No       | Mount RDMA resources      | `bool` - boolean value true or false                              | "isRdma": true                                                                                     |
+|      Field       | Required |              Description               |                                       Type - Accepted values                                       |                                                Example/Accepted values                                                 |
+|------------------|----------|----------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| "resourceName"   | Y        | Endpoint resource name                 | string - should not contain special characters, must be unique in the scope of the resource prefix | "sriov_net_A"                                                                                                          |
+| "resourcePrefix" | N        | Endpoint resource prefix name override | string - should not contain special characters                                                     | "intel.com"                                                                                                            |
+| "selectors"      | N        | A map of device selectors              | Each selector is a map of string list.                                                             | "vendors": ["8086"],"devices": ["154c", "10ed"],"drivers": ["vfio-pci"],"pfNames": ["enp2s2f0"],"linkTypes": ["ether"] |
+| "isRdma"         | N        | Mount RDMA resources                   | `bool` - boolean value true or false                                                               | "isRdma": true                                                                                                         |
 
-
+Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
 [//]: # (The table above generated using: https://ozh.github.io/ascii-tables/)
 

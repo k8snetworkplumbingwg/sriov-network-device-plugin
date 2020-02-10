@@ -153,7 +153,7 @@ func (rm *resourceManager) stopAllServers() error {
 
 // Validate configurations
 func (rm *resourceManager) validConfigs() bool {
-	resourceName := make(map[string]string) // resource name placeholder
+	resourceNames := make(map[string]string) // resource names placeholder
 
 	for _, conf := range rm.configList {
 		// check if name contains acceptable characters
@@ -161,15 +161,25 @@ func (rm *resourceManager) validConfigs() bool {
 			glog.Errorf("resource name \"%s\" contains invalid characters", conf.ResourceName)
 			return false
 		}
-		// check resource names are unique
-		_, ok := resourceName[conf.ResourceName]
-		if ok {
+
+		// resourcePrefix might be overriden for a given resource pool
+		resourcePrefix := rm.cliParams.resourcePrefix
+		if conf.ResourcePrefix != "" {
+			resourcePrefix = conf.ResourcePrefix
+		}
+
+		resourceName := resourcePrefix + "/" + conf.ResourceName
+
+		glog.Infof("validating resource name \"%s\"", resourceName)
+
+		// ensure that resource name is unique
+		if _, exists := resourceNames[resourceName]; exists {
 			// resource name already exist
-			glog.Errorf("resource name \"%s\" already exists", conf.ResourceName)
+			glog.Errorf("resource name \"%s\" already exists", resourceName)
 			return false
 		}
 
-		resourceName[conf.ResourceName] = conf.ResourceName
+		resourceNames[resourceName] = resourceName
 	}
 
 	return true

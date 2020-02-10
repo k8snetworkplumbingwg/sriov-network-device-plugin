@@ -50,6 +50,10 @@ func (rp *resourcePool) GetResourceName() string {
 	return rp.config.ResourceName
 }
 
+func (rp *resourcePool) GetResourcePrefix() string {
+	return rp.config.ResourcePrefix
+}
+
 func (rp *resourcePool) GetDevices() map[string]*pluginapi.Device {
 	// returns all devices from devices[]
 	return rp.devices
