@@ -97,6 +97,10 @@ $ cp build/sriov /opt/cni/bin
 
 ### Build and run SRIOV network device plugin
 
+You can either build the docker image locally or pull it from [docker hub](https://hub.docker.com/r/nfvpe/sriov-device-plugin/).
+
+If you want to build the docker image locally then follow the following steps:
+
  1. Clone the sriov-network-device-plugin
  ```
 $ git clone https://github.com/intel/sriov-network-device-plugin.git
@@ -104,11 +108,14 @@ $ cd sriov-network-device-plugin
  ```
  2. Build docker image binary using `make`
  ```
-$ make
+$ make image
 ```
 > On a successful build, a docker image with tag `nfvpe/sriov-device-plugin:latest` will be created. You will need to build this image on each node. Alternatively, you could use a local docker registry to host this image.
 
  3. Create a ConfigMap that defines SR-IOV resrouce pool configuration
+ 
+ > Make sure to update the 'config.json' entry in the configMap data to reflect your resource configuration for the device plugin. See [Configurations](#configurations) section for supported configuration parameters.
+
  ```
 $ kubectl create -f deployments/configMap.yaml
 ```
