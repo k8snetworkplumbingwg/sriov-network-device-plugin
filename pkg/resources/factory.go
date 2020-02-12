@@ -81,63 +81,15 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return newPfNameSelector(values), nil
 	case "linkTypes":
 		return newLinkTypeSelector(values), nil
+	case "ddpProfiles":
+		return newDdpSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciNetDevice) (types.ResourcePool, error) {
-	filteredDevice := deviceList
-
-	// filter by vendor list
-	if rc.Selectors.Vendors != nil && len(rc.Selectors.Vendors) > 0 {
-		if selector, err := rf.GetSelector("vendors", rc.Selectors.Vendors); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by device list
-	if rc.Selectors.Devices != nil && len(rc.Selectors.Devices) > 0 {
-		if selector, err := rf.GetSelector("devices", rc.Selectors.Devices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by driver list
-	if rc.Selectors.Drivers != nil && len(rc.Selectors.Drivers) > 0 {
-		if selector, err := rf.GetSelector("drivers", rc.Selectors.Drivers); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by PfNames list
-	if rc.Selectors.PfNames != nil && len(rc.Selectors.PfNames) > 0 {
-		if selector, err := rf.GetSelector("pfNames", rc.Selectors.PfNames); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by linkTypes list
-	if rc.Selectors.LinkTypes != nil && len(rc.Selectors.LinkTypes) > 0 {
-		if len(rc.Selectors.LinkTypes) > 1 {
-			glog.Warningf("Link type selector should have a single value.")
-		}
-		if selector, err := rf.GetSelector("linkTypes", rc.Selectors.LinkTypes); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter for rdma devices
-	if rc.IsRdma {
-		rdmaDevices := make([]types.PciNetDevice, 0)
-		for _, dev := range filteredDevice {
-			if dev.GetRdmaSpec().IsRdma() {
-				rdmaDevices = append(rdmaDevices, dev)
-			}
-		}
-		filteredDevice = rdmaDevices
-	}
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciNetDevice) (types.ResourcePool, error) {
 
 	devicePool := make(map[string]types.PciNetDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)

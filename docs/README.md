@@ -4,3 +4,4 @@ This page contains supplimentary documention that users may find useful for vari
 * [Running DPDK application in Kubernetes](dpdk/)
 * [Using UDEV Rules for changing NIC's network device name](udev/)
 * [Running RDMA application in Kubernetes](rdma/)
+* [SR-IOV network device plugin with DDP](ddp/)

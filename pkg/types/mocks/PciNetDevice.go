@@ -27,6 +27,20 @@ func (_m *PciNetDevice) GetAPIDevice() *v1beta1.Device {
 	return r0
 }
 
+// GetDDPProfiles provides a mock function with given fields:
+func (_m *PciNetDevice) GetDDPProfiles() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetDeviceCode provides a mock function with given fields:
 func (_m *PciNetDevice) GetDeviceCode() string {
 	ret := _m.Called()

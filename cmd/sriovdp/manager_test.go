@@ -9,6 +9,7 @@ import (
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	fake "github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
+	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -412,4 +413,60 @@ var _ = Describe("Resource manager", func() {
 			[]types.LinkWatcher{&linkWatcher{ifName: "fakenet0"}},
 		),
 	)
+
+	Describe("getFilteredDevices", func() {
+		Context("with all types of selectors used", func() {
+			var (
+				devs []types.PciNetDevice
+				c    *types.ResourceConfig
+			)
+
+			BeforeEach(func() {
+				cp = &cliParams{
+					configFile:     "/tmp/sriovdp/test_config",
+					resourcePrefix: "test_",
+				}
+				rm = newResourceManager(cp)
+
+				devs = make([]types.PciNetDevice, 4)
+				vendors := []string{"8086", "8086", "8086", "1234"}
+				codes := []string{"1111", "1111", "1234", "4321"}
+				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
+				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
+				linkTypes := []string{"ether", "ether", "ether", "ether"}
+				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+				for i := range devs {
+					d := &fake.PciNetDevice{}
+					d.On("GetVendor").Return(vendors[i]).
+						On("GetDeviceCode").Return(codes[i]).
+						On("GetDriver").Return(drivers[i]).
+						On("GetPFName").Return(pfNames[i]).
+						On("GetLinkType").Return(linkTypes[i]).
+						On("GetPciAddr").Return("fake").
+						On("GetAPIDevice").Return(&pluginapi.Device{}).
+						On("GetDDPProfiles").Return(ddpProfiles[i])
+					devs[i] = d
+				}
+				rm.netDeviceList = devs
+
+				c = &types.ResourceConfig{
+					ResourceName: "fake",
+					Selectors: struct {
+						Vendors     []string `json:"vendors,omitempty"`
+						Devices     []string `json:"devices,omitempty"`
+						Drivers     []string `json:"drivers,omitempty"`
+						PfNames     []string `json:"pfNames,omitempty"`
+						LinkTypes   []string `json:"linkTypes,omitempty"`
+						DDPProfiles []string `json:"ddpProfiles,omitempty"`
+					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}, []string{"enp2s0f2"}, []string{"ether"}, []string{"GTP"}},
+				}
+
+			})
+			It("should return valid resource pool", func() {
+				filteredDevices := rm.getFilteredDevices(c)
+				Expect(filteredDevices).NotTo(BeNil())
+				Expect(filteredDevices).To(HaveLen(1))
+			})
+		})
+	})
 })
