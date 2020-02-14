@@ -1,0 +1,26 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: bond-net
+spec:
+  config: '{
+  "type": "bond",
+  "cniVersion": "0.3.1",
+  "name": "bond-net",
+  "ifname": "bond0",
+  "mode": "active-backup",
+  "linksInContainer": true,
+  "miimon": "100",
+  "links": [
+     {"name": "net1"},
+     {"name": "net2"}
+  ],
+  "ipam": {
+    "type": "host-local",
+    "subnet": "10.56.217.0/24",
+    "routes": [{
+      "dst": "0.0.0.0/0"
+    }],
+    "gateway": "10.56.217.1"
+  }
+}'
