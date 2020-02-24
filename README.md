@@ -236,7 +236,7 @@ Usage of ./sriovdp:
   -logtostderr
         log to standard error instead of files
   -resource-prefix string
-        resource name prefix used for K8s extended resource (default "intel.com")
+        resource name prefix used for K8s extended resource (default "sriovdev.com")
   -stderrthreshold value
         logs at or above this threshold go to stderr
   -v value
@@ -290,7 +290,7 @@ If only PF network interface specified in the selector, then assuming that all V
 - Create a resource config map
 - Run SRIOV device plugin (as daemonset)
 
-On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name is appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
+On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name is appended with the `-resource-prefix` i.e. `"sriovdev.com/sriov_net_A"`.
 
 ```json
 $ kubectl get node node1 -o json | jq '.status.allocatable'
@@ -300,8 +300,8 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
   "ephemeral-storage": "169986638772",
   "hugepages-1Gi": "0",
   "hugepages-2Mi": "8Gi",
-  "intel.com/sriov_net_A": "8",
-  "intel.com/sriov_net_B": "8",
+  "sriovdev.com/sriov_net_A": "8",
+  "sriovdev.com/sriov_net_B": "8",
   "memory": "7880620Ki",
   "pods": "1k"
 }

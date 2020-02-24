@@ -31,7 +31,7 @@ const (
 func flagInit(cp *cliParams) {
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
-	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
+	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "sriovdev.com",
 		"resource name prefix used for K8s extended resource")
 }
 
