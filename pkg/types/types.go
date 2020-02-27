@@ -84,25 +84,31 @@ type ResourcePool interface {
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 }
 
-// PciNetDevice provides an interface to get device specific information
-type PciNetDevice interface {
-	GetPFName() string
+// PciDevice provides an interface to get device specific information
+type PciDevice interface {
 	GetPfPciAddr() string
 	GetVendor() string
 	GetDriver() string
 	GetDeviceCode() string
 	GetPciAddr() string
-	GetNetName() string
 	IsSriovPF() bool
-	GetLinkSpeed() string
-	GetLinkType() string
 	GetSubClass() string
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	GetEnvVal() string
 	GetMounts() []*pluginapi.Mount
 	GetAPIDevice() *pluginapi.Device
-	GetRdmaSpec() RdmaSpec
 	GetVFID() int
+	GetNumaInfo() string
+}
+
+// PciNetDevice provides an interface to get device specific information
+type PciNetDevice interface {
+	PciDevice
+	GetPFName() string
+	GetNetName() string
+	GetLinkSpeed() string
+	GetLinkType() string
+	GetRdmaSpec() RdmaSpec
 	GetDDPProfiles() string
 }
 
