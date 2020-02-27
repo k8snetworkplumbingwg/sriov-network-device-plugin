@@ -35,14 +35,14 @@ var _ = Describe("PciNetDevice", func() {
 				out := dev.(*pciNetDevice)
 
 				// TODO: assert other fields once implemented
-				Expect(out.driver).To(Equal("vfio-pci"))
-				Expect(out.env).To(Equal("0000:00:00.1"))
-				Expect(out.deviceSpecs).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
+				Expect(out.GetDriver()).To(Equal("vfio-pci"))
+				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
 				Expect(out.GetRdmaSpec().IsRdma()).To(BeFalse())
 				Expect(out.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
 				Expect(out.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(out.numa).To(Equal("0"))
+				Expect(out.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to negative numa_node", func() {
@@ -67,7 +67,7 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := NewPciNetDevice(in, f)
 				out := dev.(*pciNetDevice)
 				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.numa).To(Equal(""))
+				Expect(out.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to missing numa_node", func() {
@@ -91,7 +91,7 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := NewPciNetDevice(in, f)
 				out := dev.(*pciNetDevice)
 				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.numa).To(Equal(""))
+				Expect(out.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -139,7 +139,7 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev).NotTo(BeNil())
 
-				Expect(out.env).To(Equal("0000:00:00.1"))
+				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
 			})
 		})
 	})
