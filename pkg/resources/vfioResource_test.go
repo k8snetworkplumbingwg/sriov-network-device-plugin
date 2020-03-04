@@ -19,9 +19,9 @@ var _ = Describe("VfioPool", func() {
 		BeforeEach(func() {
 			vfioPool = newVfioResourcePool()
 		})
-		It("should return valid vfioResourcePool object", func() {
+		It("should return valid vfioResource object", func() {
 			Expect(vfioPool).NotTo(Equal(nil))
-			Expect(reflect.TypeOf(vfioPool)).To(Equal(reflect.TypeOf(&vfioResourcePool{})))
+			Expect(reflect.TypeOf(vfioPool)).To(Equal(reflect.TypeOf(&vfioResource{})))
 		})
 	})
 	DescribeTable("GetDeviceSpecs",

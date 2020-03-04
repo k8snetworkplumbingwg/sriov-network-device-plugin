@@ -17,11 +17,11 @@ var _ = Describe("UioPool", func() {
 	Describe("creating new UIO resource pool", func() {
 		var uioPool types.DeviceInfoProvider
 		BeforeEach(func() {
-			uioPool = newUioResourcePool()
+			uioPool = NewUioResourcePool()
 		})
-		It("should return valid uioResourcePool object", func() {
+		It("should return valid uioResource object", func() {
 			Expect(uioPool).NotTo(Equal(nil))
-			Expect(reflect.TypeOf(uioPool)).To(Equal(reflect.TypeOf(&uioResourcePool{})))
+			Expect(reflect.TypeOf(uioPool)).To(Equal(reflect.TypeOf(&uioResource{})))
 		})
 	})
 	DescribeTable("getting device specs",

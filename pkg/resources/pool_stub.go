@@ -20,51 +20,59 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-type resourcePool struct {
+// ResourcePoolImpl implements stub ResourcePool interface
+type ResourcePoolImpl struct {
 	config     *types.ResourceConfig
 	devices    map[string]*pluginapi.Device
-	devicePool map[string]types.PciNetDevice
+	devicePool map[string]types.PciDevice
 }
 
-var _ types.ResourcePool = &resourcePool{}
+var _ types.ResourcePool = &ResourcePoolImpl{}
 
-// newResourcePool returns an instance of resourcePool
-func newResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciNetDevice) types.ResourcePool {
-	return &resourcePool{
+// NewResourcePool returns an instance of resourcePool
+func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+	return &ResourcePoolImpl{
 		config:     rc,
 		devices:    apiDevices,
 		devicePool: devicePool,
 	}
 }
 
-func (rp *resourcePool) GetConfig() *types.ResourceConfig {
+// GetConfig returns ResourceConfig for this resourcePool
+func (rp *ResourcePoolImpl) GetConfig() *types.ResourceConfig {
 	return rp.config
 }
 
-func (rp *resourcePool) InitDevice() error {
+// InitDevice - not implemented
+func (rp *ResourcePoolImpl) InitDevice() error {
 	// Not implemented
 	return nil
 }
 
-func (rp *resourcePool) GetResourceName() string {
+// GetResourceName returns the resource name as string
+func (rp *ResourcePoolImpl) GetResourceName() string {
 	return rp.config.ResourceName
 }
 
-func (rp *resourcePool) GetResourcePrefix() string {
+// GetResourcePrefix returns the resource name prefix as string
+func (rp *ResourcePoolImpl) GetResourcePrefix() string {
 	return rp.config.ResourcePrefix
 }
 
-func (rp *resourcePool) GetDevices() map[string]*pluginapi.Device {
+// GetDevices returns a map of Kubelet API devices
+func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
 	// returns all devices from devices[]
 	return rp.devices
 }
 
-func (rp *resourcePool) Probe() bool {
+// Probe - does device healthcheck. Not implemented
+func (rp *ResourcePoolImpl) Probe() bool {
 	// TO-DO: Implement this
 	return false
 }
 
-func (rp *resourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
+// GetDeviceSpecs returns list of plugin API device specs for a list of device IDs
+func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
 	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
@@ -72,17 +80,8 @@ func (rp *resourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSp
 	for _, id := range deviceIDs {
 		if dev, ok := rp.devicePool[id]; ok {
 			newSpecs := dev.GetDeviceSpecs()
-			rdmaSpec := dev.GetRdmaSpec()
-			if rp.config.IsRdma {
-				if rdmaSpec.IsRdma() {
-					rdmaDeviceSpec := rdmaSpec.GetRdmaDeviceSpec()
-					newSpecs = append(newSpecs, rdmaDeviceSpec...)
-				} else {
-					glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device %v is not rdma device", id)
-				}
-			}
 			for _, ds := range newSpecs {
-				if !rp.deviceSpecExist(devSpecs, ds) {
+				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)
 				}
 
@@ -93,7 +92,8 @@ func (rp *resourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSp
 	return devSpecs
 }
 
-func (rp *resourcePool) GetEnvs(deviceIDs []string) []string {
+// GetEnvs returns a list of device specific Env values for device IDs
+func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) []string {
 	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
 	devEnvs := make([]string, 0)
 
@@ -108,7 +108,8 @@ func (rp *resourcePool) GetEnvs(deviceIDs []string) []string {
 	return devEnvs
 }
 
-func (rp *resourcePool) GetMounts(deviceIDs []string) []*pluginapi.Mount {
+// GetMounts returns a list of Mount for device IDs
+func (rp *ResourcePoolImpl) GetMounts(deviceIDs []string) []*pluginapi.Mount {
 	glog.Infof("GetMounts(): for devices: %v", deviceIDs)
 	devMounts := make([]*pluginapi.Mount, 0)
 
@@ -121,11 +122,17 @@ func (rp *resourcePool) GetMounts(deviceIDs []string) []*pluginapi.Mount {
 	return devMounts
 }
 
-func (rp *resourcePool) deviceSpecExist(specs []*pluginapi.DeviceSpec, newSpec *pluginapi.DeviceSpec) bool {
+// DeviceSpecExist checks if a DeviceSpec already exist in a DeviceSpec list
+func (rp *ResourcePoolImpl) DeviceSpecExist(specs []*pluginapi.DeviceSpec, newSpec *pluginapi.DeviceSpec) bool {
 	for _, sp := range specs {
 		if sp.HostPath == newSpec.HostPath {
 			return true
 		}
 	}
 	return false
+}
+
+// GetDevicePool returns PciDevice pool as a map
+func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.PciDevice {
+	return rp.devicePool
 }

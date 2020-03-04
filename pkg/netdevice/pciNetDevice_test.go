@@ -1,4 +1,4 @@
-package resources
+package netdevice
 
 import (
 	"github.com/jaypipes/ghw"

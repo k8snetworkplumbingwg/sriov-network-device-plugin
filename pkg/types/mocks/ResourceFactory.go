@@ -10,6 +10,45 @@ type ResourceFactory struct {
 	mock.Mock
 }
 
+// GetDeviceFilter provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetDeviceFilter(_a0 *types.ResourceConfig) (types.DeviceFilter, error) {
+	ret := _m.Called(_a0)
+
+	var r0 types.DeviceFilter
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) types.DeviceFilter); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.DeviceFilter)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*types.ResourceConfig) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetDeviceProvider provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetDeviceProvider(_a0 types.DeviceType) types.DeviceProvider {
+	ret := _m.Called(_a0)
+
+	var r0 types.DeviceProvider
+	if rf, ok := ret.Get(0).(func(types.DeviceType) types.DeviceProvider); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.DeviceProvider)
+		}
+	}
+
+	return r0
+}
+
 // GetInfoProvider provides a mock function with given fields: _a0
 func (_m *ResourceFactory) GetInfoProvider(_a0 string) types.DeviceInfoProvider {
 	ret := _m.Called(_a0)
@@ -43,11 +82,11 @@ func (_m *ResourceFactory) GetRdmaSpec(_a0 string) types.RdmaSpec {
 }
 
 // GetResourcePool provides a mock function with given fields: rc, deviceList
-func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciNetDevice) (types.ResourcePool, error) {
+func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciDevice) (types.ResourcePool, error) {
 	ret := _m.Called(rc, deviceList)
 
 	var r0 types.ResourcePool
-	if rf, ok := ret.Get(0).(func(*types.ResourceConfig, []types.PciNetDevice) types.ResourcePool); ok {
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig, []types.PciDevice) types.ResourcePool); ok {
 		r0 = rf(rc, deviceList)
 	} else {
 		if ret.Get(0) != nil {
@@ -56,7 +95,7 @@ func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*types.ResourceConfig, []types.PciNetDevice) error); ok {
+	if rf, ok := ret.Get(1).(func(*types.ResourceConfig, []types.PciDevice) error); ok {
 		r1 = rf(rc, deviceList)
 	} else {
 		r1 = ret.Error(1)
