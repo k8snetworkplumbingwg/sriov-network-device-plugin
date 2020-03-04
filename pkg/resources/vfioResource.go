@@ -21,25 +21,42 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-type uioResourcePool struct {
+/*
+	vfioResource extends resourcePool and overrides:
+	GetDeviceSpecs(),
+	GetEnvs()
+	GetMounts()
+*/
+type vfioResource struct {
+	vfioMount string
 }
 
-func newUioResourcePool() types.DeviceInfoProvider {
-	return &uioResourcePool{}
+// NewVfioResource create instance of VFIO DeviceInfoProvider
+func NewVfioResource() types.DeviceInfoProvider {
+
+	return &vfioResource{
+		vfioMount: "/dev/vfio/vfio",
+	}
+
 }
 
 // *****************************************************************
 /* DeviceInfoProvider Interface */
-func (rp *uioResourcePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *vfioResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
+		HostPath:      rp.vfioMount,
+		ContainerPath: rp.vfioMount,
+		Permissions:   "mrw",
+	})
 
-	uioDev, err := utils.GetUIODeviceFile(pciAddr)
+	vfioDev, err := utils.GetVFIODeviceFile(pciAddr)
 	if err != nil {
 		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
 	} else {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      uioDev,
-			ContainerPath: uioDev,
+			HostPath:      vfioDev,
+			ContainerPath: vfioDev,
 			Permissions:   "mrw",
 		})
 	}
@@ -47,11 +64,11 @@ func (rp *uioResourcePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpe
 	return devSpecs
 }
 
-func (rp *uioResourcePool) GetEnvVal(pciAddr string) string {
+func (rp *vfioResource) GetEnvVal(pciAddr string) string {
 	return pciAddr
 }
 
-func (rp *uioResourcePool) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *vfioResource) GetMounts(pciAddr string) []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }

@@ -18,13 +18,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
-	"github.com/vishvananda/netlink"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/resources"
+	"github.com/intel/sriov-network-device-plugin/pkg/factory"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 )
@@ -62,6 +60,7 @@ type resourceManager struct {
 	resourceServers []types.ResourceServer
 	netDeviceList   []types.PciNetDevice         // all network devices in host
 	linkWatchList   map[string]types.LinkWatcher // SRIOV PF list - for watching link status
+	deviceProviders map[types.DeviceType]types.DeviceProvider
 }
 
 func newResourceManager(cp *cliParams) *resourceManager {
@@ -71,12 +70,20 @@ func newResourceManager(cp *cliParams) *resourceManager {
 	} else {
 		glog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
+
+	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode)
+	dp := make(map[types.DeviceType]types.DeviceProvider)
+	for k := range types.SupportedDevices {
+		dp[k] = rf.GetDeviceProvider(k)
+	}
+
 	return &resourceManager{
 		cliParams:       *cp,
 		pluginWatchMode: pluginWatchMode,
-		rFactory:        resources.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode),
+		rFactory:        rf,
 		netDeviceList:   make([]types.PciNetDevice, 0),
 		linkWatchList:   make(map[string]types.LinkWatcher, 0),
+		deviceProviders: dp,
 	}
 }
 
@@ -97,6 +104,17 @@ func (rm *resourceManager) readConfig() error {
 
 	glog.Infof("ResourceList: %+v", resources.ResourceList)
 	for i := range resources.ResourceList {
+		conf := &resources.ResourceList[i]
+		// Validate deviceType
+		if conf.DeviceType == "" {
+			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
+		} else {
+			// Check if the DeviceType is supported
+			if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
+				return fmt.Errorf("unsupported deviceType:  \"%s\"", conf.DeviceType)
+			}
+		}
+		conf.DeviceFilter, err = rm.rFactory.GetDeviceFilter(conf)
 		rm.configList = append(rm.configList, &resources.ResourceList[i])
 	}
 
@@ -110,7 +128,16 @@ func (rm *resourceManager) initServers() error {
 		// Create new ResourcePool
 		glog.Infof("")
 		glog.Infof("Creating new ResourcePool: %s", rc.ResourceName)
-		filteredDevices := rm.getFilteredDevices(rc)
+		glog.Infof("DeviceType: %+v", rc.DeviceType)
+		dp, ok := rm.deviceProviders[rc.DeviceType]
+		if !ok {
+			glog.Infof("Unable to get device provider from deviceType: %s", rc.DeviceType)
+			return fmt.Errorf("error getting device provider")
+		}
+
+		//filteredDevices := dp.GetFilteredDevices(rc)
+		devices := dp.GetDevices()
+		filteredDevices := rc.DeviceFilter.GetFilteredDevices(devices)
 		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
@@ -180,6 +207,16 @@ func (rm *resourceManager) validConfigs() bool {
 			return false
 		}
 
+		// Validate deviceType
+		if conf.DeviceType == "" {
+			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
+		} else {
+			// Check if the DeviceType is supported
+			if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
+				glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
+				return false
+			}
+		}
 		resourceNames[resourceName] = resourceName
 	}
 
@@ -198,165 +235,13 @@ func (rm *resourceManager) discoverHostDevices() error {
 	if len(devices) == 0 {
 		glog.Warningf("discoverDevices(): no PCI network device found")
 	}
-	for _, device := range devices {
-		devClass, err := strconv.ParseInt(device.Class.ID, 16, 64)
-		if err != nil {
-			glog.Warningf("discoverDevices(): unable to parse device class for device %+v %q", device, err)
-			continue
-		}
 
-		// only interested in network class
-		if devClass == netClass {
-			vendor := device.Vendor
-			vendorName := vendor.Name
-			if len(vendor.Name) > 20 {
-				vendorName = string([]byte(vendorName)[0:17]) + "..."
-			}
-			product := device.Product
-			productName := product.Name
-			if len(product.Name) > 40 {
-				productName = string([]byte(productName)[0:37]) + "..."
-			}
-			glog.Infof("discoverDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
-
-			// exclude device in-use in host
-			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
-
-				aPF := utils.IsSriovPF(device.Address)
-				aVF := utils.IsSriovVF(device.Address)
-
-				if aPF || !aVF {
-					// add to linkWatchList
-					rm.addToLinkWatchList(device.Address)
-				}
-
-				if aPF && utils.SriovConfigured(device.Address) {
-					// do not add this device in net device list
-					continue
-				}
-
-				if newDevice, err := resources.NewPciNetDevice(device, rm.rFactory); err == nil {
-					rm.netDeviceList = append(rm.netDeviceList, newDevice)
-				} else {
-					glog.Errorf("discoverDevices() error adding new device: %q", err)
-				}
-
-			}
+	for k, v := range types.SupportedDevices {
+		if dp, ok := rm.deviceProviders[k]; ok {
+			dp.AddTargetDevices(devices, v)
 		}
 	}
 	return nil
-}
-
-// hasDefaultRoute returns true if PCI network device is default route interface
-func hasDefaultRoute(pciAddr string) (bool, error) {
-
-	// inUse := false
-	// Get net interface name
-	ifNames, err := utils.GetNetNames(pciAddr)
-	if err != nil {
-		return false, fmt.Errorf("error trying get net device name for device %s", pciAddr)
-	}
-
-	if len(ifNames) > 0 { // there's at least one interface name found
-		for _, ifName := range ifNames {
-			link, err := netlink.LinkByName(ifName)
-			if err != nil {
-				glog.Errorf("expected to get valid host interface with name %s: %q", ifName, err)
-			}
-
-			routes, err := netlink.RouteList(link, netlink.FAMILY_V4) // IPv6 routes: all interface has at least one link local route entry
-			for _, r := range routes {
-				if r.Dst == nil {
-					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
-					return true, nil
-				}
-			}
-		}
-	}
-
-	return false, nil
-}
-
-func (rm *resourceManager) addToLinkWatchList(pciAddr string) {
-	netNames, err := utils.GetNetNames(pciAddr)
-	if err == nil {
-		// There are some cases, where we may get multiple netdevice name for a PCI device
-		// Only add one device
-		if len(netNames) > 0 {
-			netName := netNames[0]
-			lw := &linkWatcher{ifName: netName}
-			if _, ok := rm.linkWatchList[pciAddr]; !ok {
-				rm.linkWatchList[netName] = lw
-				glog.Infof("%s added to linkWatchList", netName)
-			}
-		}
-	}
-}
-
-// applyFilters returned a subset PciNetDevices by applying given selectors values in the following orders:
-// "vendors", "devices", "drivers", "pfNames", "ddpProfiles".
-// Each selector gets a new sub-set of devices from the result of previous one.
-func (rm *resourceManager) getFilteredDevices(rc *types.ResourceConfig) []types.PciNetDevice {
-	filteredDevice := rm.netDeviceList
-
-	rf := rm.rFactory
-	// filter by vendor list
-	if rc.Selectors.Vendors != nil && len(rc.Selectors.Vendors) > 0 {
-		if selector, err := rf.GetSelector("vendors", rc.Selectors.Vendors); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by device list
-	if rc.Selectors.Devices != nil && len(rc.Selectors.Devices) > 0 {
-		if selector, err := rf.GetSelector("devices", rc.Selectors.Devices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by driver list
-	if rc.Selectors.Drivers != nil && len(rc.Selectors.Drivers) > 0 {
-		if selector, err := rf.GetSelector("drivers", rc.Selectors.Drivers); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by PfNames list
-	if rc.Selectors.PfNames != nil && len(rc.Selectors.PfNames) > 0 {
-		if selector, err := rf.GetSelector("pfNames", rc.Selectors.PfNames); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by linkTypes list
-	if rc.Selectors.LinkTypes != nil && len(rc.Selectors.LinkTypes) > 0 {
-		if len(rc.Selectors.LinkTypes) > 1 {
-			glog.Warningf("Link type selector should have a single value.")
-		}
-		if selector, err := rf.GetSelector("linkTypes", rc.Selectors.LinkTypes); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by DDP Profiles list
-	if rc.Selectors.DDPProfiles != nil && len(rc.Selectors.DDPProfiles) > 0 {
-		if selector, err := rf.GetSelector("ddpProfiles", rc.Selectors.DDPProfiles); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter for rdma devices
-	if rc.IsRdma {
-		rdmaDevices := make([]types.PciNetDevice, 0)
-		for _, dev := range filteredDevice {
-			if dev.GetRdmaSpec().IsRdma() {
-				rdmaDevices = append(rdmaDevices, dev)
-			}
-		}
-		filteredDevice = rdmaDevices
-	}
-
-	return filteredDevice
 }
 
 type linkWatcher struct {

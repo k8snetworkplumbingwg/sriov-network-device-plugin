@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resources
+package factory
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/intel/sriov-network-device-plugin/pkg/resources"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
@@ -50,7 +53,7 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return newResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }
@@ -59,11 +62,11 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 func (rf *resourceFactory) GetInfoProvider(name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
-		return newVfioResourcePool()
+		return resources.NewVfioResource()
 	case "uio", "igb_uio":
-		return newUioResourcePool()
+		return resources.NewUioResource()
 	default:
-		return newNetDevicePool()
+		return resources.NewGenericResource()
 	}
 }
 
@@ -72,26 +75,26 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 	// glog.Infof("GetSelector(): selector for attribute: %s", attr)
 	switch attr {
 	case "vendors":
-		return newVendorSelector(values), nil
+		return resources.NewVendorSelector(values), nil
 	case "devices":
-		return newDeviceSelector(values), nil
+		return resources.NewDeviceSelector(values), nil
 	case "drivers":
-		return newDriverSelector(values), nil
+		return resources.NewDriverSelector(values), nil
 	case "pfNames":
-		return newPfNameSelector(values), nil
+		return resources.NewPfNameSelector(values), nil
 	case "linkTypes":
-		return newLinkTypeSelector(values), nil
+		return resources.NewLinkTypeSelector(values), nil
 	case "ddpProfiles":
-		return newDdpSelector(values), nil
+		return resources.NewDdpSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciNetDevice) (types.ResourcePool, error) {
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
 
-	devicePool := make(map[string]types.PciNetDevice, 0)
+	devicePool := make(map[string]types.PciDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)
 	for _, dev := range filteredDevice {
 		pciAddr := dev.GetPciAddr()
@@ -104,10 +107,52 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 			dev.GetDriver())
 	}
 
-	rPool := newResourcePool(rc, apiDevices, devicePool)
-	return rPool, nil
+	var rPool types.ResourcePool
+	var err error
+	switch rc.DeviceType {
+	case types.NetDeviceType:
+		if len(filteredDevice) > 0 {
+			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
+				rPool = netdevice.NewNetResourcePool(rc, apiDevices, devicePool)
+			} else {
+				rPool = nil
+				err = fmt.Errorf("invalid device list for NetDeviceType")
+			}
+		}
+	default:
+		rPool = resources.NewResourcePool(rc, apiDevices, devicePool)
+	}
+	return rPool, err
 }
 
 func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
-	return NewRdmaSpec(pciAddrs)
+	return netdevice.NewRdmaSpec(pciAddrs)
+}
+
+func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DeviceProvider {
+	switch dt {
+	case types.NetDeviceType:
+		return netdevice.NewNetDeviceProvider(rf)
+	// case types.AcceleratorType:
+	// 	return NewNetDeviceProvider(rf) // Change this to AccelDeviceProvider
+	default:
+		return nil
+	}
+}
+
+func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (types.DeviceFilter, error) {
+	switch rc.DeviceType {
+	case types.NetDeviceType:
+		netDeviceSelector := &types.NetDeviceSelectors{}
+
+		if err := json.Unmarshal(*rc.Selectors, netDeviceSelector); err != nil {
+			return nil, fmt.Errorf("error unmarshalling selector bytes %v", err)
+		}
+		// glog.Infof("selectors: %+v", netDeviceSelector)
+		return netdevice.NewNetDeviceFilter(netDeviceSelector, rf, rc.IsRdma), nil
+	// case types.AcceleratorType:
+	// 	return NewNetDeviceProvider(rf) // Change this to AccelDeviceProvider
+	default:
+		return nil, nil
+	}
 }

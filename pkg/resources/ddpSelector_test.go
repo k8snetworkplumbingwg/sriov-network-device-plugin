@@ -20,7 +20,7 @@ var _ = Describe("DdpSelector", func() {
 		Context("filtering", func() {
 			It("should return devices matching DDP profiles", func() {
 				profiles := []string{"GTP"}
-				sel := newDdpSelector(profiles).(*ddpSelector)
+				sel := NewDdpSelector(profiles).(*ddpSelector)
 
 				dev0 := mocks.PciNetDevice{}
 				dev0.On("GetPciAddr").Return("0000:01:10.0")

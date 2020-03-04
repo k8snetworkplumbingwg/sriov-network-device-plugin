@@ -43,7 +43,8 @@ type resourceServer struct {
 	checkIntervals     int // health check intervals in seconds
 }
 
-func newResourceServer(prefix, suffix string, pluginWatch bool, rp types.ResourcePool) types.ResourceServer {
+// NewResourceServer returns an instance of ResourceServer
+func NewResourceServer(prefix, suffix string, pluginWatch bool, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
 	sockPath := filepath.Join(types.SockDir, sockName)
 	if !pluginWatch {

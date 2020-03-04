@@ -15,6 +15,9 @@
 package types
 
 import (
+	"encoding/json"
+
+	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
@@ -30,19 +33,40 @@ const (
 	KubeEndPoint = "kubelet.sock"
 )
 
-// ResourceConfig contains cofiguration paremeters for a resource pool
+// DeviceType is custom type to define supported device types
+type DeviceType string
+
+const (
+	// NetDeviceType is DeviceType for network class devices
+	NetDeviceType DeviceType = "netDevice"
+	// // AcceleratorType is DeviceType for accelerator class devices
+	// AcceleratorType DeviceType = "accelerator"
+)
+
+// SupportedDevices is map of 'device identifier as string' to 'device class hexcode as int'
+var SupportedDevices = map[DeviceType]int{
+	NetDeviceType: 0x02,
+	// AcceleratorType: 0x12,
+}
+
+// ResourceConfig contains configuration paremeters for a resource pool
 type ResourceConfig struct {
-	ResourcePrefix string `json:"resourcePrefix,omitempty"` // optional resource prefix that will ovewrite global prefix specified in cli params
-	ResourceName   string `json:"resourceName"`             // the resource name will be added with resource prefix in K8s api
-	IsRdma         bool   // the resource support rdma
-	Selectors      struct {
-		Vendors     []string `json:"vendors,omitempty"`
-		Devices     []string `json:"devices,omitempty"`
-		Drivers     []string `json:"drivers,omitempty"`
-		PfNames     []string `json:"pfNames,omitempty"`
-		LinkTypes   []string `json:"linkTypes,omitempty"`
-		DDPProfiles []string `json:"ddpProfiles,omitempty"`
-	} `json:"selectors,omitempty"` // Whether devices have SRIOV virtual function capabilities or not
+	ResourcePrefix string           `json:"resourcePrefix,omitempty"` // optional resource prefix that will ovewrite global prefix specified in cli params
+	ResourceName   string           `json:"resourceName"`             // the resource name will be added with resource prefix in K8s api
+	IsRdma         bool             // the resource support rdma
+	DeviceType     DeviceType       `json:"deviceType,omitempty"`
+	Selectors      *json.RawMessage `json:"selectors,omitempty"`
+	DeviceFilter   DeviceFilter
+}
+
+// NetDeviceSelectors contains network device related selectors fields
+type NetDeviceSelectors struct {
+	Vendors     []string `json:"vendors,omitempty"`
+	Devices     []string `json:"devices,omitempty"`
+	Drivers     []string `json:"drivers,omitempty"`
+	PfNames     []string `json:"pfNames,omitempty"`
+	LinkTypes   []string `json:"linkTypes,omitempty"`
+	DDPProfiles []string `json:"ddpProfiles,omitempty"`
 }
 
 // ResourceConfList is list of ResourceConfig
@@ -68,8 +92,10 @@ type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
 	GetInfoProvider(string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
-	GetResourcePool(rc *ResourceConfig, deviceList []PciNetDevice) (ResourcePool, error)
+	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
+	GetDeviceProvider(DeviceType) DeviceProvider
+	GetDeviceFilter(*ResourceConfig) (DeviceFilter, error)
 }
 
 // ResourcePool represents a generic resource entity
@@ -82,6 +108,12 @@ type ResourcePool interface {
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
 	GetEnvs(deviceIDs []string) []string
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
+}
+
+// DeviceProvider provides interface for device discovery
+type DeviceProvider interface {
+	AddTargetDevices([]*ghw.PCIDevice, int) error
+	GetDevices() []PciDevice
 }
 
 // PciDevice provides an interface to get device specific information
@@ -119,9 +151,14 @@ type DeviceInfoProvider interface {
 	GetMounts(pciAddr string) []*pluginapi.Mount
 }
 
+// DeviceFilter provides an interface for getting a list of filtered devices from user config
+type DeviceFilter interface {
+	GetFilteredDevices([]PciDevice) []PciDevice
+}
+
 // DeviceSelector provides an interface for filtering a list of devices
 type DeviceSelector interface {
-	Filter([]PciNetDevice) []PciNetDevice
+	Filter([]PciDevice) []PciDevice
 }
 
 // LinkWatcher in interface to watch Network link status

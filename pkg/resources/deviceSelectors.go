@@ -2,13 +2,14 @@ package resources
 
 import (
 	"fmt"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"strconv"
 	"strings"
+
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
 )
 
-// newVendorSelector returns a DeviceSelector interface for vendor list
-func newVendorSelector(vendors []string) types.DeviceSelector {
+// NewVendorSelector returns a DeviceSelector interface for vendor list
+func NewVendorSelector(vendors []string) types.DeviceSelector {
 	return &vendorSelector{vendors: vendors}
 }
 
@@ -16,8 +17,8 @@ type vendorSelector struct {
 	vendors []string
 }
 
-func (s *vendorSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
-	filteredList := make([]types.PciNetDevice, 0)
+func (s *vendorSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
 		devVendor := dev.GetVendor()
 		if contains(s.vendors, devVendor) {
@@ -27,8 +28,8 @@ func (s *vendorSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
-// newDeviceSelector returns a DeviceSelector interface for device list
-func newDeviceSelector(devices []string) types.DeviceSelector {
+// NewDeviceSelector returns a DeviceSelector interface for device list
+func NewDeviceSelector(devices []string) types.DeviceSelector {
 	return &deviceSelector{devices: devices}
 }
 
@@ -36,8 +37,8 @@ type deviceSelector struct {
 	devices []string
 }
 
-func (s *deviceSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
-	filteredList := make([]types.PciNetDevice, 0)
+func (s *deviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
 		devCode := dev.GetDeviceCode()
 		if contains(s.devices, devCode) {
@@ -47,8 +48,8 @@ func (s *deviceSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
-// newDriverSelector returns a DeviceSelector interface for driver list
-func newDriverSelector(drivers []string) types.DeviceSelector {
+// NewDriverSelector returns a DeviceSelector interface for driver list
+func NewDriverSelector(drivers []string) types.DeviceSelector {
 	return &driverSelector{drivers: drivers}
 }
 
@@ -56,8 +57,8 @@ type driverSelector struct {
 	drivers []string
 }
 
-func (s *driverSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
-	filteredList := make([]types.PciNetDevice, 0)
+func (s *driverSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
 		devDriver := dev.GetDriver()
 		if contains(s.drivers, devDriver) {
@@ -67,8 +68,8 @@ func (s *driverSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
-// newPfNameSelector returns a NetDevSelector interface for netDev list
-func newPfNameSelector(pfNames []string) types.DeviceSelector {
+// NewPfNameSelector returns a NetDevSelector interface for netDev list
+func NewPfNameSelector(pfNames []string) types.DeviceSelector {
 	return &pfNameSelector{pfNames: pfNames}
 }
 
@@ -76,10 +77,11 @@ type pfNameSelector struct {
 	pfNames []string
 }
 
-func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
-	filteredList := make([]types.PciNetDevice, 0)
+func (s *pfNameSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
-		selector := getItem(s.pfNames, dev.GetPFName())
+		pfName := dev.(types.PciNetDevice).GetPFName()
+		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
 			if strings.Contains(selector, "#") {
 				// Selector does contain VF index in next format:
@@ -90,7 +92,7 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 				// in selector pool
 				fields := strings.Split(selector, "#")
 				if len(fields) != 2 {
-					fmt.Printf("Failed to parse %s PF name selector, probably incorrect separator character usage\n", dev.GetPFName())
+					fmt.Printf("Failed to parse %s PF name selector, probably incorrect separator character usage\n", pfName)
 					continue
 				}
 				entries := strings.Split(fields[1], ",")
@@ -98,17 +100,17 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 					if strings.Contains(entries[i], "-") {
 						rng := strings.Split(entries[i], "-")
 						if len(rng) != 2 {
-							fmt.Printf("Failed to parse %s PF name selector, probably incorrect range character usage\n", dev.GetPFName())
+							fmt.Printf("Failed to parse %s PF name selector, probably incorrect range character usage\n", pfName)
 							continue
 						}
 						rngSt, err := strconv.Atoi(rng[0])
 						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, start range is incorrect\n", dev.GetPFName())
+							fmt.Printf("Failed to parse %s PF name selector, start range is incorrect\n", pfName)
 							continue
 						}
 						rngEnd, err := strconv.Atoi(rng[1])
 						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, end range is incorrect\n", dev.GetPFName())
+							fmt.Printf("Failed to parse %s PF name selector, end range is incorrect\n", pfName)
 							continue
 						}
 						vfID := dev.GetVFID()
@@ -118,7 +120,7 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 					} else {
 						vfid, err := strconv.Atoi(entries[i])
 						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, index is incorrect\n", dev.GetPFName())
+							fmt.Printf("Failed to parse %s PF name selector, index is incorrect\n", pfName)
 							continue
 						}
 						vfID := dev.GetVFID()
@@ -137,8 +139,8 @@ func (s *pfNameSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDe
 	return filteredList
 }
 
-// newLinkTypeSelector returns a interface for netDev list
-func newLinkTypeSelector(linkTypes []string) types.DeviceSelector {
+// NewLinkTypeSelector returns a interface for netDev list
+func NewLinkTypeSelector(linkTypes []string) types.DeviceSelector {
 	return &linkTypeSelector{linkTypes: linkTypes}
 }
 
@@ -146,10 +148,11 @@ type linkTypeSelector struct {
 	linkTypes []string
 }
 
-func (s *linkTypeSelector) Filter(inDevices []types.PciNetDevice) []types.PciNetDevice {
-	filteredList := make([]types.PciNetDevice, 0)
+func (s *linkTypeSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
-		if contains(s.linkTypes, dev.GetLinkType()) {
+		linkType := dev.(types.PciNetDevice).GetLinkType()
+		if contains(s.linkTypes, linkType) {
 			filteredList = append(filteredList, dev)
 		}
 	}

@@ -19,24 +19,25 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-type netDevicePool struct {
+type genericResource struct {
 }
 
-func newNetDevicePool() types.DeviceInfoProvider {
-	return &netDevicePool{}
+// NewGenericResource instantiate a generic DeviceInfoProvider
+func NewGenericResource() types.DeviceInfoProvider {
+	return &genericResource{}
 }
 
-func (rp *netDevicePool) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *genericResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-func (rp *netDevicePool) GetEnvVal(pciAddr string) string {
+func (rp *genericResource) GetEnvVal(pciAddr string) string {
 	return pciAddr
 }
 
-func (rp *netDevicePool) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *genericResource) GetMounts(pciAddr string) []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }
