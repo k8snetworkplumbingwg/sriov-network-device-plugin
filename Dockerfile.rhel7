@@ -1,6 +1,6 @@
 FROM registry.svc.ci.openshift.org/ocp/builder:golang-1.10 AS builder
 
-ADD . /usr/src/sriov-network-device-plugin
+COPY . /usr/src/sriov-network-device-plugin
 
 WORKDIR /usr/src/sriov-network-device-plugin
 
@@ -19,6 +19,6 @@ WORKDIR /
 
 LABEL io.k8s.display-name="SRIOV Network Device Plugin"
 
-ADD ./images/entrypoint.sh /
+COPY ./images/entrypoint.sh /
 
 ENTRYPOINT ["/entrypoint.sh"]
