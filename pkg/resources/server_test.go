@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
@@ -28,7 +29,7 @@ var _ = Describe("Server", func() {
 			})
 			It("should have the properties correctly assigned when plugin watcher enabled", func() {
 				// Create ResourceServer with plugin watch mode enabled
-				obj := newResourceServer("fakeprefix", "fakesuffix", true, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", true, &rp)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
@@ -38,7 +39,7 @@ var _ = Describe("Server", func() {
 			})
 			It("should have the properties correctly assigned when plugin watcher disabled", func() {
 				// Create ResourceServer with plugin watch mode disabled
-				obj := newResourceServer("fakeprefix", "fakesuffix", false, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", false, &rp)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
@@ -62,7 +63,7 @@ var _ = Describe("Server", func() {
 			types.SockDir = fs.RootDir
 			types.DeprecatedSockDir = fs.RootDir
 
-			obj := newResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp)
+			obj := NewResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp)
 			rs := obj.(*resourceServer)
 
 			registrationServer := createFakeRegistrationServer(fs.RootDir,
@@ -108,7 +109,7 @@ var _ = Describe("Server", func() {
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fake.com")
-				rs := newResourceServer("fakeprefix", "fakesuffix", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fakeprefix", "fakesuffix", true, &rp).(*resourceServer)
 				err = rs.Init()
 			})
 			It("should never fail", func() {
@@ -124,16 +125,13 @@ var _ = Describe("Server", func() {
 			fs       *utils.FakeFilesystem
 		)
 		BeforeEach(func() {
+			var selectors json.RawMessage
+			err := selectors.UnmarshalJSON([]byte(`[{"devices": ["fakeid"]}]`))
+			Expect(err).NotTo(HaveOccurred())
+
 			fakeConf = &types.ResourceConfig{
 				ResourceName: "fake",
-				Selectors: struct {
-					Vendors     []string `json:"vendors,omitempty"`
-					Devices     []string `json:"devices,omitempty"`
-					Drivers     []string `json:"drivers,omitempty"`
-					PfNames     []string `json:"pfNames,omitempty"`
-					LinkTypes   []string `json:"linkTypes,omitempty"`
-					DDPProfiles []string `json:"ddpProfiles,omitempty"`
-				}{[]string{}, []string{"fakeid"}, []string{}, []string{}, []string{}, []string{}},
+				Selectors:    &selectors,
 			}
 			rp = mocks.ResourcePool{}
 			rp.On("GetConfig").Return(fakeConf).
@@ -150,7 +148,7 @@ var _ = Describe("Server", func() {
 				types.DeprecatedSockDir = fs.RootDir
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := newResourceServer("fake", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -180,7 +178,7 @@ var _ = Describe("Server", func() {
 				types.SockDir = fs.RootDir
 
 				// Create ResourceServer with plugin watch mode enabled
-				rs := newResourceServer("fake", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", true, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, true)
@@ -206,7 +204,7 @@ var _ = Describe("Server", func() {
 				types.DeprecatedSockDir = fs.RootDir
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := newResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -248,7 +246,7 @@ var _ = Describe("Server", func() {
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
 
-			rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+			rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 
 			resp, err := rs.Allocate(nil, req)
 
@@ -302,7 +300,7 @@ var _ = Describe("Server", func() {
 				On("GetResourceName").Return("fake").
 				On("GetEnvs", deviceIDs).Return(in)
 
-			obj := newResourceServer("fake.com", "fake", true, &rp)
+			obj := NewResourceServer("fake.com", "fake", true, &rp)
 			rs := *obj.(*resourceServer)
 			rs.sockPath = fs.RootDir
 			actual := rs.getEnvs(deviceIDs)
@@ -327,7 +325,7 @@ var _ = Describe("Server", func() {
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -348,7 +346,7 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -383,7 +381,7 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := newResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{

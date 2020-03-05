@@ -1,6 +1,9 @@
-package resources
+package resources_test
 
 import (
+	"fmt"
+
+	"github.com/intel/sriov-network-device-plugin/pkg/resources"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 
@@ -13,14 +16,15 @@ var _ = Describe("DdpSelector", func() {
 		Context("initializing", func() {
 			It("should populate vendors array", func() {
 				profiles := []string{"GTPv1-C", "PPPoE"}
-				sel := newDdpSelector(profiles).(*ddpSelector)
-				Expect(sel.profiles).To(ConsistOf(profiles))
+				sel := resources.NewDdpSelector(profiles)
+				fmt.Printf("%#v", sel)
+				//Expect(sel.GetDPProfiles()).To(ConsistOf(profiles))
 			})
 		})
 		Context("filtering", func() {
 			It("should return devices matching DDP profiles", func() {
 				profiles := []string{"GTP"}
-				sel := NewDdpSelector(profiles).(*ddpSelector)
+				sel := resources.NewDdpSelector(profiles)
 
 				dev0 := mocks.PciNetDevice{}
 				dev0.On("GetPciAddr").Return("0000:01:10.0")
@@ -34,7 +38,7 @@ var _ = Describe("DdpSelector", func() {
 				dev2.On("GetPciAddr").Return("0000:01:10.2")
 				dev2.On("GetDDPProfiles").Return("")
 
-				in := []types.PciNetDevice{&dev0, &dev1}
+				in := []types.PciDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))

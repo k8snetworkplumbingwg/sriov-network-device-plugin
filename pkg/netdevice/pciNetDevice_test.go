@@ -1,13 +1,22 @@
-package netdevice
+package netdevice_test
 
 import (
+	"testing"
+
 	"github.com/jaypipes/ghw"
 
+	"github.com/intel/sriov-network-device-plugin/pkg/factory"
+	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+func TestNetdevice(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Netdevice Suite")
+}
 
 var _ = Describe("PciNetDevice", func() {
 	Describe("creating new PciNetDevice", func() {
@@ -28,21 +37,19 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 
-				dev, err := NewPciNetDevice(in, f)
-				out := dev.(*pciNetDevice)
+				dev, err := netdevice.NewPciNetDevice(in, f)
 
-				// TODO: assert other fields once implemented
-				Expect(out.GetDriver()).To(Equal("vfio-pci"))
-				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
-				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
-				Expect(out.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(out.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
-				Expect(out.GetLinkType()).To(Equal("fakeLinkType"))
-				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(out.GetNumaInfo()).To(Equal("0"))
+				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
+				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
+				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
+				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to negative numa_node", func() {
@@ -61,13 +68,13 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 
-				dev, err := NewPciNetDevice(in, f)
-				out := dev.(*pciNetDevice)
-				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.GetNumaInfo()).To(Equal(""))
+				dev, err := netdevice.NewPciNetDevice(in, f)
+
+				Expect(dev.GetAPIDevice().Topology).To(BeNil())
+				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to missing numa_node", func() {
@@ -85,13 +92,13 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 
-				dev, err := NewPciNetDevice(in, f)
-				out := dev.(*pciNetDevice)
-				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.GetNumaInfo()).To(Equal(""))
+				dev, err := netdevice.NewPciNetDevice(in, f)
+
+				Expect(dev.GetAPIDevice().Topology).To(BeNil())
+				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -104,12 +111,12 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
 
-				dev, err := NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f)
 
 				Expect(dev).To(BeNil())
 				Expect(err).To(HaveOccurred())
@@ -127,19 +134,16 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
 
-				dev, err := NewPciNetDevice(in, f)
-				Expect(err).NotTo(HaveOccurred())
-
-				out := dev.(*pciNetDevice)
+				dev, err := netdevice.NewPciNetDevice(in, f)
 
 				Expect(dev).NotTo(BeNil())
-
-				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})
