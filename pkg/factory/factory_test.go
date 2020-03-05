@@ -1,53 +1,84 @@
-package factory
+package factory_test
 
 import (
+	"encoding/json"
 	"reflect"
+	"testing"
 
+	"github.com/intel/sriov-network-device-plugin/pkg/factory"
+	"github.com/intel/sriov-network-device-plugin/pkg/resources"
+	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
-
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
+func TestFactory(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Factory Suite")
+}
+
 var _ = Describe("Factory", func() {
 	Describe("getting factory instance", func() {
 		Context("always", func() {
 			It("should return the same instance", func() {
-				f0 := NewResourceFactory("fake", "fake", true)
+				f0 := factory.NewResourceFactory("fake", "fake", true)
 				Expect(f0).NotTo(BeNil())
-				f1 := NewResourceFactory("fake", "fake", true)
+				f1 := factory.NewResourceFactory("fake", "fake", true)
 				Expect(f1).To(Equal(f0))
 			})
 		})
 	})
 	DescribeTable("getting info provider",
 		func(name string, expected reflect.Type) {
-			f := NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true)
 			p := f.GetInfoProvider(name)
 			Expect(reflect.TypeOf(p)).To(Equal(expected))
 		},
-		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(&vfioResourcePool{})),
-		Entry("uio", "uio", reflect.TypeOf(&uioResourcePool{})),
-		Entry("any other value", "netdevice", reflect.TypeOf(&netDevicePool{})),
+		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(resources.NewVfioResource())),
+		Entry("uio", "uio", reflect.TypeOf(resources.NewUioResource())),
+		Entry("igb_uio", "igb_uio", reflect.TypeOf(resources.NewUioResource())),
+		Entry("any other value", "netdevice", reflect.TypeOf(resources.NewGenericResource())),
 	)
-	Describe("getting resource pool", func() {
-		Context("with all types of selectors used", func() {
+	DescribeTable("getting selector",
+		func(selector string, shouldSucceed bool, expected reflect.Type) {
+			f := factory.NewResourceFactory("fake", "fake", true)
+			v := []string{"val1", "val2", "val3"}
+			s, e := f.GetSelector(selector, v)
+
+			if shouldSucceed {
+				Expect(reflect.TypeOf(s)).To(Equal(expected))
+				Expect(e).NotTo(HaveOccurred())
+			} else {
+				Expect(s).To(BeNil())
+				Expect(e).To(HaveOccurred())
+			}
+		},
+		Entry("vendors", "vendors", true, reflect.TypeOf(resources.NewVendorSelector([]string{}))),
+		Entry("devices", "devices", true, reflect.TypeOf(resources.NewDeviceSelector([]string{}))),
+		Entry("drivers", "drivers", true, reflect.TypeOf(resources.NewDriverSelector([]string{}))),
+		Entry("pfNames", "pfNames", true, reflect.TypeOf(resources.NewPfNameSelector([]string{}))),
+		Entry("linkTypes", "linkTypes", true, reflect.TypeOf(resources.NewLinkTypeSelector([]string{}))),
+		Entry("ddpProfiles", "ddpProfiles", true, reflect.TypeOf(resources.NewDdpSelector([]string{}))),
+		Entry("invalid", "fakeAndInvalid", false, reflect.TypeOf(nil)),
+	)
+	Describe("getting resource pool for netdevice", func() {
+		Context("with all types of selectors used and matching devices found", func() {
 			defer utils.UseFakeLinks()()
 			var (
 				rp   types.ResourcePool
 				err  error
-				devs []types.PciNetDevice
+				devs []types.PciDevice
 			)
 			BeforeEach(func() {
-				f := NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true)
 
-				devs = make([]types.PciNetDevice, 4)
+				devs = make([]types.PciDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "1234"}
 				codes := []string{"1111", "1111", "1234", "4321"}
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
@@ -68,41 +99,171 @@ var _ = Describe("Factory", func() {
 					devs[i] = d
 				}
 
+				var selectors json.RawMessage
+				err := selectors.UnmarshalJSON([]byte(`
+					[
+						{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["vfio-pci"],
+							"pfNames": ["enp2s0f2"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}
+					]`),
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+
 				c := types.ResourceConfig{
 					ResourceName: "fake",
-					Selectors: struct {
-						Vendors     []string `json:"vendors,omitempty"`
-						Devices     []string `json:"devices,omitempty"`
-						Drivers     []string `json:"drivers,omitempty"`
-						PfNames     []string `json:"pfNames,omitempty"`
-						LinkTypes   []string `json:"linkTypes,omitempty"`
-						DDPProfiles []string `json:"ddpProfiles,omitempty"`
-					}{[]string{"8086"}, []string{"1111"}, []string{"vfio-pci"}, []string{"enp2s0f2"},
-						[]string{"ether"}, []string{"GTP"}},
+					Selectors:    &selectors,
+					DeviceType:   types.NetDeviceType,
 				}
 
 				rp, err = f.GetResourcePool(&c, devs)
+
 			})
 			It("should return valid resource pool", func() {
 				Expect(rp).NotTo(BeNil())
-				Expect(rp.(*resourcePool).devices).To(HaveLen(4))
-				Expect(rp.(*resourcePool).devices).To(HaveKey("0000:03:02.0"))
-				Expect(rp.(*resourcePool).devicePool).To(HaveKeyWithValue("0000:03:02.0", devs[0]))
+				Expect(rp.GetDevices()).To(HaveLen(4)) // TODO: investigate selectors
+				Expect(rp.GetDevices()).To(HaveKey("0000:03:02.0"))
 			})
 			It("should not fail", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})
+	Describe("getting resource pool for accelerator", func() {
+		Context("with all types of selectors used and matching devices found", func() {
+			defer utils.UseFakeLinks()()
+			var (
+				rp   types.ResourcePool
+				err  error
+				devs []types.PciDevice
+			)
+			BeforeEach(func() {
+				f := factory.NewResourceFactory("fake", "fake", true)
+
+				devs = make([]types.PciDevice, 1)
+				vendors := []string{"8086"}
+				codes := []string{"1024"}
+				drivers := []string{"uio_pci_generic"}
+				pciAddr := []string{"0000:04:00.0"}
+				for i := range devs {
+					d := &mocks.AccelDevice{}
+					d.On("GetVendor").Return(vendors[i]).
+						On("GetDeviceCode").Return(codes[i]).
+						On("GetDriver").Return(drivers[i]).
+						On("GetPciAddr").Return(pciAddr[i]).
+						On("GetAPIDevice").Return(&pluginapi.Device{})
+					devs[i] = d
+				}
+
+				var selectors json.RawMessage
+				err := selectors.UnmarshalJSON([]byte(`
+					[
+						{
+							"vendors": ["8086"],
+							"devices": ["1024"],
+							"drivers": ["uio_pci_generic"],
+						}
+					]`),
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+
+				c := types.ResourceConfig{
+					ResourceName: "fake",
+					Selectors:    &selectors,
+					DeviceType:   types.AcceleratorType,
+				}
+
+				rp, err = f.GetResourcePool(&c, devs)
+			})
+			It("should return valid resource pool", func() {
+				Expect(rp).NotTo(BeNil())
+				Expect(rp.GetDevices()).To(HaveLen(1))
+				Expect(rp.GetDevices()).To(HaveKey("0000:04:00.0"))
+			})
+			It("should not fail", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
+	DescribeTable("getting device provider",
+		func(dt types.DeviceType, shouldSucceed bool) {
+			f := factory.NewResourceFactory("fake", "fake", true)
+			p := f.GetDeviceProvider(dt)
+			if shouldSucceed {
+				Expect(p).NotTo(BeNil())
+			} else {
+				Expect(p).To(BeNil())
+			}
+		},
+		Entry("of a netdevice shouldn't return nil", types.NetDeviceType, true),
+		Entry("of an accelerator shouldn't return nil", types.AcceleratorType, true),
+		Entry("of unsupported device type should return nil", nil, false),
+	)
+	DescribeTable("getting device filter",
+		func(dt types.DeviceType, sel string, expected types.DeviceFilter, shouldSucceed bool) {
+			// prepare json rawmessage selector
+			s := json.RawMessage{}
+			err := s.UnmarshalJSON([]byte(sel))
+			Expect(err).NotTo(HaveOccurred())
+
+			rc := &types.ResourceConfig{
+				DeviceType: dt,
+				Selectors:  &s,
+			}
+
+			f := factory.NewResourceFactory("fake", "fake", true)
+
+			_, e := f.GetDeviceFilter(rc)
+			if shouldSucceed {
+				Expect(e).NotTo(HaveOccurred())
+			} else {
+				Expect(e).To(HaveOccurred())
+			}
+			// TODO: check returned type
+		},
+		Entry("successful netdevice", types.NetDeviceType, `{"PfNames":["eth0"]}`, nil, true),
+		Entry("failed netdevice", types.NetDeviceType, `invalid selectors!`, nil, false),
+		Entry("successful accelerator", types.AcceleratorType, `{"Vendors": ["8086"]}`, nil, true),
+		Entry("failed accelerator", types.AcceleratorType, `invalid selectors!`, nil, false),
+		// FIXME: Entry("unsupported type", nil, ``, nil, false),
+		// TODO: Entry("failed accelerator with valid netdevice selector", types.AcceleratorType, `{"PfNames":["eth0"]}`, nil, false),
+	)
 	Describe("getting rdma spec", func() {
 		Context("check c rdma spec", func() {
-			f := NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true)
 			rs := f.GetRdmaSpec("0000:00:00.1")
 			isRdma := rs.IsRdma()
 			deviceSpec := rs.GetRdmaDeviceSpec()
 			It("shoud return valid rdma spec", func() {
 				Expect(isRdma).ToNot(BeTrue())
 				Expect(deviceSpec).To(HaveLen(0))
+			})
+		})
+	})
+	Describe("getting resource server", func() {
+		Context("when resource pool is nil", func() {
+			f := factory.NewResourceFactory("fake", "fake", true)
+			rs, e := f.GetResourceServer(nil)
+			It("should fail", func() {
+				Expect(e).To(HaveOccurred())
+				Expect(rs).To(BeNil())
+			})
+		})
+		Context("when resouce pool uses overriden prefix", func() {
+			f := factory.NewResourceFactory("fake", "fake", true)
+			rp := mocks.ResourcePool{}
+			rp.On("GetResourcePrefix").Return("overriden").
+				On("GetResourceName").Return("fake")
+			rs, e := f.GetResourceServer(&rp)
+			It("should not fail", func() {
+				Expect(e).NotTo(HaveOccurred())
+				Expect(rs).NotTo(BeNil())
 			})
 		})
 	})

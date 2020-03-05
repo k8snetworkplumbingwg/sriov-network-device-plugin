@@ -1,4 +1,4 @@
-package main
+package accelerator_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSriovdp(t *testing.T) {
+func TestAccelerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sriovdp Suite")
+	RunSpecs(t, "Accelerator Suite")
 }

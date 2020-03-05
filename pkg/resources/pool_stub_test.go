@@ -1,9 +1,12 @@
-package resources
+package resources_test
 
 import (
 	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 
+	"github.com/intel/sriov-network-device-plugin/pkg/factory"
+	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/intel/sriov-network-device-plugin/pkg/resources"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
@@ -37,7 +40,7 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/vfio-pci",
 			},
 		}
-		f = NewResourceFactory("fake", "fake", true)
+		f = factory.NewResourceFactory("fake", "fake", true)
 		rc = &types.ResourceConfig{IsRdma: false}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
@@ -47,15 +50,15 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
-				rp = &resourcePool{
-					config: rc,
-					devicePool: map[string]types.PciNetDevice{
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				rp = resources.NewResourcePool(rc,
+					map[string]*pluginapi.Device{},
+					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
 					},
-				}
+				)
 				specs := rp.GetDeviceSpecs(devs)
 
 				expected := []*pluginapi.DeviceSpec{
@@ -74,15 +77,15 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
-				rp = &resourcePool{
-					config: rc,
-					devicePool: map[string]types.PciNetDevice{
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				rp = resources.NewResourcePool(rc,
+					map[string]*pluginapi.Device{},
+					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
 					},
-				}
+				)
 				envs := rp.GetEnvs(devs)
 
 				expected := []string{"0000:00:00.1", "0000:00:00.2"}
@@ -97,15 +100,15 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
-				rp = &resourcePool{
-					config: rc,
-					devicePool: map[string]types.PciNetDevice{
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				rp = resources.NewResourcePool(rc,
+					map[string]*pluginapi.Device{},
+					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
 					},
-				}
+				)
 				mounts := rp.GetMounts(devs)
 
 				// in current implementation vfio and others return empty arrays
