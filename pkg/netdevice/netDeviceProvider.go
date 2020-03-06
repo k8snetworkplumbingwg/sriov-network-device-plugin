@@ -51,7 +51,7 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 	for _, device := range devices {
 		devClass, err := strconv.ParseInt(device.Class.ID, 16, 64)
 		if err != nil {
-			glog.Warningf("discoverDevices(): unable to parse device class for device %+v %q", device, err)
+			glog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
@@ -66,7 +66,7 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 			if len(product.Name) > 40 {
 				productName = string([]byte(productName)[0:37]) + "..."
 			}
-			glog.Infof("discoverDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
+			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
 
 			// exclude device in-use in host
 			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
@@ -81,7 +81,7 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 				if newDevice, err := NewPciNetDevice(device, np.rFactory); err == nil {
 					np.deviceList = append(np.deviceList, newDevice)
 				} else {
-					glog.Errorf("discoverDevices() error adding new device: %q", err)
+					glog.Errorf("netdevice AddTargetDevices(): error adding new device: %q", err)
 				}
 
 			}

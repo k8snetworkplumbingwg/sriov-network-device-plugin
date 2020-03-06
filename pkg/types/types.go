@@ -39,14 +39,27 @@ type DeviceType string
 const (
 	// NetDeviceType is DeviceType for network class devices
 	NetDeviceType DeviceType = "netDevice"
-	// // AcceleratorType is DeviceType for accelerator class devices
-	// AcceleratorType DeviceType = "accelerator"
+	// AcceleratorType is DeviceType for accelerator class devices
+	AcceleratorType DeviceType = "accelerator"
 )
 
 // SupportedDevices is map of 'device identifier as string' to 'device class hexcode as int'
+/*
+Network controller subclasses. ref: https://pci-ids.ucw.cz/read/PD/02
+00	Ethernet controller
+01	Token ring network controller
+02	FDDI network controller
+03	ATM network controller
+04	ISDN controller
+05	WorldFip controller
+06	PICMG controller
+07	Infiniband controller
+08	Fabric controller
+80	Network controller
+*/
 var SupportedDevices = map[DeviceType]int{
-	NetDeviceType: 0x02,
-	// AcceleratorType: 0x12,
+	NetDeviceType:   0x02,
+	AcceleratorType: 0x12,
 }
 
 // ResourceConfig contains configuration paremeters for a resource pool
@@ -67,6 +80,13 @@ type NetDeviceSelectors struct {
 	PfNames     []string `json:"pfNames,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	DDPProfiles []string `json:"ddpProfiles,omitempty"`
+}
+
+// AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
+type AccelDeviceSelectors struct {
+	Vendors []string `json:"vendors,omitempty"`
+	Devices []string `json:"devices,omitempty"`
+	Drivers []string `json:"drivers,omitempty"`
 }
 
 // ResourceConfList is list of ResourceConfig
@@ -116,7 +136,7 @@ type DeviceProvider interface {
 	GetDevices() []PciDevice
 }
 
-// PciDevice provides an interface to get device specific information
+// PciDevice provides an interface to get generic device specific information
 type PciDevice interface {
 	GetPfPciAddr() string
 	GetVendor() string
@@ -133,7 +153,7 @@ type PciDevice interface {
 	GetNumaInfo() string
 }
 
-// PciNetDevice provides an interface to get device specific information
+// PciNetDevice extends PciDevice interface
 type PciNetDevice interface {
 	PciDevice
 	GetPFName() string
@@ -142,6 +162,11 @@ type PciNetDevice interface {
 	GetLinkType() string
 	GetRdmaSpec() RdmaSpec
 	GetDDPProfiles() string
+}
+
+// AccelDevice extends PciDevice interface
+type AccelDevice interface {
+	PciDevice
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
