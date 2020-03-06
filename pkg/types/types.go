@@ -150,10 +150,6 @@ type PciDevice interface {
 	GetPciAddr() string
 	IsSriovPF() bool
 	GetSubClass() string
-	GetDeviceSpecs() []*pluginapi.DeviceSpec
-	GetEnvVal() string
-	GetMounts() []*pluginapi.Mount
-	GetAPIDevice() *pluginapi.Device
 	GetVFID() int
 	GetNumaInfo() string
 }
@@ -172,6 +168,14 @@ type PciNetDevice interface {
 // AccelDevice extends PciDevice interface
 type AccelDevice interface {
 	PciDevice
+}
+
+// PoolInfo provides an interface to get the information that will be used by the ResourcePool
+type PoolInfo interface {
+	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetEnvVal() string
+	GetMounts() []*pluginapi.Mount
+	GetAPIDevice() *pluginapi.Device
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information

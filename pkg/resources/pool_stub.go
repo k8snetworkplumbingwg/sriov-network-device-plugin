@@ -24,13 +24,13 @@ import (
 type ResourcePoolImpl struct {
 	config     *types.ResourceConfig
 	devices    map[string]*pluginapi.Device
-	devicePool map[string]types.PciDevice
+	devicePool map[string]types.PoolInfo
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
-func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PoolInfo) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
 		config:     rc,
 		devices:    apiDevices,
@@ -130,9 +130,4 @@ func (rp *ResourcePoolImpl) DeviceSpecExist(specs []*pluginapi.DeviceSpec, newSp
 		}
 	}
 	return false
-}
-
-// GetDevicePool returns PciDevice pool as a map
-func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.PciDevice {
-	return rp.devicePool
 }

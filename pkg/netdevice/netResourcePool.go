@@ -29,44 +29,34 @@ type netResourcePool struct {
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+func NewNetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice, rf types.ResourceFactory) (types.ResourcePool, error) {
+	poolInfoMap := make(map[string]types.PoolInfo, 0)
+	apiDevices := make(map[string]*pluginapi.Device)
+	for _, dev := range filteredDevice {
+		pciAddr := dev.GetPciAddr()
+		netDev, _ := dev.(types.PciNetDevice)
+		poolInfo, err := newNetPoolInfo(netDev, rc, rf)
+		if err != nil {
+			glog.Errorf("Failed to obtain Pool Information for device: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
+				dev.GetPciAddr(),
+				dev.GetVendor(),
+				dev.GetDeviceCode(),
+				dev.GetDriver())
+			return nil, err
+		}
+		poolInfoMap[pciAddr] = poolInfo
+		apiDevices[pciAddr] = poolInfo.GetAPIDevice()
+		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
+			dev.GetPciAddr(),
+			dev.GetVendor(),
+			dev.GetDeviceCode(),
+			dev.GetDriver())
+	}
+
+	rp := resources.NewResourcePool(rc, apiDevices, poolInfoMap)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,
 		selectors:        s,
-	}
-}
-
-// Overrides GetDeviceSpecs
-func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-
-	devicePool := rp.GetDevicePool()
-
-	// Add device driver specific and rdma specific devices
-	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
-			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
-			newSpecs := netDev.GetDeviceSpecs()
-			rdmaSpec := netDev.GetRdmaSpec()
-			if rp.selectors.IsRdma {
-				if rdmaSpec.IsRdma() {
-					rdmaDeviceSpec := rdmaSpec.GetRdmaDeviceSpec()
-					newSpecs = append(newSpecs, rdmaDeviceSpec...)
-				} else {
-					glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device %v is not rdma device", id)
-				}
-			}
-			for _, ds := range newSpecs {
-				if !rp.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
-
-			}
-
-		}
-	}
-	return devSpecs
+	}, nil
 }

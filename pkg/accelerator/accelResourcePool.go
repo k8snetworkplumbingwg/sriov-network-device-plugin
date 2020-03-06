@@ -29,35 +29,34 @@ type accelResourcePool struct {
 var _ types.ResourcePool = &accelResourcePool{}
 
 // NewAccelResourcePool returns an instance of resourcePool
-func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+func NewAccelResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice, rf types.ResourceFactory) (types.ResourcePool, error) {
+	poolInfoMap := make(map[string]types.PoolInfo, 0)
+	apiDevices := make(map[string]*pluginapi.Device)
+	for _, dev := range filteredDevice {
+		pciAddr := dev.GetPciAddr()
+		accelDev, _ := dev.(types.AccelDevice)
+		poolInfo, err := newAccelPoolInfo(accelDev, rc, rf)
+		if err != nil {
+			glog.Errorf("Failed to obtain Pool Information for device: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
+				dev.GetPciAddr(),
+				dev.GetVendor(),
+				dev.GetDeviceCode(),
+				dev.GetDriver())
+			return nil, err
+		}
+		poolInfoMap[pciAddr] = poolInfo
+		apiDevices[pciAddr] = poolInfo.GetAPIDevice()
+		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
+			dev.GetPciAddr(),
+			dev.GetVendor(),
+			dev.GetDeviceCode(),
+			dev.GetDriver())
+	}
+
+	rp := resources.NewResourcePool(rc, apiDevices, poolInfoMap)
 	s, _ := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	return &accelResourcePool{
 		ResourcePoolImpl: rp,
 		selectors:        s,
-	}
-}
-
-// Overrides GetDeviceSpecs
-func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-
-	devicePool := rp.GetDevicePool()
-
-	// Add device driver specific devices
-	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
-			accelDev := dev.(types.AccelDevice) // convert generic PciDevice to AccelDevice
-			newSpecs := accelDev.GetDeviceSpecs()
-			for _, ds := range newSpecs {
-				if !rp.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
-
-			}
-
-		}
-	}
-	return devSpecs
+	}, nil
 }

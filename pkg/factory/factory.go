@@ -18,12 +18,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/intel/sriov-network-device-plugin/pkg/resources"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
 type resourceFactory struct {
@@ -93,27 +91,13 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 
 // GetResourcePool returns an instance of resourcePool
 func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
-
-	devicePool := make(map[string]types.PciDevice, 0)
-	apiDevices := make(map[string]*pluginapi.Device)
-	for _, dev := range filteredDevice {
-		pciAddr := dev.GetPciAddr()
-		devicePool[pciAddr] = dev
-		apiDevices[pciAddr] = dev.GetAPIDevice()
-		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
-			dev.GetPciAddr(),
-			dev.GetVendor(),
-			dev.GetDeviceCode(),
-			dev.GetDriver())
-	}
-
 	var rPool types.ResourcePool
 	var err error
 	switch rc.DeviceType {
 	case types.NetDeviceType:
 		if len(filteredDevice) > 0 {
 			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
-				rPool = netdevice.NewNetResourcePool(rc, apiDevices, devicePool)
+				rPool, err = netdevice.NewNetResourcePool(rc, filteredDevice, rf)
 			} else {
 				err = fmt.Errorf("invalid device list for NetDeviceType")
 			}
@@ -121,7 +105,7 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 	case types.AcceleratorType:
 		if len(filteredDevice) > 0 {
 			if _, ok := filteredDevice[0].(types.AccelDevice); ok {
-				rPool = accelerator.NewAccelResourcePool(rc, apiDevices, devicePool)
+				rPool, err = accelerator.NewAccelResourcePool(rc, filteredDevice, rf)
 			} else {
 				err = fmt.Errorf("invalid device list for AcceleratorType")
 			}
