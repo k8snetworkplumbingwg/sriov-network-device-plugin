@@ -29,22 +29,7 @@ import (
 
 const (
 	socketSuffix = "sock"
-	netClass     = 0x02 // Device class - Network controller.	 ref: https://pci-ids.ucw.cz/read/PD/02 (for Sub-Classes)
 )
-
-/*
-Network controller subclasses. ref: https://pci-ids.ucw.cz/read/PD/02
-		00	Ethernet controller
-		01	Token ring network controller
-		02	FDDI network controller
-		03	ATM network controller
-		04	ISDN controller
-		05	WorldFip controller
-		06	PICMG controller
-		07	Infiniband controller
-		08	Fabric controller
-		80	Network controller
-*/
 
 type cliParams struct {
 	configFile     string
@@ -87,7 +72,7 @@ func newResourceManager(cp *cliParams) *resourceManager {
 	}
 }
 
-// Read and validate configurations from Config file
+//readConfig reads and validate configurations from Config file
 func (rm *resourceManager) readConfig() error {
 
 	resources := &types.ResourceConfList{}
@@ -114,8 +99,13 @@ func (rm *resourceManager) readConfig() error {
 				return fmt.Errorf("unsupported deviceType:  \"%s\"", conf.DeviceType)
 			}
 		}
-		conf.DeviceFilter, err = rm.rFactory.GetDeviceFilter(conf)
-		rm.configList = append(rm.configList, &resources.ResourceList[i])
+		if conf.DeviceFilter, err = rm.rFactory.GetDeviceFilter(conf); err == nil {
+			rm.configList = append(rm.configList, &resources.ResourceList[i])
+		} else {
+			glog.Warningf("unable to get deviceFilter from selectors list:'%s' for deviceType: %s error: %s",
+				conf.Selectors, conf.DeviceType, err)
+		}
+
 	}
 
 	return nil
@@ -138,6 +128,10 @@ func (rm *resourceManager) initServers() error {
 		//filteredDevices := dp.GetFilteredDevices(rc)
 		devices := dp.GetDevices()
 		filteredDevices := rc.DeviceFilter.GetFilteredDevices(devices)
+		if len(filteredDevices) < 1 {
+			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
+			continue
+		}
 		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
@@ -207,16 +201,12 @@ func (rm *resourceManager) validConfigs() bool {
 			return false
 		}
 
-		// Validate deviceType
-		if conf.DeviceType == "" {
-			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
-		} else {
-			// Check if the DeviceType is supported
-			if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
-				glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
-				return false
-			}
+		// Check if the DeviceType is valid
+		if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
+			glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
+			return false
 		}
+
 		resourceNames[resourceName] = resourceName
 	}
 
