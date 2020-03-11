@@ -57,9 +57,9 @@ func main() {
 		glog.Fatalf("Exiting.. one or more invalid configuration(s) given")
 		return
 	}
-	glog.Infof("Discovering host network devices")
+	glog.Infof("Discovering host devices")
 	if err := rm.discoverHostDevices(); err != nil {
-		glog.Errorf("error discovering host network devices%v", err)
+		glog.Errorf("error discovering host devices%v", err)
 		return
 	}
 

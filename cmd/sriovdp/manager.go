@@ -41,10 +41,8 @@ type resourceManager struct {
 	pluginWatchMode bool
 	socketSuffix    string
 	rFactory        types.ResourceFactory
-	configList      []*types.ResourceConfig // resourceName -> resourcePool
+	configList      []*types.ResourceConfig
 	resourceServers []types.ResourceServer
-	netDeviceList   []types.PciNetDevice         // all network devices in host
-	linkWatchList   map[string]types.LinkWatcher // SRIOV PF list - for watching link status
 	deviceProviders map[types.DeviceType]types.DeviceProvider
 }
 
@@ -66,8 +64,6 @@ func newResourceManager(cp *cliParams) *resourceManager {
 		cliParams:       *cp,
 		pluginWatchMode: pluginWatchMode,
 		rFactory:        rf,
-		netDeviceList:   make([]types.PciNetDevice, 0),
-		linkWatchList:   make(map[string]types.LinkWatcher, 0),
 		deviceProviders: dp,
 	}
 }
@@ -87,7 +83,7 @@ func (rm *resourceManager) readConfig() error {
 		return fmt.Errorf("error unmarshalling raw bytes %v", err)
 	}
 
-	glog.Infof("ResourceList: %+v", resources.ResourceList)
+	glog.Infof("raw ResourceList: %s", rawBytes)
 	for i := range resources.ResourceList {
 		conf := &resources.ResourceList[i]
 		// Validate deviceType
@@ -107,7 +103,7 @@ func (rm *resourceManager) readConfig() error {
 		}
 
 	}
-
+	glog.Infof("unmarshalled ResourceList: %+v", resources.ResourceList)
 	return nil
 }
 
@@ -125,7 +121,6 @@ func (rm *resourceManager) initServers() error {
 			return fmt.Errorf("error getting device provider")
 		}
 
-		//filteredDevices := dp.GetFilteredDevices(rc)
 		devices := dp.GetDevices()
 		filteredDevices := rc.DeviceFilter.GetFilteredDevices(devices)
 		if len(filteredDevices) < 1 {
@@ -214,7 +209,6 @@ func (rm *resourceManager) validConfigs() bool {
 }
 
 func (rm *resourceManager) discoverHostDevices() error {
-	glog.Infoln("discovering host network devices")
 
 	pci, err := ghw.PCI()
 	if err != nil {
@@ -232,13 +226,4 @@ func (rm *resourceManager) discoverHostDevices() error {
 		}
 	}
 	return nil
-}
-
-type linkWatcher struct {
-	ifName string
-	// subscribers []LinkSubscriber
-}
-
-func (lw *linkWatcher) Subscribe() {
-
 }
