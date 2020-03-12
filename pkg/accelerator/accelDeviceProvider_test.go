@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package netdevice_test
+package accelerator_test
 
 import (
+	"github.com/intel/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/intel/sriov-network-device-plugin/pkg/factory"
-	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
@@ -27,11 +27,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("NetDeviceProvider", func() {
-	Describe("getting new instance of netDeviceProvider", func() {
+var _ = Describe("AcceleratorProvider", func() {
+	Describe("getting new instance of acceleratorProvider", func() {
 		Context("with correct arguments", func() {
 			rf := &mocks.ResourceFactory{}
-			p := netdevice.NewNetDeviceProvider(rf)
+			p := accelerator.NewAccelDeviceProvider(rf)
 			It("should return valid instance of the provider", func() {
 				Expect(p).ToNot(BeNil())
 			})
@@ -40,15 +40,15 @@ var _ = Describe("NetDeviceProvider", func() {
 	Describe("getting devices", func() {
 		Context("when there are none", func() {
 			rf := &mocks.ResourceFactory{}
-			p := netdevice.NewNetDeviceProvider(rf)
+			p := accelerator.NewAccelDeviceProvider(rf)
 			devs := p.GetDevices()
 			It("should return empty slice", func() {
 				Expect(devs).To(BeEmpty())
 			})
 		})
 	})
-	Describe("adding 3 target devices", func() {
-		Context("when 2 are valid devices, but 1 is a PF with SRIOV configured and 1 is invalid", func() {
+	Describe("adding 4 target devices", func() {
+		Context("when 2 are valid devices, but 2 are not", func() {
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1",
@@ -69,7 +69,7 @@ var _ = Describe("NetDeviceProvider", func() {
 			defer fs.Use()()
 
 			rf := factory.NewResourceFactory("fake", "fake", true)
-			p := netdevice.NewNetDeviceProvider(rf)
+			p := accelerator.NewAccelDeviceProvider(rf)
 
 			dev1 := &ghw.PCIDevice{
 				Address: "0000:00:00.1",
@@ -86,17 +86,25 @@ var _ = Describe("NetDeviceProvider", func() {
 			}
 
 			devInvalid := &ghw.PCIDevice{
-				Class: &pcidb.Class{ID: "completely unparsable"},
+				Address: "0000:00:00.3",
+				Class:   &pcidb.Class{ID: "completely unparsable"},
 			}
 
-			devsToAdd := []*ghw.PCIDevice{dev1, dev2, devInvalid}
+			devNoSysFs := &ghw.PCIDevice{
+				Address: "0000:00:00.4",
+				Class:   &pcidb.Class{ID: "1024"},
+				Vendor:  &pcidb.Vendor{Name: "Vendor"},
+				Product: &pcidb.Product{Name: "Product"},
+			}
+
+			devsToAdd := []*ghw.PCIDevice{dev1, dev2, devInvalid, devNoSysFs}
 
 			err := p.AddTargetDevices(devsToAdd, 0x1024)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should return only 1 device on GetDevices()", func() {
-				Expect(p.GetDevices()).To(HaveLen(1))
+				Expect(p.GetDevices()).To(HaveLen(2))
 			})
 		})
 	})
