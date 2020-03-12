@@ -1,3 +1,17 @@
+// Copyright 2020 Intel Corp. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package factory_test
 
 import (
@@ -57,6 +71,13 @@ var _ = Describe("Factory", func() {
 			} else {
 				Expect(s).To(BeNil())
 				Expect(e).To(HaveOccurred())
+			}
+
+			// if statement below because gomega refuses to do "nil == nil" assertions
+			if expected != nil {
+				Expect(reflect.TypeOf(s)).To(Equal(expected))
+			} else {
+				Expect(reflect.TypeOf(s)).To(BeNil())
 			}
 		},
 		Entry("vendors", "vendors", true, reflect.TypeOf(resources.NewVendorSelector([]string{}))),
@@ -126,7 +147,7 @@ var _ = Describe("Factory", func() {
 			})
 			It("should return valid resource pool", func() {
 				Expect(rp).NotTo(BeNil())
-				Expect(rp.GetDevices()).To(HaveLen(4)) // TODO: investigate selectors
+				Expect(rp.GetDevices()).To(HaveLen(4))
 				Expect(rp.GetDevices()).To(HaveKey("0000:03:02.0"))
 			})
 			It("should not fail", func() {
@@ -225,14 +246,12 @@ var _ = Describe("Factory", func() {
 			} else {
 				Expect(e).To(HaveOccurred())
 			}
-			// TODO: check returned type
 		},
 		Entry("successful netdevice", types.NetDeviceType, `{"PfNames":["eth0"]}`, nil, true),
 		Entry("failed netdevice", types.NetDeviceType, `invalid selectors!`, nil, false),
 		Entry("successful accelerator", types.AcceleratorType, `{"Vendors": ["8086"]}`, nil, true),
 		Entry("failed accelerator", types.AcceleratorType, `invalid selectors!`, nil, false),
-		// FIXME: Entry("unsupported type", nil, ``, nil, false),
-		// TODO: Entry("failed accelerator with valid netdevice selector", types.AcceleratorType, `{"PfNames":["eth0"]}`, nil, false),
+		Entry("unsupported type", nil, ``, nil, false),
 	)
 	Describe("getting rdma spec", func() {
 		Context("check c rdma spec", func() {
