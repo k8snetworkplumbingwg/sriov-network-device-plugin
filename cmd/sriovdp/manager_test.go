@@ -220,15 +220,12 @@ var _ = PDescribe("Resource manager", func() {
 						&types.ResourceConfig{ResourceName: "fake"},
 					},
 					resourceServers: []types.ResourceServer{},
-					netDeviceList:   []types.PciNetDevice{},
 				}
 			})
 			Describe("initializing servers", func() {
 				Context("when getting resource server fails", func() {
 					It("should return an error", func() {
 						mockedRf.
-							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
-							Return(&fake.ResourcePool{}, nil).
 							On("GetResourceServer", &fake.ResourcePool{}).
 							Return(&fake.ResourceServer{}, fmt.Errorf("fake error"))
 
@@ -242,10 +239,7 @@ var _ = PDescribe("Resource manager", func() {
 					BeforeEach(func() {
 						mockedServer = &fake.ResourceServer{}
 						mockedServer.On("Init").Return(fmt.Errorf("fake error"))
-						mockedRf.
-							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
-							Return(&fake.ResourcePool{}, nil).
-							On("GetResourceServer", &fake.ResourcePool{}).
+						mockedRf.On("GetResourceServer", &fake.ResourcePool{}).
 							Return(mockedServer, nil)
 					})
 					It("should not return an error", func() {
@@ -261,10 +255,7 @@ var _ = PDescribe("Resource manager", func() {
 					)
 					BeforeEach(func() {
 						mockedServer = &fake.ResourceServer{}
-						mockedRf.
-							On("GetResourcePool", rm.configList[0], rm.netDeviceList).
-							Return(&fake.ResourcePool{}, nil).
-							On("GetResourceServer", &fake.ResourcePool{}).
+						mockedRf.On("GetResourceServer", &fake.ResourcePool{}).
 							Return(mockedServer, nil)
 						mockedServer.On("Init").Return(nil)
 					})
@@ -294,7 +285,6 @@ var _ = PDescribe("Resource manager", func() {
 					&types.ResourceConfig{ResourceName: "fake"},
 				},
 				resourceServers: []types.ResourceServer{},
-				netDeviceList:   []types.PciNetDevice{},
 			}
 
 			err := rm.discoverHostDevices()
@@ -440,7 +430,6 @@ var _ = PDescribe("Resource manager", func() {
 						On("GetDDPProfiles").Return(ddpProfiles[i])
 					devs[i] = d
 				}
-				rm.netDeviceList = devs
 
 				var selectors json.RawMessage
 				err := selectors.UnmarshalJSON([]byte(`
