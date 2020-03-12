@@ -3,7 +3,7 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: sriov-rdma-mlnx
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: mellanox.com/mlnx_rdma
+    k8s.v1.cni.cncf.io/resourceName: sriovdev.com/mlnx_rdma
 spec:
   config: '{
     "type": "sriov",

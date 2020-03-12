@@ -9,6 +9,7 @@ data:
         "resourceList": [
             {
                 "resourceName": "mlnx_connectx4",
+                "resourcePrefix": "mellanox.com"
                 "isRdma": true,
                 "selectors": {
                     "vendors": ["15b3"],
@@ -18,6 +19,7 @@ data:
             },
             {
                 "resourceName": "mlnx_connectx5",
+                "resourcePrefix": "mellanox.com"
                 "isRdma": true,
                 "selectors": {
                     "vendors": ["15b3"],

@@ -99,6 +99,7 @@ data:
     {
         "resourceList": [{
                 "resourceName": "x700_gtp",
+                "resourcePrefix": "intel.com",
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c"],
@@ -107,6 +108,7 @@ data:
             },
             {
                 "resourceName": "x700_pppoe",
+                "resourcePrefix": "intel.com",
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c"],

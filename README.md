@@ -459,7 +459,7 @@ sriov-pod   1/1     Running   0          111s
 
 The allocated device information is exported in Container's environment variable. The variable name is `PCIDEVICE_` appended with full extended resource name (e.g. intel.com/sriov etc.) which is capitailzed and any special characters (".", "/") are replaced with underscore ("_"). In case of multiple devices from same extended resource pool, the device IDs are delimited with commas (",").
 
-For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
+For example, if 2 devices are allocated from `sriovdev.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
 
 ## Issues and Contributing

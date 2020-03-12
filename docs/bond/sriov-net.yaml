@@ -3,7 +3,7 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: sriov-net
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: intel.com/intel_sriov_netdevice
+    k8s.v1.cni.cncf.io/resourceName: sriovdev.com/intel_sriov_netdevice
 spec:
   config: '{
   "type": "sriov",

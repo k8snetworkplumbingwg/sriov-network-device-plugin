@@ -65,9 +65,9 @@ spec:  # specification of the pod's contents
     imagePullPolicy: IfNotPresent
     resources:
       requests:
-        intel.com/intel_sriov_netdevice: '2'
+        sriovdev.com/intel_sriov_netdevice: '2'
       limits:
-        intel.com/intel_sriov_netdevice: '2'
+        sriovdev.com/intel_sriov_netdevice: '2'
 ```
 
 Multus will trigger the above CRDs, sriov-net and bond-net1 in the order in which they're listed. This will result in first the creation of a pod with two SRIOV VFs interfaces named net1 and net2 as specified in the networks annotation. It will then create a bond interface named bond0, using the interfaces named net1 and net2 as specified in the bond network attachment definition.

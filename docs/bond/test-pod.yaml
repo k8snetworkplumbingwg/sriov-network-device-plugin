@@ -25,6 +25,6 @@ spec:  # specification of the pod's contents
     imagePullPolicy: IfNotPresent
     resources:
       requests:
-        intel.com/intel_sriov_netdevice: '2'
+        sriovdev.com/intel_sriov_netdevice: '2'
       limits:
-        intel.com/intel_sriov_netdevice: '2'
+        sriovdev.com/intel_sriov_netdevice: '2'

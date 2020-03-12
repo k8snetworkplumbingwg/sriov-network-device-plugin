@@ -9,6 +9,7 @@ data:
         "resourceList": [
             {
                 "resourceName": "intel_x710vfio",
+                "resourcePrefix": "intel.com",
                 "selectors": {
                     "vendors": ["8086"],
                     "devices": ["154c"],

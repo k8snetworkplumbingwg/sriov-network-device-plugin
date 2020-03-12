@@ -14,7 +14,7 @@ spec:
         add: ["IPC_LOCK"]
     resources:
       requests:
-        mellanox.com/mlnx_rdma: 2
+        sriovdev.com/mlnx_rdma: 2
       limits:
-        mellanox.com/mlnx_rdma: 2
+        sriovdev.com/mlnx_rdma: 2
     command: ["sleep", "infinity"]
