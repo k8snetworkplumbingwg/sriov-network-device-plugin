@@ -42,11 +42,11 @@ func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Dev
 
 	devicePool := rp.GetDevicePool()
 
-	// Add vfio group specific devices
+	// Add device driver specific devices
 	for _, id := range deviceIDs {
 		if dev, ok := devicePool[id]; ok {
-			netDev := dev.(types.AccelDevice) // convert generic PciDevice to PciNetDevice
-			newSpecs := netDev.GetDeviceSpecs()
+			accelDev := dev.(types.AccelDevice) // convert generic PciDevice to AccelDevice
+			newSpecs := accelDev.GetDeviceSpecs()
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)

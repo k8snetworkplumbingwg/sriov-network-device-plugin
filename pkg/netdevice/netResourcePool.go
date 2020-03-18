@@ -43,7 +43,7 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 	devicePool := rp.GetDevicePool()
 	config := rp.GetConfig()
 
-	// Add vfio group specific devices
+	// Add device driver specific and rdma specific devices
 	for _, id := range deviceIDs {
 		if dev, ok := devicePool[id]; ok {
 			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
