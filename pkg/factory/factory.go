@@ -138,7 +138,7 @@ func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
 	return netdevice.NewRdmaSpec(pciAddrs)
 }
 
-// GetDeviceProvider returns an instance of DeviceFilter based on DeviceType
+// GetDeviceProvider returns an instance of DeviceProvider based on DeviceType
 func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DeviceProvider {
 	switch dt {
 	case types.NetDeviceType:

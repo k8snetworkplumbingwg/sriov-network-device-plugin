@@ -68,7 +68,7 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 			}
 			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
 
-			// exclude device in-use in host
+			// exclude netdevice in-use in host
 			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
 
 				aPF := utils.IsSriovPF(device.Address)
@@ -92,8 +92,6 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 
 // hasDefaultRoute returns true if PCI network device is default route interface
 func hasDefaultRoute(pciAddr string) (bool, error) {
-
-	// inUse := false
 	// Get net interface name
 	ifNames, err := utils.GetNetNames(pciAddr)
 	if err != nil {

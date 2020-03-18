@@ -99,7 +99,7 @@ func (rm *resourceManager) readConfig() error {
 			rm.configList = append(rm.configList, &resources.ResourceList[i])
 		} else {
 			glog.Warningf("unable to get deviceFilter from selectors list:'%s' for deviceType: %s error: %s",
-				conf.Selectors, conf.DeviceType, err)
+				*conf.Selectors, conf.DeviceType, err)
 		}
 
 	}

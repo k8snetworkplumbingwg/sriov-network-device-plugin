@@ -17,7 +17,6 @@ package resources
 import (
 	"strconv"
 
-	// "github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	"github.com/jaypipes/ghw"
@@ -49,11 +48,8 @@ func nodeToStr(nodeNum int) string {
 
 // NewPciDevice returns an instance of PciDevice interface
 func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.PciDevice, error) {
-	//func NewPciDevice(pciDevice *ghw.PCIDevice, rFactory types.ResourceFactory) (types.PciNDevice, error) {
-	// populate all fields in pciNetDevice here
 
-	// 			1. get PF details, add PF info in its pciNetDevice struct
-	// 			2. Get driver info
+	// 	Get driver info
 	pciAddr := dev.Address
 	driverName, err := utils.GetDriverName(pciAddr)
 	if err != nil {
