@@ -129,7 +129,7 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 			}
 		}
 	default:
-		rPool = resources.NewResourcePool(rc, apiDevices, devicePool)
+		err = fmt.Errorf("cannot create resourcePool: invalid device type %s", rc.DeviceType)
 	}
 	return rPool, err
 }
