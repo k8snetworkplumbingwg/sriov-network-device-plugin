@@ -72,11 +72,16 @@ type ResourceConfig struct {
 	DeviceFilter   DeviceFilter
 }
 
+// DeviceSelectors contains common device selectors fields
+type DeviceSelectors struct {
+	Vendors []string `json:"vendors,omitempty"`
+	Devices []string `json:"devices,omitempty"`
+	Drivers []string `json:"drivers,omitempty"`
+}
+
 // NetDeviceSelectors contains network device related selectors fields
 type NetDeviceSelectors struct {
-	Vendors     []string `json:"vendors,omitempty"`
-	Devices     []string `json:"devices,omitempty"`
-	Drivers     []string `json:"drivers,omitempty"`
+	DeviceSelectors
 	PfNames     []string `json:"pfNames,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	DDPProfiles []string `json:"ddpProfiles,omitempty"`
@@ -84,9 +89,7 @@ type NetDeviceSelectors struct {
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
 type AccelDeviceSelectors struct {
-	Vendors []string `json:"vendors,omitempty"`
-	Devices []string `json:"devices,omitempty"`
-	Drivers []string `json:"drivers,omitempty"`
+	DeviceSelectors
 }
 
 // ResourceConfList is list of ResourceConfig

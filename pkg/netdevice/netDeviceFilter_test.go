@@ -68,9 +68,9 @@ var _ = Describe("netdevice filtering", func() {
 				rdma     bool
 				expected []types.PciDevice
 			}{
-				{"vendors", types.NetDeviceSelectors{Vendors: []string{"8086"}}, false, []types.PciDevice{all[0], all[1]}},
-				{"devices", types.NetDeviceSelectors{Devices: []string{"abcd"}}, false, []types.PciDevice{all[0], all[2]}},
-				{"drivers", types.NetDeviceSelectors{Drivers: []string{"igb_uio"}}, false, []types.PciDevice{all[0], all[1], all[2]}},
+				{"vendors", types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, false, []types.PciDevice{all[0], all[1]}},
+				{"devices", types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, false, []types.PciDevice{all[0], all[2]}},
+				{"drivers", types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, false, []types.PciDevice{all[0], all[1], all[2]}},
 				{"pfNames", types.NetDeviceSelectors{PfNames: []string{"net0", "eth1"}}, false, []types.PciDevice{all[2], all[3], all[4]}},
 				{"linkTypes", types.NetDeviceSelectors{LinkTypes: []string{"infiniband"}}, false, []types.PciDevice{all[1]}},
 				{"linkTypes multi", types.NetDeviceSelectors{LinkTypes: []string{"infiniband", "fake"}}, false, []types.PciDevice{all[1], all[4]}},

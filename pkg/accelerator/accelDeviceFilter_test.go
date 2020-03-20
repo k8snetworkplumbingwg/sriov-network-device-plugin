@@ -49,9 +49,9 @@ var _ = Describe("accelerator filtering", func() {
 				sel      types.AccelDeviceSelectors
 				expected []types.PciDevice
 			}{
-				{"vendors", types.AccelDeviceSelectors{Vendors: []string{"8086"}}, []types.PciDevice{all[0], all[1]}},
-				{"devices", types.AccelDeviceSelectors{Devices: []string{"abcd"}}, []types.PciDevice{all[0], all[2]}},
-				{"drivers", types.AccelDeviceSelectors{Drivers: []string{"igb_uio"}}, []types.PciDevice{all[0], all[1], all[2]}},
+				{"vendors", types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
+				{"devices", types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
+				{"drivers", types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
 			}
 
 			for _, tc := range testCases {
