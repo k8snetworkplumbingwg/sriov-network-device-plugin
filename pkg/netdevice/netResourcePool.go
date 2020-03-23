@@ -23,6 +23,7 @@ import (
 
 type netResourcePool struct {
 	*resources.ResourcePoolImpl
+	selectors *types.NetDeviceSelectors
 }
 
 var _ types.ResourcePool = &netResourcePool{}
@@ -30,8 +31,10 @@ var _ types.ResourcePool = &netResourcePool{}
 // NewNetResourcePool returns an instance of resourcePool
 func NewNetResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,
+		selectors:        s,
 	}
 }
 
@@ -41,7 +44,6 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
 	devicePool := rp.GetDevicePool()
-	config := rp.GetConfig()
 
 	// Add device driver specific and rdma specific devices
 	for _, id := range deviceIDs {
@@ -49,7 +51,7 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
 			newSpecs := netDev.GetDeviceSpecs()
 			rdmaSpec := netDev.GetRdmaSpec()
-			if config.IsRdma {
+			if rp.selectors.IsRdma {
 				if rdmaSpec.IsRdma() {
 					rdmaDeviceSpec := rdmaSpec.GetRdmaDeviceSpec()
 					newSpecs = append(newSpecs, rdmaDeviceSpec...)

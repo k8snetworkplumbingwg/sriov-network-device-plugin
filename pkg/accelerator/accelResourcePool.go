@@ -23,6 +23,7 @@ import (
 
 type accelResourcePool struct {
 	*resources.ResourcePoolImpl
+	selectors *types.AccelDeviceSelectors
 }
 
 var _ types.ResourcePool = &accelResourcePool{}
@@ -30,8 +31,10 @@ var _ types.ResourcePool = &accelResourcePool{}
 // NewAccelResourcePool returns an instance of resourcePool
 func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+	s, _ := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	return &accelResourcePool{
 		ResourcePoolImpl: rp,
+		selectors:        s,
 	}
 }
 

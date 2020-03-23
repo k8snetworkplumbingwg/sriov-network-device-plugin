@@ -15,6 +15,7 @@
 package accelerator
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -74,4 +75,43 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 		}
 	}
 	return nil
+}
+
+func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
+
+	filteredDevice := devices
+	af, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
+	if !ok {
+		return filteredDevice, fmt.Errorf("unable to convert SelectorObj to AccelDeviceSelectors")
+	}
+
+	rf := ap.rFactory
+	// filter by vendor list
+	if af.Vendors != nil && len(af.Vendors) > 0 {
+		if selector, err := rf.GetSelector("vendors", af.Vendors); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by device list
+	if af.Devices != nil && len(af.Devices) > 0 {
+		if selector, err := rf.GetSelector("devices", af.Devices); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// filter by driver list
+	if af.Drivers != nil && len(af.Drivers) > 0 {
+		if selector, err := rf.GetSelector("drivers", af.Drivers); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// convert to []AccelDevice to []PciDevice
+	newDeviceList := make([]types.PciDevice, len(filteredDevice))
+	for i, d := range filteredDevice {
+		newDeviceList[i] = d
+	}
+
+	return newDeviceList, nil
 }

@@ -250,14 +250,13 @@ var _ = Describe("Resource manager", func() {
 					dev := &mocks.PciDevice{}
 					devs := []types.PciDevice{dev}
 
-					filter := &mocks.DeviceFilter{}
-					filter.On("GetFilteredDevices", devs).Return(devs)
-
 					rc := &types.ResourceConfig{
 						ResourceName: "fake",
 						DeviceType:   types.NetDeviceType,
-						DeviceFilter: filter,
+						SelectorObj:  types.NetDeviceSelectors{},
 					}
+					dp := &mocks.DeviceProvider{}
+					dp.On("GetFilteredDevices", devs, rc).Return(devs, nil)
 
 					rp := &mocks.ResourcePool{}
 
@@ -265,9 +264,7 @@ var _ = Describe("Resource manager", func() {
 					mockedRf.On("GetResourcePool", rc, devs).Return(rp, nil).
 						On("GetResourceServer", rp).Return(mockedServer, nil)
 
-					dp := &mocks.DeviceProvider{}
 					dp.On("GetDevices").Return(devs)
-
 					rm := &resourceManager{
 						rFactory:   mockedRf,
 						configList: []*types.ResourceConfig{rc},

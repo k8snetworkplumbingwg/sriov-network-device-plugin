@@ -27,7 +27,11 @@ import (
 
 var _ = Describe("NetResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
-		rc := &types.ResourceConfig{ResourceName: "fake", ResourcePrefix: "fake"}
+		rc := &types.ResourceConfig{
+			ResourceName:   "fake",
+			ResourcePrefix: "fake",
+			SelectorObj:    &types.NetDeviceSelectors{},
+		}
 		devs := map[string]*v1beta1.Device{}
 		pcis := map[string]types.PciDevice{}
 
@@ -42,7 +46,9 @@ var _ = Describe("NetResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				IsRdma:         false,
+				SelectorObj: &types.NetDeviceSelectors{
+					IsRdma: false,
+				},
 			}
 			devs := map[string]*v1beta1.Device{}
 
@@ -90,7 +96,9 @@ var _ = Describe("NetResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				IsRdma:         true,
+				SelectorObj: &types.NetDeviceSelectors{
+					IsRdma: true,
+				},
 			}
 			devs := map[string]*v1beta1.Device{}
 			rdma1 := &mocks.RdmaSpec{}

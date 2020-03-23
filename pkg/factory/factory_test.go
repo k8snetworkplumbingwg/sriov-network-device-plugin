@@ -227,7 +227,7 @@ var _ = Describe("Factory", func() {
 		Entry("of unsupported device type should return nil", nil, false),
 	)
 	DescribeTable("getting device filter",
-		func(dt types.DeviceType, sel string, expected types.DeviceFilter, shouldSucceed bool) {
+		func(dt types.DeviceType, sel string, expected interface{}, shouldSucceed bool) {
 			// prepare json rawmessage selector
 			s := json.RawMessage{}
 			err := s.UnmarshalJSON([]byte(sel))

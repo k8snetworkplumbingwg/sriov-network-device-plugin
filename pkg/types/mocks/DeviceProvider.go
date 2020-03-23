@@ -40,3 +40,26 @@ func (_m *DeviceProvider) GetDevices() []types.PciDevice {
 
 	return r0
 }
+
+// GetFilteredDevices provides a mock function with given fields: _a0, _a1
+func (_m *DeviceProvider) GetFilteredDevices(_a0 []types.PciDevice, _a1 *types.ResourceConfig) ([]types.PciDevice, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 []types.PciDevice
+	if rf, ok := ret.Get(0).(func([]types.PciDevice, *types.ResourceConfig) []types.PciDevice); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.PciDevice)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]types.PciDevice, *types.ResourceConfig) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
