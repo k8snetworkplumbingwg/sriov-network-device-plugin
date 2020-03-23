@@ -11,15 +11,15 @@ type ResourceFactory struct {
 }
 
 // GetDeviceFilter provides a mock function with given fields: _a0
-func (_m *ResourceFactory) GetDeviceFilter(_a0 *types.ResourceConfig) (types.DeviceFilter, error) {
+func (_m *ResourceFactory) GetDeviceFilter(_a0 *types.ResourceConfig) (interface{}, error) {
 	ret := _m.Called(_a0)
 
-	var r0 types.DeviceFilter
-	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) types.DeviceFilter); ok {
+	var r0 interface{}
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) interface{}); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(types.DeviceFilter)
+			r0 = ret.Get(0).(interface{})
 		}
 	}
 

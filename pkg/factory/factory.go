@@ -150,9 +150,9 @@ func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DevicePr
 	}
 }
 
-// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns an instance of DeviceFilter based on
+// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns an instance of DeviceSelector based on
 // DeviceType in the ResourceConfig
-func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (types.DeviceFilter, error) {
+func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (interface{}, error) {
 	switch rc.DeviceType {
 	case types.NetDeviceType:
 		netDeviceSelector := &types.NetDeviceSelectors{}
@@ -160,14 +160,14 @@ func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (types.Devi
 		if err := json.Unmarshal(*rc.Selectors, netDeviceSelector); err != nil {
 			return nil, fmt.Errorf("error unmarshalling NetDevice selector bytes %v", err)
 		}
-		return netdevice.NewNetDeviceFilter(netDeviceSelector, rf, rc.IsRdma), nil
+		return netDeviceSelector, nil
 	case types.AcceleratorType:
 		accelDeviceSelector := &types.AccelDeviceSelectors{}
 
 		if err := json.Unmarshal(*rc.Selectors, accelDeviceSelector); err != nil {
 			return nil, fmt.Errorf("error unmarshalling Accelerator selector bytes %v", err)
 		}
-		return accelerator.NewAccelDeviceFilter(accelDeviceSelector, rf), nil
+		return accelDeviceSelector, nil
 	default:
 		return nil, fmt.Errorf("unable to get deviceFilter, invalid deviceType %s", rc.DeviceType)
 	}

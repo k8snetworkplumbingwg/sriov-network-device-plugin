@@ -66,10 +66,9 @@ var SupportedDevices = map[DeviceType]int{
 type ResourceConfig struct {
 	ResourcePrefix string           `json:"resourcePrefix,omitempty"` // optional resource prefix that will ovewrite global prefix specified in cli params
 	ResourceName   string           `json:"resourceName"`             // the resource name will be added with resource prefix in K8s api
-	IsRdma         bool             // the resource support rdma
 	DeviceType     DeviceType       `json:"deviceType,omitempty"`
 	Selectors      *json.RawMessage `json:"selectors,omitempty"`
-	DeviceFilter   DeviceFilter
+	SelectorObj    interface{}
 }
 
 // DeviceSelectors contains common device selectors fields
@@ -85,6 +84,7 @@ type NetDeviceSelectors struct {
 	PfNames     []string `json:"pfNames,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	DDPProfiles []string `json:"ddpProfiles,omitempty"`
+	IsRdma      bool     // the resource support rdma
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
@@ -118,7 +118,8 @@ type ResourceFactory interface {
 	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
 	GetDeviceProvider(DeviceType) DeviceProvider
-	GetDeviceFilter(*ResourceConfig) (DeviceFilter, error)
+	// GetDeviceFilter(*ResourceConfig) (DeviceFilter, error)
+	GetDeviceFilter(*ResourceConfig) (interface{}, error)
 }
 
 // ResourcePool represents a generic resource entity
@@ -137,6 +138,7 @@ type ResourcePool interface {
 type DeviceProvider interface {
 	AddTargetDevices([]*ghw.PCIDevice, int) error
 	GetDevices() []PciDevice
+	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)
 }
 
 // PciDevice provides an interface to get generic device specific information
@@ -177,11 +179,6 @@ type DeviceInfoProvider interface {
 	GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec
 	GetEnvVal(pciAddr string) string
 	GetMounts(pciAddr string) []*pluginapi.Mount
-}
-
-// DeviceFilter provides an interface for getting a list of filtered devices from user config
-type DeviceFilter interface {
-	GetFilteredDevices([]PciDevice) []PciDevice
 }
 
 // DeviceSelector provides an interface for filtering a list of devices

@@ -17,6 +17,7 @@ package accelerator_test
 import (
 	"github.com/intel/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/intel/sriov-network-device-plugin/pkg/factory"
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
@@ -105,6 +106,48 @@ var _ = Describe("AcceleratorProvider", func() {
 			})
 			It("should return only 1 device on GetDevices()", func() {
 				Expect(p.GetDevices()).To(HaveLen(2))
+			})
+		})
+	})
+	Describe("getting Filtered devices", func() {
+		Context("using selectors", func() {
+			It("should correctly filter devices", func() {
+				rf := factory.NewResourceFactory("fake", "fake", false)
+				p := accelerator.NewAccelDeviceProvider(rf)
+				all := make([]types.PciDevice, 5)
+				mocked := make([]mocks.AccelDevice, 5)
+
+				ve := []string{"8086", "8086", "1111", "2222", "3333"}
+				de := []string{"abcd", "123a", "abcd", "2222", "1024"}
+				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci"}
+
+				for i, _ := range mocked {
+					mocked[i].
+						On("GetVendor").Return(ve[i]).
+						On("GetDeviceCode").Return(de[i]).
+						On("GetDriver").Return(md[i])
+
+					all[i] = &mocked[i]
+				}
+
+				testCases := []struct {
+					name     string
+					sel      *types.AccelDeviceSelectors
+					expected []types.PciDevice
+				}{
+					{"vendors", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
+					{"devices", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
+					{"drivers", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
+				}
+
+				for _, tc := range testCases {
+					By(tc.name)
+					config := &types.ResourceConfig{SelectorObj: tc.sel}
+					actual, err := p.GetFilteredDevices(all, config)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(actual).To(HaveLen(len(tc.expected)))
+					Expect(actual).To(ConsistOf(tc.expected))
+				}
 			})
 		})
 	})

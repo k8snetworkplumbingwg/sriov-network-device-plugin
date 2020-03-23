@@ -41,7 +41,7 @@ var _ = Describe("PoolStub", func() {
 			},
 		}
 		f = factory.NewResourceFactory("fake", "fake", true)
-		rc = &types.ResourceConfig{IsRdma: false}
+		rc = &types.ResourceConfig{}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {

@@ -42,7 +42,6 @@ var _ = Describe("AccelResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				IsRdma:         false,
 			}
 			devs := map[string]*v1beta1.Device{}
 

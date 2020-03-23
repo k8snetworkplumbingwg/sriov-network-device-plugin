@@ -17,6 +17,7 @@ package netdevice_test
 import (
 	"github.com/intel/sriov-network-device-plugin/pkg/factory"
 	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
@@ -97,6 +98,71 @@ var _ = Describe("NetDeviceProvider", func() {
 			})
 			It("should return only 1 device on GetDevices()", func() {
 				Expect(p.GetDevices()).To(HaveLen(1))
+			})
+		})
+	})
+	Describe("getting Filtered devices", func() {
+		Context("using selectors", func() {
+			It("should correctly filter devices", func() {
+				rf := factory.NewResourceFactory("fake", "fake", false)
+				p := netdevice.NewNetDeviceProvider(rf)
+				all := make([]types.PciDevice, 5)
+				mocked := make([]mocks.PciNetDevice, 5)
+
+				ve := []string{"8086", "8086", "1111", "2222", "3333"}
+				de := []string{"abcd", "123a", "abcd", "2222", "1024"}
+				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci"}
+				pf := []string{"eth0", "eth0", "eth1", "net0", "net0"}
+				lt := []string{"ether", "infiniband", "ether", "ether", "fake"}
+				dd := []string{"E710 PPPoE and PPPoL2TPv2", "fake", "fake", "gtp", "profile"}
+				rd := []bool{false, true, false, false, true}
+
+				rdmaYes := &mocks.RdmaSpec{}
+				rdmaYes.On("IsRdma").Return(true)
+				rdmaNo := &mocks.RdmaSpec{}
+				rdmaNo.On("IsRdma").Return(false)
+
+				for i, _ := range mocked {
+					mocked[i].
+						On("GetVendor").Return(ve[i]).
+						On("GetDeviceCode").Return(de[i]).
+						On("GetDriver").Return(md[i]).
+						On("GetPFName").Return(pf[i]).
+						On("GetLinkType").Return(lt[i]).
+						On("GetDDPProfiles").Return(dd[i])
+
+					if rd[i] {
+						mocked[i].On("GetRdmaSpec").Return(rdmaYes)
+					} else {
+						mocked[i].On("GetRdmaSpec").Return(rdmaNo)
+					}
+
+					all[i] = &mocked[i]
+				}
+
+				testCases := []struct {
+					name     string
+					sel      *types.NetDeviceSelectors
+					expected []types.PciDevice
+				}{
+					{"vendors", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
+					{"devices", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
+					{"drivers", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
+					{"pfNames", &types.NetDeviceSelectors{PfNames: []string{"net0", "eth1"}}, []types.PciDevice{all[2], all[3], all[4]}},
+					{"linkTypes", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband"}}, []types.PciDevice{all[1]}},
+					{"linkTypes multi", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband", "fake"}}, []types.PciDevice{all[1], all[4]}},
+					{"ddpProfiles", &types.NetDeviceSelectors{DDPProfiles: []string{"E710 PPPoE and PPPoL2TPv2"}}, []types.PciDevice{all[0]}},
+					{"rdma", &types.NetDeviceSelectors{IsRdma: true}, []types.PciDevice{all[1], all[4]}},
+				}
+
+				for _, tc := range testCases {
+					By(tc.name)
+					config := &types.ResourceConfig{SelectorObj: tc.sel}
+					actual, err := p.GetFilteredDevices(all, config)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(actual).To(HaveLen(len(tc.expected)))
+					Expect(actual).To(ConsistOf(tc.expected))
+				}
 			})
 		})
 	})
