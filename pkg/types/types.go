@@ -118,7 +118,6 @@ type ResourceFactory interface {
 	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
 	GetDeviceProvider(DeviceType) DeviceProvider
-	// GetDeviceFilter(*ResourceConfig) (DeviceFilter, error)
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
 }
 
@@ -136,6 +135,7 @@ type ResourcePool interface {
 
 // DeviceProvider provides interface for device discovery
 type DeviceProvider interface {
+	// AddTargetDevices adds a list of devices in a DeviceProvider that matches the 'device class hexcode as int'
 	AddTargetDevices([]*ghw.PCIDevice, int) error
 	GetDevices() []PciDevice
 	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)

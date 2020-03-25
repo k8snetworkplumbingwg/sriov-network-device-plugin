@@ -115,7 +115,6 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
 				rPool = netdevice.NewNetResourcePool(rc, apiDevices, devicePool)
 			} else {
-				rPool = nil
 				err = fmt.Errorf("invalid device list for NetDeviceType")
 			}
 		}
@@ -124,7 +123,6 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 			if _, ok := filteredDevice[0].(types.AccelDevice); ok {
 				rPool = accelerator.NewAccelResourcePool(rc, apiDevices, devicePool)
 			} else {
-				rPool = nil
 				err = fmt.Errorf("invalid device list for AcceleratorType")
 			}
 		}

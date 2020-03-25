@@ -25,11 +25,11 @@ data:
             },
             {
                 "resourceName": "mlnx_sriov_rdma",
-                "isRdma": true,
                 "selectors": {
                     "vendors": ["15b3"],
                     "devices": ["1018"],
-                    "drivers": ["mlx5_ib"]
+                    "drivers": ["mlx5_ib"],
+                    "isRdma": true
                 }
             }
         ]
