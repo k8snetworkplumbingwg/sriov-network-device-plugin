@@ -49,7 +49,7 @@ func nodeToStr(nodeNum int) string {
 // NewPciDevice returns an instance of PciDevice interface
 func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.PciDevice, error) {
 
-	// 	Get driver info
+	// Get driver info
 	pciAddr := dev.Address
 	driverName, err := utils.GetDriverName(pciAddr)
 	if err != nil {
@@ -61,7 +61,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 		return nil, err
 	}
 
-	// 			3. Get Device file info (e.g., uio, vfio specific)
+	// Get Device file info (e.g., uio, vfio specific)
 	// Get DeviceInfoProvider using device driver
 	infoProvider := rFactory.GetInfoProvider(driverName)
 	dSpecs := infoProvider.GetDeviceSpecs(pciAddr)
@@ -81,7 +81,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 		}
 	}
 
-	// 			4. Create pciNetDevice object with all relevent info
+	// 	Create pciNetDevice object with all relevent info
 	return &pciDevice{
 		basePciDevice: dev,
 		driver:        driverName,

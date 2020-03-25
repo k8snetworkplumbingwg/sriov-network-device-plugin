@@ -1,16 +1,16 @@
 
-# SRIOV Network device plugin for Kubernetes
+# SR-IOV Network device plugin for Kubernetes
 
 [![Travis CI](https://travis-ci.org/intel/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/intel/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/intel/sriov-network-device-plugin)
 
 ## Table of Contents
 
-- [SRIOV Network device plugin](#sriov-network-device-plugin)
+- [SR-IOV Network device plugin](#sr-iov-network-device-plugin)
 - [Features](#features)
-  - [Supported SRIOV NICs](#supported-sriov-nics)
+  - [Supported SR-IOV NICs](#supported-sr-iov-nics)
 - [Quick Start](#quick-start)
-  - [Build SRIOV CNI](#build-sriov-cni)
-  - [Build and run SRIOV network device plugin](#build-and-run-sriov-network-device-plugin)
+  - [Build SR-IOV CNI](#build-sr-iov-cni)
+  - [Build and run SR-IOV network device plugin](#build-and-run-sr-iov-network-device-plugin)
   - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
       - [Option 1 - Multus](#option-1---multus)
         - [Install Multus](#install-multus)
@@ -37,13 +37,13 @@
     - [Pod device information](#pod-device-information)
 - [Issues and Contributing](#issues-and-contributing)
 
-## SRIOV Network Device Plugin
+## SR-IOV Network Device Plugin
 
-The SRIOV network device plugin is Kubernetes device plugin for discovering and advertising SRIOV network virtual functions (VFs) available on a Kubernetes host.
+The SR-IOV network device plugin is Kubernetes device plugin for discovering and advertising SR-IOV virtual functions (VFs) available on a Kubernetes host.
 
 ## Features
 
-- Handles SRIOV capable/not-capable devices (NICs and Accelerators alike)
+- Handles SR-IOV capable/not-capable devices (NICs and Accelerators alike)
 - Supports devices with both Kernel and userspace (UIO and VFIO) drivers
 - Allows resource grouping using "Selector"
 - User configurable resourceName
@@ -51,24 +51,24 @@ The SRIOV network device plugin is Kubernetes device plugin for discovering and 
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
 - Extensible to support new device types with minimal effort if not already supported
 
-To deploy workloads with SRIOV VF this plugin needs to work together with the following two CNI components:
+To deploy workloads with SR-IOV VF this plugin needs to work together with the following two CNI components:
 
 - Any CNI meta plugin supporting Device Plugin based network provisioning (Multus CNI, or DANM)
 
   - Retrieves allocated network device information of a Pod
 
-- SRIOV CNI
+- SR-IOV CNI
 
-  - During Pod creation, plumbs allocated SRIOV VF to a Pods network namespace using VF information given by the meta plugin
+  - During Pod creation, plumbs allocated SR-IOV VF to a Pods network namespace using VF information given by the meta plugin
 
   - On Pod deletion, reset and release the VF from the Pod
 
 
 Please follow the [Quick Start](#quick-start) for multi network interface support in Kubernetes.
 
-### Supported SRIOV NICs
+### Supported SR-IOV NICs
 
-The following  NICs were tested with this implementation. However, other SRIOV capable NICs should work as well.
+The following  NICs were tested with this implementation. However, other SR-IOV capable NICs should work as well.
 -  Intel® Ethernet Controller X710 Series 4x10G
 		- PF driver : v2.4.6
 		- VF driver: v3.5.6
@@ -85,9 +85,9 @@ To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.co
 
 ## Quick Start
 
-### Build SRIOV CNI
+### Build SR-IOV CNI
 
-1. Compile SRIOV-CNI (supported from release 2.0+):
+1. Compile SR-IOV-CNI (supported from release 2.0+):
 ```
 $ git clone https://github.com/intel/sriov-cni.git
 $ cd sriov-cni
@@ -95,7 +95,7 @@ $ make
 $ cp build/sriov /opt/cni/bin
 ```
 
-### Build and run SRIOV network device plugin
+### Build and run SR-IOV network device plugin
 
 You can either build the docker image locally or pull it from [docker hub](https://hub.docker.com/r/nfvpe/sriov-device-plugin/).
 
@@ -119,7 +119,7 @@ $ make image
  ```
 $ kubectl create -f deployments/configMap.yaml
 ```
- 4. Deploy SRIOV network device plugin Daemonset
+ 4. Deploy SR-IOV network device plugin Daemonset
 ```
 $ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
 ```
@@ -137,13 +137,13 @@ Please refer to Multus [Quickstart Installation Guide](https://github.com/intel/
 ##### Network Object CRDs
 
 Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
-1. Create the SRIOV Network CRD
+1. Create the SR-IOV Network CRD
 ```
 $ kubectl create -f deployments/sriov-crd.yaml
 ```
 
 #### Option 2 - DANM
-This section explains an example deployment of SRIOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
+This section explains an example deployment of SR-IOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
 
 ##### Install DANM
 Refer to [DANM documentation](https://github.com/nokia/danm#getting-started) for detailed instructions.
@@ -153,13 +153,13 @@ DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level
 This means that all DANM API features seamlessly work together with the SR-IOV setup described above, whether you use the [lightweight](https://github.com/nokia/danm#lightweight-network-management-experience), or the [production grade](https://github.com/nokia/danm#production-grade-network-management-experience) network management APIs.
 For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
 
-> See following sections on how to configure and run SRIOV device plugin.
+> See following sections on how to configure and run SR-IOV device plugin.
 
 ## Configurations
 
 ### Config parameters
 
-This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SRIOV device plugin. In json format this file appears as shown below:
+This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SR-IOV device plugin. In json format this file appears as shown below:
 
 ```json
 {
@@ -184,20 +184,29 @@ This plugin creates device plugin endpoints based on the configurations given in
         {
             "resourceName": "mlnx_sriov_rdma",
             "resourcePrefix": "mellanox.com",
-            "isRdma": true,
             "selectors": {
                 "vendors": ["15b3"],
                 "devices": ["1018"],
-                "drivers": ["mlx5_ib"]
+                "drivers": ["mlx5_ib"],
+                "isRdma": true
             }
         },
         {
             "resourceName": "infiniband_rdma_netdevs",
-            "isRdma": true,
             "selectors": {
-                "linkTypes": ["infiniband"]
+                "linkTypes": ["infiniband"],
+                "isRdma": true
+            }
+        },
+        {
+            "resourceName": "intel_fpga",
+            "deviceType": "accelerator",
+            "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["0d90"]
             }
         }
+
     ]
 }
 ```
@@ -205,17 +214,45 @@ This plugin creates device plugin endpoints based on the configurations given in
 `"resourceList"` should contain a list of config objects. Each config object may consist of following fields:
 
 
+|      Field       | Required |                                                    Description                                                    |                     Type/Defaults                     |                     Example/Accepted values                     |
+|------------------|----------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------------|
+| "resourceName"   | Y        | Endpoint resource name. Should not contain special characters, must be unique in the scope of the resource prefix | string                                                | "sriov_net_A"                                                   |
+| "resourcePrefix" | N        | Endpoint resource prefix name override. Should not contain special characters                                     | string Default : "intel.com"                          | "yourcompany.com"                                               |
+| "deviceType"     | N        | Device Type for a resource pool.                                                                                  | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice"          |
+| "selectors"      | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                             | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]} |
 
-|      Field       | Required |              Description               |                                       Type - Accepted values                                       |                                                Example/Accepted values                                                 |
-|------------------|----------|----------------------------------------|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| "resourceName"   | Y        | Endpoint resource name                 | string - should not contain special characters, must be unique in the scope of the resource prefix | "sriov_net_A"                                                                                                          |
-| "resourcePrefix" | N        | Endpoint resource prefix name override | string - should not contain special characters                                                     | "intel.com"                                                                                                            |
-| "selectors"      | N        | A map of device selectors              | Each selector is a map of string list.                                                             | "vendors": ["8086"],"devices": ["154c", "10ed"],"drivers": ["vfio-pci"],"pfNames": ["enp2s2f0"],"linkTypes": ["ether"] |
-| "isRdma"         | N        | Mount RDMA resources                   | `bool` - boolean value true or false                                                               | "isRdma": true                                                                                                         |
+
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
-[//]: # (The table above generated using: https://ozh.github.io/ascii-tables/)
+#### Device selectors
+The "deviceType" value determines which selectors are supported for that device. Each selector evaluated in order as listed in selector tables below.
+
+#### Common selectors
+All device types support following common device selectors.
+
+|   Field   | Required |                Description                |         Type/Defaults          |   Example/Accepted values   |
+|-----------|----------|-------------------------------------------|--------------------------------|-----------------------------|
+| "vendors" | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086"]         |
+| "devices" | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "10ed"] |
+| "drivers" | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]     |
+
+
+#### Extended selectors for device type "netDevice"
+This selector is applicable when "deviceType" is "netDevice"(note: this is default). In addition to the common selectors from above table, the "netDevice" also supports following selectors.
+
+|     Field     | Required |                          Description                           |                   Type/Defaults                   |                               Example/Accepted values                                |
+|---------------|----------|----------------------------------------------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------|
+| "pfNames"     | N        | VFs from PF matches list of PF names                           | `string` list Default: `null`                     | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames") |
+| "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                               |
+| "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                       |
+| "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                     |
+
+
+[//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
+
+#### Extended selectors for device type "accelerator"
+This selector is applicable when "deviceType" is "accelerator". The "accelerator" device type currently supports only the common selectors.
 
 ### Command line arguments
 
@@ -284,11 +321,11 @@ If only PF network interface specified in the selector, then assuming that all V
 
 ### Workflow
 
-- Load device's (Physical function if it is SRIOV capable) kernel module and bind the driver to the PF
+- Load device's (Physical function if it is SR-IOV capable) kernel module and bind the driver to the PF
 - Create required Virtual functions
 - Bind all VF with right drivers
 - Create a resource config map
-- Run SRIOV device plugin (as daemonset)
+- Run SR-IOV device plugin (as daemonset)
 
 On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name is appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
 
@@ -313,7 +350,7 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
 ### Deploy the Device Plugin
-The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SRIOV device plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
+The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SR-IOV device plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
 
 ````
 # Create ConfigMap
@@ -334,7 +371,7 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 ### Deploy SR-IOV workloads when Multus is used
 There are some example Pod specs and related network CRD yaml files in [deployments](./deployments) directory for a sample deployment with Multus.
 
-Leave the SRIOV device plugin running and open a new terminal session for following steps.
+Leave the SR-IOV device plugin running and open a new terminal session for following steps.
 
 #### Deploy test Pod connecting to pre-created SR-IOV network
 
