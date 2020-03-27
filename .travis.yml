@@ -5,11 +5,11 @@ matrix:
   - name: amd64
     os: linux
     env: ARCH=amd64
-  - name: ppc64le
-    os: linux-ppc64le
-    env: 
-      - ARCH=ppc64le
-      - DOCKERFILE=images/Dockerfile.ppc64le
+  # - name: ppc64le
+  #   os: linux-ppc64le
+  #   env: 
+  #     - ARCH=ppc64le
+  #     - DOCKERFILE=images/Dockerfile.ppc64le
 
 before_install:
   - sudo apt-get update -qq
@@ -29,27 +29,23 @@ deploy:
   - provider: script
     skip_cleanup: true
     script: >
-     bash -c '
-     if [ "${ARCH}" == "amd64" ]; then
-       docker push nfvpe/sriov-device-plugin;
-     fi
-     docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$ARCH;
-     docker push nfvpe/sriov-device-plugin:$ARCH;
-     echo done'
+      if [ "${TARGET}" == "amd64" ]; then
+        docker push nfvpe/sriov-device-plugin;
+      fi
+      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$ARCH;
+      docker push nfvpe/sriov-device-plugin:$ARCH;
     on:
       branch: master
   # Push image to Dockerhub on tag
   - provider: script
     skip_cleanup: true
     script: >
-      bash -c '
       if [ "${ARCH}" == "amd64" ]; then
-        docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:"$TRAVIS_TAG";
-        docker push nfvpe/sriov-device-plugin:"$TRAVIS_TAG";
+        docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG;
+        docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG;
       fi
-      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
-      docker push nfvpe/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
-      echo done'
+      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG-$ARCH;
+      docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG-$ARCH;
     on:
       tags: true
       all_branches: true
