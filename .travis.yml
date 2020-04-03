@@ -19,33 +19,32 @@ script:
   - make test
   - make build
   - make
-  - make image
+  - make image TAG="$REGISTRY_USER/sriov-device-plugin"
 
 before_deploy:
-  - docker login -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+  - docker login -u "$LOGIN_USER" -p "$REGISTRY_PASS"
 
 deploy:
   # Push image to Dockerhub on merge to master
   - provider: script
     skip_cleanup: true
     script: >
-      if [ "${TARGET}" == "amd64" ]; then
-        docker push nfvpe/sriov-device-plugin;
-      fi
-      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$ARCH;
-      docker push nfvpe/sriov-device-plugin:$ARCH;
+      bash -c '
+      if [[ "${ARCH}" == "amd64" ]]; then docker push $REGISTRY_USER/sriov-device-plugin; fi;
+      docker tag $REGISTRY_USER/sriov-device-plugin $REGISTRY_USER/sriov-device-plugin:$ARCH;
+      docker push $REGISTRY_USER/sriov-device-plugin:$ARCH;
+      echo done'
     on:
       branch: master
   # Push image to Dockerhub on tag
   - provider: script
     skip_cleanup: true
     script: >
-      if [ "${ARCH}" == "amd64" ]; then
-        docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG;
-        docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG;
-      fi
-      docker tag nfvpe/sriov-device-plugin nfvpe/sriov-device-plugin:$TRAVIS_TAG-$ARCH;
-      docker push nfvpe/sriov-device-plugin:$TRAVIS_TAG-$ARCH;
+      bash -c '
+      if [[ "${ARCH}" == "amd64" ]]; then docker tag $REGISTRY_USER/sriov-device-plugin $REGISTRY_USER/sriov-device-plugin:"$TRAVIS_TAG"; docker push $REGISTRY_USER/sriov-device-plugin:"$TRAVIS_TAG"; fi;
+      docker tag $REGISTRY_USER/sriov-device-plugin $REGISTRY_USER/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
+      docker push $REGISTRY_USER/sriov-device-plugin:"$TRAVIS_TAG-$ARCH";
+      echo done'
     on:
       tags: true
       all_branches: true
