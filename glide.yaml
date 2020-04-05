@@ -16,6 +16,7 @@ import:
   version: ^0.3.0
 - package: github.com/vishvananda/netlink
 - package: github.com/Mellanox/rdmamap
+  version: v1.0.0
 testImport:
 - package: github.com/onsi/ginkgo
   version: v1.6.0

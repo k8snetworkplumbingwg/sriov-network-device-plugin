@@ -1,5 +1,5 @@
-hash: bd74eab6e57e433eb20b558eb9ca600efb4be342a3a8897d7f9ca20b31e1b7fe
-updated: 2019-09-19T09:56:57.784008541+01:00
+hash: 056cd7c13ac7e43cf2e4c53d05d8f586128ad883672feece616d3b208c024cc2
+updated: 2020-04-05T09:14:23.844099484+03:00
 imports:
 - name: github.com/davecgh/go-spew
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
@@ -7,6 +7,10 @@ imports:
   - spew
 - name: github.com/ghodss/yaml
   version: 25d852aebe32c875e9c044af3eef9c7dc6bc777f
+- name: github.com/go-ole/go-ole
+  version: 14974a1cf6477f616180232977d8ab4791ea8820
+  subpackages:
+  - oleutil
 - name: github.com/gogo/protobuf
   version: 8a5ed79f688836cf007ca23aefe0299791e7bea5
   subpackages:
@@ -25,11 +29,11 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/jaypipes/ghw
-  version: 29869ac89830376f4997b823e455dac004acce4e
+  version: 14923eaaa4d8378051f741694e261747d16fc05e
 - name: github.com/jaypipes/pcidb
   version: 98ef3ee36c69f20650fe7855047ad042338c6983
 - name: github.com/Mellanox/rdmamap
-  version: 3a54d061a5e71a4a5e76a3fa9257108cbbffa0b1
+  version: c857d7164898302741e379a69d9f73255aabe78a
 - name: github.com/mitchellh/go-homedir
   version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/pkg/errors
@@ -38,6 +42,8 @@ imports:
   version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
   - difflib
+- name: github.com/StackExchange/wmi
+  version: cbe66965904dbe8a6cd589e2298e5d8b986bd7dd
 - name: github.com/stretchr/objx
   version: 35313a95ee26395aa17d366c71a2ccf788fa69b6
 - name: github.com/stretchr/testify
@@ -68,6 +74,7 @@ imports:
   version: 0c1ff786ef13daa914a3351c5e6b0321aed5960e
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
   version: 3d0f7978add91030e5e8976ff65ccdd828286cba
   subpackages:
