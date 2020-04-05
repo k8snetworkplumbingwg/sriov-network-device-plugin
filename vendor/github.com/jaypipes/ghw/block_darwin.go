@@ -137,6 +137,9 @@ func (ctx *context) getIoregPlist(ioDeviceTreePath string) (*ioregPlist, error) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "ioreg query for %q failed", ioDeviceTreePath)
 	}
+	if out == nil || len(out) == 0 {
+		return nil, nil
+	}
 
 	var data []ioregPlist
 	if _, err := plist.Unmarshal(out, &data); err != nil {
@@ -246,6 +249,9 @@ func (ctx *context) blockFillInfo(info *BlockInfo) error {
 		if err != nil {
 			return err
 		}
+		if ioregPlist == nil {
+			continue
+		}
 
 		// The NUMA node & WWN don't seem to be reported by any tools available by default in macOS.
 		diskReport := &Disk{
@@ -253,6 +259,7 @@ func (ctx *context) blockFillInfo(info *BlockInfo) error {
 			SizeBytes:              uint64(disk.Size),
 			PhysicalBlockSizeBytes: uint64(infoPlist.DeviceBlockSize),
 			DriveType:              ctx.driveTypeFromPlist(infoPlist),
+			IsRemovable:            infoPlist.Removable,
 			StorageController:      ctx.storageControllerFromPlist(infoPlist),
 			BusType:                ctx.busTypeFromPlist(infoPlist),
 			BusPath:                busPath,
