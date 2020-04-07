@@ -8,20 +8,22 @@ data:
     {
         "resourceList": [
             {
+                "resourcePrefix": "mellanox.com",
                 "resourceName": "mlnx_connectx4",
                 "selectors": {
                     "vendors": ["15b3"],
                     "devices": ["1016"],
-                    "drivers": ["mlx5_ib", "mlx5_core"],
+                    "drivers": ["mlx5_core"],
                     "isRdma": true
                 }
             },
             {
+                "resourcePrefix": "mellanox.com",
                 "resourceName": "mlnx_connectx5",
                 "selectors": {
                     "vendors": ["15b3"],
                     "devices": ["1018"],
-                    "drivers": ["mlx5_ib", "mlx5_core"],
+                    "drivers": ["mlx5_core"],
                     "isRdma": true
                 }
             }

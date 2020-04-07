@@ -8,7 +8,7 @@ spec:
   containers:
   - name: testpmd
     image: <DPDK testpmd image>
-    imagePullPolicy: Never
+    imagePullPolicy: IfNotPresent
     securityContext:
      capabilities:
         add: ["IPC_LOCK"]
@@ -18,10 +18,10 @@ spec:
     resources:
       requests:
         memory: 1Gi
-        hugepages-1Gi: 4Gi
+        hugepages-1Gi: 2Gi
         mellanox.com/mlnx_connectx4: 2
       limits:
-        hugepages-1Gi: 4Gi
+        hugepages-1Gi: 2Gi
         mellanox.com/mlnx_connectx4: 2
     command: ["sleep", "infinity"]
   volumes:
