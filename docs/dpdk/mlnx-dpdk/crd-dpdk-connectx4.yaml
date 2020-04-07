@@ -6,6 +6,15 @@ metadata:
     k8s.v1.cni.cncf.io/resourceName: mellanox.com/mlnx_connectx4
 spec:
   config: '{
+    "cniVersion": "0.3.1",
     "type": "sriov",
-    "name": "sriov-mlnx_connectx4"
+    "name": "sriov-mlnx-connectx4",
+    "ipam": {
+      "type": "host-local",
+      "subnet": "10.56.217.0/24",
+      "routes": [{
+        "dst": "0.0.0.0/0"
+      }],
+      "gateway": "10.56.217.1"
+    }
 }'
