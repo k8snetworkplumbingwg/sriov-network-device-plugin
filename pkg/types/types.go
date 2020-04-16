@@ -45,6 +45,10 @@ const (
 
 // SupportedDevices is map of 'device identifier as string' to 'device class hexcode as int'
 /*
+Supported PCI Device Classes. ref: https://pci-ids.ucw.cz/read/PD
+02	Network controller
+12	Processing accelerators
+
 Network controller subclasses. ref: https://pci-ids.ucw.cz/read/PD/02
 00	Ethernet controller
 01	Token ring network controller
@@ -56,6 +60,10 @@ Network controller subclasses. ref: https://pci-ids.ucw.cz/read/PD/02
 07	Infiniband controller
 08	Fabric controller
 80	Network controller
+
+Processing accelerators subclasses. ref: https://pci-ids.ucw.cz/read/PD/12
+00	Processing accelerators
+01	AI Inference Accelerator
 */
 var SupportedDevices = map[DeviceType]int{
 	NetDeviceType:   0x02,
