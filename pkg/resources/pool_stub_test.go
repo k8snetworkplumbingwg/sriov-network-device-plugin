@@ -2,7 +2,7 @@ package resources_test
 
 import (
 	"github.com/jaypipes/ghw"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/factory"
 	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
