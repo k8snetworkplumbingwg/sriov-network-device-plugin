@@ -19,8 +19,9 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/jaypipes/ghw"
+
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
 )
 
 type accelDeviceProvider struct {

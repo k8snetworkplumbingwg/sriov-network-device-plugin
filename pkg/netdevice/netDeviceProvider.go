@@ -19,10 +19,11 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 	"github.com/jaypipes/ghw"
 	"github.com/vishvananda/netlink"
+
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 )
 
 type netDeviceProvider struct {

@@ -16,10 +16,11 @@ package netdevice
 
 import (
 	"github.com/golang/glog"
+	"github.com/jaypipes/ghw"
+
 	"github.com/intel/sriov-network-device-plugin/pkg/resources"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
-	"github.com/jaypipes/ghw"
 )
 
 // pciNetDevice extends pciDevice

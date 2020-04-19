@@ -2,7 +2,7 @@ package netdevice
 
 import (
 	"github.com/Mellanox/rdmamap"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
 )
