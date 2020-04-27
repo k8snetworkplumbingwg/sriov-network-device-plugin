@@ -179,7 +179,8 @@ This plugin creates device plugin endpoints based on the configurations given in
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed"],
                 "drivers": ["vfio-pci"],
-                "pfNames": ["enp0s0f0","enp2s2f1"]
+                "pfNames": ["enp0s0f0","enp2s2f1"],
+                "needVhostNet": true
             }
         },
         {
@@ -249,6 +250,7 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                               |
 | "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                       |
 | "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                     |
+| "needVhostNet"| N        | Share /dev/vhost-net                                           | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                               |
 
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
