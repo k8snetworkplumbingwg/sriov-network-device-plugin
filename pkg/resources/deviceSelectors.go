@@ -139,6 +139,25 @@ func (s *pfNameSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
 	return filteredList
 }
 
+// NewPciAddressSelector returns a NetDevSelector interface for netDev list
+func NewPciAddressSelector(pciAddresses []string) types.DeviceSelector {
+	return &pciAddressSelector{pciAddresses: pciAddresses}
+}
+
+type pciAddressSelector struct {
+	pciAddresses []string
+}
+
+func (s *pciAddressSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
+	for _, dev := range inDevices {
+		if contains(s.pciAddresses, dev.GetPciAddr()) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+	return filteredList
+}
+
 // NewLinkTypeSelector returns a interface for netDev list
 func NewLinkTypeSelector(linkTypes []string) types.DeviceSelector {
 	return &linkTypeSelector{linkTypes: linkTypes}

@@ -89,10 +89,11 @@ type DeviceSelectors struct {
 // NetDeviceSelectors contains network device related selectors fields
 type NetDeviceSelectors struct {
 	DeviceSelectors
-	PfNames     []string `json:"pfNames,omitempty"`
-	LinkTypes   []string `json:"linkTypes,omitempty"`
-	DDPProfiles []string `json:"ddpProfiles,omitempty"`
-	IsRdma      bool     // the resource support rdma
+	PfNames      []string `json:"pfNames,omitempty"`
+	PciAddresses []string `json:"pciAddresses,omitempty"`
+	LinkTypes    []string `json:"linkTypes,omitempty"`
+	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
+	IsRdma       bool     // the resource support rdma
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields

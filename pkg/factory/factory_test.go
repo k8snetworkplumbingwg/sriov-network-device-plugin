@@ -84,6 +84,7 @@ var _ = Describe("Factory", func() {
 		Entry("devices", "devices", true, reflect.TypeOf(resources.NewDeviceSelector([]string{}))),
 		Entry("drivers", "drivers", true, reflect.TypeOf(resources.NewDriverSelector([]string{}))),
 		Entry("pfNames", "pfNames", true, reflect.TypeOf(resources.NewPfNameSelector([]string{}))),
+		Entry("pciAddresses", "pciAddresses", true, reflect.TypeOf(resources.NewPciAddressSelector([]string{}))),
 		Entry("linkTypes", "linkTypes", true, reflect.TypeOf(resources.NewLinkTypeSelector([]string{}))),
 		Entry("ddpProfiles", "ddpProfiles", true, reflect.TypeOf(resources.NewDdpSelector([]string{}))),
 		Entry("invalid", "fakeAndInvalid", false, reflect.TypeOf(nil)),
@@ -128,6 +129,7 @@ var _ = Describe("Factory", func() {
 							"devices": ["1111"],
 							"drivers": ["vfio-pci"],
 							"pfNames": ["enp2s0f2"],
+							"pciAddresses": ["0000:03:02.0"],
 							"linkTypes": ["ether"],
 							"ddpProfiles": ["GTP"]
 						}
