@@ -149,16 +149,16 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		}
 	}
 
-	// filter by PfNames list
-	if nf.PfNames != nil && len(nf.PfNames) > 0 {
-		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
+	// filter by pciAddresses list
+	if nf.PciAddresses != nil && len(nf.PciAddresses) > 0 {
+		if selector, err := rf.GetSelector("pciAddresses", nf.PciAddresses); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
-	// filter by pciAddresses list
-	if nf.PciAddresses != nil && len(nf.PciAddresses) > 0 {
-		if selector, err := rf.GetSelector("pciAddresses", nf.PciAddresses); err == nil {
+	// filter by PfNames list
+	if nf.PfNames != nil && len(nf.PfNames) > 0 {
+		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}

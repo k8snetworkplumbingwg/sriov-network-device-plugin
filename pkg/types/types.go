@@ -81,19 +81,19 @@ type ResourceConfig struct {
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
-	Vendors []string `json:"vendors,omitempty"`
-	Devices []string `json:"devices,omitempty"`
-	Drivers []string `json:"drivers,omitempty"`
+	Vendors      []string `json:"vendors,omitempty"`
+	Devices      []string `json:"devices,omitempty"`
+	Drivers      []string `json:"drivers,omitempty"`
+	PciAddresses []string `json:"pciAddresses,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields
 type NetDeviceSelectors struct {
 	DeviceSelectors
-	PfNames      []string `json:"pfNames,omitempty"`
-	PciAddresses []string `json:"pciAddresses,omitempty"`
-	LinkTypes    []string `json:"linkTypes,omitempty"`
-	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
-	IsRdma       bool     // the resource support rdma
+	PfNames     []string `json:"pfNames,omitempty"`
+	LinkTypes   []string `json:"linkTypes,omitempty"`
+	DDPProfiles []string `json:"ddpProfiles,omitempty"`
+	IsRdma      bool     // the resource support rdma
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields

@@ -88,6 +88,38 @@ var _ = Describe("DeviceSelectors", func() {
 			})
 		})
 	})
+	Describe("pciAddress selector", func() {
+		/*Context("initializing", func() {
+			It("should populate pciAddresses array", func() {
+				pciAddr := []string{"0000:03:02.0", "0000:03:02.1"}
+				sel := resources.NewPciAddressSelector(pciAddr).(*pciAddressSelector)
+				Expect(sel.pciAddresses).To(ConsistOf(pciAddr))
+			})
+		})*/
+		Context("filtering", func() {
+			It("should return devices matching on VF pci addresses", func() {
+				pciAddr := []string{"0000:03:02.0", "0000:03:02.1"}
+				sel := resources.NewPciAddressSelector(pciAddr)
+
+				dev0 := mocks.PciNetDevice{}
+				dev0.On("GetPciAddr").Return("0000:03:02.0")
+				dev1 := mocks.PciNetDevice{}
+				dev1.On("GetPciAddr").Return("0000:03:02.1")
+				dev2 := mocks.PciNetDevice{}
+				dev2.On("GetPciAddr").Return("0000:03:02.2")
+				dev3 := mocks.PciNetDevice{}
+				dev3.On("GetPciAddr").Return("0000:03:02.3")
+
+				in := []types.PciDevice{&dev0, &dev1, &dev2, &dev3}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).To(ContainElement(&dev1))
+				Expect(filtered).NotTo(ContainElement(&dev2))
+				Expect(filtered).NotTo(ContainElement(&dev3))
+			})
+		})
+	})
 	Describe("pfName selector", func() {
 		/*Context("initializing", func() {
 			It("should populate ifnames array", func() {
@@ -150,39 +182,6 @@ var _ = Describe("DeviceSelectors", func() {
 				Expect(filtered).To(ContainElement(&dev8))
 				Expect(filtered).NotTo(ContainElement(&dev9))
 				Expect(filtered).To(ContainElement(&dev10))
-			})
-		})
-	})
-
-	Describe("pciAddress selector", func() {
-		/*Context("initializing", func() {
-			It("should populate pciAddresses array", func() {
-				pciAddr := []string{"0000:03:02.0", "0000:03:02.1"}
-				sel := resources.NewPciAddressSelector(pciAddr).(*pciAddressSelector)
-				Expect(sel.pciAddresses).To(ConsistOf(pciAddr))
-			})
-		})*/
-		Context("filtering", func() {
-			It("should return devices matching on VF pci addresses", func() {
-				pciAddr := []string{"0000:03:02.0", "0000:03:02.1"}
-				sel := resources.NewPciAddressSelector(pciAddr)
-
-				dev0 := mocks.PciNetDevice{}
-				dev0.On("GetPciAddr").Return("0000:03:02.0")
-				dev1 := mocks.PciNetDevice{}
-				dev1.On("GetPciAddr").Return("0000:03:02.1")
-				dev2 := mocks.PciNetDevice{}
-				dev2.On("GetPciAddr").Return("0000:03:02.2")
-				dev3 := mocks.PciNetDevice{}
-				dev3.On("GetPciAddr").Return("0000:03:02.3")
-
-				in := []types.PciDevice{&dev0, &dev1, &dev2, &dev3}
-				filtered := sel.Filter(in)
-
-				Expect(filtered).To(ContainElement(&dev0))
-				Expect(filtered).To(ContainElement(&dev1))
-				Expect(filtered).NotTo(ContainElement(&dev2))
-				Expect(filtered).NotTo(ContainElement(&dev3))
 			})
 		})
 	})
