@@ -42,8 +42,11 @@ var _ = Describe("AcceleratorProvider", func() {
 		Context("when there are none", func() {
 			rf := &mocks.ResourceFactory{}
 			p := accelerator.NewAccelDeviceProvider(rf)
-			devs := p.GetDevices()
+			config := &types.ResourceConfig{}
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config)
 			It("should return empty slice", func() {
+				Expect(dDevs).To(BeEmpty())
 				Expect(devs).To(BeEmpty())
 			})
 		})
@@ -71,6 +74,12 @@ var _ = Describe("AcceleratorProvider", func() {
 
 			rf := factory.NewResourceFactory("fake", "fake", true)
 			p := accelerator.NewAccelDeviceProvider(rf)
+			config := &types.ResourceConfig{
+				DeviceType: types.AcceleratorType,
+				SelectorObj: types.AccelDeviceSelectors{
+					DeviceSelectors: types.DeviceSelectors{},
+				},
+			}
 
 			dev1 := &ghw.PCIDevice{
 				Address: "0000:00:00.1",
@@ -101,11 +110,16 @@ var _ = Describe("AcceleratorProvider", func() {
 			devsToAdd := []*ghw.PCIDevice{dev1, dev2, devInvalid, devNoSysFs}
 
 			err := p.AddTargetDevices(devsToAdd, 0x1024)
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should return only 1 device on GetDevices()", func() {
-				Expect(p.GetDevices()).To(HaveLen(2))
+			It("should return 3 devices on GetDiscoveredDevices()", func() {
+				Expect(dDevs).To(HaveLen(3))
+			})
+			It("should return 2 devices on GetDevices()", func() {
+				Expect(devs).To(HaveLen(2))
 			})
 		})
 	})

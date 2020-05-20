@@ -121,7 +121,7 @@ func (rm *resourceManager) initServers() error {
 			return fmt.Errorf("error getting device provider")
 		}
 
-		devices := dp.GetDevices()
+		devices := dp.GetDevices(rc)
 		filteredDevices, err := dp.GetFilteredDevices(devices, rc)
 		if err != nil {
 			glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/intel/sriov-network-device-plugin/pkg/factory"
 	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/intel/sriov-network-device-plugin/pkg/types"
 	"github.com/intel/sriov-network-device-plugin/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -53,8 +54,9 @@ var _ = Describe("PciNetDevice", func() {
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
 				Expect(dev.GetNetName()).To(Equal("eth0"))
@@ -85,8 +87,9 @@ var _ = Describe("PciNetDevice", func() {
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetAPIDevice().Topology).To(BeNil())
 				Expect(dev.GetNumaInfo()).To(Equal(""))
@@ -109,8 +112,9 @@ var _ = Describe("PciNetDevice", func() {
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetAPIDevice().Topology).To(BeNil())
 				Expect(dev.GetNumaInfo()).To(Equal(""))
@@ -130,8 +134,9 @@ var _ = Describe("PciNetDevice", func() {
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
+				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev).To(BeNil())
 				Expect(err).To(HaveOccurred())
@@ -153,8 +158,9 @@ var _ = Describe("PciNetDevice", func() {
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
+				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev).NotTo(BeNil())
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))

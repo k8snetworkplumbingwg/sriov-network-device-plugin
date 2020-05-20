@@ -42,8 +42,11 @@ var _ = Describe("NetDeviceProvider", func() {
 		Context("when there are none", func() {
 			rf := &mocks.ResourceFactory{}
 			p := netdevice.NewNetDeviceProvider(rf)
-			devs := p.GetDevices()
+			config := &types.ResourceConfig{}
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config)
 			It("should return empty slice", func() {
+				Expect(dDevs).To(BeEmpty())
 				Expect(devs).To(BeEmpty())
 			})
 		})
@@ -71,7 +74,12 @@ var _ = Describe("NetDeviceProvider", func() {
 
 			rf := factory.NewResourceFactory("fake", "fake", true)
 			p := netdevice.NewNetDeviceProvider(rf)
-
+			config := &types.ResourceConfig{
+				DeviceType: types.NetDeviceType,
+				SelectorObj: types.NetDeviceSelectors{
+					DeviceSelectors: types.DeviceSelectors{},
+				},
+			}
 			dev1 := &ghw.PCIDevice{
 				Address: "0000:00:00.1",
 				Class:   &pcidb.Class{ID: "1024"},
@@ -93,11 +101,16 @@ var _ = Describe("NetDeviceProvider", func() {
 			devsToAdd := []*ghw.PCIDevice{dev1, dev2, devInvalid}
 
 			err := p.AddTargetDevices(devsToAdd, 0x1024)
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
+			It("should return only 1 device on GetDiscoveredDevices()", func() {
+				Expect(dDevs).To(HaveLen(1))
+			})
 			It("should return only 1 device on GetDevices()", func() {
-				Expect(p.GetDevices()).To(HaveLen(1))
+				Expect(devs).To(HaveLen(1))
 			})
 		})
 	})
