@@ -81,6 +81,10 @@ func (s *pfNameSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
 	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
 		pfName := dev.(types.PciNetDevice).GetPFName()
+		if pfName == "" {
+			// Exclude devices that doesn't have a PF name
+			continue
+		}
 		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
 			if strings.Contains(selector, "#") {
