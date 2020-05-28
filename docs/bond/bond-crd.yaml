@@ -9,6 +9,7 @@ spec:
   "name": "bond-net",
   "ifname": "bond0",
   "mode": "active-backup",
+  "failOverMac": 1,
   "linksInContainer": true,
   "miimon": "100",
   "links": [
