@@ -83,6 +83,7 @@ var _ = Describe("Factory", func() {
 		Entry("vendors", "vendors", true, reflect.TypeOf(resources.NewVendorSelector([]string{}))),
 		Entry("devices", "devices", true, reflect.TypeOf(resources.NewDeviceSelector([]string{}))),
 		Entry("drivers", "drivers", true, reflect.TypeOf(resources.NewDriverSelector([]string{}))),
+		Entry("pciAddresses", "pciAddresses", true, reflect.TypeOf(resources.NewPciAddressSelector([]string{}))),
 		Entry("pfNames", "pfNames", true, reflect.TypeOf(resources.NewPfNameSelector([]string{}))),
 		Entry("linkTypes", "linkTypes", true, reflect.TypeOf(resources.NewLinkTypeSelector([]string{}))),
 		Entry("ddpProfiles", "ddpProfiles", true, reflect.TypeOf(resources.NewDdpSelector([]string{}))),
@@ -103,8 +104,8 @@ var _ = Describe("Factory", func() {
 				vendors := []string{"8086", "8086", "8086", "1234"}
 				codes := []string{"1111", "1111", "1234", "4321"}
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
-				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
 				pciAddr := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3"}
+				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
 				linkTypes := []string{"ether", "infiniband", "other", "other2"}
 				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
 				for i := range devs {
@@ -112,8 +113,8 @@ var _ = Describe("Factory", func() {
 					d.On("GetVendor").Return(vendors[i]).
 						On("GetDeviceCode").Return(codes[i]).
 						On("GetDriver").Return(drivers[i]).
-						On("GetPFName").Return(pfNames[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
+						On("GetPFName").Return(pfNames[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
 						On("GetDDPProfiles").Return(ddpProfiles[i])
@@ -127,6 +128,7 @@ var _ = Describe("Factory", func() {
 							"vendors": ["8086"],
 							"devices": ["1111"],
 							"drivers": ["vfio-pci"],
+							"pciAddresses": ["0000:03:02.0"],
 							"pfNames": ["enp2s0f2"],
 							"linkTypes": ["ether"],
 							"ddpProfiles": ["GTP"]

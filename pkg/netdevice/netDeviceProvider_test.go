@@ -112,6 +112,7 @@ var _ = Describe("NetDeviceProvider", func() {
 				ve := []string{"8086", "8086", "1111", "2222", "3333"}
 				de := []string{"abcd", "123a", "abcd", "2222", "1024"}
 				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci"}
+				pa := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3", "0000:03:02.4"}
 				pf := []string{"eth0", "eth0", "eth1", "net0", "net0"}
 				lt := []string{"ether", "infiniband", "ether", "ether", "fake"}
 				dd := []string{"E710 PPPoE and PPPoL2TPv2", "fake", "fake", "gtp", "profile"}
@@ -127,6 +128,7 @@ var _ = Describe("NetDeviceProvider", func() {
 						On("GetVendor").Return(ve[i]).
 						On("GetDeviceCode").Return(de[i]).
 						On("GetDriver").Return(md[i]).
+						On("GetPciAddr").Return(pa[i]).
 						On("GetPFName").Return(pf[i]).
 						On("GetLinkType").Return(lt[i]).
 						On("GetDDPProfiles").Return(dd[i])
@@ -148,6 +150,7 @@ var _ = Describe("NetDeviceProvider", func() {
 					{"vendors", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
 					{"devices", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
 					{"drivers", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
+					{"pciAddresses", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}}, []types.PciDevice{all[0], all[3]}},
 					{"pfNames", &types.NetDeviceSelectors{PfNames: []string{"net0", "eth1"}}, []types.PciDevice{all[2], all[3], all[4]}},
 					{"linkTypes", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband"}}, []types.PciDevice{all[1]}},
 					{"linkTypes multi", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband", "fake"}}, []types.PciDevice{all[1], all[4]}},

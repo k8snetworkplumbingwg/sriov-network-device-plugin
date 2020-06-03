@@ -81,9 +81,10 @@ type ResourceConfig struct {
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
-	Vendors []string `json:"vendors,omitempty"`
-	Devices []string `json:"devices,omitempty"`
-	Drivers []string `json:"drivers,omitempty"`
+	Vendors      []string `json:"vendors,omitempty"`
+	Devices      []string `json:"devices,omitempty"`
+	Drivers      []string `json:"drivers,omitempty"`
+	PciAddresses []string `json:"pciAddresses,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields

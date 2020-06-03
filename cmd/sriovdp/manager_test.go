@@ -389,6 +389,28 @@ var _ = Describe("Resource manager", func() {
 				},
 			},
 		),
+		Entry("VF device without PF and bound to dpdk driver",
+			&utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:03:02.0",
+					"sys/bus/pci/devices/0000:03:02.1",
+				},
+				Files: map[string][]byte{
+					"sys/bus/pci/devices/0000:03:02.0/modalias": []byte(
+						"pci:v00008086d0000154Csv00008086sd00000000bc02sc00i00",
+					),
+					"sys/bus/pci/devices/0000:03:02.1/modalias": []byte(
+						"pci:v00008086d0000154Csv00008086sd00000000bc02sc00i00",
+					),
+					"sys/bus/pci/devices/0000:03:02.0/max_vfs": []byte("0"),
+					"sys/bus/pci/devices/0000:03:02.1/max_vfs": []byte("0"),
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:03:02.0/driver": "../../../../bus/pci/drivers/igb_uio",
+					"sys/bus/pci/devices/0000:03:02.1/driver": "../../../../bus/pci/drivers/igb_uio",
+				},
+			},
+		),
 	)
 	Describe("starting all server", func() {
 		Context("when resource servers are starting fine", func() {

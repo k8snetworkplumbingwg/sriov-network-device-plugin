@@ -232,11 +232,12 @@ The "deviceType" value determines which selectors are supported for that device.
 #### Common selectors
 All device types support following common device selectors.
 
-|   Field   | Required |                Description                |         Type/Defaults          |   Example/Accepted values   |
-|-----------|----------|-------------------------------------------|--------------------------------|-----------------------------|
-| "vendors" | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086"]         |
-| "devices" | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "10ed"] |
-| "drivers" | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]     |
+|   Field        | Required |                Description                |         Type/Defaults          |   Example/Accepted values        |
+|----------------|----------|-------------------------------------------|--------------------------------|----------------------------------|
+| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086"]              |
+| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "10ed"]      |
+| "drivers"      | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]          |
+| "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null`  | "pciAddresses": ["0000:03:02.0"] |
 
 
 #### Extended selectors for device type "netDevice"
@@ -296,6 +297,7 @@ The device plugin will initially discover all PCI network resources in the host 
 1. "vendors" - The vendor hex code of device
 2. "devices" - The device hex code of device
 3. "drivers" - The driver name the device is registered with
+4. "pciAddresses" - The pci address of the device in BDF notation
 4. "pfNames" - The Physical function name
 5. "linkTypes" - The link type of the net device associated with the PCI device.
 
