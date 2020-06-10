@@ -37,7 +37,7 @@ spec:
       containers:
       - name: kube-sriovdp
         image: nfvpe/sriov-device-plugin
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         args:
         - --log-dir=sriovdp
         - --log-level=10
@@ -97,7 +97,7 @@ spec:
       containers:
       - name: kube-sriovdp
         image: nfvpe/sriov-device-plugin:ppc64le
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         args:
         - --log-dir=sriovdp
         - --log-level=10
