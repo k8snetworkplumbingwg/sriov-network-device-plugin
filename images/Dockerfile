@@ -1,7 +1,7 @@
 FROM golang:alpine as builder
 
 ADD . /usr/src/sriov-network-device-plugin
-ADD https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz /tmp/ddptool/
+ADD https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz?use_mirror=astuteinternet /tmp/ddptool/
 
 ENV HTTP_PROXY $http_proxy
 ENV HTTPS_PROXY $https_proxy
