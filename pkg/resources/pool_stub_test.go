@@ -50,8 +50,8 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
 					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
@@ -77,8 +77,8 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
 					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
@@ -100,8 +100,8 @@ var _ = Describe("PoolStub", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f)
-				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f)
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
 					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{

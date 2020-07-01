@@ -147,7 +147,11 @@ type ResourcePool interface {
 type DeviceProvider interface {
 	// AddTargetDevices adds a list of devices in a DeviceProvider that matches the 'device class hexcode as int'
 	AddTargetDevices([]*ghw.PCIDevice, int) error
-	GetDevices() []PciDevice
+	GetDiscoveredDevices() []*ghw.PCIDevice
+
+	// Get Devices runs through the Discovered Devices and returns a list of fully populated PciDevices accoring to the given ResourceConfig
+	GetDevices(*ResourceConfig) []PciDevice
+
 	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)
 }
 

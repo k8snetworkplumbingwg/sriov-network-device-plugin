@@ -25,7 +25,7 @@ import (
 )
 
 type accelDeviceProvider struct {
-	deviceList []types.AccelDevice
+	deviceList []*ghw.PCIDevice
 	rFactory   types.ResourceFactory
 }
 
@@ -33,14 +33,22 @@ type accelDeviceProvider struct {
 func NewAccelDeviceProvider(rf types.ResourceFactory) types.DeviceProvider {
 	return &accelDeviceProvider{
 		rFactory:   rf,
-		deviceList: make([]types.AccelDevice, 0),
+		deviceList: make([]*ghw.PCIDevice, 0),
 	}
 }
 
-func (ap *accelDeviceProvider) GetDevices() []types.PciDevice {
-	newPciDevices := make([]types.PciDevice, len(ap.deviceList))
-	for i := range ap.deviceList {
-		newPciDevices[i] = ap.deviceList[i]
+func (ap *accelDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
+	return ap.deviceList
+}
+
+func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
+	newPciDevices := make([]types.PciDevice, 0)
+	for _, device := range ap.deviceList {
+		if newDevice, err := NewAccelDevice(device, ap.rFactory); err == nil {
+			newPciDevices = append(newPciDevices, newDevice)
+		} else {
+			glog.Errorf("accelerator GetDevices() error creating new device: %q", err)
+		}
 	}
 	return newPciDevices
 }
@@ -67,12 +75,7 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 			}
 			glog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
 
-			if newDevice, err := NewAccelDevice(device, ap.rFactory); err == nil {
-				ap.deviceList = append(ap.deviceList, newDevice)
-			} else {
-				glog.Errorf("accelerator AddTargetDevices() error adding new device: %q", err)
-			}
-
+			ap.deviceList = append(ap.deviceList, device)
 		}
 	}
 	return nil
