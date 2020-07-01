@@ -86,6 +86,10 @@ To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.co
 
 ## Quick Start
 
+### Creating SR-IOV Virtual Functions
+
+Before starting the SR-IOV device plugin you will need to create SR-IOV Virtual Functions on your system. [The VF Setup doc will guide you through that process.](docs/vf-setup.md)
+
 ### Build SR-IOV CNI
 
 1. Compile SR-IOV-CNI (supported from release 2.0+):
