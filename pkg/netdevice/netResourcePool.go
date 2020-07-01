@@ -61,6 +61,14 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 					glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device %v is not rdma device", id)
 				}
 			}
+			if rp.selectors.NeedVhostNet {
+				if VhostNetDeviceExist() {
+					vhostNetDeviceSpec := GetVhostNetDeviceSpec()
+					newSpecs = append(newSpecs, vhostNetDeviceSpec...)
+				} else {
+					glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
+				}
+			}
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)
