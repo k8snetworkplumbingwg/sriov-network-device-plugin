@@ -104,6 +104,18 @@ Applying... Done!
 -I- Please reboot machine to load new configurations.
 ```
 
+Alternatively, use `mstconfig` from _mstflint_ package
+
+```
+# mstconfig -d 04:00.0 set SRIOV_EN=1 NUM_OF_VFS=8
+...
+Apply new Configuration ? (y/n) [n] : y
+Applying... Done!
+-I- Please reboot machine to load new configurations.
+```
+
+Where `04:00.0` is the NIC's PCI address.
+
 Reboot the machine
 ```
 # reboot
