@@ -55,6 +55,12 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	}
 
 	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
+	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if ok {
+		if nf.IsRdma && !rdmaSpec.IsRdma() {
+			glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", pciAddr)
+		}
+	}
 
 	linkType := ""
 	if len(ifName) > 0 {
