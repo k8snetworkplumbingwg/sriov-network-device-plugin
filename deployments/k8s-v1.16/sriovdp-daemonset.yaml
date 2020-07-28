@@ -36,7 +36,7 @@ spec:
       serviceAccountName: sriov-device-plugin
       containers:
       - name: kube-sriovdp
-        image: nfvpe/sriov-device-plugin
+        image: nfvpe/sriov-device-plugin:v3.2
         imagePullPolicy: IfNotPresent
         args:
         - --log-dir=sriovdp
@@ -158,7 +158,7 @@ spec:
 # this is a temporary image repository for arm64 architecture, util CI/CD of the
 # sriov-device-plugin will not allow to recreate multiple images
         image: alexeyperevalov/arm64-sriov-device-plugin
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         args:
         - --log-dir=sriovdp
         - --log-level=10
