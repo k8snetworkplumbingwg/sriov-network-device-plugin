@@ -25,7 +25,6 @@ import (
 
 type pciDevice struct {
 	basePciDevice *ghw.PCIDevice
-	pfAddr        string
 	driver        string
 	vendor        string
 	product       string
@@ -92,10 +91,6 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 		env:           env,
 		numa:          nodeToStr(nodeNum),
 	}, nil
-}
-
-func (pd *pciDevice) GetPfPciAddr() string {
-	return pd.pfAddr
 }
 
 func (pd *pciDevice) GetVendor() string {

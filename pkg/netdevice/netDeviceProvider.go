@@ -167,6 +167,13 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		}
 	}
 
+	// filter by RootDevices list
+	if nf.RootDevices != nil && len(nf.RootDevices) > 0 {
+		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
 	// filter by linkTypes list
 	if nf.LinkTypes != nil && len(nf.LinkTypes) > 0 {
 		if len(nf.LinkTypes) > 1 {

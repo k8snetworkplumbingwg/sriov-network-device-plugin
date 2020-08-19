@@ -85,6 +85,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewPciAddressSelector(values), nil
 	case "pfNames":
 		return resources.NewPfNameSelector(values), nil
+	case "rootDevices":
+		return resources.NewRootDeviceSelector(values), nil
 	case "linkTypes":
 		return resources.NewLinkTypeSelector(values), nil
 	case "ddpProfiles":
