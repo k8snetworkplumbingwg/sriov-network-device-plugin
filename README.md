@@ -250,11 +250,12 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 
 |     Field     | Required |                          Description                           |                   Type/Defaults                   |                               Example/Accepted values                                |
 |---------------|----------|----------------------------------------------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------|
-| "pfNames"     | N        | VFs from PF matches list of PF names                           | `string` list Default: `null`                     | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames") |
-| "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                               |
-| "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                       |
-| "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                     |
-| "needVhostNet"| N        | Share /dev/vhost-net                                           | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                               |
+| "pfNames"     | N        | VFs from PF matches list of PF names                           | `string` list Default: `null`                     | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
+| "rootDevices"     | N        | VFs from PF matches list of PF PCI addresses               | `string` list Default: `null`                     | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
+| "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                                           |
+| "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
+| "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
+| "needVhostNet"| N        | Share /dev/vhost-net                                           | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
 
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
@@ -300,24 +301,32 @@ The idea here is, user creates a resource config for each resource pool as shown
 
 The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". Each "resource pool" then applies its selectors on this list and add devices that satisfies the selector's constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
 
-1. "vendors" - The vendor hex code of device
-2. "devices" - The device hex code of device
-3. "drivers" - The driver name the device is registered with
+1. "vendors"      - The vendor hex code of device
+2. "devices"      - The device hex code of device
+3. "drivers"      - The driver name the device is registered with
 4. "pciAddresses" - The pci address of the device in BDF notation
-4. "pfNames" - The Physical function name
-5. "linkTypes" - The link type of the net device associated with the PCI device.
+4. "pfNames"      - The Physical function name
+5. "rootDevices"  - The Physical function PCI address
+6. "linkTypes"    - The link type of the net device associated with the PCI device.
 
-The "pfNames" selector can be used to specify a list and/or range of VFs for a pool in the below format:
+The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs for a pool in the below format:
 ````
 "<PFName>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
 ````
 
+Or
+
+````
+"<RootDevice>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
+````
+
 Where:
 
-    `<PFName>`   - is the PF interface name
-    `<SingleVF>` - is a single VF index (0-based) that is included into the pool
-    `<FirstVF>`  - is the first VF index (0-based) that is included into the range
-    `<LastVF>`   - is the last VF index (0-based) that is included into the range
+    `<PFName>`     - is the PF interface name
+    `<RootDevice>` - is the PF PCI address
+    `<SingleVF>`   - is a single VF index (0-based) that is included into the pool
+    `<FirstVF>`    - is the first VF index (0-based) that is included into the range
+    `<LastVF>`     - is the last VF index (0-based) that is included into the range
 
 Example:
 
@@ -325,7 +334,11 @@ The selector for interface named `netpf0` and VF 0, 2 upto 7 (included 2 and 7) 
 ````
 "pfNames": ["netpf0#0,2-7,9"]
 ````
-If only PF network interface specified in the selector, then assuming that all VFs of this interface are going to the pool.
+The selector for PCI address `0000:86:00.0` and VF 0, 1, 3, 4 will look like:
+````
+"rootDevices": ["0000:86:00.0#0-1,3,4"]
+````
+If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs of this interface are going to the pool.
 
 
 ### Workflow
