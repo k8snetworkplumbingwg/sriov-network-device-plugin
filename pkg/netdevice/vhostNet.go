@@ -8,7 +8,7 @@ import (
 
 // VhostNetDeviceExist returns true if /dev/vhost-net exists
 func VhostNetDeviceExist() bool {
-	_, err := os.Stat("/dev/vhost-net");
+	_, err := os.Stat("/dev/vhost-net")
 	return err == nil
 }
 

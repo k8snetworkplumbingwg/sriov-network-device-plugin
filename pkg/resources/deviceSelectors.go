@@ -193,7 +193,7 @@ func contains(hay []string, needle string) bool {
 
 func getItem(hay []string, needle string) string {
 	for _, item := range hay {
-		if strings.HasPrefix(item, needle) {
+		if strings.EqualFold(strings.Split(item, "#")[0], needle) {
 			return item
 		}
 	}
