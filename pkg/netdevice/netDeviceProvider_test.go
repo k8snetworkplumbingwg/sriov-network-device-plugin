@@ -144,7 +144,7 @@ var _ = Describe("NetDeviceProvider", func() {
 						On("GetDriver").Return(md[i]).
 						On("GetPciAddr").Return(pa[i]).
 						On("GetPFName").Return(pf[i]).
-						On("GetPFAddr").Return(ro[i]).
+						On("GetPfPciAddr").Return(ro[i]).
 						On("GetLinkType").Return(lt[i]).
 						On("GetDDPProfiles").Return(dd[i])
 

@@ -173,20 +173,6 @@ func (_m *PciNetDevice) GetNumaInfo() string {
 	return r0
 }
 
-// GetPFAddr provides a mock function with given fields:
-func (_m *PciNetDevice) GetPFAddr() string {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
 // GetPFName provides a mock function with given fields:
 func (_m *PciNetDevice) GetPFName() string {
 	ret := _m.Called()
@@ -203,6 +189,20 @@ func (_m *PciNetDevice) GetPFName() string {
 
 // GetPciAddr provides a mock function with given fields:
 func (_m *PciNetDevice) GetPciAddr() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetPfPciAddr provides a mock function with given fields:
+func (_m *PciNetDevice) GetPfPciAddr() string {
 	ret := _m.Called()
 
 	var r0 string

@@ -117,7 +117,7 @@ var _ = Describe("Factory", func() {
 						On("GetDriver").Return(drivers[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
 						On("GetPFName").Return(pfNames[i]).
-						On("GetPFAddr").Return(rootDevices[i]).
+						On("GetPfPciAddr").Return(rootDevices[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
 						On("GetDDPProfiles").Return(ddpProfiles[i])

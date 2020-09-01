@@ -127,7 +127,7 @@ type rootDeviceSelector struct {
 func (s *rootDeviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
 	filteredList := make([]types.PciDevice, 0)
 	for _, dev := range inDevices {
-		rootDevice := dev.(types.PciNetDevice).GetPFAddr()
+		rootDevice := dev.(types.PciNetDevice).GetPfPciAddr()
 		if rootDevice == "" {
 			// Exclude devices that doesn't have a root PCI device
 			continue

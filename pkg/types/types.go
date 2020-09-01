@@ -162,6 +162,7 @@ type PciDevice interface {
 	GetDriver() string
 	GetDeviceCode() string
 	GetPciAddr() string
+	GetPfPciAddr() string
 	IsSriovPF() bool
 	GetSubClass() string
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
@@ -176,7 +177,6 @@ type PciDevice interface {
 type PciNetDevice interface {
 	PciDevice
 	GetPFName() string
-	GetPFAddr() string
 	GetNetName() string
 	GetLinkSpeed() string
 	GetLinkType() string

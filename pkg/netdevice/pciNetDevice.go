@@ -28,7 +28,6 @@ type pciNetDevice struct {
 	types.PciDevice
 	ifName    string
 	pfName    string
-	pfAddr    string
 	linkSpeed string
 	rdmaSpec  types.RdmaSpec
 	linkType  string
@@ -54,10 +53,6 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	if err != nil {
 		glog.Warningf("unable to get PF name %q", err.Error())
 	}
-	pfAddr, err := utils.GetPfAddr(pciAddr)
-	if err != nil {
-		glog.Warningf("unable to get PF address %q", err.Error())
-	}
 
 	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
@@ -80,7 +75,6 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		PciDevice: pciDev,
 		ifName:    ifName,
 		pfName:    pfName,
-		pfAddr:    pfAddr,
 		linkSpeed: "", // TO-DO: Get this using utils pkg
 		rdmaSpec:  rdmaSpec,
 		linkType:  linkType,
@@ -89,10 +83,6 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 
 func (nd *pciNetDevice) GetPFName() string {
 	return nd.pfName
-}
-
-func (nd *pciNetDevice) GetPFAddr() string {
-	return nd.pfAddr
 }
 
 func (nd *pciNetDevice) GetNetName() string {
