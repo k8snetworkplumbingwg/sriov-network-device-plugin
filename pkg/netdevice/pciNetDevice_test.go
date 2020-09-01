@@ -55,7 +55,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, "")
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 				rc := &types.ResourceConfig{}
 
@@ -88,7 +88,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, "")
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 				rc := &types.ResourceConfig{}
 
@@ -113,7 +113,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, "")
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 				rc := &types.ResourceConfig{}
 
@@ -265,7 +265,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, "")
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}
@@ -289,7 +289,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				defer utils.UseFakeLinks()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, "")
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 				}

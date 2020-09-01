@@ -1,6 +1,8 @@
 package resources_test
 
 import (
+	"reflect"
+
 	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
@@ -41,7 +43,7 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.1/physfn":      "../0000:01:00.0",
 			},
 		}
-		f = factory.NewResourceFactory("fake", "fake", true)
+		f = factory.NewResourceFactory("fake", "fake", true, "")
 		rc = &types.ResourceConfig{SelectorObj: types.NetDeviceSelectors{}}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
@@ -116,6 +118,33 @@ var _ = Describe("PoolStub", func() {
 				expected := []*pluginapi.Mount{}
 				Expect(mounts).To(HaveLen(0))
 				Expect(mounts).To(ConsistOf(expected))
+			})
+
+		})
+	})
+	Describe("getting device pool", func() {
+		Context("for valid devices", func() {
+			It("should return valid device pool", func() {
+				defer fs.Use()()
+				defer utils.UseFakeLinks()()
+
+				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
+				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
+				rp = resources.NewResourcePool(rc,
+					map[string]*pluginapi.Device{},
+					map[string]types.PciDevice{
+						"0000:00:00.1": d1,
+						"0000:00:00.2": d2,
+					},
+				)
+				pool := rp.GetDevicePool()
+
+				expected := map[string]types.PciDevice{
+					"0000:00:00.1": d1,
+					"0000:00:00.2": d2,
+				}
+				Expect(pool).To(HaveLen(2))
+				Expect(reflect.DeepEqual(pool, expected)).To(Equal(true))
 			})
 
 		})

@@ -34,6 +34,7 @@ const (
 type cliParams struct {
 	configFile     string
 	resourcePrefix string
+	allocatePolicy string
 }
 
 type resourceManager struct {
@@ -54,7 +55,7 @@ func newResourceManager(cp *cliParams) *resourceManager {
 		glog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
 
-	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode)
+	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode, cp.allocatePolicy)
 	dp := make(map[types.DeviceType]types.DeviceProvider)
 	for k := range types.SupportedDevices {
 		dp[k] = rf.GetDeviceProvider(k)

@@ -132,7 +132,7 @@ func (rp *ResourcePoolImpl) DeviceSpecExist(specs []*pluginapi.DeviceSpec, newSp
 	return false
 }
 
-// GetDevicePool returns PciDevice pool as a map
+// GetDevicePool returns PciDevices pool as a map
 func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.PciDevice {
 	return rp.devicePool
 }

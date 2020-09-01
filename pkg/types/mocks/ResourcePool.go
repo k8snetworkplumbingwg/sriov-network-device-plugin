@@ -3,8 +3,8 @@
 package mocks
 
 import (
+	types "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	mock "github.com/stretchr/testify/mock"
-
 	v1beta1 "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -22,6 +22,22 @@ func (_m *ResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
 		r0 = rf(resourceNamePrefix)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetDevicePool provides a mock function with given fields:
+func (_m *ResourcePool) GetDevicePool() map[string]types.PciDevice {
+	ret := _m.Called()
+
+	var r0 map[string]types.PciDevice
+	if rf, ok := ret.Get(0).(func() map[string]types.PciDevice); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]types.PciDevice)
+		}
 	}
 
 	return r0

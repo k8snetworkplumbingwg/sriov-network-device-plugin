@@ -31,18 +31,20 @@ type resourceFactory struct {
 	endPointPrefix string
 	endPointSuffix string
 	pluginWatch    bool
+	allocatePolicy string
 }
 
 var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
-func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceFactory {
+func NewResourceFactory(prefix, suffix string, pluginWatch bool, allocatePolicy string) types.ResourceFactory {
 
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
 			endPointSuffix: suffix,
 			pluginWatch:    pluginWatch,
+			allocatePolicy: allocatePolicy,
 		}
 	}
 	return instance
@@ -55,9 +57,19 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp, rf.GetAllocator()), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
+}
+
+// GetAllocator returns an instance of Allocator using preferredAllocationPolicy
+func (rf *resourceFactory) GetAllocator() types.Allocator {
+	switch rf.allocatePolicy {
+	case "concentrated":
+		return resources.NewConcentrateAllocator()
+	default:
+		return nil
+	}
 }
 
 // GetDefaultInfoProvider returns an instance of DeviceInfoProvider using name as string
