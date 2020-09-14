@@ -65,8 +65,8 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 // GetAllocator returns an instance of Allocator using preferredAllocationPolicy
 func (rf *resourceFactory) GetAllocator() types.Allocator {
 	switch rf.allocatePolicy {
-	case "concentrated":
-		return resources.NewConcentrateAllocator()
+	case "packed":
+		return resources.NewPackedAllocator()
 	default:
 		return nil
 	}

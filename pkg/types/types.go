@@ -207,8 +207,8 @@ type Allocator interface {
 	Allocate(*pluginapi.ContainerPreferredAllocationRequest, ResourcePool) []string
 }
 
-// ConcentrateAllocator extends Allocator interface
-type ConcentrateAllocator interface {
+// PackedAllocator extends Allocator interface
+type PackedAllocator interface {
 	Allocator
 }
 

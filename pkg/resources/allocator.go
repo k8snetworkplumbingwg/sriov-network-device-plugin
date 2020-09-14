@@ -24,17 +24,17 @@ import (
 // DeviceSet is to hold and manipulate a set of PciDevice
 type DeviceSet map[string]types.PciDevice
 
-// ConcentrateAllocator implements the Allocator interface
-type ConcentrateAllocator struct {
+// PackedAllocator implements the Allocator interface
+type PackedAllocator struct {
 }
 
 // Allocator implements the Allocator interface
 type Allocator struct {
 }
 
-// NewConcentrateAllocator create instance of ConcentrateAllocator
-func NewConcentrateAllocator() types.Allocator {
-	return &ConcentrateAllocator{}
+// NewPackedAllocator create instance of PackedAllocator
+func NewPackedAllocator() types.Allocator {
+	return &PackedAllocator{}
 }
 
 // NewAllocator create instance of Allocator
@@ -69,7 +69,7 @@ func (ds DeviceSet) Sort() []string {
 }
 
 // Allocate return the preferred allocation
-func (ca *ConcentrateAllocator) Allocate(rqt *pluginapi.ContainerPreferredAllocationRequest, rp types.ResourcePool) []string {
+func (pa *PackedAllocator) Allocate(rqt *pluginapi.ContainerPreferredAllocationRequest, rp types.ResourcePool) []string {
 	size := rqt.AllocationSize
 	preferredDevices := make([]string, 0)
 	if size <= 0 || len(rqt.AvailableDeviceIDs) < int(size) || len(rqt.MustIncludeDeviceIDs) > int(size) {

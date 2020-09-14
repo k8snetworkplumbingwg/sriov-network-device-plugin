@@ -58,7 +58,7 @@ var _ = Describe("Factory", func() {
 				Expect(a).To(BeNil())
 			}
 		},
-		Entry("concentrated", "concentrated", reflect.TypeOf(resources.NewConcentrateAllocator())),
+		Entry("packed", "packed", reflect.TypeOf(resources.NewPackedAllocator())),
 		Entry("empty", "", nil),
 		Entry("any other value", "random policy", nil),
 	)

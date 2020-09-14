@@ -21,12 +21,12 @@ var _ = Describe("Allocator", func() {
 	)
 	BeforeEach(func() {
 	})
-	Describe("creating new concentrate allocator", func() {
+	Describe("creating new packed allocator", func() {
 		Context("with valid policy", func() {
 			It("should return valid allocator", func() {
-				ca := resources.NewConcentrateAllocator()
-				expected := &resources.ConcentrateAllocator{}
-				Expect(reflect.TypeOf(ca)).To(Equal(reflect.TypeOf(expected)))
+				pa := resources.NewPackedAllocator()
+				expected := &resources.PackedAllocator{}
+				Expect(reflect.TypeOf(pa)).To(Equal(reflect.TypeOf(expected)))
 			})
 		})
 	})
@@ -88,7 +88,7 @@ var _ = Describe("Allocator", func() {
 			})
 		})
 	})
-	DescribeTable("allocating with concentrate allocator",
+	DescribeTable("allocating with packed allocator",
 		func(rqt *pluginapi.ContainerPreferredAllocationRequest, expected []string) {
 			rc = &types.ResourceConfig{SelectorObj: types.NetDeviceSelectors{}}
 			f = factory.NewResourceFactory("fake", "fake", true)
@@ -105,8 +105,8 @@ var _ = Describe("Allocator", func() {
 					"0000:00:1b.0": d4,
 				},
 			)
-			ca := resources.NewConcentrateAllocator()
-			sortedKeys := ca.Allocate(rqt, rp)
+			pa := resources.NewPackedAllocator()
+			sortedKeys := pa.Allocate(rqt, rp)
 			Expect(sortedKeys).To(Equal(expected))
 		},
 		Entry("allocating successfully with 3 device IDs",

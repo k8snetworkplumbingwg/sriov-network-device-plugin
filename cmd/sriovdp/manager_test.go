@@ -144,7 +144,7 @@ var _ = Describe("Resource manager", func() {
 			cp = &cliParams{
 				configFile:     "/tmp/sriovdp/test_config",
 				resourcePrefix: "test_",
-				allocatePolicy: "concentrated",
+				allocatePolicy: "packed",
 			}
 			rm = newResourceManager(cp)
 			fs = &utils.FakeFilesystem{
