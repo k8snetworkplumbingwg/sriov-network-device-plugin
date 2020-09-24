@@ -106,59 +106,39 @@ func (s *pfNameSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
 		}
 		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
-			if strings.Contains(selector, "#") {
-				// Selector does contain VF index in next format:
-				// <PFName>#<VFIndexStart>-<VFIndexEnd>
-				// In this case both <VFIndexStart> and <VFIndexEnd>
-				// are included in range, for example: "netpf0#3-5"
-				// The VFs 3,4 and 5 of the PF 'netpf0' will be included
-				// in selector pool
-				fields := strings.Split(selector, "#")
-				if len(fields) != 2 {
-					fmt.Printf("Failed to parse %s PF name selector, probably incorrect separator character usage\n", pfName)
-					continue
-				}
-				entries := strings.Split(fields[1], ",")
-				for i := 0; i < len(entries); i++ {
-					if strings.Contains(entries[i], "-") {
-						rng := strings.Split(entries[i], "-")
-						if len(rng) != 2 {
-							fmt.Printf("Failed to parse %s PF name selector, probably incorrect range character usage\n", pfName)
-							continue
-						}
-						rngSt, err := strconv.Atoi(rng[0])
-						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, start range is incorrect\n", pfName)
-							continue
-						}
-						rngEnd, err := strconv.Atoi(rng[1])
-						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, end range is incorrect\n", pfName)
-							continue
-						}
-						vfID := dev.GetVFID()
-						if vfID >= rngSt && vfID <= rngEnd {
-							filteredList = append(filteredList, dev)
-						}
-					} else {
-						vfid, err := strconv.Atoi(entries[i])
-						if err != nil {
-							fmt.Printf("Failed to parse %s PF name selector, index is incorrect\n", pfName)
-							continue
-						}
-						vfID := dev.GetVFID()
-						if vfID == vfid {
-							filteredList = append(filteredList, dev)
-						}
-
-					}
-				}
-			} else {
+			if isSelected(dev, selector) {
 				filteredList = append(filteredList, dev)
 			}
 		}
 	}
 
+	return filteredList
+}
+
+// NewRootDeviceSelector returns a NetDevSelector interface for netDev list
+func NewRootDeviceSelector(rootDevices []string) types.DeviceSelector {
+	return &rootDeviceSelector{rootDevices: rootDevices}
+}
+
+type rootDeviceSelector struct {
+	rootDevices []string
+}
+
+func (s *rootDeviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
+	for _, dev := range inDevices {
+		rootDevice := dev.(types.PciNetDevice).GetPfPciAddr()
+		if rootDevice == "" {
+			// Exclude devices that doesn't have a root PCI device
+			continue
+		}
+		selector := getItem(s.rootDevices, rootDevice)
+		if selector != "" {
+			if isSelected(dev, selector) {
+				filteredList = append(filteredList, dev)
+			}
+		}
+	}
 	return filteredList
 }
 
@@ -198,4 +178,58 @@ func getItem(hay []string, needle string) string {
 		}
 	}
 	return ""
+}
+
+func isSelected(dev types.PciDevice, selector string) bool {
+	if strings.Contains(selector, "#") {
+		// Selector does contain VF index in next format:
+		// <PFName>#<VFIndexStart>-<VFIndexEnd> or
+		// <PFAddr>#<VFIndexStart>-<VFIndexEnd>
+		// In this case both <VFIndexStart> and <VFIndexEnd>
+		// are included in range, for example: "netpf0#3-5"
+		// The VFs 3,4 and 5 of the PF 'netpf0' will be included
+		// in selector pool
+		fields := strings.Split(selector, "#")
+		if len(fields) != 2 {
+			fmt.Printf("Failed to parse %s PF (name|address) selector, probably incorrect separator character usage\n", selector)
+			return false
+		}
+		entries := strings.Split(fields[1], ",")
+		for i := 0; i < len(entries); i++ {
+			if strings.Contains(entries[i], "-") {
+				rng := strings.Split(entries[i], "-")
+				if len(rng) != 2 {
+					fmt.Printf("Failed to parse %s PF (name|address) selector, probably incorrect range character usage\n", selector)
+					return false
+				}
+				rngSt, err := strconv.Atoi(rng[0])
+				if err != nil {
+					fmt.Printf("Failed to parse %s PF (name|address) selector, start range is incorrect\n", selector)
+					return false
+				}
+				rngEnd, err := strconv.Atoi(rng[1])
+				if err != nil {
+					fmt.Printf("Failed to parse %s PF (name|address) selector, end range is incorrect\n", selector)
+					return false
+				}
+				vfID := dev.GetVFID()
+				if vfID >= rngSt && vfID <= rngEnd {
+					return true
+				}
+			} else {
+				vfid, err := strconv.Atoi(entries[i])
+				if err != nil {
+					fmt.Printf("Failed to parse %s PF (name|address) selector, index is incorrect\n", selector)
+					return false
+				}
+				vfID := dev.GetVFID()
+				if vfID == vfid {
+					return true
+				}
+			}
+		}
+	} else {
+		return true
+	}
+	return false
 }

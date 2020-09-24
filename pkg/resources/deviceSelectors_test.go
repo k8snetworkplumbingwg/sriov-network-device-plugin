@@ -186,6 +186,65 @@ var _ = Describe("DeviceSelectors", func() {
 		})
 	})
 
+	Describe("rootDevice selector", func() {
+		Context("filtering", func() {
+			It("should return devices matching interface PF address", func() {
+				netDevs := []string{"0000:86:00.0", "0000:86:00.1#1", "0000:86:00.2#0-2,5,7"}
+				sel := resources.NewRootDeviceSelector(netDevs)
+
+				dev0 := mocks.PciNetDevice{}
+				dev0.On("GetPfPciAddr").Return("0000:86:00.0")
+				dev1 := mocks.PciNetDevice{}
+				dev1.On("GetPfPciAddr").Return("0000:a0:00.0")
+				dev2 := mocks.PciNetDevice{}
+				dev2.On("GetPfPciAddr").Return("0000:86:00.1")
+				dev2.On("GetVFID").Return(1)
+				dev3 := mocks.PciNetDevice{}
+				dev3.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev3.On("GetVFID").Return(0)
+				dev4 := mocks.PciNetDevice{}
+				dev4.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev4.On("GetVFID").Return(1)
+				dev5 := mocks.PciNetDevice{}
+				dev5.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev5.On("GetVFID").Return(2)
+				dev6 := mocks.PciNetDevice{}
+				dev6.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev6.On("GetVFID").Return(3)
+				dev7 := mocks.PciNetDevice{}
+				dev7.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev7.On("GetVFID").Return(4)
+				dev8 := mocks.PciNetDevice{}
+				dev8.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev8.On("GetVFID").Return(5)
+				dev9 := mocks.PciNetDevice{}
+				dev9.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev9.On("GetVFID").Return(6)
+				dev10 := mocks.PciNetDevice{}
+				dev10.On("GetPfPciAddr").Return("0000:86:00.2")
+				dev10.On("GetVFID").Return(7)
+
+				in := []types.PciDevice{&dev0, &dev1, &dev2,
+					&dev3, &dev4, &dev5,
+					&dev6, &dev7, &dev8,
+					&dev9, &dev10}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).NotTo(ContainElement(&dev1))
+				Expect(filtered).To(ContainElement(&dev2))
+				Expect(filtered).To(ContainElement(&dev3))
+				Expect(filtered).To(ContainElement(&dev4))
+				Expect(filtered).To(ContainElement(&dev5))
+				Expect(filtered).NotTo(ContainElement(&dev6))
+				Expect(filtered).NotTo(ContainElement(&dev7))
+				Expect(filtered).To(ContainElement(&dev8))
+				Expect(filtered).NotTo(ContainElement(&dev9))
+				Expect(filtered).To(ContainElement(&dev10))
+			})
+		})
+	})
+
 	Describe("linkType selector", func() {
 		/*Context("initializing", func() {
 			It("should populate linkTypes array", func() {

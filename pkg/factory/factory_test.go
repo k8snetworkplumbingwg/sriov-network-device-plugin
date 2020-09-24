@@ -85,6 +85,7 @@ var _ = Describe("Factory", func() {
 		Entry("drivers", "drivers", true, reflect.TypeOf(resources.NewDriverSelector([]string{}))),
 		Entry("pciAddresses", "pciAddresses", true, reflect.TypeOf(resources.NewPciAddressSelector([]string{}))),
 		Entry("pfNames", "pfNames", true, reflect.TypeOf(resources.NewPfNameSelector([]string{}))),
+		Entry("rootDevices", "rootDevices", true, reflect.TypeOf(resources.NewRootDeviceSelector([]string{}))),
 		Entry("linkTypes", "linkTypes", true, reflect.TypeOf(resources.NewLinkTypeSelector([]string{}))),
 		Entry("ddpProfiles", "ddpProfiles", true, reflect.TypeOf(resources.NewDdpSelector([]string{}))),
 		Entry("invalid", "fakeAndInvalid", false, reflect.TypeOf(nil)),
@@ -106,6 +107,7 @@ var _ = Describe("Factory", func() {
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
 				pciAddr := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3"}
 				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
+				rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
 				linkTypes := []string{"ether", "infiniband", "other", "other2"}
 				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
 				for i := range devs {
@@ -115,6 +117,7 @@ var _ = Describe("Factory", func() {
 						On("GetDriver").Return(drivers[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
 						On("GetPFName").Return(pfNames[i]).
+						On("GetPfPciAddr").Return(rootDevices[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
 						On("GetDDPProfiles").Return(ddpProfiles[i])
@@ -130,6 +133,7 @@ var _ = Describe("Factory", func() {
 							"drivers": ["vfio-pci"],
 							"pciAddresses": ["0000:03:02.0"],
 							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
 							"ddpProfiles": ["GTP"]
 						}

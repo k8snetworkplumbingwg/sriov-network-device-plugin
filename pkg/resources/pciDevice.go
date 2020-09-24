@@ -49,8 +49,15 @@ func nodeToStr(nodeNum int) string {
 // NewPciDevice returns an instance of PciDevice interface
 func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.PciDevice, error) {
 
-	// Get driver info
 	pciAddr := dev.Address
+
+	// Get PF PCI address
+	pfAddr, err := utils.GetPfAddr(pciAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get driver info
 	driverName, err := utils.GetDriverName(pciAddr)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 	// 	Create pciNetDevice object with all relevent info
 	return &pciDevice{
 		basePciDevice: dev,
+		pfAddr:        pfAddr,
 		driver:        driverName,
 		vfID:          vfID,
 		apiDevice:     apiDevice,

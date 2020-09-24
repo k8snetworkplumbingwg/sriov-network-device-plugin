@@ -26,9 +26,9 @@ var _ = Describe("PoolStub", func() {
 	BeforeEach(func() {
 		fs = &utils.FakeFilesystem{
 			Dirs: []string{
-				"sys/bus/pci/devices/0000:00:00.1/net/enp2s0f1",
-				"sys/bus/pci/devices/0000:00:00.1/physfn/net/enp2s0f0",
-				"sys/bus/pci/devices/0000:00:00.2/net/enp2s0f0",
+				"sys/bus/pci/devices/0000:00:00.1/net/enp2s0f0v0",
+				"sys/bus/pci/devices/0000:01:00.0/net/enp2s0f0",
+				"sys/bus/pci/devices/0000:00:00.2/net/enp2s0f1v0",
 				"sys/kernel/iommu_groups/0",
 				"sys/kernel/iommu_groups/1",
 				"sys/bus/pci/drivers/vfio-pci",
@@ -38,6 +38,7 @@ var _ = Describe("PoolStub", func() {
 				"sys/bus/pci/devices/0000:00:00.2/iommu_group": "../../../../kernel/iommu_groups/1",
 				"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
 				"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/vfio-pci",
+				"sys/bus/pci/devices/0000:00:00.1/physfn":      "../0000:01:00.0",
 			},
 		}
 		f = factory.NewResourceFactory("fake", "fake", true)

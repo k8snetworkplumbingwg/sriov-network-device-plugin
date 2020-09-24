@@ -91,6 +91,7 @@ type DeviceSelectors struct {
 type NetDeviceSelectors struct {
 	DeviceSelectors
 	PfNames      []string `json:"pfNames,omitempty"`
+	RootDevices  []string `json:"rootDevices,omitempty"`
 	LinkTypes    []string `json:"linkTypes,omitempty"`
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
 	IsRdma       bool     // the resource support rdma
@@ -157,11 +158,11 @@ type DeviceProvider interface {
 
 // PciDevice provides an interface to get generic device specific information
 type PciDevice interface {
-	GetPfPciAddr() string
 	GetVendor() string
 	GetDriver() string
 	GetDeviceCode() string
 	GetPciAddr() string
+	GetPfPciAddr() string
 	IsSriovPF() bool
 	GetSubClass() string
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
