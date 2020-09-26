@@ -51,6 +51,7 @@ The SR-IOV network device plugin is Kubernetes device plugin for discovering and
 - Detects Kubelet restarts and auto-re-register
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
 - Extensible to support new device types with minimal effort if not already supported
+- Works within virtual deployments of Kubernetes that do not have virtualized-iommu support (VFIO No-IOMMU support)
 
 To deploy workloads with SR-IOV VF this plugin needs to work together with the following two CNI components:
 
@@ -366,6 +367,36 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 }
 
 ```
+
+### Virtual environments with no iommu
+
+In virtual deployments of Kubernetes where the underlying virtualization platform does not support a virtualized iommu, the VFIO driver needs to be loaded with a special 
+flag.  The file **/etc/modprobe.d/vfio-noiommu.conf** must be created with the contents:
+
+````
+# cat /etc/modprobe.d/vfio-noiommu.conf
+options vfio enable_unsafe_noiommu_mode=1
+````
+
+With the above option, vfio devices will be created with the form on the virtual host (VM):
+
+````
+/dev/vfio/noiommu-0
+/dev/vfio/noiommu-1
+...
+````
+
+The presence of noiommu-* devices will automatically be detected by the sriov-device-plugin.  The noiommu-N devices will be mounted **inside** the pod in their expected/normal location;
+
+````
+/dev/vfio/0
+/dev/vfio/1
+...
+````
+It should be noted that with no IOMMU, there is no way to ensure safe use of DMA.  When *enable_unsafe_noiommu_mode* is used, CAP_SYS_RAWIO privileges are necessary to work with groups and
+containers using this mode.  Use of this mode, specifically
+binding a device without a native IOMMU group to a VFIO bus driver will taint the kernel.  Only no-iommu support for the vfio-pci bus is provided.  However, there are still those users
+that want userspace drivers even under those conditions.
 
 ## Example deployments
 

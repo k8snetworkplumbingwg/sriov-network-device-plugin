@@ -50,13 +50,13 @@ func (rp *vfioResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 		Permissions:   "mrw",
 	})
 
-	vfioDev, err := utils.GetVFIODeviceFile(pciAddr)
+	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(pciAddr)
 	if err != nil {
-		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
+		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s, %s", pciAddr, err.Error())
 	} else {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      vfioDev,
-			ContainerPath: vfioDev,
+			HostPath:      vfioDevHost,
+			ContainerPath: vfioDevContainer,
 			Permissions:   "mrw",
 		})
 	}
