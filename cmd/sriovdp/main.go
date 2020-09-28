@@ -33,8 +33,6 @@ func flagInit(cp *cliParams) {
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
 		"resource name prefix used for K8s extended resource")
-	flag.StringVar(&cp.allocatePolicy, "allocate-policy", "",
-		"allocate policy used for k8s device plugin GetPreferredAllocation API")
 }
 
 func main() {

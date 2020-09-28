@@ -55,7 +55,6 @@ var _ = Describe("Resource manager", func() {
 			cp = &cliParams{
 				configFile:     "/tmp/sriovdp/test_config",
 				resourcePrefix: "test_",
-				allocatePolicy: "",
 			}
 			rm = newResourceManager(cp)
 		})
@@ -144,7 +143,6 @@ var _ = Describe("Resource manager", func() {
 			cp = &cliParams{
 				configFile:     "/tmp/sriovdp/test_config",
 				resourcePrefix: "test_",
-				allocatePolicy: "packed",
 			}
 			rm = newResourceManager(cp)
 			fs = &utils.FakeFilesystem{
@@ -297,7 +295,7 @@ var _ = Describe("Resource manager", func() {
 			os.Setenv("GHW_CHROOT", fs.RootDir)
 			defer os.Unsetenv("GHW_CHROOT")
 
-			rf := factory.NewResourceFactory("fake", "fake", true, "")
+			rf := factory.NewResourceFactory("fake", "fake", true)
 
 			rm := &resourceManager{
 				rFactory: rf,

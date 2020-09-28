@@ -27,6 +27,20 @@ func (_m *ResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
 	return r0
 }
 
+// GetAllocatePolicy provides a mock function with given fields:
+func (_m *ResourcePool) GetAllocatePolicy() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetDevicePool provides a mock function with given fields:
 func (_m *ResourcePool) GetDevicePool() map[string]types.PciDevice {
 	ret := _m.Called()

@@ -51,7 +51,7 @@ var _ = Describe("Allocator", func() {
 	Describe("manipulating device set", func() {
 		Context("by inserting and deleting elements", func() {
 			It("should return no error and valid device set", func() {
-				f = factory.NewResourceFactory("fake", "fake", true, "")
+				f = factory.NewResourceFactory("fake", "fake", true)
 				ds := resources.NewDeviceSet()
 				d1, _ := resources.NewPciDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, nil)
 				d2, _ := resources.NewPciDevice(&ghw.PCIDevice{Address: "0000:00:af.0"}, f, nil)

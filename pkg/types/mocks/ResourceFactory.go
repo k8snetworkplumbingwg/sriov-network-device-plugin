@@ -28,13 +28,13 @@ func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string, _a1 string) types.
 	return r0
 }
 
-// GetAllocator provides a mock function with given fields:
-func (_m *ResourceFactory) GetAllocator() types.Allocator {
-	ret := _m.Called()
+// GetAllocator provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetAllocator(_a0 string) types.Allocator {
+	ret := _m.Called(_a0)
 
 	var r0 types.Allocator
-	if rf, ok := ret.Get(0).(func() types.Allocator); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(string) types.Allocator); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.Allocator)

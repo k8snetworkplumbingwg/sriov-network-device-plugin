@@ -78,6 +78,7 @@ type ResourceConfig struct {
 	DeviceType     DeviceType       `json:"deviceType,omitempty"`
 	Selectors      *json.RawMessage `json:"selectors,omitempty"`
 	SelectorObj    interface{}
+	AllocatePolicy string `json:"allocatePolicy,omitempty"`
 }
 
 // DeviceSelectors contains common device selectors fields
@@ -132,7 +133,7 @@ type ResourceFactory interface {
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
 	GetNadUtils() NadUtils
-	GetAllocator() Allocator
+	GetAllocator(string) Allocator
 }
 
 // ResourcePool represents a generic resource entity
@@ -148,6 +149,7 @@ type ResourcePool interface {
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
 	GetDevicePool() map[string]PciDevice // for ListAndWatch
+	GetAllocatePolicy() string
 }
 
 // DeviceProvider provides interface for device discovery

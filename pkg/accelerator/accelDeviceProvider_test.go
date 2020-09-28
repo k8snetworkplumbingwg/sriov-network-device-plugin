@@ -72,7 +72,7 @@ var _ = Describe("AcceleratorProvider", func() {
 
 			defer fs.Use()()
 
-			rf := factory.NewResourceFactory("fake", "fake", true, "")
+			rf := factory.NewResourceFactory("fake", "fake", true)
 			p := accelerator.NewAccelDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.AcceleratorType,
@@ -126,7 +126,7 @@ var _ = Describe("AcceleratorProvider", func() {
 	Describe("getting Filtered devices", func() {
 		Context("using selectors", func() {
 			It("should correctly filter devices", func() {
-				rf := factory.NewResourceFactory("fake", "fake", false, "")
+				rf := factory.NewResourceFactory("fake", "fake", false)
 				p := accelerator.NewAccelDeviceProvider(rf)
 				all := make([]types.PciDevice, 5)
 				mocked := make([]mocks.AccelDevice, 5)

@@ -72,7 +72,7 @@ var _ = Describe("NetDeviceProvider", func() {
 
 			defer fs.Use()()
 
-			rf := factory.NewResourceFactory("fake", "fake", true, "")
+			rf := factory.NewResourceFactory("fake", "fake", true)
 			p := netdevice.NewNetDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.NetDeviceType,
@@ -117,7 +117,7 @@ var _ = Describe("NetDeviceProvider", func() {
 	Describe("getting Filtered devices", func() {
 		Context("using selectors", func() {
 			It("should correctly filter devices", func() {
-				rf := factory.NewResourceFactory("fake", "fake", false, "")
+				rf := factory.NewResourceFactory("fake", "fake", false)
 				p := netdevice.NewNetDeviceProvider(rf)
 				all := make([]types.PciDevice, 5)
 				mocked := make([]mocks.PciNetDevice, 5)
