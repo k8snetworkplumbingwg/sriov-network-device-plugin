@@ -51,7 +51,7 @@ var _ = Describe("Factory", func() {
 	DescribeTable("getting info provider",
 		func(name string, expected reflect.Type) {
 			f := factory.NewResourceFactory("fake", "fake", true)
-			p := f.GetInfoProvider(name)
+			p := f.GetDefaultInfoProvider(name)
 			Expect(reflect.TypeOf(p)).To(Equal(expected))
 		},
 		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(resources.NewVfioResource())),

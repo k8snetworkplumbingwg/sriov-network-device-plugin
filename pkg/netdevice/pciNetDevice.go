@@ -37,7 +37,7 @@ type pciNetDevice struct {
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
 
 	var ifName string
-	pciDev, err := resources.NewPciDevice(dev, rFactory)
+	pciDev, err := resources.NewPciDevice(dev, rFactory, nil)
 	if err != nil {
 		return nil, err
 	}

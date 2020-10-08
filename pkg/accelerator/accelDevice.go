@@ -29,7 +29,7 @@ type accelDevice struct {
 // NewAccelDevice returns an instance of AccelDevice interface
 func NewAccelDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.AccelDevice, error) {
 
-	pciDev, err := resources.NewPciDevice(dev, rFactory)
+	pciDev, err := resources.NewPciDevice(dev, rFactory, nil)
 	if err != nil {
 		return nil, err
 	}

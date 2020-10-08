@@ -12,6 +12,22 @@ type ResourceFactory struct {
 	mock.Mock
 }
 
+// GetDefaultInfoProvider provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string) types.DeviceInfoProvider {
+	ret := _m.Called(_a0)
+
+	var r0 types.DeviceInfoProvider
+	if rf, ok := ret.Get(0).(func(string) types.DeviceInfoProvider); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.DeviceInfoProvider)
+		}
+	}
+
+	return r0
+}
+
 // GetDeviceFilter provides a mock function with given fields: _a0
 func (_m *ResourceFactory) GetDeviceFilter(_a0 *types.ResourceConfig) (interface{}, error) {
 	ret := _m.Called(_a0)
@@ -45,22 +61,6 @@ func (_m *ResourceFactory) GetDeviceProvider(_a0 types.DeviceType) types.DeviceP
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.DeviceProvider)
-		}
-	}
-
-	return r0
-}
-
-// GetInfoProvider provides a mock function with given fields: _a0
-func (_m *ResourceFactory) GetInfoProvider(_a0 string) types.DeviceInfoProvider {
-	ret := _m.Called(_a0)
-
-	var r0 types.DeviceInfoProvider
-	if rf, ok := ret.Get(0).(func(string) types.DeviceInfoProvider); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(types.DeviceInfoProvider)
 		}
 	}
 

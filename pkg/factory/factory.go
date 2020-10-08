@@ -60,8 +60,8 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }
 
-// GetInfoProvider returns an instance of DeviceInfoProvider using name as string
-func (rf *resourceFactory) GetInfoProvider(name string) types.DeviceInfoProvider {
+// GetDefaultInfoProvider returns an instance of DeviceInfoProvider using name as string
+func (rf *resourceFactory) GetDefaultInfoProvider(name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
 		return resources.NewVfioResource()

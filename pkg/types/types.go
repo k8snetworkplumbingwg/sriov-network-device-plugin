@@ -125,7 +125,7 @@ type ResourceServer interface {
 // ResourceFactory is an interface to get instances of ResourcePool and ResouceServer
 type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
-	GetInfoProvider(string) DeviceInfoProvider
+	GetDefaultInfoProvider(string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
