@@ -35,9 +35,29 @@ type pciNetDevice struct {
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
-
 	var ifName string
-	pciDev, err := resources.NewPciDevice(dev, rFactory, nil)
+	infoProviders := make([]types.DeviceInfoProvider, 0)
+
+	driverName, err := utils.GetDriverName(dev.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(driverName))
+	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
+	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if ok {
+		// Add InfoProviders based on Selector data
+		if nf.IsRdma {
+			if rdmaSpec.IsRdma() {
+				infoProviders = append(infoProviders, NewRdmaInfoProvider(rdmaSpec))
+			} else {
+				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
+			}
+		}
+	}
+
+	pciDev, err := resources.NewPciDevice(dev, rFactory, infoProviders)
 	if err != nil {
 		return nil, err
 	}
@@ -52,14 +72,6 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	pfName, err := utils.GetPfName(pciAddr)
 	if err != nil {
 		glog.Warningf("unable to get PF name %q", err.Error())
-	}
-
-	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
-	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
-	if ok {
-		if nf.IsRdma && !rdmaSpec.IsRdma() {
-			glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", pciAddr)
-		}
 	}
 
 	linkType := ""

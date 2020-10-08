@@ -57,15 +57,6 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 		if dev, ok := devicePool[id]; ok {
 			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
 			newSpecs := netDev.GetDeviceSpecs()
-			rdmaSpec := netDev.GetRdmaSpec()
-			if rp.selectors.IsRdma {
-				if rdmaSpec.IsRdma() {
-					rdmaDeviceSpec := rdmaSpec.GetRdmaDeviceSpec()
-					newSpecs = append(newSpecs, rdmaDeviceSpec...)
-				} else {
-					glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device %v is not rdma device", id)
-				}
-			}
 			if rp.selectors.NeedVhostNet {
 				if VhostNetDeviceExist() {
 					vhostNetDeviceSpec := GetVhostNetDeviceSpec()
