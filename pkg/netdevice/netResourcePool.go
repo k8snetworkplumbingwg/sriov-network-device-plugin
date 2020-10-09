@@ -57,14 +57,6 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 		if dev, ok := devicePool[id]; ok {
 			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
 			newSpecs := netDev.GetDeviceSpecs()
-			if rp.selectors.NeedVhostNet {
-				if VhostNetDeviceExist() {
-					vhostNetDeviceSpec := GetVhostNetDeviceSpec()
-					newSpecs = append(newSpecs, vhostNetDeviceSpec...)
-				} else {
-					glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
-				}
-			}
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)

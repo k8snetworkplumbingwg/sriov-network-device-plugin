@@ -56,3 +56,33 @@ func (rip *rdmaInfoProvider) GetEnvVal(pciAddr string) string {
 func (rip *rdmaInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
 	return nil
 }
+
+/*
+   VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
+*/
+type vhostNetInfoProvider struct {
+}
+
+// NewVhostNetInfoProvider returns a new Vhost Information Provider
+func NewVhostNetInfoProvider() types.DeviceInfoProvider {
+	return &vhostNetInfoProvider{}
+}
+
+// *****************************************************************
+/* DeviceInfoProvider Interface */
+
+func (rip *vhostNetInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+	if !VhostNetDeviceExist() {
+		glog.Errorf("GetDeviceSpecs(): /dev/vhost-net doesn't exist")
+		return nil
+	}
+	return GetVhostNetDeviceSpec()
+}
+
+func (rip *vhostNetInfoProvider) GetEnvVal(pciAddr string) string {
+	return pciAddr
+}
+
+func (rip *vhostNetInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
+	return nil
+}

@@ -205,6 +205,49 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
+		Context("With needsVhostNet", func() {
+			rc := &types.ResourceConfig{
+				ResourceName:   "fake",
+				ResourcePrefix: "fake",
+				SelectorObj: &types.NetDeviceSelectors{
+					NeedVhostNet: true,
+				},
+			}
+
+			fs := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:00:00.1",
+					"sys/kernel/iommu_groups/0",
+					"sys/bus/pci/drivers/vfio-pci",
+					"dev/vhost-net",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
+					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+				},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+			}
+
+			f := factory.NewResourceFactory("fake", "fake", true)
+			in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+			It("should add the vhost-net deviceSpec", func() {
+				defer fs.Use()()
+				defer utils.UseFakeLinks()()
+
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
+
+				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
+				Expect(dev.GetNetName()).To(Equal(""))
+				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(3)) // /dev/vfio/vfio0 and default /dev/vfio/vfio + vhost-net
+				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
+				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(dev.GetLinkType()).To(Equal(""))
+				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetNumaInfo()).To(Equal("0"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
 		Context("cannot get device's driver", func() {
 			It("should fail", func() {
 				fs := &utils.FakeFilesystem{

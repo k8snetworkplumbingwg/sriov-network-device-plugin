@@ -55,6 +55,13 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
 			}
 		}
+		if nf.NeedVhostNet {
+			if VhostNetDeviceExist() {
+				infoProviders = append(infoProviders, NewVhostNetInfoProvider())
+			} else {
+				glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
+			}
+		}
 	}
 
 	pciDev, err := resources.NewPciDevice(dev, rFactory, infoProviders)
