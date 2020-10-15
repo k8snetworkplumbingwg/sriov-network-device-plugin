@@ -108,6 +108,7 @@ type NetDeviceSelectors struct {
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
 	IsRdma       bool     // the resource support rdma
 	NeedVhostNet bool     // share vhost-net along the selected resource
+	VdpaType     VdpaType `json:"vdpaType,omitempty"`
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
@@ -198,6 +199,7 @@ type PciNetDevice interface {
 	GetLinkType() string
 	GetRdmaSpec() RdmaSpec
 	GetDDPProfiles() string
+	GetVdpaDevice() VdpaDevice
 }
 
 // AccelDevice extends PciDevice interface
