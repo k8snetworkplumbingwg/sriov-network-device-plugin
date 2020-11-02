@@ -6,6 +6,7 @@ SRIOV_DP_SYS_BINARY_DIR="/usr/bin/"
 LOG_DIR=""
 LOG_LEVEL=10
 RESOURCE_PREFIX=""
+CONFIG_FILE=""
 CLI_PARAMS=""
 
 usage()
@@ -17,6 +18,7 @@ usage()
     /bin/echo -e "\t--log-dir=$LOG_DIR"
     /bin/echo -e "\t--log-level=$LOG_LEVEL"
     /bin/echo -e "\t--resource-prefix=$RESOURCE_PREFIX"
+    /bin/echo -e "\t--config-file=$CONFIG_FILE"
 }
 
 while [ "$1" != "" ]; do
@@ -35,6 +37,9 @@ while [ "$1" != "" ]; do
             ;;
         --resource-prefix)
             RESOURCE_PREFIX=$VALUE
+            ;;
+        --config-file)
+            CONFIG_FILE=$VALUE
             ;;
         *)
             echo "ERROR: unknown parameter \"$PARAM\""
@@ -56,6 +61,10 @@ fi
 
 if [ "$RESOURCE_PREFIX" != "" ]; then
     CLI_PARAMS="$CLI_PARAMS --resource-prefix $RESOURCE_PREFIX"
+fi
+
+if [ "$CONFIG_FILE" != "" ]; then
+    CLI_PARAMS="$CLI_PARAMS --config-file $CONFIG_FILE"
 fi
 
 $SRIOV_DP_SYS_BINARY_DIR/sriovdp $CLI_PARAMS
