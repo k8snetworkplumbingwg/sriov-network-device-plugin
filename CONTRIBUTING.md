@@ -17,7 +17,7 @@ Please follows the standard formatting recommendations and language idioms set o
 
 We always encourage the contribution for the community project. We like to collaborate with various stake holder on this project. We ask developer to keep following guidelines in mind before the contribution.
 
-* Make sure to create an [Issue](https://github.com/intel/sriov-network-device-plugin/issues) for bug fix or the feature request.  
+* Make sure to create an [Issue](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin/issues) for bug fix or the feature request.  
 * **For bugs**: For the bug fixes, please follow the issue template format while creating a issue.  If you have already found a fix, feel free to submit a Pull Request referencing the Issue you created. Include the `Fixes #` syntax to link it to the issue you're addressing.
 * **For feature requests**, For the feature requests, please follow the issue template format while creating a feature requests. We want to improve upon SRIOV Network device plugin incrementally which means small changes or features at a time.
   * Please make sure each PR are compiling or passed by Travis.
@@ -28,7 +28,7 @@ Once you're ready to contribute code back to this repo, start with these steps:
 * Clone the fork to your machine:
 
 ```
-$ git clone https://github.com/intel/sriov-network-device-plugin.git
+$ git clone https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin.git
 ```
 
 * Create a topic branch with prefix `dev/` for your change and checkout that branch:

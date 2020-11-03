@@ -16,7 +16,7 @@ package resources
 
 import (
 	"github.com/golang/glog"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 

@@ -15,11 +15,11 @@
 package accelerator_test
 
 import (
-	"github.com/intel/sriov-network-device-plugin/pkg/accelerator"
-	"github.com/intel/sriov-network-device-plugin/pkg/factory"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/pcidb"

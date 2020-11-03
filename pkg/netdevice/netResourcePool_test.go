@@ -15,9 +15,9 @@
 package netdevice_test
 
 import (
-	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 

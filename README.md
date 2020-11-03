@@ -1,7 +1,7 @@
 
 # SR-IOV Network device plugin for Kubernetes
 
-[![Travis CI](https://travis-ci.org/intel/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/intel/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/intel/sriov-network-device-plugin)
+[![Travis CI](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/k8snetworkplumbingwg/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/k8snetworkplumbingwg/sriov-network-device-plugin)
 
 ## Table of Contents
 
@@ -94,7 +94,7 @@ Before starting the SR-IOV device plugin you will need to create SR-IOV Virtual 
 
 1. Compile SR-IOV-CNI (supported from release 2.0+):
 ```
-$ git clone https://github.com/intel/sriov-cni.git
+$ git clone https://github.com/k8snetworkplumbingwg/sriov-cni.git
 $ cd sriov-cni
 $ make
 $ cp build/sriov /opt/cni/bin
@@ -108,7 +108,7 @@ If you want to build the docker image locally then follow the following steps:
 
  1. Clone the sriov-network-device-plugin
  ```
-$ git clone https://github.com/intel/sriov-network-device-plugin.git
+$ git clone https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin.git
 $ cd sriov-network-device-plugin
  ```
  2. Build docker image binary using `make`

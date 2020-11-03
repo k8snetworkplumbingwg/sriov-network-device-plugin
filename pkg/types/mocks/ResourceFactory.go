@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	types "github.com/intel/sriov-network-device-plugin/pkg/types"
+	types "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	mock "github.com/stretchr/testify/mock"
 )
 

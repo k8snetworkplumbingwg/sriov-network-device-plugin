@@ -17,8 +17,8 @@ package accelerator
 import (
 	"github.com/jaypipes/ghw"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/resources"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
 // accelDevice extends pciDevice
