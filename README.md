@@ -398,6 +398,15 @@ containers using this mode.  Use of this mode, specifically
 binding a device without a native IOMMU group to a VFIO bus driver will taint the kernel.  Only no-iommu support for the vfio-pci bus is provided.  However, there are still those users
 that want userspace drivers even under those conditions.
 
+Unfortunately, the SR-IOV CNI is not compatible with the _noiommu_ feature.  To use the _noiommu_ feature, remove the 
+networks annotation from the container spec.  To foster compatiblity between virtual and baremetal deployments creating the associated SrioveNetwork CR is recommended.
+
+````yaml
+  annotations:
+#    k8s.v1.cni.cncf.io/networks: sriov-net1
+  ...
+````
+
 ## Example deployments
 
 We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.

@@ -32,7 +32,7 @@ options vfio enable_unsafe_noiommu_mode=1
 With `vfio-pci` an application must run privilege Pod with  **IPC_LOCK** and **CAP_SYS_RAWIO** capability.
 
 # Example deployment
-This directory includes sample deployment yaml files showing how to deploy a dpdk application in Kubernetes with in privileged Pod with SR-IOV VF attached to vfio-pci driver in the case of non-bifurcating nic devices/drivers or the VF attached to the default driver in the case of native-bifurcating devices/drivers (non-priveleged).  See [this](https://doc.dpdk.org/guides/howto/flow_bifurcation.html) for more information.
+This directory includes a sample deployment yaml files showing how to deploy a dpdk application in Kubernetes with a privileged Pod (_pod_testpmd_virt.yaml_). 
 
 ## Deploy Virtual machines with attached VFs
 
@@ -40,7 +40,7 @@ This directory includes sample deployment yaml files showing how to deploy a dpd
 - Trusted On/Off
 - Spoof-Checking On/Off
 
-In a virtual environment, some VF characteristics are set by the underlying virtualization platform and are used 'as is' inside the VM.  A virtual deployment does not have access the VFs associated PF.
+In a virtual environment, some VF characteristics are set by the underlying virtualization platform and are used 'as is' inside the VM.  A virtual deployment does not have access to the VFs associated PF.
 
 2. Attach the VFs or associated ports to the VM
 
@@ -99,4 +99,16 @@ It is worth mentioning that to achieve maximum performance from a dpdk applicati
 1. Application process needs to be pinned to some dedicated isolated CPUs. Detailing how to achieve this is out of scope of this document. You can refer to [CPU Manager for Kubernetes](https://github.com/intel/CPU-Manager-for-Kubernetes) that provides such functionality in Kubernetes.  In the virtualized case, cpu pinning and isolation must be considered at the phyiscal layer as well as the virtual layer.
 
 2. All application resources(CPUs, devices and memory) are from same NUMA locality.  In the virtualized case, NUMA locality is controlled by the underlying virtualized platform for the VM.
+
+# Pod Usage
+
+Unfortunately, the SR-IOV CNI is not compatible with the noiommu feature.  To use the noiommu feature, remove the 
+networks annotation from the container spec.
+
+````yaml
+  annotations:
+#   k8s.v1.cni.cncf.io/networks: sriov-net1
+````
+A full example of a noiommu deployment is shown in
+_pod_testpmd.yaml_.
 
