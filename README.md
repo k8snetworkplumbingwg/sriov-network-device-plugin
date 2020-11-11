@@ -1,7 +1,7 @@
 
 # SR-IOV Network device plugin for Kubernetes
 
-[![Travis CI](https://travis-ci.org/intel/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/intel/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/intel/sriov-network-device-plugin) [![Weekly minutes](https://img.shields.io/badge/Weekly%20Meeting%20Minutes-Mon%203pm%20GMT-blue.svg?style=plastic)](https://docs.google.com/document/d/1sJQMHbxZdeYJPgAWK1aSt6yzZ4K_8es7woVIrwinVwI)
+[![Travis CI](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/k8snetworkplumbingwg/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/k8snetworkplumbingwg/sriov-network-device-plugin) [![Weekly minutes](https://img.shields.io/badge/Weekly%20Meeting%20Minutes-Mon%203pm%20GMT-blue.svg?style=plastic)](https://docs.google.com/document/d/1sJQMHbxZdeYJPgAWK1aSt6yzZ4K_8es7woVIrwinVwI)
 
 ## Table of Contents
 
