@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sriovdp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+      "resourceList": [
+        {
+          "resourceName": "intelnics_radio_downlink",
+          "selectors": {
+            "drivers": [
+              "vfio-pci"
+            ],
+            "pciAddresses": [
+              "0000:00:09.0",
+              "0000:00:0a.0"
+            ],
+          },
+        },
+        {
+          "resourceName": "intelnics_radio_uplink",
+          "selectors": {
+            "drivers": [
+              "vfio-pci"
+            ],
+            "pciAddresses": [
+              "0000:00:07.0",
+              "0000:00:08.0"
+            ],
+          },
+        }
+      ]
+    }

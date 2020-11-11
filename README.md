@@ -23,6 +23,7 @@
   - [Command line arguments](#command-line-arguments)
   - [Assumptions](#assumptions)
   - [Workflow](#workflow)
+- [Virtual Deployments](#virtual-deployments)
 - [Example deployments](#example-deployments)
     - [Deploy the Device Plugin](#deploy-the-device-plugin)
     - [Deploy SR-IOV workloads when Multus is used](#deploy-sr-iov-workloads-when-multus-is-used)
@@ -367,45 +368,18 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 }
 
 ```
+## Virtual Deployments
+
+SR-IOV network device plugin supports running in a virtualized environment.  However, not all device selectors are 
+applicable as the VFs are passthrough to the VM without any association to their respective PF, hence any device 
+selector that relies on the association between a VF and its PF will not work and therefore the _pfNames_ and 
+_rootDevices_ extended selectors will not work in a virtual deployment.  The common selector _pciAddress_ can be 
+used to select the virtual device.
 
 ### Virtual environments with no iommu
 
-In virtual deployments of Kubernetes where the underlying virtualization platform does not support a virtualized iommu, the VFIO driver needs to be loaded with a special 
-flag.  The file **/etc/modprobe.d/vfio-noiommu.conf** must be created with the contents:
-
-````
-# cat /etc/modprobe.d/vfio-noiommu.conf
-options vfio enable_unsafe_noiommu_mode=1
-````
-
-With the above option, vfio devices will be created with the form on the virtual host (VM):
-
-````
-/dev/vfio/noiommu-0
-/dev/vfio/noiommu-1
-...
-````
-
-The presence of noiommu-* devices will automatically be detected by the sriov-device-plugin.  The noiommu-N devices will be mounted **inside** the pod in their expected/normal location;
-
-````
-/dev/vfio/0
-/dev/vfio/1
-...
-````
-It should be noted that with no IOMMU, there is no way to ensure safe use of DMA.  When *enable_unsafe_noiommu_mode* is used, CAP_SYS_RAWIO privileges are necessary to work with groups and
-containers using this mode.  Use of this mode, specifically
-binding a device without a native IOMMU group to a VFIO bus driver will taint the kernel.  Only no-iommu support for the vfio-pci bus is provided.  However, there are still those users
-that want userspace drivers even under those conditions.
-
-Unfortunately, the SR-IOV CNI is not compatible with the _noiommu_ feature.  To use the _noiommu_ feature, remove the 
-networks annotation from the container spec.  To foster compatiblity between virtual and baremetal deployments creating the associated SrioveNetwork CR is recommended.
-
-````yaml
-  annotations:
-#    k8s.v1.cni.cncf.io/networks: sriov-net1
-  ...
-````
+SR-IOV network device plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
+For more information refer to [this](./docs/dpdk/README-virt.md).
 
 ## Example deployments
 

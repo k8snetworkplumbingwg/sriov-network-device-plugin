@@ -1,6 +1,34 @@
-# Running DPDK applications in a Kubernetes virtual environment
+# Running DPDK applications in a Kubernetes virtual environment without virtualized iommu support
 
 ## Pre-requisites
+
+In virtual deployments of Kubernetes where the underlying virtualization platform does not support a virtualized iommu, the VFIO driver needs to be loaded with a special 
+flag.  The file **/etc/modprobe.d/vfio-noiommu.conf** must be created with the contents:
+
+````
+# cat /etc/modprobe.d/vfio-noiommu.conf
+options vfio enable_unsafe_noiommu_mode=1
+````
+
+With the above option, vfio devices will be created with the form on the virtual host (VM):
+
+````
+/dev/vfio/noiommu-0
+/dev/vfio/noiommu-1
+...
+````
+
+The presence of noiommu-* devices will automatically be detected by the sriov-device-plugin.  The noiommu-N devices will be mounted **inside** the pod in their expected/normal location;
+
+````
+/dev/vfio/0
+/dev/vfio/1
+...
+````
+It should be noted that with no IOMMU, there is no way to ensure safe use of DMA.  When *enable_unsafe_noiommu_mode* is used, CAP_SYS_RAWIO privileges are necessary to work with groups and
+containers using this mode.  Use of this mode, specifically
+binding a device without a native IOMMU group to a VFIO bus driver will taint the kernel.  Only no-iommu support for the vfio-pci bus is provided.  However, there are still those users
+that want userspace drivers even under those conditions.
 
 ### Hugepages
 DPDK applications require Hugepages memory. Please refer to the [Hugepages section](http://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#use-of-hugepages-in-the-linux-environment) in DPDK getting started guide on hugespages in DPDK.
@@ -32,7 +60,7 @@ options vfio enable_unsafe_noiommu_mode=1
 With `vfio-pci` an application must run privilege Pod with  **IPC_LOCK** and **CAP_SYS_RAWIO** capability.
 
 # Example deployment
-This directory includes a sample deployment yaml files showing how to deploy a dpdk application in Kubernetes with a privileged Pod (_pod_testpmd_virt.yaml_). 
+This directory includes a sample deployment yaml files showing how to deploy a dpdk application in Kubernetes with a **privileged** Pod (_pod_testpmd_virt.yaml_). 
 
 ## Deploy Virtual machines with attached VFs
 
@@ -100,15 +128,10 @@ It is worth mentioning that to achieve maximum performance from a dpdk applicati
 
 2. All application resources(CPUs, devices and memory) are from same NUMA locality.  In the virtualized case, NUMA locality is controlled by the underlying virtualized platform for the VM.
 
-# Pod Usage
+# Usage
 
-Unfortunately, the SR-IOV CNI is not compatible with the noiommu feature.  To use the noiommu feature, remove the 
-networks annotation from the container spec.
+_When consuming a VFIO device in a virtual environment, a secondary network is not required as network configuration for the underlying VF should be performed at the hypervisor level._
 
-````yaml
-  annotations:
-#   k8s.v1.cni.cncf.io/networks: sriov-net1
-````
-A full example of a noiommu deployment is shown in
-_pod_testpmd.yaml_.
+An example of a noiommu deployment is shown in _pod_testpmd_virt.yaml_.  The configMap for the example is shown in _configMap-virt.yaml_.
+
 
