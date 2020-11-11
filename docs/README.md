@@ -6,3 +6,4 @@ This page contains supplimentary documention that users may find useful for vari
 * [Using UDEV Rules for changing NIC's network device name](udev/)
 * [Running RDMA application in Kubernetes](rdma/)
 * [SR-IOV network device plugin with DDP](ddp/)
+* [Using node specific config file for running device plugin DaemonSet](config-file)
