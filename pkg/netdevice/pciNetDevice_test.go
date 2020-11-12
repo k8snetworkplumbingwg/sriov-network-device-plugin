@@ -19,10 +19,10 @@ import (
 
 	"github.com/jaypipes/ghw"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/factory"
-	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

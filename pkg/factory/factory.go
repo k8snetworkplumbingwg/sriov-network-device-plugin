@@ -21,10 +21,10 @@ import (
 	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/accelerator"
-	"github.com/intel/sriov-network-device-plugin/pkg/netdevice"
-	"github.com/intel/sriov-network-device-plugin/pkg/resources"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
 type resourceFactory struct {

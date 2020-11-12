@@ -18,9 +18,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/resources"
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 // pciNetDevice extends pciDevice

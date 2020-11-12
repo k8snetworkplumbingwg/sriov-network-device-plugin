@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
 // NewVendorSelector returns a DeviceSelector interface for vendor list

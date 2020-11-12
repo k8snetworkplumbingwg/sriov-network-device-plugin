@@ -8,9 +8,9 @@ import (
 
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
-	"github.com/intel/sriov-network-device-plugin/pkg/types"
-	"github.com/intel/sriov-network-device-plugin/pkg/types/mocks"
-	"github.com/intel/sriov-network-device-plugin/pkg/utils"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

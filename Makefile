@@ -5,7 +5,7 @@
 # Package related
 BINARY_NAME=sriovdp
 PACKAGE=sriov-network-device-plugin
-ORG_PATH=github.com/intel
+ORG_PATH=github.com/k8snetworkplumbingwg
 REPO_PATH=$(ORG_PATH)/$(PACKAGE)
 GOPATH=$(CURDIR)/.gopath
 GOBIN=$(CURDIR)/bin

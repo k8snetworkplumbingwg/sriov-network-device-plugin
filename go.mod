@@ -1,4 +1,4 @@
-module github.com/intel/sriov-network-device-plugin
+module github.com/k8snetworkplumbingwg/sriov-network-device-plugin
 
 go 1.13
 

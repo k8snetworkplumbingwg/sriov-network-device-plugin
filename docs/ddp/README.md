@@ -123,7 +123,7 @@ $ kubectl create -f configMap.yaml
 ```
 
 ## 6. Deploy SR-IOV network device plugin
-Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV network device plugin as [usual](https://github.com/intel/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP profile names given in the resource pool selector.
+Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV network device plugin as [usual](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP profile names given in the resource pool selector.
 
 ```
 [root@silpixa00396659 ~]# kubectl get node node1 -o json | jq ".status.allocatable"
