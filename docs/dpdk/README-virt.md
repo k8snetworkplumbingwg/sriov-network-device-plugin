@@ -26,7 +26,11 @@ The presence of noiommu-* devices will automatically be detected by the sriov-de
 ...
 ````
 It should be noted that with no IOMMU, there is no way to ensure safe use of DMA.  When *enable_unsafe_noiommu_mode* is used, CAP_SYS_RAWIO privileges are necessary to work with groups and
-containers using this mode.  Use of this mode, specifically
+containers using this mode.  
+
+>Note: The most common use case for direct VF is with the **DPDK** framework which will require the use of privileged containers.
+
+Use of this mode, specifically
 binding a device without a native IOMMU group to a VFIO bus driver will taint the kernel.  Only no-iommu support for the vfio-pci bus is provided.  However, there are still those users
 that want userspace drivers even under those conditions.
 
@@ -130,8 +134,8 @@ It is worth mentioning that to achieve maximum performance from a dpdk applicati
 
 # Usage
 
-_When consuming a VFIO device in a virtual environment, a secondary network is not required as network configuration for the underlying VF should be performed at the hypervisor level._
+>When consuming a VFIO device in a virtual environment, a secondary network is not required as network configuration for the underlying VF should be performed at the hypervisor level.
 
-An example of a noiommu deployment is shown in _pod_testpmd_virt.yaml_.  The configMap for the example is shown in _configMap-virt.yaml_.
+An example of a noiommu deployment is shown in [pod_testpmd_virt.yaml](pod_testpmd_virt.yaml).  The configMap for the example is shown in [configMap-virt.yaml](configMap-virt.yaml).
 
 

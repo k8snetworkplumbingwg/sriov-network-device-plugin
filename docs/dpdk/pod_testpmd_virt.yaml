@@ -7,6 +7,7 @@ spec:
   - name: testpmd
     image: <DPDK testpmd image>
     securityContext:
+        # This application is DPDK-based
         privileged: true
     resources:
       requests:
