@@ -16,18 +16,18 @@ var _ = Describe("VfioPool", func() {
 	Describe("creating new VFIO resource", func() {
 		var vfioPool types.DeviceInfoProvider
 		BeforeEach(func() {
-			vfioPool = resources.NewVfioResource()
+			vfioPool = resources.NewVfioInfoProvider()
 		})
-		It("should return valid vfioResource object", func() {
+		It("should return valid vfioInfoProvider object", func() {
 			Expect(vfioPool).NotTo(Equal(nil))
-			// FIXME: Expect(reflect.TypeOf(vfioPool)).To(Equal(reflect.TypeOf(&vfioResource{})))
+			// FIXME: Expect(reflect.TypeOf(vfioPool)).To(Equal(reflect.TypeOf(&vfioInfoProvider{})))
 		})
 	})
 	DescribeTable("GetDeviceSpecs",
 		func(fs *utils.FakeFilesystem, pciAddr string, expected []*pluginapi.DeviceSpec) {
 			defer fs.Use()()
 
-			pool := resources.NewVfioResource()
+			pool := resources.NewVfioInfoProvider()
 			specs := pool.GetDeviceSpecs(pciAddr)
 			Expect(specs).To(ConsistOf(expected))
 		},
@@ -56,7 +56,7 @@ var _ = Describe("VfioPool", func() {
 	)
 	Describe("getting mounts", func() {
 		It("should always return empty array of mounts", func() {
-			pool := resources.NewVfioResource()
+			pool := resources.NewVfioInfoProvider()
 			result := pool.GetMounts("fakeAddr")
 			Expect(result).To(BeEmpty())
 		})
@@ -64,7 +64,7 @@ var _ = Describe("VfioPool", func() {
 	Describe("getting env val", func() {
 		It("should always return passed PCI address", func() {
 			in := "00:02.0"
-			pool := resources.NewVfioResource()
+			pool := resources.NewVfioInfoProvider()
 			out := pool.GetEnvVal(in)
 			Expect(out).To(Equal(in))
 		})

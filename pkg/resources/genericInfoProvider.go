@@ -19,25 +19,25 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
-type genericResource struct {
+type genericInfoProvider struct {
 }
 
-// NewGenericResource instantiate a generic DeviceInfoProvider
-func NewGenericResource() types.DeviceInfoProvider {
-	return &genericResource{}
+// NewGenericInfoProvider instantiate a generic DeviceInfoProvider
+func NewGenericInfoProvider() types.DeviceInfoProvider {
+	return &genericInfoProvider{}
 }
 
-func (rp *genericResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *genericInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-func (rp *genericResource) GetEnvVal(pciAddr string) string {
+func (rp *genericInfoProvider) GetEnvVal(pciAddr string) string {
 	return pciAddr
 }
 
-func (rp *genericResource) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *genericInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }

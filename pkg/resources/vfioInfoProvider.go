@@ -21,26 +21,39 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
-type uioResource struct {
+/*
+   vfioInfoProvider implements DeviceInfoProvider
+*/
+type vfioInfoProvider struct {
+	vfioMount string
 }
 
-// NewUioResource return instance of uio DeviceInfoProvider
-func NewUioResource() types.DeviceInfoProvider {
-	return &uioResource{}
+// NewVfioInfoProvider create instance of VFIO DeviceInfoProvider
+func NewVfioInfoProvider() types.DeviceInfoProvider {
+
+	return &vfioInfoProvider{
+		vfioMount: "/dev/vfio/vfio",
+	}
+
 }
 
 // *****************************************************************
 /* DeviceInfoProvider Interface */
-func (rp *uioResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *vfioInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
+	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
+		HostPath:      rp.vfioMount,
+		ContainerPath: rp.vfioMount,
+		Permissions:   "mrw",
+	})
 
-	uioDev, err := utils.GetUIODeviceFile(pciAddr)
+	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(pciAddr)
 	if err != nil {
-		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
+		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s, %s", pciAddr, err.Error())
 	} else {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      uioDev,
-			ContainerPath: uioDev,
+			HostPath:      vfioDevHost,
+			ContainerPath: vfioDevContainer,
 			Permissions:   "mrw",
 		})
 	}
@@ -48,11 +61,11 @@ func (rp *uioResource) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
 	return devSpecs
 }
 
-func (rp *uioResource) GetEnvVal(pciAddr string) string {
+func (rp *vfioInfoProvider) GetEnvVal(pciAddr string) string {
 	return pciAddr
 }
 
-func (rp *uioResource) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *vfioInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }

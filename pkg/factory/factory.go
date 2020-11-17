@@ -64,11 +64,11 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 func (rf *resourceFactory) GetDefaultInfoProvider(name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
-		return resources.NewVfioResource()
+		return resources.NewVfioInfoProvider()
 	case "uio", "igb_uio":
-		return resources.NewUioResource()
+		return resources.NewUioInfoProvider()
 	default:
-		return resources.NewGenericResource()
+		return resources.NewGenericInfoProvider()
 	}
 }
 

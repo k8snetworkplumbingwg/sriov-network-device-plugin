@@ -16,18 +16,18 @@ var _ = Describe("UioPool", func() {
 	Describe("creating new UIO resource pool", func() {
 		var uioPool types.DeviceInfoProvider
 		BeforeEach(func() {
-			uioPool = resources.NewUioResource()
+			uioPool = resources.NewUioInfoProvider()
 		})
-		It("should return valid uioResource object", func() {
+		It("should return valid uioInfoProvider object", func() {
 			Expect(uioPool).NotTo(Equal(nil))
-			// FIXME: Expect(reflect.TypeOf(uioPool)).To(Equal(reflect.TypeOf(&uioResource{})))
+			// FIXME: Expect(reflect.TypeOf(uioPool)).To(Equal(reflect.TypeOf(&uioInfoProvider{})))
 		})
 	})
 	DescribeTable("getting device specs",
 		func(fs *utils.FakeFilesystem, pciAddr string, expected []*pluginapi.DeviceSpec) {
 			defer fs.Use()()
 
-			pool := resources.NewUioResource()
+			pool := resources.NewUioInfoProvider()
 			specs := pool.GetDeviceSpecs(pciAddr)
 			Expect(specs).To(ConsistOf(expected))
 		},
@@ -46,7 +46,7 @@ var _ = Describe("UioPool", func() {
 	)
 	Describe("getting mounts", func() {
 		It("should always return empty array of mounts", func() {
-			pool := resources.NewUioResource()
+			pool := resources.NewUioInfoProvider()
 			result := pool.GetMounts("fakePCIAddr")
 			Expect(result).To(BeEmpty())
 		})
@@ -54,7 +54,7 @@ var _ = Describe("UioPool", func() {
 	Describe("getting env val", func() {
 		It("should always return passed PCI address", func() {
 			in := "00:02.0"
-			pool := resources.NewUioResource()
+			pool := resources.NewUioInfoProvider()
 			out := pool.GetEnvVal(in)
 			Expect(out).To(Equal(in))
 		})

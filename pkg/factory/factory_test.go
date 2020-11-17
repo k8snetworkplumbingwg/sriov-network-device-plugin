@@ -54,10 +54,10 @@ var _ = Describe("Factory", func() {
 			p := f.GetDefaultInfoProvider(name)
 			Expect(reflect.TypeOf(p)).To(Equal(expected))
 		},
-		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(resources.NewVfioResource())),
-		Entry("uio", "uio", reflect.TypeOf(resources.NewUioResource())),
-		Entry("igb_uio", "igb_uio", reflect.TypeOf(resources.NewUioResource())),
-		Entry("any other value", "netdevice", reflect.TypeOf(resources.NewGenericResource())),
+		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(resources.NewVfioInfoProvider())),
+		Entry("uio", "uio", reflect.TypeOf(resources.NewUioInfoProvider())),
+		Entry("igb_uio", "igb_uio", reflect.TypeOf(resources.NewUioInfoProvider())),
+		Entry("any other value", "netdevice", reflect.TypeOf(resources.NewGenericInfoProvider())),
 	)
 	DescribeTable("getting selector",
 		func(selector string, shouldSucceed bool, expected reflect.Type) {
