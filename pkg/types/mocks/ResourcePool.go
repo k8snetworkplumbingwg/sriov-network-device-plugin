@@ -13,6 +13,20 @@ type ResourcePool struct {
 	mock.Mock
 }
 
+// CleanDeviceInfoFile provides a mock function with given fields: resourceNamePrefix
+func (_m *ResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
+	ret := _m.Called(resourceNamePrefix)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(resourceNamePrefix)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetDeviceSpecs provides a mock function with given fields: deviceIDs
 func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec {
 	ret := _m.Called(deviceIDs)
@@ -114,6 +128,20 @@ func (_m *ResourcePool) Probe() bool {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// StoreDeviceInfoFile provides a mock function with given fields: resourceNamePrefix
+func (_m *ResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error {
+	ret := _m.Called(resourceNamePrefix)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(resourceNamePrefix)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

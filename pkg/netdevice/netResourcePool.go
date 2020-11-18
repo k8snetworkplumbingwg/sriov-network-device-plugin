@@ -15,8 +15,12 @@
 package netdevice
 
 import (
+	"fmt"
 	"github.com/golang/glog"
+	"strings"
 
+	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	nadutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -79,4 +83,43 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 		}
 	}
 	return devSpecs
+}
+
+// StoreDeviceInfoFile stores the Device Info files according to the
+//  k8snetworkplumbingwg/device-info-spec
+func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error {
+	for id, dev := range rp.GetDevicePool() {
+		netDev, ok := dev.(types.PciNetDevice)
+		if !ok {
+			return fmt.Errorf("StoreDeviceInfoFile: Only pciNetDevices are supported")
+		}
+		devInfo := nettypes.DeviceInfo{
+			Type:    nettypes.DeviceInfoTypePCI,
+			Version: nettypes.DeviceInfoVersion,
+			Pci: &nettypes.PciDevice{
+				PciAddress: netDev.GetPciAddr(),
+			},
+		}
+		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
+		if err := nadutils.SaveDeviceInfoForDP(resource, id, &devInfo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CleanDeviceInfoFile cleans the Device Info files
+func (rp *netResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
+	errors := make([]string, 0)
+	for id := range rp.GetDevicePool() {
+		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
+		if err := nadutils.CleanDeviceInfoForDP(resource, id); err != nil {
+			// Continue trying to clean.
+			errors = append(errors, err.Error())
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ","))
+	}
+	return nil
 }

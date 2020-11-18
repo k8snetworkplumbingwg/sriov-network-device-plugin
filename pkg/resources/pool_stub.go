@@ -136,3 +136,15 @@ func (rp *ResourcePoolImpl) DeviceSpecExist(specs []*pluginapi.DeviceSpec, newSp
 func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.PciDevice {
 	return rp.devicePool
 }
+
+// StoreDeviceInfoFile does nothing. DeviceType-specific ResourcePools might
+// store information according to the k8snetworkplumbingwg/device-info-spec
+func (rp *ResourcePoolImpl) StoreDeviceInfoFile(resourceNamePrefix string) error {
+	return nil
+}
+
+// CleanDeviceInfoFile does nothing. DeviceType-specific ResourcePools might
+// clean the Device Info file
+func (rp *ResourcePoolImpl) CleanDeviceInfoFile(resourceNamePrefix string) error {
+	return nil
+}
