@@ -188,6 +188,11 @@ func (rs *resourceServer) Init() error {
 func (rs *resourceServer) Start() error {
 	resourceName := rs.resourcePool.GetResourceName()
 	_ = rs.cleanUp() // try tp clean up and continue
+
+	if err := rs.resourcePool.StoreDeviceInfoFile(rs.resourceNamePrefix); err != nil {
+		glog.Errorf("%s: error creating DeviceInfo File: %s", rs.resourcePool.GetResourceName(), err.Error())
+	}
+
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
 	lis, err := net.Listen("unix", rs.sockPath)
 	if err != nil {
@@ -292,8 +297,15 @@ func (rs *resourceServer) Watch() {
 }
 
 func (rs *resourceServer) cleanUp() error {
+	errors := make([]string, 0)
 	if err := os.Remove(rs.sockPath); err != nil && !os.IsNotExist(err) {
-		return err
+		errors = append(errors, err.Error())
+	}
+	if err := rs.resourcePool.CleanDeviceInfoFile(rs.resourceNamePrefix); err != nil {
+		errors = append(errors, err.Error())
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(strings.Join(errors, ","))
 	}
 	return nil
 }

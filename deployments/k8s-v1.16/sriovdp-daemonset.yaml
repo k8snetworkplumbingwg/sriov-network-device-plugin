@@ -51,6 +51,8 @@ spec:
           mountPath: /var/log
         - name: config-volume
           mountPath: /etc/pcidp
+        - name: device-info
+          mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
       volumes:
         - name: devicesock
           hostPath:
@@ -58,6 +60,10 @@ spec:
         - name: log
           hostPath:
             path: /var/log
+        - name: device-info
+          hostPath:
+            path: /var/run/k8s.cni.cncf.io/devinfo/dp
+            type: DirectoryOrCreate
         - name: config-volume
           configMap:
             name: sriovdp-config
@@ -111,6 +117,8 @@ spec:
           mountPath: /var/log
         - name: config-volume
           mountPath: /etc/pcidp
+        - name: device-info
+          mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
       volumes:
         - name: devicesock
           hostPath:
@@ -118,6 +126,10 @@ spec:
         - name: log
           hostPath:
             path: /var/log
+        - name: device-info
+          hostPath:
+            path: /var/run/k8s.cni.cncf.io/devinfo/dp
+            type: DirectoryOrCreate
         - name: config-volume
           configMap:
             name: sriovdp-config
@@ -172,6 +184,8 @@ spec:
           mountPath: /var/log
         - name: config-volume
           mountPath: /etc/pcidp
+        - name: device-info
+          mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
       volumes:
         - name: devicesock
           hostPath:
@@ -179,6 +193,10 @@ spec:
         - name: log
           hostPath:
             path: /var/log
+        - name: device-info
+          hostPath:
+            path: /var/run/k8s.cni.cncf.io/devinfo/dp
+            type: DirectoryOrCreate
         - name: config-volume
           configMap:
             name: sriovdp-config
