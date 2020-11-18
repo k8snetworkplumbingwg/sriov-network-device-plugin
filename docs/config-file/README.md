@@ -45,7 +45,6 @@ spec:
         app: sriovdp
     spec:
       hostNetwork: true
-      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: amd64
       tolerations:
