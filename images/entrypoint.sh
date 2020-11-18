@@ -67,4 +67,4 @@ if [ "$CONFIG_FILE" != "" ]; then
     CLI_PARAMS="$CLI_PARAMS --config-file $CONFIG_FILE"
 fi
 
-$SRIOV_DP_SYS_BINARY_DIR/sriovdp $CLI_PARAMS
+exec $SRIOV_DP_SYS_BINARY_DIR/sriovdp $CLI_PARAMS
