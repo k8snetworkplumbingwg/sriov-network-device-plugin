@@ -26,7 +26,6 @@ spec:
         app: sriovdp
     spec:
       hostNetwork: true
-      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: amd64
       tolerations:
@@ -86,7 +85,6 @@ spec:
         app: sriovdp
     spec:
       hostNetwork: true
-      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: ppc64le
       tolerations:
@@ -145,7 +143,6 @@ spec:
         app: sriovdp
     spec:
       hostNetwork: true
-      hostPID: true
       nodeSelector:
         beta.kubernetes.io/arch: arm64
       tolerations:
