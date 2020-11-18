@@ -259,7 +259,7 @@ func ValidResourceName(name string) bool {
 }
 
 // GetVFIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
-func GetVFIODeviceFile(dev string) (devFile string, err error) {
+func GetVFIODeviceFile(dev string) (devFileHost string, devFileContainer string, err error) {
 	// Get iommu group for this device
 	devPath := filepath.Join(sysBusPci, dev)
 	_, err = os.Lstat(devPath)
@@ -290,8 +290,23 @@ func GetVFIODeviceFile(dev string) (devFile string, err error) {
 		err = fmt.Errorf("GetVFIODeviceFile(): error reading symlink to iommu_group %v", err)
 		return
 	}
+	devFileContainer = filepath.Join("/dev/vfio", filepath.Base(linkName))
+	devFileHost = devFileContainer
 
-	devFile = filepath.Join("/dev/vfio", filepath.Base(linkName))
+	// Get a file path to the iommu group name
+	namePath := filepath.Join(linkName, "name")
+	// Read the iommu group name
+	// The name file will not exist on baremetal
+	vfioName, errName := ioutil.ReadFile(namePath)
+	if errName == nil {
+		vName := strings.TrimSpace(string(vfioName))
+
+		// if the iommu group name == vfio-noiommu then we are in a VM, adjust path to vfio device
+		if vName == "vfio-noiommu" {
+			linkName = filepath.Join(filepath.Dir(linkName), "noiommu-"+filepath.Base(linkName))
+			devFileHost = filepath.Join("/dev/vfio", filepath.Base(linkName))
+		}
+	}
 
 	return
 }

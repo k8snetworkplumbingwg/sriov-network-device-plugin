@@ -23,6 +23,7 @@
   - [Command line arguments](#command-line-arguments)
   - [Assumptions](#assumptions)
   - [Workflow](#workflow)
+- [Virtual Deployments](#virtual-deployments)
 - [Example deployments](#example-deployments)
     - [Deploy the Device Plugin](#deploy-the-device-plugin)
     - [Deploy SR-IOV workloads when Multus is used](#deploy-sr-iov-workloads-when-multus-is-used)
@@ -51,6 +52,7 @@ The SR-IOV network device plugin is Kubernetes device plugin for discovering and
 - Detects Kubelet restarts and auto-re-register
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
 - Extensible to support new device types with minimal effort if not already supported
+- Works within virtual deployments of Kubernetes that do not have virtualized-iommu support (VFIO No-IOMMU support)
 
 To deploy workloads with SR-IOV VF this plugin needs to work together with the following two CNI components:
 
@@ -366,6 +368,18 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 }
 
 ```
+## Virtual Deployments
+
+SR-IOV network device plugin supports running in a virtualized environment.  However, not all device selectors are 
+applicable as the VFs are passthrough to the VM without any association to their respective PF, hence any device 
+selector that relies on the association between a VF and its PF will not work and therefore the _pfNames_ and 
+_rootDevices_ extended selectors will not work in a virtual deployment.  The common selector _pciAddress_ can be 
+used to select the virtual device.
+
+### Virtual environments with no iommu
+
+SR-IOV network device plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
+For more information refer to [this](./docs/dpdk/README-virt.md).
 
 ## Example deployments
 

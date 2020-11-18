@@ -296,8 +296,9 @@ var _ = Describe("In the utils package", func() {
 	DescribeTable("getting VFIO device file",
 		func(fs *FakeFilesystem, device, expected string, shouldFail bool) {
 			defer fs.Use()()
-			actual, err := GetVFIODeviceFile(device)
-			Expect(actual).To(Equal(expected))
+			//TODO: adapt test to running in a virtual environment
+			actualHost, _, err := GetVFIODeviceFile(device)
+			Expect(actualHost).To(Equal(expected))
 			assertShouldFail(err, shouldFail)
 		},
 		Entry("could not get directory information for device",

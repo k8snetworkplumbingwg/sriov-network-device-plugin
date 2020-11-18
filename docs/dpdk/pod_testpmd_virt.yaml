@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpmd
+spec:
+  containers:
+  - name: testpmd
+    image: <DPDK testpmd image>
+    securityContext:
+        # This application is DPDK-based
+        privileged: true
+    resources:
+      requests:
+        openshift.io/intelnics_radio_downlink: "1"
+        openshift.io/intelnics_radio_uplink: "1"
+        memory: 1000Mi
+        hugepages-1Gi: 2Gi
+        cpu: '1'
+      limits:
+        openshift.io/intelnics_radio_downlink: "1"
+        openshift.io/intelnics_radio_uplink: "1"
+        hugepages-1Gi: 2Gi
+        cpu: '1'
+        memory: 2000Mi
+    volumeMounts:
+      - mountPath: /dev/hugepages
+        name: hugepage
+        readOnly: False
+  volumes:
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
