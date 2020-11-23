@@ -153,10 +153,11 @@ image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV Network de
 
 .PHONY: clean
 clean: ; $(info  Cleaning...) @ ## Cleanup everything
-	@go clean --modcache
+	@go clean --modcache --cache --testcache
 	@rm -rf $(GOPATH)
-	@rm -rf $(BUILDDIR)/$(BINARY_NAME)
-	@rm -rf test/tests.* test/coverage.*
+	@rm -rf $(BUILDDIR)
+	@rm -rf $(GOBIN)
+	@rm -rf test/
 
 .PHONY: help
 help: ; @ ## Display this help message
