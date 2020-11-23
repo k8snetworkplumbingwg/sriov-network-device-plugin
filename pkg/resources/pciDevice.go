@@ -70,7 +70,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProvid
 
 	// Use the default Information Provided if not
 	if len(infoProviders) == 0 {
-		infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(driverName))
+		infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(pciAddr, driverName))
 	}
 
 	nodeNum := utils.GetDevNode(pciAddr)
@@ -130,7 +130,7 @@ func (pd *pciDevice) GetSubClass() string {
 func (pd *pciDevice) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	dSpecs := make([]*pluginapi.DeviceSpec, 0)
 	for _, infoProvider := range pd.infoProviders {
-		dSpecs = append(dSpecs, infoProvider.GetDeviceSpecs(pd.basePciDevice.Address)...)
+		dSpecs = append(dSpecs, infoProvider.GetDeviceSpecs()...)
 	}
 
 	return dSpecs
@@ -139,13 +139,13 @@ func (pd *pciDevice) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 func (pd *pciDevice) GetEnvVal() string {
 	// Currently Device Plugin does not support returning multiple Env Vars
 	// so we use the value provided by the first InfoProvider.
-	return pd.infoProviders[0].GetEnvVal(pd.basePciDevice.Address)
+	return pd.infoProviders[0].GetEnvVal()
 }
 
 func (pd *pciDevice) GetMounts() []*pluginapi.Mount {
 	mnt := make([]*pluginapi.Mount, 0)
 	for _, infoProvider := range pd.infoProviders {
-		mnt = append(mnt, infoProvider.GetMounts(pd.basePciDevice.Address)...)
+		mnt = append(mnt, infoProvider.GetMounts()...)
 	}
 
 	return mnt

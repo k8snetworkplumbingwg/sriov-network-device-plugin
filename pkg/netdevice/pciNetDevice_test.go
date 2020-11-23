@@ -37,6 +37,7 @@ func TestNetdevice(t *testing.T) {
 
 var _ = Describe("PciNetDevice", func() {
 	Describe("creating new PciNetDevice", func() {
+		t := GinkgoT()
 		Context("succesfully", func() {
 			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
@@ -135,15 +136,11 @@ var _ = Describe("PciNetDevice", func() {
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1",
 					"sys/bus/pci/devices/0000:00:00.2/net/eth1",
-					"sys/kernel/iommu_groups/0",
-					"sys/kernel/iommu_groups/1",
 					"sys/bus/pci/drivers/mlx5_core",
 				},
 				Symlinks: map[string]string{
-					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-					"sys/bus/pci/devices/0000:00:00.2/iommu_group": "../../../../kernel/iommu_groups/1",
-					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/mlx5_core",
-					"sys/bus/pci/devices/0000:00:00.2/driver":      "../../../../bus/pci/drivers/mlx5_core",
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
+					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/mlx5_core",
 				},
 				Files: map[string][]byte{
 					"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0"),
@@ -166,10 +163,17 @@ var _ = Describe("PciNetDevice", func() {
 			rdma2.On("IsRdma").Return(false)
 
 			f := &mocks.ResourceFactory{}
-			f.On("GetDefaultInfoProvider", "mlx5_core").Return(func(s string) types.DeviceInfoProvider {
-				f := factory.NewResourceFactory("fake", "fake", true)
-				return f.GetDefaultInfoProvider("mlx5_core")
-			}).
+
+			mockInfo1 := &mocks.DeviceInfoProvider{}
+			mockInfo1.On("GetEnvVal").Return("0000:00:00.1")
+			mockInfo1.On("GetDeviceSpecs").Return(nil)
+			mockInfo1.On("GetMounts").Return(nil)
+			mockInfo2 := &mocks.DeviceInfoProvider{}
+			mockInfo2.On("GetEnvVal").Return("0000:00:00.2")
+			mockInfo2.On("GetDeviceSpecs").Return(nil)
+			mockInfo2.On("GetMounts").Return(nil)
+			f.On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return(mockInfo1).
+				On("GetDefaultInfoProvider", "0000:00:00.2", "mlx5_core").Return(mockInfo2).
 				On("GetRdmaSpec", "0000:00:00.1").Return(rdma1).
 				On("GetRdmaSpec", "0000:00:00.2").Return(rdma2)
 
@@ -186,9 +190,11 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetLinkType()).To(Equal(""))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
+				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
+				mockInfo1.AssertExpectations(t)
 			})
 			It("but not otherwise", func() {
 				defer fs.Use()()
@@ -199,10 +205,12 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetNetName()).To(Equal("eth1"))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.2"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
+				mockInfo2.AssertExpectations(t)
 			})
 		})
 		Context("With needsVhostNet", func() {

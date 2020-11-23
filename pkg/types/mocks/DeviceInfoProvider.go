@@ -13,13 +13,13 @@ type DeviceInfoProvider struct {
 	mock.Mock
 }
 
-// GetDeviceSpecs provides a mock function with given fields: pciAddr
-func (_m *DeviceInfoProvider) GetDeviceSpecs(pciAddr string) []*v1beta1.DeviceSpec {
-	ret := _m.Called(pciAddr)
+// GetDeviceSpecs provides a mock function with given fields:
+func (_m *DeviceInfoProvider) GetDeviceSpecs() []*v1beta1.DeviceSpec {
+	ret := _m.Called()
 
 	var r0 []*v1beta1.DeviceSpec
-	if rf, ok := ret.Get(0).(func(string) []*v1beta1.DeviceSpec); ok {
-		r0 = rf(pciAddr)
+	if rf, ok := ret.Get(0).(func() []*v1beta1.DeviceSpec); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*v1beta1.DeviceSpec)
@@ -29,13 +29,13 @@ func (_m *DeviceInfoProvider) GetDeviceSpecs(pciAddr string) []*v1beta1.DeviceSp
 	return r0
 }
 
-// GetEnvVal provides a mock function with given fields: pciAddr
-func (_m *DeviceInfoProvider) GetEnvVal(pciAddr string) string {
-	ret := _m.Called(pciAddr)
+// GetEnvVal provides a mock function with given fields:
+func (_m *DeviceInfoProvider) GetEnvVal() string {
+	ret := _m.Called()
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(string) string); ok {
-		r0 = rf(pciAddr)
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
 	}
@@ -43,13 +43,13 @@ func (_m *DeviceInfoProvider) GetEnvVal(pciAddr string) string {
 	return r0
 }
 
-// GetMounts provides a mock function with given fields: pciAddr
-func (_m *DeviceInfoProvider) GetMounts(pciAddr string) []*v1beta1.Mount {
-	ret := _m.Called(pciAddr)
+// GetMounts provides a mock function with given fields:
+func (_m *DeviceInfoProvider) GetMounts() []*v1beta1.Mount {
+	ret := _m.Called()
 
 	var r0 []*v1beta1.Mount
-	if rf, ok := ret.Get(0).(func(string) []*v1beta1.Mount); ok {
-		r0 = rf(pciAddr)
+	if rf, ok := ret.Get(0).(func() []*v1beta1.Mount); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*v1beta1.Mount)

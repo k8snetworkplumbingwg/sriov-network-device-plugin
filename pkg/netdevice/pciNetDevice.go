@@ -43,7 +43,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		return nil, err
 	}
 
-	infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(driverName))
+	infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(dev.Address, driverName))
 	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
 	if ok {

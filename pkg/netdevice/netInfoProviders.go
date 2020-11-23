@@ -41,19 +41,19 @@ func NewRdmaInfoProvider(rdmaSpec types.RdmaSpec) types.DeviceInfoProvider {
 // *****************************************************************
 /* DeviceInfoProvider Interface */
 
-func (rip *rdmaInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rip *rdmaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if !rip.rdmaSpec.IsRdma() {
-		glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device %s is not rdma device", pciAddr)
+		glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device is not rdma device")
 		return nil
 	}
 	return rip.rdmaSpec.GetRdmaDeviceSpec()
 }
 
-func (rip *rdmaInfoProvider) GetEnvVal(pciAddr string) string {
-	return pciAddr
+func (rip *rdmaInfoProvider) GetEnvVal() string {
+	return ""
 }
 
-func (rip *rdmaInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rip *rdmaInfoProvider) GetMounts() []*pluginapi.Mount {
 	return nil
 }
 
@@ -71,7 +71,7 @@ func NewVhostNetInfoProvider() types.DeviceInfoProvider {
 // *****************************************************************
 /* DeviceInfoProvider Interface */
 
-func (rip *vhostNetInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if !VhostNetDeviceExist() {
 		glog.Errorf("GetDeviceSpecs(): /dev/vhost-net doesn't exist")
 		return nil
@@ -79,10 +79,10 @@ func (rip *vhostNetInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.Dev
 	return GetVhostNetDeviceSpec()
 }
 
-func (rip *vhostNetInfoProvider) GetEnvVal(pciAddr string) string {
-	return pciAddr
+func (rip *vhostNetInfoProvider) GetEnvVal() string {
+	return ""
 }
 
-func (rip *vhostNetInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rip *vhostNetInfoProvider) GetMounts() []*pluginapi.Mount {
 	return nil
 }

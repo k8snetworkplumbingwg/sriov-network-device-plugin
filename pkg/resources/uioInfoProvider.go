@@ -22,21 +22,24 @@ import (
 )
 
 type uioInfoProvider struct {
+	pciAddr string
 }
 
 // NewUioInfoProvider return instance of uio DeviceInfoProvider
-func NewUioInfoProvider() types.DeviceInfoProvider {
-	return &uioInfoProvider{}
+func NewUioInfoProvider(pciAddr string) types.DeviceInfoProvider {
+	return &uioInfoProvider{
+		pciAddr: pciAddr,
+	}
 }
 
 // *****************************************************************
 /* DeviceInfoProvider Interface */
-func (rp *uioInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
-	uioDev, err := utils.GetUIODeviceFile(pciAddr)
+	uioDev, err := utils.GetUIODeviceFile(rp.pciAddr)
 	if err != nil {
-		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", pciAddr)
+		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s", rp.pciAddr)
 	} else {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      uioDev,
@@ -48,11 +51,11 @@ func (rp *uioInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpe
 	return devSpecs
 }
 
-func (rp *uioInfoProvider) GetEnvVal(pciAddr string) string {
-	return pciAddr
+func (rp *uioInfoProvider) GetEnvVal() string {
+	return rp.pciAddr
 }
 
-func (rp *uioInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *uioInfoProvider) GetMounts() []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }

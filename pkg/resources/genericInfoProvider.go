@@ -20,24 +20,27 @@ import (
 )
 
 type genericInfoProvider struct {
+	pciAddr string
 }
 
 // NewGenericInfoProvider instantiate a generic DeviceInfoProvider
-func NewGenericInfoProvider() types.DeviceInfoProvider {
-	return &genericInfoProvider{}
+func NewGenericInfoProvider(pciAddr string) types.DeviceInfoProvider {
+	return &genericInfoProvider{
+		pciAddr: pciAddr,
+	}
 }
 
-func (rp *genericInfoProvider) GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec {
+func (rp *genericInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-func (rp *genericInfoProvider) GetEnvVal(pciAddr string) string {
-	return pciAddr
+func (rp *genericInfoProvider) GetEnvVal() string {
+	return rp.pciAddr
 }
 
-func (rp *genericInfoProvider) GetMounts(pciAddr string) []*pluginapi.Mount {
+func (rp *genericInfoProvider) GetMounts() []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }

@@ -12,13 +12,13 @@ type ResourceFactory struct {
 	mock.Mock
 }
 
-// GetDefaultInfoProvider provides a mock function with given fields: _a0
-func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string) types.DeviceInfoProvider {
-	ret := _m.Called(_a0)
+// GetDefaultInfoProvider provides a mock function with given fields: _a0, _a1
+func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string, _a1 string) types.DeviceInfoProvider {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 types.DeviceInfoProvider
-	if rf, ok := ret.Get(0).(func(string) types.DeviceInfoProvider); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(string, string) types.DeviceInfoProvider); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.DeviceInfoProvider)

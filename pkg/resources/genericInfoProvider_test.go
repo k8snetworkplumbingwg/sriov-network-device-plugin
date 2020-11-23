@@ -12,7 +12,7 @@ var _ = Describe("genericInfoProvider", func() {
 	Describe("creating new genericInfoProvider", func() {
 		var pool types.DeviceInfoProvider
 		BeforeEach(func() {
-			pool = resources.NewGenericInfoProvider()
+			pool = resources.NewGenericInfoProvider("fakePCIAddr")
 		})
 		It("should return valid genericInfoProvider object", func() {
 			Expect(pool).NotTo(Equal(nil))
@@ -21,14 +21,14 @@ var _ = Describe("genericInfoProvider", func() {
 	})
 	Describe("getting mounts", func() {
 		It("should always return an empty array", func() {
-			pool := resources.NewGenericInfoProvider()
-			Expect(pool.GetMounts("fakePCIAddr")).To(BeEmpty())
+			pool := resources.NewGenericInfoProvider("fakePCIAddr")
+			Expect(pool.GetMounts()).To(BeEmpty())
 		})
 	})
 	Describe("getting device specs", func() {
 		It("should always return an empty map", func() {
-			pool := resources.NewGenericInfoProvider()
-			Expect(pool.GetDeviceSpecs("fakePCIAddr")).To(BeEmpty())
+			pool := resources.NewGenericInfoProvider("fakePCIAddr")
+			Expect(pool.GetDeviceSpecs()).To(BeEmpty())
 		})
 	})
 })

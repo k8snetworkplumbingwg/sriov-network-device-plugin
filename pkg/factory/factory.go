@@ -61,14 +61,14 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 }
 
 // GetDefaultInfoProvider returns an instance of DeviceInfoProvider using name as string
-func (rf *resourceFactory) GetDefaultInfoProvider(name string) types.DeviceInfoProvider {
+func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr string, name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
-		return resources.NewVfioInfoProvider()
+		return resources.NewVfioInfoProvider(pciAddr)
 	case "uio", "igb_uio":
-		return resources.NewUioInfoProvider()
+		return resources.NewUioInfoProvider(pciAddr)
 	default:
-		return resources.NewGenericInfoProvider()
+		return resources.NewGenericInfoProvider(pciAddr)
 	}
 }
 
