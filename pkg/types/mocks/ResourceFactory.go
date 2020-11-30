@@ -67,6 +67,22 @@ func (_m *ResourceFactory) GetInfoProvider(_a0 string) types.DeviceInfoProvider 
 	return r0
 }
 
+// GetNadUtils provides a mock function with given fields:
+func (_m *ResourceFactory) GetNadUtils() types.NadUtils {
+	ret := _m.Called()
+
+	var r0 types.NadUtils
+	if rf, ok := ret.Get(0).(func() types.NadUtils); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.NadUtils)
+		}
+	}
+
+	return r0
+}
+
 // GetRdmaSpec provides a mock function with given fields: _a0
 func (_m *ResourceFactory) GetRdmaSpec(_a0 string) types.RdmaSpec {
 	ret := _m.Called(_a0)

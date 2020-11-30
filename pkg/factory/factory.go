@@ -179,3 +179,8 @@ func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (interface{
 		return nil, fmt.Errorf("unable to get deviceFilter, invalid deviceType %s", rc.DeviceType)
 	}
 }
+
+// GetNadUtils returns an instance of NadUtils
+func (rf *resourceFactory) GetNadUtils() types.NadUtils {
+	return netdevice.NewNadUtils()
+}
