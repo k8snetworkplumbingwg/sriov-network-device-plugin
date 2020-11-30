@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	nadutils "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -30,17 +29,19 @@ import (
 type netResourcePool struct {
 	*resources.ResourcePoolImpl
 	selectors *types.NetDeviceSelectors
+	nadutils  types.NadUtils
 }
 
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
+func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,
 		selectors:        s,
+		nadutils:         nadutils,
 	}
 }
 
@@ -101,7 +102,7 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error 
 			},
 		}
 		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
-		if err := nadutils.SaveDeviceInfoForDP(resource, id, &devInfo); err != nil {
+		if err := rp.nadutils.SaveDeviceInfoFile(resource, id, &devInfo); err != nil {
 			return err
 		}
 	}
@@ -113,7 +114,7 @@ func (rp *netResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error 
 	errors := make([]string, 0)
 	for id := range rp.GetDevicePool() {
 		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
-		if err := nadutils.CleanDeviceInfoForDP(resource, id); err != nil {
+		if err := rp.nadutils.CleanDeviceInfoFile(resource, id); err != nil {
 			// Continue trying to clean.
 			errors = append(errors, err.Error())
 		}

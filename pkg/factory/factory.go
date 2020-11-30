@@ -118,7 +118,8 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 	case types.NetDeviceType:
 		if len(filteredDevice) > 0 {
 			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
-				rPool = netdevice.NewNetResourcePool(rc, apiDevices, devicePool)
+				nadUtils := rf.GetNadUtils()
+				rPool = netdevice.NewNetResourcePool(nadUtils, rc, apiDevices, devicePool)
 			} else {
 				err = fmt.Errorf("invalid device list for NetDeviceType")
 			}

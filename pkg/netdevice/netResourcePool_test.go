@@ -15,6 +15,7 @@
 package netdevice_test
 
 import (
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
@@ -27,6 +28,8 @@ import (
 
 var _ = Describe("NetResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
+		rf := factory.NewResourceFactory("fake", "fake", true)
+		nadutils := rf.GetNadUtils()
 		rc := &types.ResourceConfig{
 			ResourceName:   "fake",
 			ResourcePrefix: "fake",
@@ -35,7 +38,7 @@ var _ = Describe("NetResourcePool", func() {
 		devs := map[string]*v1beta1.Device{}
 		pcis := map[string]types.PciDevice{}
 
-		rp := netdevice.NewNetResourcePool(rc, devs, pcis)
+		rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
 
 		It("should return a valid instance of the pool", func() {
 			Expect(rp).ToNot(BeNil())
@@ -43,6 +46,8 @@ var _ = Describe("NetResourcePool", func() {
 	})
 	Describe("getting DeviceSpecs", func() {
 		Context("for non-RDMA devices", func() {
+			rf := factory.NewResourceFactory("fake", "fake", true)
+			nadutils := rf.GetNadUtils()
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
@@ -78,7 +83,7 @@ var _ = Describe("NetResourcePool", func() {
 
 			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
-			rp := netdevice.NewNetResourcePool(rc, devs, pcis)
+			rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
 
 			devIDs := []string{"fake1", "fake2"}
 
@@ -93,6 +98,8 @@ var _ = Describe("NetResourcePool", func() {
 			})
 		})
 		Context("for RDMA devices", func() {
+			rf := factory.NewResourceFactory("fake", "fake", true)
+			nadutils := rf.GetNadUtils()
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
@@ -123,7 +130,7 @@ var _ = Describe("NetResourcePool", func() {
 
 			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2}
 
-			rp := netdevice.NewNetResourcePool(rc, devs, pcis)
+			rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
 
 			devIDs := []string{"fake1", "fake2"}
 
