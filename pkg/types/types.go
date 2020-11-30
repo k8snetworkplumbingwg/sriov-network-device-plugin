@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/jaypipes/ghw"
+	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -130,6 +131,7 @@ type ResourceFactory interface {
 	GetRdmaSpec(string) RdmaSpec
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
+	GetNadUtils() NadUtils
 }
 
 // ResourcePool represents a generic resource entity
@@ -212,4 +214,10 @@ type LinkWatcher interface { // This is not fully defined yet!!
 type RdmaSpec interface {
 	IsRdma() bool
 	GetRdmaDeviceSpec() []*pluginapi.DeviceSpec
+}
+
+// NadUtils is an interface for Network-Attachment-Definition utilities
+type NadUtils interface {
+	SaveDeviceInfoFile(resourceName string, deviceID string, devInfo *nettypes.DeviceInfo) error
+	CleanDeviceInfoFile(resourceName string, deviceID string) error
 }
