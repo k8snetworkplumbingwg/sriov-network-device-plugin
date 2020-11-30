@@ -15,6 +15,8 @@
 package netdevice_test
 
 import (
+	"fmt"
+	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -24,6 +26,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/stretchr/testify/mock"
 )
 
 var _ = Describe("NetResourcePool", func() {
@@ -141,6 +144,56 @@ var _ = Describe("NetResourcePool", func() {
 				Expect(actual).To(HaveLen(2)) // fake1 => 2 rdma devices
 				Expect(actual).To(ContainElement(fake1ds[0]))
 				Expect(actual).To(ContainElement(fake1ds[1]))
+			})
+		})
+	})
+	Describe("Saving and Cleaning DevInfo files ", func() {
+		t := GinkgoT()
+		Context("for valid pci devices", func() {
+			rc := &types.ResourceConfig{
+				ResourceName:   "fakeResource",
+				ResourcePrefix: "fakeOrg.io",
+				SelectorObj: &types.NetDeviceSelectors{
+					IsRdma: true,
+				},
+			}
+
+			devs := map[string]*v1beta1.Device{}
+			fake1 := &mocks.PciNetDevice{}
+			fake1.On("GetPciAddr").Return("0000:01:00.1")
+			fake2 := &mocks.PciNetDevice{}
+			fake2.On("GetPciAddr").Return("0000:01:00.2")
+			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2}
+
+			It("should call nadutils to create a well formatted DeviceInfo object", func() {
+				nadutils := &mocks.NadUtils{}
+				nadutils.On("SaveDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1", Anything).
+					Return(func(rName, id string, devInfo *nettypes.DeviceInfo) error {
+						if devInfo.Type != nettypes.DeviceInfoTypePCI || devInfo.Pci == nil || devInfo.Pci.PciAddress != "0000:01:00.1" {
+							return fmt.Errorf("wrong device info")
+						}
+						return nil
+					})
+				nadutils.On("SaveDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2", Anything).
+					Return(func(rName, id string, devInfo *nettypes.DeviceInfo) error {
+						if devInfo.Type != nettypes.DeviceInfoTypePCI || devInfo.Pci == nil || devInfo.Pci.PciAddress != "0000:01:00.2" {
+							return fmt.Errorf("wrong device info")
+						}
+						return nil
+					})
+				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				err := rp.StoreDeviceInfoFile("fakeOrg.io")
+				nadutils.AssertExpectations(t)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should call nadutils to clean the DeviceInfo objects", func() {
+				nadutils := &mocks.NadUtils{}
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1").Return(nil)
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2").Return(nil)
+				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				err := rp.CleanDeviceInfoFile("fakeOrg.io")
+				nadutils.AssertExpectations(t)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
