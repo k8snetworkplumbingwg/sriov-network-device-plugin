@@ -52,12 +52,15 @@ var _ = Describe("Server", func() {
 	})
 	DescribeTable("registering with Kubelet",
 		func(shouldRunServer, shouldEnablePluginWatch, shouldServerFail, shouldFail bool) {
+			t := GinkgoT()
 			var err error
 			fs := &utils.FakeFilesystem{}
 			defer fs.Use()()
 			rp := mocks.ResourcePool{}
 			rp.On("Probe").Return(false)
 			rp.On("GetResourceName").Return("fakename")
+			rp.On("StoreDeviceInfoFile", "fakeprefix").Return(nil)
+			rp.On("CleanDeviceInfoFile", "fakeprefix").Return(nil)
 
 			// Use faked dir as socket dir
 			types.SockDir = fs.RootDir
@@ -71,9 +74,9 @@ var _ = Describe("Server", func() {
 
 			if shouldRunServer {
 				if shouldEnablePluginWatch {
-					rp.On("StoreDeviceInfoFile", "fakeprefix").Return(nil)
-					rp.On("CleanDeviceInfoFile", "fakeprefix").Return(nil)
 					rs.Start()
+					rp.AssertCalled(t, "CleanDeviceInfoFile", "fakeprefix")
+					rp.AssertCalled(t, "StoreDeviceInfoFile", "fakeprefix")
 				} else {
 					os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 					registrationServer.start()
@@ -125,6 +128,7 @@ var _ = Describe("Server", func() {
 			fakeConf *types.ResourceConfig
 			fs       *utils.FakeFilesystem
 		)
+		t := GinkgoT()
 		BeforeEach(func() {
 			var selectors json.RawMessage
 			err := selectors.UnmarshalJSON([]byte(`[{"devices": ["fakeid"]}]`))
@@ -171,6 +175,7 @@ var _ = Describe("Server", func() {
 					rp.On("CleanDeviceInfoFile", "fake").Return(nil)
 					err := rs.Stop()
 					Expect(err).NotTo(HaveOccurred())
+					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
 				Eventually(rs.termSignal, time.Second*10).Should(Receive())
 				Eventually(rs.stopWatcher, time.Second*10).Should(Receive())
@@ -205,6 +210,7 @@ var _ = Describe("Server", func() {
 					rp.On("CleanDeviceInfoFile", "fake").Return(nil)
 					err := rs.Stop()
 					Expect(err).NotTo(HaveOccurred())
+					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
 				Eventually(rs.termSignal, time.Second*10).Should(Receive())
 
