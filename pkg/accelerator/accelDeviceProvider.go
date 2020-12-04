@@ -111,6 +111,13 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc 
 		}
 	}
 
+	// filter by pciAddresses list
+	if af.PciAddresses != nil && len(af.PciAddresses) > 0 {
+		if selector, err := rf.GetSelector("pciAddresses", af.PciAddresses); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
 	// convert to []AccelDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
 	for i, d := range filteredDevice {
