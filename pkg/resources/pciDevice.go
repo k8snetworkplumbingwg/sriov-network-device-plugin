@@ -30,11 +30,9 @@ type pciDevice struct {
 	vendor        string
 	product       string
 	vfID          int
-	env           string
 	numa          string
 	apiDevice     *pluginapi.Device
-	deviceSpecs   []*pluginapi.DeviceSpec
-	mounts        []*pluginapi.Mount
+	infoProviders []types.DeviceInfoProvider
 }
 
 // Convert NUMA node number to string.
@@ -47,7 +45,9 @@ func nodeToStr(nodeNum int) string {
 }
 
 // NewPciDevice returns an instance of PciDevice interface
-func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.PciDevice, error) {
+// A list of DeviceInfoProviders can be set externally.
+// If empty, the default driver-based selection provided by ResourceFactory will be used
+func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProviders []types.DeviceInfoProvider) (types.PciDevice, error) {
 
 	pciAddr := dev.Address
 
@@ -68,12 +68,11 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 		return nil, err
 	}
 
-	// Get Device file info (e.g., uio, vfio specific)
-	// Get DeviceInfoProvider using device driver
-	infoProvider := rFactory.GetInfoProvider(driverName)
-	dSpecs := infoProvider.GetDeviceSpecs(pciAddr)
-	mnt := infoProvider.GetMounts(pciAddr)
-	env := infoProvider.GetEnvVal(pciAddr)
+	// Use the default Information Provided if not
+	if len(infoProviders) == 0 {
+		infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(pciAddr, driverName))
+	}
+
 	nodeNum := utils.GetDevNode(pciAddr)
 	apiDevice := &pluginapi.Device{
 		ID:     pciAddr,
@@ -95,9 +94,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory) (types.Pci
 		driver:        driverName,
 		vfID:          vfID,
 		apiDevice:     apiDevice,
-		deviceSpecs:   dSpecs,
-		mounts:        mnt,
-		env:           env,
+		infoProviders: infoProviders,
 		numa:          nodeToStr(nodeNum),
 	}, nil
 }
@@ -131,15 +128,27 @@ func (pd *pciDevice) GetSubClass() string {
 }
 
 func (pd *pciDevice) GetDeviceSpecs() []*pluginapi.DeviceSpec {
-	return pd.deviceSpecs
+	dSpecs := make([]*pluginapi.DeviceSpec, 0)
+	for _, infoProvider := range pd.infoProviders {
+		dSpecs = append(dSpecs, infoProvider.GetDeviceSpecs()...)
+	}
+
+	return dSpecs
 }
 
 func (pd *pciDevice) GetEnvVal() string {
-	return pd.env
+	// Currently Device Plugin does not support returning multiple Env Vars
+	// so we use the value provided by the first InfoProvider.
+	return pd.infoProviders[0].GetEnvVal()
 }
 
 func (pd *pciDevice) GetMounts() []*pluginapi.Mount {
-	return pd.mounts
+	mnt := make([]*pluginapi.Mount, 0)
+	for _, infoProvider := range pd.infoProviders {
+		mnt = append(mnt, infoProvider.GetMounts()...)
+	}
+
+	return mnt
 }
 
 func (pd *pciDevice) GetAPIDevice() *pluginapi.Device {

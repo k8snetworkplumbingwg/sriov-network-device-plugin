@@ -125,7 +125,7 @@ type ResourceServer interface {
 // ResourceFactory is an interface to get instances of ResourcePool and ResouceServer
 type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
-	GetInfoProvider(string) DeviceInfoProvider
+	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
@@ -195,9 +195,9 @@ type AccelDevice interface {
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
 type DeviceInfoProvider interface {
-	GetDeviceSpecs(pciAddr string) []*pluginapi.DeviceSpec
-	GetEnvVal(pciAddr string) string
-	GetMounts(pciAddr string) []*pluginapi.Mount
+	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetEnvVal() string
+	GetMounts() []*pluginapi.Mount
 }
 
 // DeviceSelector provides an interface for filtering a list of devices
