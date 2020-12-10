@@ -182,6 +182,15 @@ This plugin creates device plugin endpoints based on the configurations given in
             }
         },
         {
+            "resourceName": "ct6dx_vdpa_vhost",
+            "selectors": {
+                "vendors": ["15b3"],
+                "devices": ["101e"],
+                "drivers": ["mlx5_core"],
+                "vdpaType": "vhost"
+            }
+        },
+        {
             "resourceName": "intel_fpga",
             "deviceType": "accelerator",
             "selectors": {
@@ -231,8 +240,9 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "rootDevices"     | N        | VFs from PF matches list of PF PCI addresses               | `string` list Default: `null`                     | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
 | "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                                           |
 | "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
-| "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
+| "isRdma"      | N        | Mount RDMA resources. Incompatible with vdpaType               | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
 | "needVhostNet"| N        | Share /dev/vhost-net and /dev/net/tun                          | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
+| "vdpaType"    | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true    | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                           |
 
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
