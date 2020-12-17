@@ -23,7 +23,6 @@
   - [Command line arguments](#command-line-arguments)
   - [Assumptions](#assumptions)
   - [Workflow](#workflow)
-- [Virtual Deployments](#virtual-deployments)
 - [Example deployments](#example-deployments)
     - [Deploy the Device Plugin](#deploy-the-device-plugin)
     - [Deploy SR-IOV workloads when Multus is used](#deploy-sr-iov-workloads-when-multus-is-used)
@@ -36,6 +35,7 @@
       - [Deploy demo Pod connecting to pre-created SR-IOV networks](#deploy-demo-pod-connecting-to-pre-created-sr-iov-networks)
       - [Verify status and the network connections of the demo Pod](#verify-status-and-the-network-connections-of-the-demo-pod)
     - [Pod device information](#pod-device-information)
+- [Virtual Deployments Support](#virtual-deployments-support)
 - [Multi Architecture Support](#multi-architecture-support)
 - [Issues and Contributing](#issues-and-contributing)
 
@@ -368,19 +368,6 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 }
 
 ```
-## Virtual Deployments
-
-SR-IOV network device plugin supports running in a virtualized environment.  However, not all device selectors are 
-applicable as the VFs are passthrough to the VM without any association to their respective PF, hence any device 
-selector that relies on the association between a VF and its PF will not work and therefore the _pfNames_ and 
-_rootDevices_ extended selectors will not work in a virtual deployment.  The common selector _pciAddress_ can be 
-used to select the virtual device.
-
-### Virtual environments with no iommu
-
-SR-IOV network device plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
-For more information refer to [this](./docs/dpdk/README-virt.md).
-
 ## Example deployments
 
 We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
@@ -534,6 +521,27 @@ The allocated device information is exported in Container's environment variable
 
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
+
+
+## Virtual Deployments Support
+
+### Configure Device Plugin extended selectors in virtual environments
+
+SR-IOV network device plugin supports running in a virtualized environment.  However, not all device selectors are
+applicable as the VFs are passthrough to the VM without any association to their respective PF, hence any device
+selector that relies on the association between a VF and its PF will not work and therefore the _pfNames_ and
+_rootDevices_ extended selectors will not work in a virtual deployment.  The common selector _pciAddress_ can be
+used to select the virtual device.
+
+## CNI plugins in virtual environments
+
+SR-IOV CNI plugin doesn't support running in a virtualized environment since it always requires accessing to PF device
+which usually doesn't exist in VM. The recommended CNI plugin to use in virtulized environment is the [host-device](https://www.cni.dev/plugins/main/host-device/) CNI plugin.
+
+### Virtual environments with no iommu
+
+SR-IOV network device plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
+For more information refer to [this](./docs/dpdk/README-virt.md).
 
 ## Multi Architecture Support
 
