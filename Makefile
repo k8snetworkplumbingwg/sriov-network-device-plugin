@@ -58,7 +58,7 @@ $(GOBIN):
 $(BUILDDIR): | $(BASE) ; $(info Creating build directory...)
 	@cd $(BASE) && mkdir -p $@
 
-build: $(BUILDDIR)/$(BINARY_NAME) | ; $(info Building $(BINARY_NAME)...) @ ## Build SR-IOV CNI plugin
+build: $(BUILDDIR)/$(BINARY_NAME) | ; $(info Building $(BINARY_NAME)...) @ ## Build SR-IOV Network device plugin
 	$(info Done!)
 
 $(BUILDDIR)/$(BINARY_NAME): $(GOFILES) | $(BUILDDIR)
@@ -146,7 +146,7 @@ deps-update: ; $(info  Updating dependencies...) @ ## Update dependencies
 # Docker image
 # To pass proxy for Docker invoke it as 'make image HTTP_POXY=http://192.168.0.1:8080'
 .PHONY: image
-image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV CNI docker image
+image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV Network device plugin docker image
 	@docker build -t $(TAG) -f $(DOCKERFILE)  $(CURDIR) $(DOCKERARGS)
 
 # Misc
