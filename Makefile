@@ -21,7 +21,7 @@ export GOBIN
 # Docker
 IMAGEDIR=$(BASE)/images
 DOCKERFILE?=$(CURDIR)/images/Dockerfile
-TAG=nfvpe/sriov-device-plugin
+TAG=docker.io/nfvpe/sriov-device-plugin
 # Accept proxy settings for docker 
 DOCKERARGS=
 ifdef HTTP_PROXY
