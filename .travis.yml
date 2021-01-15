@@ -15,6 +15,7 @@ matrix:
   #     - DOCKERFILE=images/Dockerfile.ppc64le
 
 before_install:
+  - sudo update-pciids
   - sudo apt-get update -qq
   - sudo systemctl restart docker
 
