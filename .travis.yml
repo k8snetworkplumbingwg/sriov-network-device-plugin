@@ -16,6 +16,7 @@ matrix:
 
 before_install:
   - sudo apt-get update -qq
+  - sudo apt-get install hwdata -yq
   - sudo systemctl restart docker
 
 script:
