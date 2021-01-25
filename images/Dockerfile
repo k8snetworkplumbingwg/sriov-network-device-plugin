@@ -11,7 +11,7 @@ RUN apk add --update --virtual build-dependencies build-base linux-headers && \
     make build && \
     cd /tmp/ddptool && make
 
-FROM alpine
+FROM alpine:3.12
 RUN apk add hwdata-pci
 COPY --from=builder /usr/src/sriov-network-device-plugin/build/sriovdp /usr/bin/
 COPY --from=builder /tmp/ddptool/ddptool /usr/bin/
