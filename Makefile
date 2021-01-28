@@ -2,32 +2,36 @@
 # Credit:
 #   This makefile was adapted from: https://github.com/vincentbernat/hellogopher/blob/feature/glide/Makefile
 #
-# Package related
-BINARY_NAME=sriovdp
-PACKAGE=sriov-network-device-plugin
-ORG_PATH=github.com/k8snetworkplumbingwg
-REPO_PATH=$(ORG_PATH)/$(PACKAGE)
+# Go environment
 GOPATH=$(CURDIR)/.gopath
 GOBIN=$(CURDIR)/bin
-BUILDDIR=$(CURDIR)/build
-BASE=$(GOPATH)/src/$(REPO_PATH)
-PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./... | grep -v "^$(PACKAGE)/vendor/"))
-GOFILES = $(shell find . -name *.go | grep -vE "(\/vendor\/)|(_test.go)")
-TESTPKGS = $(shell env GOPATH=$(GOPATH) go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
-TIMEOUT = 15
+# Go tools
 GOLINT = $(GOBIN)/golint
 GOCOVMERGE = $(GOBIN)/gocovmerge
 GOCOV = $(GOBIN)/gocov
 GOCOVXML = $(GOBIN)/gocov-xml
 GO2XUNIT = $(GOBIN)/go2xunit
+# Package info
+BINARY_NAME=sriovdp
+PACKAGE=sriov-network-device-plugin
+ORG_PATH=github.com/k8snetworkplumbingwg
+# Build info
+BUILDDIR=$(CURDIR)/build
+REPO_PATH=$(ORG_PATH)/$(PACKAGE)
+BASE=$(GOPATH)/src/$(REPO_PATH)
+PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./... | grep -v "^$(PACKAGE)/vendor/"))
+GOFILES = $(shell find . -name *.go | grep -vE "(\/vendor\/)|(_test.go)")
+# Test artifacts and settings
+TESTPKGS = $(shell env GOPATH=$(GOPATH) go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
+TIMEOUT = 15
 COVERAGE_MODE = atomic
 COVERAGE_PROFILE = $(COVERAGE_DIR)/profile.out
 COVERAGE_XML = $(COVERAGE_DIR)/coverage.xml
 COVERAGE_HTML = $(COVERAGE_DIR)/index.html
-IMAGEDIR=$(BASE)/images
+# Docker image
 DOCKERFILE?=$(CURDIR)/images/Dockerfile
 TAG=docker.io/nfvpe/sriov-device-plugin
-# Accept proxy settings for docker 
+# Docker arguments - To pass proxy for Docker invoke it as 'make image HTTP_POXY=http://192.168.0.1:8080'
 DOCKERARGS=
 ifdef HTTP_PROXY
 	DOCKERARGS += --build-arg http_proxy=$(HTTP_PROXY)
