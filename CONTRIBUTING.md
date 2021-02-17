@@ -8,11 +8,17 @@
 * [Tools](#Tools)
 
 ## Meetings
-Join us for project discussios at _K8s Network & Resource management_ meetings
+Join us for project discussions at _K8s Network & Resource management_ meetings
 
 Time: 15:00 - 16:00 GMT / 10:00-11:00 ET /  07:00-08:00 PST  every other Monday
 * [Meeting notes and agenda](https://docs.google.com/document/d/1sJQMHbxZdeYJPgAWK1aSt6yzZ4K_8es7woVIrwinVwI/edit?usp=sharing)
 * [Zoom channel](https://zoom.us/j/2392609689?pwd=K1R4ZEQyWWJVSGV3V1pmVThLMlhqQT09)
+
+Join us for architecture and/or new feature discussion at the _Additional K8s Network & Resource management_ meetings
+
+Time: 14:00 - 15:00 GMT / 09:00-10:00 ET /  06:00-07:00 PST on every other Tuesday of the alternative week when the main community meeting does not occur
+ * [Meeting notes and agenda](https://docs.google.com/document/d/1bEyEh_K9lGwQWHgUHUH-vqodYd1W-LCWRGlW0-ZVR5A)
+ * [Zoom channel](https://zoom.us/j/2392609689?pwd=K1R4ZEQyWWJVSGV3V1pmVThLMlhqQT09)
 
 ## How to Contribute
 
@@ -82,8 +88,8 @@ $ git checkout -b dev/some-topic-branch
 * Contributors will review your pull request, suggest changes, run tests and eventually merge or close the request.
 
 > We encourage contributor to test SRIOV Network Device plugin with various NICs to check the compatibility.
-> 
-## Tools
-The project uses the Slack chat:
-- Slack: #[Intel-SDSG-slack](https://intel-corp.herokuapp.com/) channel on slack
-- Please contact contributors for issues and PR reviews.
+>
+## Contact Us
+- #General channel on [NPWG](https://npwg-team.slack.com/) Slack
+- Feel free to post GitHub issues and PRs for review
+- Attend either K8s Network & Resource mangement or Additional K8s Network & Resource management meetings
