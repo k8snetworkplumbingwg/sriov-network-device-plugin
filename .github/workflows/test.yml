@@ -1,0 +1,25 @@
+name: Test
+on:
+    push:
+    pull_request:
+jobs:
+  build:
+    strategy:
+      matrix:
+        go-version: [1.13.x, 1.14.x, 1.15.x, 1.16.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Install hwdata
+        run: sudo apt-get install hwdata -y
+
+      - name: Go test
+        run: make test
