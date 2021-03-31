@@ -536,7 +536,7 @@ used to select the virtual device.
 ## CNI plugins in virtual environments
 
 SR-IOV CNI plugin doesn't support running in a virtualized environment since it always requires accessing to PF device
-which usually doesn't exist in VM. The recommended CNI plugin to use in virtulized environment is the [host-device](https://www.cni.dev/plugins/main/host-device/) CNI plugin.
+which usually doesn't exist in VM. The recommended CNI plugin to use in a virtualized environment is the [host-device](https://www.cni.dev/plugins/current/main/host-device/) CNI plugin.
 
 ### Virtual environments with no iommu
 
