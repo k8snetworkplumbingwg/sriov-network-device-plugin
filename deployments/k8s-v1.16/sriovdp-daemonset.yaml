@@ -42,6 +42,13 @@ spec:
         - --log-level=10
         securityContext:
           privileged: true
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "40Mi"
+          limits:
+            cpu: 1
+            memory: "200Mi"
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/
@@ -107,6 +114,13 @@ spec:
         - --log-level=10
         securityContext:
           privileged: true
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "40Mi"
+          limits:
+            cpu: 1
+            memory: "200Mi"
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/
@@ -173,6 +187,13 @@ spec:
         - --log-level=10
         securityContext:
           privileged: true
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "40Mi"
+          limits:
+            cpu: 1
+            memory: "200Mi"
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/
