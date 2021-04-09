@@ -1,90 +1,76 @@
+# SR-IOV Network Device plugin with DDP
+Dynamic Device Personalizationi aka DDP allows dynamic reconfiguration of the packet processing pipeline of Intel® Ethernet 800/700 series to meet specific use-case needs for on-demand, adding new packet processing pipeline configuration *packages* to a network adapter at run time, without resetting or rebooting the server.
 
+The SR-IOV Network Device plugin can be used to identify currently running DDP *packages*, allowing it to filter Virtual Functions (VFs) by their DDP package name.
 
-# SR-IOV network device plugin with DDP
-Dynamic Device Personalization aka DDP allows dynamic reconfiguration of the packet processing pipeline of Intel Ethernet 700 Series to meet specific use case needs on demand, adding new packet processing pipeline configuration *profiles* to a network adapter at run time, without resetting or rebooting the server.
+In this documentation we will cover the kernel driver use-case only. DPDK configuration of DDP is out of scope.
 
-(ref: [Dynamic Device Personalization for Intel® Ethernet 700 Series](https://software.intel.com/en-us/articles/dynamic-device-personalization-for-intel-ethernet-700-series))
+## Dynamic Device Personalization for Intel® Ethernet Controller E810
+For Intel® Ethernet Controller E810, a DDP package can be loaded into the NIC using the ice kernel driver. Current device DDP state can be determined with DDPTool or devlink.
 
-The SR-IOV network device plugin can be used to identify currently running DDP *profiles*, allowing it to filter Virtual Functions by their DDP profile names.
+### Recommended pre-requisites for SR-IOV Network Device plugin
+ * Firmware: v2.22 or newer
+ * Driver: ice v1.2.1 or newer
 
-The Intel Ethernet 700 Series, a DDP profile can be loaded/unloaded into the NIC using i40e kernel module(v2.7.26+) and ethtool OR using DPDK i40e pollmode driver & DPDK api. In this documentation we will cover i40e Kernel driver mode.
+### Additional tools for debug
+ * DDP NIC state detection tool(s): devlink mainline kernel 5.10 or newer, DDPTool 1.0.1.4 or newer
 
-## Pre-requisites
- * Firmware: v6.01 or newer
+## Dynamic Device Personalization for Intel® Ethernet Controller X710
+For Intel® Ethernet Controller X710, a DDP package can be loaded into the NIC using i40e kernel driver and ethtool. Current device DDP state can be determined with DDPTool.
+
+### Recommended pre-requisites for SR-IOV Network Device plugin
+ * Firmware: v8.30 or newer
  * Driver: i40e v2.7.26 or newer
 
-Refer to [Intel downloadcenter](https://downloadcenter.intel.com/) for latest firmware and drivers for Intel Ethernet 700 Series.
+### Additional tools for config/debug
+ * Ethtool: RHEL* 7.5 or newer or Linux* kernel 4.0.1 or newer
+ * DDP NIC state detection tool(s): DDPTool 1.0.0.0 or newer
 
-You can use `ethtool` to get driver and firmware information of the controller.
+## Short step by step configuration for E810 & X710 series NICs
+### Install DDP packages
+#### Intel® Ethernet Controller E810
+By default, ice driver will automatically load the default DDP package. If you require additional protocals beyond the default set available, download and extract the DDP package into your device firmware folder, typically `/lib/firmware/intel/ice/ddp`.
+Additional packages to suit your use-case can be found at [Intel® download center](https://downloadcenter.intel.com/search?keyword=Dynamic+Device+Personalization)
 
-```
-# ethtool -i enp2s0f0
-driver: i40e
-version: 2.9.21
-firmware-version: 7.00 0x80004cda 1.2154.0
-expansion-rom-version:
-bus-info: 0000:02:00.0
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-supports-priv-flags: yes
-```
+#### Intel® Ethernet Controller X710
+Download and extract the desired DDP packages into your device firmware folder, typically `/lib/firmware/intel/i40e/ddp/`.
+Packages to suit your use-case can be found [Intel® download center](https://downloadcenter.intel.com/search?keyword=Dynamic+Device+Personalization)
 
-## 1. Install DDP profiles
-On each node, download and extract desired DDP profiles into `/lib/firmware/intel/i40e/ddp/` directory.
+### Load a DDP package
+#### Intel® Ethernet Controller E810
+##### DDP package applied to a single physical card
+With E810, it is possible to load a different DDP package per physical card. Please see the ice driver readme for full details.
+You must place the DDP package in your NIC firmware folder (typically ```/lib/firmware/updates/intel/ice/ddp/```), append physical card serial number to DDP package name and reload all the physical function drivers on that physical card.
 
-The latest list of available packages can be found [here]( https://downloadcenter.intel.com/search?keyword=Dynamic+Device+Personalization).
+##### DDP package applied to all physical cards on a host
+Symbolically link your DDP package to the ```ice.pkg``` package in your NIC firmware folder (typically ```/lib/firmware/updates/intel/ice/ddp```/) and reload all the physical function drivers or simply reload ice driver.
 
-For example, to download and extract the GTP profile:
-
-```
-$ wget https://downloadmirror.intel.com/27587/eng/gtp.zip
-$ unzip gtp.zip
-$ mkdir -pv /lib/firmware/intel/i40e/ddp
-$ cp gtp.pkgo /lib/firmware/intel/i40e/ddp/
-```
-
-## 2. Load a DDP profile in to the NIC
-
-Use Linux `ethtool` utility to load a DDP profile into the controller.
-> Note: You can only load DDP profile into a controller using only first Physical Function(PF0).
+#### Intel® Ethernet Controller X710
+Please see the i40e driver readme for full details.
+Use Linux `ethtool` utility to load a DDP package into the controller.
+> Note: You can only load DDP package into a controller using only first Physical Function(PF0).
 ```
 $ ethtool -f enp2s0f0 gtp.pkgo 100
 ```
-## 3. Create SR-IOV Virtual Functions
 
-Create desired number of VFs using PF interfaces of the controller.
+### Create SR-IOV Virtual Functions
 
-```
-$ echo 2 > /sys/class/net/enp2s0f0/device/sriov_numvfs
+Create desired number of VFs using PF interfaces of the controllers.
 
 ```
-
-## 4. Verify that correct profile is loaded
-You can use another Linux utility for Intel 700 Series called `ddptool` to query current DDP profile information. This tool can be downloaded from [here]( https://downloads.sourceforge.net/project/e1000/ddptool%20stable/ddptool-1.0.0.0/ddptool-1.0.0.0.tar.gz).
+$ echo 2 > /sys/class/net/${PF_NAME}/device/sriov_numvfs
 
 ```
-[root@silpixa00396659 ~]# ddptool -a
-Intel(R) Dynamic Device Personalization Tool
-DDPTool version 1.0.0.0
-Copyright (C) 2019 Intel Corporation.
 
-NIC  DevId D:B:S.F      DevName         TrackId  Version      Name
-==== ===== ============ =============== ======== ============ ==============================
-001) 1572  0000:02:00.0 enp2s0f0        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-002) 1572  0000:02:00.1 enp2s0f1        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-003) 1572  0000:02:00.2 enp2s0f2        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-004) 1572  0000:02:00.3 enp2s0f3        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-005) 154C  0000:03:02.0 N/A             80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-006) 154C  0000:03:02.1 enp3s2f1        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-007) 154C  0000:03:02.2 enp3s2f2        80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-008) 154C  0000:03:02.3 N/A             80000008 1.0.3.0      GTPv1-C/U IPv4/IPv6 payload
-```
+### Verify that correct package is loaded
+#### Intel® Ethernet Controller E810
+Display the active DDP package with devlink starting with kernel ver. 5.10 or newer. See kernel documentation for more details [here](https://www.kernel.org/doc/html/latest/networking/devlink/ice.html).
+You can also use another Linux utility for Intel® 800 Series called `ddptool` to query current DDP package information. This tool can be downloaded from sourceforge [here](https://sourceforge.net/projects/e1000/files/ddptool%20stable/) or GitHub [here](https://github.com/intel/ddp-tool).
 
-Take note of the `Name` of the profile from ddptool output. This name will be used in `"ddpProfiles"` selector in plugin's resource pool configurations.
+#### Intel® Ethernet Controller X710
+You can use Linux utility for Intel® 700 Series called `ddptool` to query current DDP package information. This tool can be downloaded from sourceforge [here](https://sourceforge.net/projects/e1000/files/ddptool%20stable/) or GitHub [here](https://github.com/intel/ddp-tool).
 
-## 5. Create resource config with DDP profile selector
+### Create resource config with DDP package selector
 
 Create ConfigMap for device plugin:
 
@@ -97,7 +83,24 @@ metadata:
 data:
   config.json: |
     {
-        "resourceList": [{
+        "resourceList": [
+             {
+                "resourceName": "e800_default",
+                "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["1889"],
+                    "ddpProfiles": ["ICE OS Default Package"]
+                }
+            },
+            {
+                "resourceName": "e800_comms",
+                "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["1889"],
+                    "ddpProfiles": ["ICE COMMS Package"]
+                }
+            },
+            {
                 "resourceName": "x700_gtp",
                 "selectors": {
                     "vendors": ["8086"],
@@ -122,26 +125,28 @@ data:
 $ kubectl create -f configMap.yaml
 ```
 
-## 6. Deploy SR-IOV network device plugin
-Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV network device plugin as [usual](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP profile names given in the resource pool selector.
+### Deploy SR-IOV network device plugin
+Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV network device plugin as [usual](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP package names given in the resource pool selector.
 
 ```
-[root@silpixa00396659 ~]# kubectl get node node1 -o json | jq ".status.allocatable"
+[root@localhost ~]# kubectl get node node1 -o json | jq ".status.allocatable"
 {
   "cpu": "8",
   "ephemeral-storage": "169986638772",
   "hugepages-1Gi": "0",
   "hugepages-2Mi": "8Gi",
   "intel.com/x700_gtp": "2",
-  "intel.com/x700_pppoe": "0",
+  "intel.com/x700_pppoe": "2",
+  "intel.com/e800_default": "2",
+  "intel.com/e800_comms": "2",
   "memory": "7880620Ki",
   "pods": "100"
 }
 
 ```
 
-## 7. Create net-attach-def CRs
-This deployment is using Multus and SR-IOV CNI plugin for Pod network attachment of SR-IOV VFs. For this, we need to create a new net-attach-def CR that reference to the new resource pool.
+### Create net-attach-def CRs
+This deployment is using Multus and SR-IOV CNI plugin for Pod network attachment of SR-IOV VFs. For this, we need to create a new net-attach-def CR that references to the new resource pool.
 
 ```
 $ cat crd-sriov-gtp.yaml
@@ -171,8 +176,8 @@ spec:
 $ kubectl create -f crd-sriov-gtp.yaml
 ```
 
-## 8. Deploy workloads
-Once we can verify that VFs are registered by the device plugin under correct resource pool with specific DDP profile, we can request those VFs from our workload as normal.
+### Deploy workloads
+Once we can verify that VFs are registered by the device plugin under correct resource pool with specific DDP package, we can request those VFs from our workload as normal.
 
 ```
 $ kubectl create -f pod-gtp.yaml
@@ -181,6 +186,11 @@ $ kubectl create -f pod-gtp.yaml
 The sample ConfigMap and Pod specs are available in this directory.
 
 ## References
+* https://downloadcenter.intel.com/search?keyword=Dynamic+Device+Personalization
+* https://github.com/intel/ddp-tool
+* https://sourceforge.net/projects/e1000/files/ddptool%20stable/
+* https://www.kernel.org/doc/html/latest/networking/devlink/ice.html
+* https://www.intel.com/content/www/us/en/products/network-io/ethernet/controllers/ethernet-800-series-controllers.html
 * https://software.intel.com/en-us/articles/dynamic-device-personalization-for-intel-ethernet-700-series
 * https://www.intel.com/content/www/us/en/architecture-and-technology/ethernet/dynamic-device-personalization-brief.html
 * https://builders.intel.com/docs/networkbuilders/implementing-a-high-performance-bng-with-intel-universal-nfvi-packet-forwarding-platform-technology.pdf
