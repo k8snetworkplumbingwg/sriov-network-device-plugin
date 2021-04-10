@@ -9,7 +9,7 @@ metadata:
 spec:
   containers:
   - name: pppoecntr1
-    image: centos/tools 
+    image: centos/tools
     imagePullPolicy: IfNotPresent
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 300000; done;" ]
@@ -18,3 +18,5 @@ spec:
         intel.com/x700_pppoe: 1
       limits:
         intel.com/x700_pppoe: 1
+# Note: requests / limits can be added automaticaly using
+# network resources injector mutating webhook.

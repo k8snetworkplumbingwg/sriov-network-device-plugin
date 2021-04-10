@@ -18,3 +18,4 @@ spec:
       "gateway": "10.56.217.1"
     }
 }'
+# Note: requires SRIOV CNI
