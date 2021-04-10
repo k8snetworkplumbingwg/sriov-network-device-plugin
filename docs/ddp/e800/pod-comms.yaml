@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod-comms
+  annotations:
+    k8s.v1.cni.cncf.io/networks: sriov-net-comms
+spec:
+  containers:
+  - name: cntr1
+    image: centos/tools
+    imagePullPolicy: IfNotPresent
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 300000; done;" ]
+    resources:
+      requests:
+        intel.com/e800_comms: 1
+      limits:
+        intel.com/e800_comms: 1
+# Note: requests / limits can be added automaticaly using
+# network resources injector mutating webhook.

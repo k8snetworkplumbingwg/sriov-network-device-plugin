@@ -1,0 +1,21 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: sriov-net-default
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: intel.com/e800_default
+spec:
+  config: '{
+    "cniVersion": "0.3.1",
+    "type": "sriov",
+    "name": "sriov-net-default",
+    "ipam": {
+      "type": "host-local",
+      "subnet": "10.56.217.0/24",
+      "routes": [{
+        "dst": "0.0.0.0/0"
+      }],
+      "gateway": "10.56.217.1"
+    }
+}'
+# Note: requires SRIOV CNI
