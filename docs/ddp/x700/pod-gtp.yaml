@@ -18,3 +18,5 @@ spec:
         intel.com/x700_gtp: 1
       limits:
         intel.com/x700_gtp: 1
+# Note: requests / limits can be added automaticaly using
+# network resources injector mutating webhook.
