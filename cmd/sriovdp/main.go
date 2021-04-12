@@ -20,6 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/config"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/features"
+
 	"github.com/golang/glog"
 )
 
@@ -33,6 +36,8 @@ func flagInit(cp *cliParams) {
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
 		"resource name prefix used for K8s extended resource")
+	flag.StringVar(&cp.featureGates, "feature-gates", "",
+		"enables or disables selected features")
 }
 
 func main() {
@@ -57,6 +62,41 @@ func main() {
 		glog.Fatalf("Exiting.. one or more invalid configuration(s) given")
 		return
 	}
+
+	config.NewConfig()
+	
+	cfg, err := config.GetConfig()
+	if err != nil {
+		glog.Fatalf("error while getting config: %v", err)
+		return
+	}
+
+	// Read global config
+	if err := cfg.ReadConfig(cp.configFile); err != nil {
+		glog.Error(err)
+		return
+	}
+
+	features.NewFeatureGate()
+
+	fg, err := features.GetFeatureGate()
+	if err != nil {
+		glog.Fatalf("error while getting feature gate: %v", err)
+		return
+	}
+
+	// Set FeatureGates with ConfigMap
+	if err := fg.SetFromMap(cfg.FeatureGates); err != nil {
+		glog.Error(err)
+		return
+	}
+
+	// Set FeatureGates with CLI arguments
+	if err := fg.SetFromString(cp.featureGates); err != nil {
+		glog.Error(err)
+		return
+	}
+
 	glog.Infof("Discovering host devices")
 	if err := rm.discoverHostDevices(); err != nil {
 		glog.Errorf("error discovering host devices%v", err)
