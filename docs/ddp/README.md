@@ -43,11 +43,11 @@ With E810, it is possible to load a different DDP package per physical card. Ple
 You must place the DDP package in your NIC firmware folder (typically ```/lib/firmware/updates/intel/ice/ddp/```), append physical card serial number to DDP package name and reload all the physical function drivers on that physical card.
 
 ##### DDP package applied to all physical cards on a host
-Symbolically link your DDP package to the ```ice.pkg``` package in your NIC firmware folder (typically ```/lib/firmware/updates/intel/ice/ddp```/) and reload all the physical function drivers or simply reload ice driver.
+Symbolically link your DDP package to the ```ice.pkg``` package in your NIC firmware folder (typically ```/lib/firmware/updates/intel/ice/ddp```/) and reload the ice driver.
 
 #### Intel® Ethernet Controller X710
 Please see the i40e driver readme for full details.
-Use Linux `ethtool` utility to load a DDP package into the controller.
+Use Linux `ethtool` utility to load a DDP package into the controller. No reload of the i40e driver required.
 > Note: You can only load DDP package into a controller using only first Physical Function(PF0).
 ```
 $ ethtool -f enp2s0f0 gtp.pkgo 100
