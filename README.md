@@ -72,19 +72,15 @@ Please follow the [Quick Start](#quick-start) for multi network interface suppor
 ### Supported SR-IOV NICs
 
 The following  NICs were tested with this implementation. However, other SR-IOV capable NICs should work as well.
--  Intel® Ethernet Controller X710 Series 4x10G
-		- PF driver : v2.4.6
-		- VF driver: v3.5.6
-> please refer to Intel download center for installing latest [Intel Ethernet Controller-X710-Series](https://downloadcenter.intel.com/product/82947/Intel-Ethernet-Controller-X710-Series) drivers
- - Intel® 82599ES 10 Gigabit Ethernet Controller
-	- PF driver : v4.4.0-k
-	- VF driver: v3.2.2-k
-> please refer to Intel download center for installing latest [Intel-® 82599ES 10 Gigabit Ethernet](https://ark.intel.com/products/41282/Intel-82599ES-10-Gigabit-Ethernet-Controller) drivers
-
-- Mellanox ConnectX®-4 Lx EN Adapter
-- Mellanox ConnectX®-5 Adapter
-> Network card drivers are available as a part of the various linux distributions and upstream.
-To download the latest Mellanox NIC drivers, click [here](http://www.mellanox.com/page/software_overview_eth).
+ - Intel® E800 Series
+ - Intel® X700 Series
+ - Intel® 82599ES
+ - Mellanox ConnectX-4®
+ - Mellanox Connectx-4® Lx EN Adapter
+ - Mellanox ConnectX-5®
+ - Mellanox ConnectX-5® Ex
+ - Mellanox ConnectX-6®
+ - Mellanox ConnectX-6® Dx
 
 ## Quick Start
 
@@ -139,11 +135,11 @@ A compatible CNI meta-plugin installation is required for SR-IOV CNI plugin to b
 #### Option 1 - Multus
 
 ##### Install Multus
-Please refer to Multus [Quickstart Installation Guide](https://github.com/intel/multus-cni#quickstart-installation-guide) to install Multus.
+Please refer to Multus [Quickstart Installation Guide](https://github.com/k8snetworkplumbingwg/multus-cni#quickstart-installation-guide) to install Multus.
 
 ##### Network Object CRDs
 
-Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/intel/multus-cni/blob/master/README.md) for more information.
+Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/README.md) for more information.
 1. Create the SR-IOV Network CRD
 ```
 $ kubectl create -f deployments/sriov-crd.yaml
@@ -153,11 +149,11 @@ $ kubectl create -f deployments/sriov-crd.yaml
 This section explains an example deployment of SR-IOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
 
 ##### Install DANM
-Refer to [DANM documentation](https://github.com/nokia/danm#getting-started) for detailed instructions.
+Refer to [DANM deployment documentation](https://github.com/nokia/danm/blob/master/deployment-guide.md) for detailed instructions.
 
 ##### Create SR-IOV type networks
 DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level.
-This means that all DANM API features seamlessly work together with the SR-IOV setup described above, whether you use the [lightweight](https://github.com/nokia/danm#lightweight-network-management-experience), or the [production grade](https://github.com/nokia/danm#production-grade-network-management-experience) network management APIs.
+Refer to the [DAMN User Guide documentation](https://github.com/nokia/danm/blob/master/user-guide.md) for detailed instructions.
 For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
 
 > See following sections on how to configure and run SR-IOV device plugin.
@@ -174,8 +170,8 @@ This plugin creates device plugin endpoints based on the configurations given in
             "resourceName": "intel_sriov_netdevice",
             "selectors": {
                 "vendors": ["8086"],
-                "devices": ["154c", "10ed"],
-                "drivers": ["i40evf", "ixgbevf"]
+                "devices": ["154c", "10ed", "1889"],
+                "drivers": ["i40evf", "ixgbevf", "iavf"]
             }
         },
         {
@@ -183,7 +179,7 @@ This plugin creates device plugin endpoints based on the configurations given in
             "resourcePrefix": "intel.com",
             "selectors": {
                 "vendors": ["8086"],
-                "devices": ["154c", "10ed"],
+                "devices": ["154c", "10ed", "1889"],
                 "drivers": ["vfio-pci"],
                 "pfNames": ["enp0s0f0","enp2s2f1"],
                 "needVhostNet": true
@@ -241,8 +237,8 @@ All device types support following common device selectors.
 
 |   Field        | Required |                Description                |         Type/Defaults          |   Example/Accepted values        |
 |----------------|----------|-------------------------------------------|--------------------------------|----------------------------------|
-| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086"]              |
-| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "10ed"]      |
+| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086", "15b3"]      |
+| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "1889", "1018"] |
 | "drivers"      | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]          |
 | "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null`  | "pciAddresses": ["0000:03:02.0"] |
 
