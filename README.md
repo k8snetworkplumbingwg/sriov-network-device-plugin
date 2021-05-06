@@ -1,16 +1,16 @@
 
-# SR-IOV Network device plugin for Kubernetes
+# SR-IOV Network Device Plugin for Kubernetes
 
 [![Travis CI](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin.svg?branch=master)](https://travis-ci.org/k8snetworkplumbingwg/sriov-network-device-plugin/builds) [![Go Report Card](https://goreportcard.com/badge/github.com/k8snetworkplumbingwg/sriov-network-device-plugin)](https://goreportcard.com/report/github.com/k8snetworkplumbingwg/sriov-network-device-plugin) [![Weekly minutes](https://img.shields.io/badge/Weekly%20Meeting%20Minutes-Mon%203pm%20GMT-blue.svg?style=plastic)](https://docs.google.com/document/d/1sJQMHbxZdeYJPgAWK1aSt6yzZ4K_8es7woVIrwinVwI)
 
 ## Table of Contents
 
-- [SR-IOV Network device plugin](#sr-iov-network-device-plugin)
+- [SR-IOV Network Device Plugin](#sr-iov-network-device-plugin)
 - [Features](#features)
   - [Supported SR-IOV NICs](#supported-sr-iov-nics)
 - [Quick Start](#quick-start)
   - [Build SR-IOV CNI](#build-sr-iov-cni)
-  - [Build and run SR-IOV network device plugin](#build-and-run-sr-iov-network-device-plugin)
+  - [Build and run SR-IOV Network Device Plugin](#build-and-run-sr-iov-network-device-plugin)
   - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
       - [Option 1 - Multus](#option-1---multus)
         - [Install Multus](#install-multus)
@@ -41,7 +41,7 @@
 
 ## SR-IOV Network Device Plugin
 
-The SR-IOV network device plugin is Kubernetes device plugin for discovering and advertising SR-IOV virtual functions (VFs) available on a Kubernetes host.
+The SR-IOV Network Device Plugin is Kubernetes device plugin for discovering and advertising SR-IOV virtual functions (VFs) available on a Kubernetes host.
 
 ## Features
 
@@ -86,7 +86,7 @@ The following  NICs were tested with this implementation. However, other SR-IOV 
 
 ### Creating SR-IOV Virtual Functions
 
-Before starting the SR-IOV device plugin you will need to create SR-IOV Virtual Functions on your system. [The VF Setup doc will guide you through that process.](docs/vf-setup.md)
+Before starting the SR-IOV Network Device Plugin you will need to create SR-IOV Virtual Functions on your system. [The VF Setup doc will guide you through that process.](docs/vf-setup.md)
 
 ### Build SR-IOV CNI
 
@@ -98,7 +98,7 @@ $ make
 $ cp build/sriov /opt/cni/bin
 ```
 
-### Build and run SR-IOV network device plugin
+### Build and run SR-IOV Network Device Plugin
 
 You can either build the docker image locally or pull it from [docker hub](https://hub.docker.com/r/nfvpe/sriov-device-plugin/).
 
@@ -122,7 +122,7 @@ $ make image
  ```
 $ kubectl create -f deployments/configMap.yaml
 ```
- 4. Deploy SR-IOV network device plugin Daemonset
+ 4. Deploy SR-IOV Network Device Plugin Daemonset
 ```
 $ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
 ```
@@ -130,7 +130,7 @@ $ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
 
 
 ### Install one compatible CNI meta plugin
-A compatible CNI meta-plugin installation is required for SR-IOV CNI plugin to be able to get allocated VF's deviceID in order to configure it.  
+A compatible CNI meta-plugin installation is required for SR-IOV CNI plugin to be able to get allocated VF's deviceID in order to configure it.
 
 #### Option 1 - Multus
 
@@ -146,7 +146,7 @@ $ kubectl create -f deployments/sriov-crd.yaml
 ```
 
 #### Option 2 - DANM
-This section explains an example deployment of SR-IOV Network device plugin in Kubernetes if you choose DANM as your meta plugin.
+This section explains an example deployment of SR-IOV Network Device Plugin in Kubernetes if you choose DANM as your meta plugin.
 
 ##### Install DANM
 Refer to [DANM deployment documentation](https://github.com/nokia/danm/blob/master/deployment-guide.md) for detailed instructions.
@@ -156,13 +156,13 @@ DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level
 Refer to the [DAMN User Guide documentation](https://github.com/nokia/danm/blob/master/user-guide.md) for detailed instructions.
 For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
 
-> See following sections on how to configure and run SR-IOV device plugin.
+> See following sections on how to configure and run SR-IOV Network Device Plugin.
 
 ## Configurations
 
 ### Config parameters
 
-This plugin creates device plugin endpoints based on the configurations given in  the config map associated with the SR-IOV device plugin. In json format this file appears as shown below:
+This plugin creates device plugin endpoints based on the configurations given in the config map associated with the SR-IOV Network Device Plugin. In json format this file appears as shown below:
 
 ```json
 {
@@ -345,7 +345,7 @@ If only PF network interface or PF PCI address is specified in the selector, the
 - Create required Virtual functions
 - Bind all VF with right drivers
 - Create a resource config map
-- Run SR-IOV device plugin (as daemonset)
+- Run SR-IOV Network Device Plugin (as daemonset)
 
 On successful run, the allocatable resource list for the node should be updated with resource discovered by the plugin as shown below. Note that the resource name is appended with the `-resource-prefix` i.e. `"intel.com/sriov_net_A"`.
 
@@ -369,7 +369,7 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
 ### Deploy the Device Plugin
-The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SR-IOV device plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
+The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SR-IOV Network Device Plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
 
 ````
 # Create ConfigMap
@@ -390,7 +390,7 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 ### Deploy SR-IOV workloads when Multus is used
 There are some example Pod specs and related network CRD yaml files in [deployments](./deployments) directory for a sample deployment with Multus.
 
-Leave the SR-IOV device plugin running and open a new terminal session for following steps.
+Leave the SR-IOV Network Device Plugin running and open a new terminal session for following steps.
 
 #### Deploy test Pod connecting to pre-created SR-IOV network
 
@@ -523,7 +523,7 @@ For example, if 2 devices are allocated from `intel.com/sriov` extended resource
 
 ### Configure Device Plugin extended selectors in virtual environments
 
-SR-IOV network device plugin supports running in a virtualized environment.  However, not all device selectors are
+SR-IOV Network Device Plugin supports running in a virtualized environment.  However, not all device selectors are
 applicable as the VFs are passthrough to the VM without any association to their respective PF, hence any device
 selector that relies on the association between a VF and its PF will not work and therefore the _pfNames_ and
 _rootDevices_ extended selectors will not work in a virtual deployment.  The common selector _pciAddress_ can be
@@ -536,7 +536,7 @@ which usually doesn't exist in VM. The recommended CNI plugin to use in a virtua
 
 ### Virtual environments with no iommu
 
-SR-IOV network device plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
+SR-IOV Network Device Plugin supports allocating VFIO devices in a virtualized environment without a virtualized iommu.
 For more information refer to [this](./docs/dpdk/README-virt.md).
 
 ## Multi Architecture Support
@@ -547,7 +547,7 @@ The supported architectures:
 
 Buiding image for AMD64:
 ```
-$ DOCKERFILE=Dockerfile make image 
+$ DOCKERFILE=Dockerfile make image
 ```
 
 Buiding image for PPC64LE:
