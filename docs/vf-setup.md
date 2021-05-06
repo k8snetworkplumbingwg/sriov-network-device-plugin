@@ -1,6 +1,6 @@
 # Setting up Virtual Functions
 
-The SR-IOV Network Device Plugin requires SR-IOV virtual functions (VFs) to be created on the host ahead of startup. The device plugin does not manage the creation of virtual functions, and it does not automatically update when there is a change in the virtual functions. Each time the number of VFs or the driver used by the VF change the SR-IOV Network device plugin needs to be restarted. 
+The SR-IOV Network Device Plugin requires SR-IOV virtual functions (VFs) to be created on the host ahead of startup. The device plugin does not manage the creation of virtual functions, and it does not automatically update when there is a change in the virtual functions. Each time the number of VFs or the driver used by the VF change the SR-IOV Network Device Plugin needs to be restarted.
 This guide gives an overview for setting up SR-IOV virtual functions on a linux host for various NICs. 
 
   * [Intel](#intel)

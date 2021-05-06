@@ -5,7 +5,7 @@ The below shows a method to create a pod with 2 SR-IOV interfaces bonded into a 
 This style of configuration can be used to create workloads with high availability - i.e. with two VFs from different PFs connected to the pod. Note that Bond CNI will only work with interfaces utilising the kernel driver. Workloads that leverage userspace drivers on VFs - such as DPDK workloads - are not covered by this guide or by the Bond CNI.
 
 ## Prerequisites
-This guide assumes the quick set up of the repo has been followed. That is that Multus, SRIOV CNI and SRIOV Device Plugin have been installed.
+This guide assumes the quick set up of the repo has been followed. That is that Multus, SRIOV CNI and SRIOV Network Device Plugin have been installed.
 
 Additionally at least two SRIOV Virtual Functions of the type 'intel_sriov_netdevice' should be available on a target node.
 

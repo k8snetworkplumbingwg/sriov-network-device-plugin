@@ -1,6 +1,6 @@
 # Using node specific config file for running device plugin DaemonSet
 
-To allow granular and accurate control over which SR-IOV devices can be exposed as kubernetes extended resource, it is sometimes required to define a per-node config file when launching SR-IOV device plugin DaemonSet in a heterogeneous cluster. Since SR-IOV device plugin provides a command line option `--config-file`, the node specific config file can be achieved by running the following steps:
+To allow granular and accurate control over which SR-IOV devices can be exposed as kubernetes extended resource, it is sometimes required to define a per-node config file when launching SR-IOV Device Plugin DaemonSet in a heterogeneous cluster. Since SR-IOV Device Plugin provides a command line option `--config-file`, the node specific config file can be achieved by running the following steps:
 
 1. Generate configMap with node specific sections:
 ```

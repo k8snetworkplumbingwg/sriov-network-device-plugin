@@ -1,14 +1,14 @@
-# SR-IOV Network Device plugin with DDP
+# SR-IOV Network Device Plugin with DDP
 Dynamic Device Personalizationi aka DDP allows dynamic reconfiguration of the packet processing pipeline of Intel® Ethernet 800/700 series to meet specific use-case needs for on-demand, adding new packet processing pipeline configuration *packages* to a network adapter at run time, without resetting or rebooting the server.
 
-The SR-IOV Network Device plugin can be used to identify currently running DDP *packages*, allowing it to filter Virtual Functions (VFs) by their DDP package name.
+The SR-IOV Network Device Plugin can be used to identify currently running DDP *packages*, allowing it to filter Virtual Functions (VFs) by their DDP package name.
 
 In this documentation we will cover the kernel driver use-case only. DPDK configuration of DDP is out of scope.
 
 ## Dynamic Device Personalization for Intel® Ethernet Controller E810
 For Intel® Ethernet Controller E810, a DDP package can be loaded into the NIC using the ice kernel driver. Current device DDP state can be determined with DDPTool or devlink.
 
-### Recommended pre-requisites for SR-IOV Network Device plugin
+### Recommended pre-requisites for SR-IOV Network Device Plugin
  * Firmware: v2.22 or newer
  * Driver: ice v1.2.1 or newer
 
@@ -18,7 +18,7 @@ For Intel® Ethernet Controller E810, a DDP package can be loaded into the NIC u
 ## Dynamic Device Personalization for Intel® Ethernet Controller X710
 For Intel® Ethernet Controller X710, a DDP package can be loaded into the NIC using i40e kernel driver and ethtool. Current device DDP state can be determined with DDPTool.
 
-### Recommended pre-requisites for SR-IOV Network Device plugin
+### Recommended pre-requisites for SR-IOV Network Device Plugin
  * Firmware: v8.30 or newer
  * Driver: i40e v2.7.26 or newer
 
@@ -72,7 +72,7 @@ You can use Linux utility for Intel® 700 Series called `ddptool` to query curre
 
 ### Create resource config with DDP package selector
 
-Create ConfigMap for device plugin:
+Create ConfigMap for SR-IOV Network Device Plugin:
 
 ```
 apiVersion: v1
@@ -125,8 +125,8 @@ data:
 $ kubectl create -f configMap.yaml
 ```
 
-### Deploy SR-IOV network device plugin
-Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV network device plugin as [usual](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP package names given in the resource pool selector.
+### Deploy SR-IOV Network Device Plugin
+Once the ConfigMap for the device plugin is created/updated you can deploy the SR-IOV Network Device Plugin as [usual](https://github.com/k8snetworkplumbingwg/sriov-network-device-plugin#example-deployments). When everything is good, we should see that device plugin is able to discover VFs with DDP package names given in the resource pool selector.
 
 ```
 [root@localhost ~]# kubectl get node node1 -o json | jq ".status.allocatable"
