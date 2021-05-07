@@ -10,7 +10,7 @@ data:
                 "resourceName": "intel_sriov_netdevice",
                 "selectors": {
                     "vendors": ["8086"],
-                    "devices": ["154c", "10ed"],
+                    "devices": ["154c", "10ed", "1889"],
                     "drivers": ["i40evf", "iavf", "ixgbevf"]
                 }
             },
@@ -18,7 +18,7 @@ data:
                 "resourceName": "intel_sriov_dpdk",
                 "selectors": {
                     "vendors": ["8086"],
-                    "devices": ["154c", "10ed"],
+                    "devices": ["154c", "10ed", "1889"],
                     "drivers": ["vfio-pci"],
                     "pfNames": ["enp0s0f0","enp2s2f1"]
                 }
