@@ -178,14 +178,13 @@ func getItem(hay []string, needle string, what string) string {
 		// May be an exact match or a regex, try both.
 		if strings.EqualFold(strings.Split(item, "#")[0], needle) {
 			return item
+		}
+		re, err := regexp.Compile(strings.Split(item, "#")[0])
+		if err != nil {
+			glog.Infof("getItem(): error compiling %s, may however not be a regex: %v", what, err)
 		} else {
-			re, err := regexp.Compile(strings.Split(item, "#")[0])
-			if err != nil {
-				glog.Infof("getItem(): error compiling %s, may however not be a regex: %v", what, err)
-			} else {
-				if re.Match([]byte(needle)) {
-					return item
-				}
+			if re.Match([]byte(needle)) {
+				return item
 			}
 		}
 	}
