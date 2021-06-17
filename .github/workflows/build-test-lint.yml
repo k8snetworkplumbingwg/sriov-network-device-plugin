@@ -59,6 +59,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
+
   hadolint:
     runs-on: ubuntu-latest
     name: Hadolint
@@ -71,3 +72,21 @@ jobs:
     - uses: brpaz/hadolint-action@v1.2.1
       with:
         dockerfile: Dockerfile.rhel7
+
+  go-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16.x
+
+    # if this fails, run go mod tidy
+    - name: Check if module files are consistent with code
+      run: go mod tidy && git diff --exit-code
+
+    # if this fails, run go mod vendor
+    - name: Check if vendor directory is consistent with go modules
+      run: go mod vendor && git diff --exit-code
