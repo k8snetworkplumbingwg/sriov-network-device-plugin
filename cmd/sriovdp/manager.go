@@ -81,7 +81,7 @@ func (rm *resourceManager) readConfig() error {
 
 	glog.Infof("raw ResourceList: %s", rawBytes)
 	if err = json.Unmarshal(rawBytes, resources); err != nil {
-		return fmt.Errorf("error unmarshalling raw bytes %v\n please make sure the config is in json format \n", err)
+		return fmt.Errorf("error unmarshalling raw bytes %v please make sure the config is in json format", err)
 	}
 
 	for i := range resources.ResourceList {
