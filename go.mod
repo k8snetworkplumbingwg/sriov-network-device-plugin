@@ -23,4 +23,3 @@ replace (
 	github.com/containernetworking/cni => github.com/containernetworking/cni v0.8.1
 	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 )
-
