@@ -79,11 +79,11 @@ func (rm *resourceManager) readConfig() error {
 
 	}
 
+	glog.Infof("raw ResourceList: %s", rawBytes)
 	if err = json.Unmarshal(rawBytes, resources); err != nil {
-		return fmt.Errorf("error unmarshalling raw bytes %v", err)
+		return fmt.Errorf("error unmarshalling raw bytes %v please make sure the config is in json format", err)
 	}
 
-	glog.Infof("raw ResourceList: %s", rawBytes)
 	for i := range resources.ResourceList {
 		conf := &resources.ResourceList[i]
 		// Validate deviceType
