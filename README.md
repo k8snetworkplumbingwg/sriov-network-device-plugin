@@ -102,7 +102,7 @@ $ make image
 ```
 > On a successful build, a docker image with tag `nfvpe/sriov-device-plugin:latest` will be created. You will need to build this image on each node. Alternatively, you could use a local docker registry to host this image.
 
- 3. Create a ConfigMap that defines SR-IOV resrouce pool configuration
+ 3. Create a ConfigMap that defines SR-IOV resource pool configuration
  
  > Make sure to update the 'config.json' entry in the configMap data to reflect your resource configuration for the device plugin. See [Configurations](#configurations) section for supported configuration parameters.
 
