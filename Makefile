@@ -99,10 +99,10 @@ test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint | $(BASE) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
-	$Q cd $(BASE) && go test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
+	$Q cd $(BASE) && go test $(go list ./... | grep -v /test/) -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
 test-xml: fmt lint | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
-	$Q cd $(BASE) && 2>&1 go test -timeout 20s -v $(TESTPKGS) | tee test/tests.output
+	$Q cd $(BASE) && 2>&1 go test $(go list ./... | grep -v /test/) -timeout 20s -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
 .PHONY: test-coverage test-coverage-tools
@@ -111,7 +111,7 @@ test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage.$(shell date -u +"%Y-%m-%
 test-coverage: fmt lint test-coverage-tools | $(BASE) ; $(info  Running coverage tests...) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)/coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
-		go test \
+		go test $(go list ./... | grep -v /test/) \
 			-coverpkg=$$(go list -f '{{ join .Deps "\n" }}' $$pkg | \
 					grep '^$(PACKAGE)/' | grep -v '^$(PACKAGE)/vendor/' | \
 					tr '\n' ',')$$pkg \
