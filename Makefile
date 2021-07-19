@@ -31,6 +31,10 @@ COVERAGE_HTML = $(COVERAGE_DIR)/index.html
 # Docker image
 DOCKERFILE?=$(CURDIR)/images/Dockerfile
 TAG=docker.io/nfvpe/sriov-device-plugin
+VERSION=latest
+ifdef GITHUB_SHA
+	VERSION=$(GITHUB_SHA)
+endif
 # Docker arguments - To pass proxy for Docker invoke it as 'make image HTTP_POXY=http://192.168.0.1:8080'
 DOCKERARGS=
 ifdef HTTP_PROXY
@@ -95,10 +99,10 @@ test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint | $(BASE) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
-	$Q cd $(BASE) && go test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
+	$Q cd $(BASE) && go test $(go list ./... | grep -v /test/) -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
 test-xml: fmt lint | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
-	$Q cd $(BASE) && 2>&1 go test -timeout 20s -v $(TESTPKGS) | tee test/tests.output
+	$Q cd $(BASE) && 2>&1 go test $(go list ./... | grep -v /test/) -timeout 20s -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
 .PHONY: test-coverage test-coverage-tools
@@ -107,7 +111,7 @@ test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage.$(shell date -u +"%Y-%m-%
 test-coverage: fmt lint test-coverage-tools | $(BASE) ; $(info  Running coverage tests...) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)/coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
-		go test \
+		go test $(go list ./... | grep -v /test/) \
 			-coverpkg=$$(go list -f '{{ join .Deps "\n" }}' $$pkg | \
 					grep '^$(PACKAGE)/' | grep -v '^$(PACKAGE)/vendor/' | \
 					tr '\n' ',')$$pkg \
@@ -137,6 +141,10 @@ deps-update: ; $(info  Updating dependencies...) @ ## Update dependencies
 .PHONY: image
 image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV Network device plugin docker image
 	@docker build -t $(TAG) -f $(DOCKERFILE)  $(CURDIR) $(DOCKERARGS)
+
+.PHONY: test-image
+test-image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV Network device plugin docker image
+	@docker build -t $(TAG):$(VERSION) -f $(DOCKERFILE)  $(CURDIR) $(DOCKERARGS)
 
 .PHONY: clean
 clean: ; $(info  Cleaning...) @ ## Cleanup everything
