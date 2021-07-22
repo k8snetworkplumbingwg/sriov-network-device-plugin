@@ -38,8 +38,6 @@ jobs:
           push: true
           tags: |
             ${{ steps.docker_meta.outputs.tags }}
-            ${{ steps.docker_meta.outputs.tags }}-amd64
-            ${{ env.IMAGE_NAME }}:stable-amd64
           file: images/Dockerfile
 
   build-and-push-arm64-device-plugin:
@@ -80,7 +78,6 @@ jobs:
           push: true
           tags: |
             ${{ steps.docker_meta.outputs.tags }}-arm64
-            ${{ env.IMAGE_NAME }}:stable-arm64
           file: images/Dockerfile.arm64
 
   build-and-push-ppc64le-device-plugin:
@@ -121,5 +118,4 @@ jobs:
           push: true
           tags: |
             ${{ steps.docker_meta.outputs.tags }}-ppc64le
-            ${{ env.IMAGE_NAME }}:stable-ppc64le
           file: images/Dockerfile.ppc64le
