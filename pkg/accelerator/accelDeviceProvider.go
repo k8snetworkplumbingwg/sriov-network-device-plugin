@@ -24,6 +24,13 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
+const (
+	classIDBaseInt = 16
+	classIDBitSize = 64
+	maxVendorName  = 20
+	maxProductName = 40
+)
+
 type accelDeviceProvider struct {
 	deviceList []*ghw.PCIDevice
 	rFactory   types.ResourceFactory
@@ -54,9 +61,8 @@ func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciD
 }
 
 func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
-
 	for _, device := range devices {
-		devClass, err := strconv.ParseInt(device.Class.ID, 16, 64)
+		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
 		if err != nil {
 			glog.Warningf("accelerator AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
@@ -65,15 +71,16 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 		if devClass == int64(deviceCode) {
 			vendor := device.Vendor
 			vendorName := vendor.Name
-			if len(vendor.Name) > 20 {
+			if len(vendor.Name) > maxVendorName {
 				vendorName = string([]byte(vendorName)[0:17]) + "..."
 			}
 			product := device.Product
 			productName := product.Name
-			if len(product.Name) > 40 {
+			if len(product.Name) > maxProductName {
 				productName = string([]byte(productName)[0:37]) + "..."
 			}
-			glog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
+			glog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
+				device.Class.ID, vendorName, productName)
 
 			ap.deviceList = append(ap.deviceList, device)
 		}
@@ -82,7 +89,6 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 }
 
 func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
-
 	filteredDevice := devices
 	af, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	if !ok {
@@ -120,9 +126,7 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc 
 
 	// convert to []AccelDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
-	for i, d := range filteredDevice {
-		newDeviceList[i] = d
-	}
+	copy(newDeviceList, filteredDevice)
 
 	return newDeviceList, nil
 }

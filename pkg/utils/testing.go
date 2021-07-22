@@ -29,7 +29,6 @@ func (fs *FakeFilesystem) Use() func() {
 		if err != nil {
 			panic(fmt.Errorf("error creating fake directory: %s", err.Error()))
 		}
-
 	}
 	for filename, body := range fs.Files {
 		err := ioutil.WriteFile(path.Join(fs.RootDir, filename), body, 0644)

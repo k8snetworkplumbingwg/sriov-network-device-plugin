@@ -16,9 +16,9 @@ package netdevice
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"strings"
 
+	"github.com/golang/glog"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
@@ -35,7 +35,8 @@ type netResourcePool struct {
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
+func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
+	devicePool map[string]types.PciDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
@@ -61,9 +62,7 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)
 				}
-
 			}
-
 		}
 	}
 	return devSpecs
@@ -75,7 +74,7 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error 
 	for id, dev := range rp.GetDevicePool() {
 		netDev, ok := dev.(types.PciNetDevice)
 		if !ok {
-			return fmt.Errorf("StoreDeviceInfoFile: Only pciNetDevices are supported")
+			return fmt.Errorf("storeDeviceInfoFile: Only pciNetDevices are supported")
 		}
 		devInfo := nettypes.DeviceInfo{
 			Type:    nettypes.DeviceInfoTypePCI,

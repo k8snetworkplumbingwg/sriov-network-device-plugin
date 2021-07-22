@@ -38,7 +38,7 @@ func TestNetdevice(t *testing.T) {
 var _ = Describe("PciNetDevice", func() {
 	Describe("creating new PciNetDevice", func() {
 		t := GinkgoT()
-		Context("succesfully", func() {
+		Context("successfully", func() {
 			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
 					Dirs: []string{
@@ -153,8 +153,8 @@ var _ = Describe("PciNetDevice", func() {
 			rdma1 := &mocks.RdmaSpec{}
 			// fake1 will have 2 RDMA device specs
 			fake1ds := []*pluginapi.DeviceSpec{
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
 			rdma1.On("IsRdma").Return(true).On("GetRdmaDeviceSpec").Return(fake1ds)
 

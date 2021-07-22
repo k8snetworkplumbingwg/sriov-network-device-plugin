@@ -137,7 +137,7 @@ var _ = Describe("NetDeviceProvider", func() {
 				rdmaNo := &mocks.RdmaSpec{}
 				rdmaNo.On("IsRdma").Return(false)
 
-				for i, _ := range mocked {
+				for i := range mocked {
 					mocked[i].
 						On("GetVendor").Return(ve[i]).
 						On("GetDeviceCode").Return(de[i]).

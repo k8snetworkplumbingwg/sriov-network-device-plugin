@@ -13,11 +13,11 @@ import (
 type nadUtils struct {
 }
 
-func (nu *nadUtils) SaveDeviceInfoFile(resourceName string, deviceID string, devInfo *nettypes.DeviceInfo) error {
+func (nu *nadUtils) SaveDeviceInfoFile(resourceName, deviceID string, devInfo *nettypes.DeviceInfo) error {
 	return nadutils.SaveDeviceInfoForDP(resourceName, deviceID, devInfo)
 }
 
-func (nu *nadUtils) CleanDeviceInfoFile(resourceName string, deviceID string) error {
+func (nu *nadUtils) CleanDeviceInfoFile(resourceName, deviceID string) error {
 	return nadutils.CleanDeviceInfoForDP(resourceName, deviceID)
 }
 

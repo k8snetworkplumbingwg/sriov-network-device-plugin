@@ -27,7 +27,7 @@ import (
 
 var _ = Describe("Accelerator", func() {
 	Describe("creating new accelerator device", func() {
-		Context("succesfully", func() {
+		Context("successfully", func() {
 			It("should return AccelDevice object instance", func() {
 				fs := &utils.FakeFilesystem{
 					Dirs: []string{

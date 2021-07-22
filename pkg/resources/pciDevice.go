@@ -17,9 +17,10 @@ package resources
 import (
 	"strconv"
 
-	"github.com/jaypipes/ghw"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
+
+	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -48,7 +49,6 @@ func nodeToStr(nodeNum int) string {
 // A list of DeviceInfoProviders can be set externally.
 // If empty, the default driver-based selection provided by ResourceFactory will be used
 func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProviders []types.DeviceInfoProvider) (types.PciDevice, error) {
-
 	pciAddr := dev.Address
 
 	// Get PF PCI address
@@ -87,7 +87,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProvid
 		}
 	}
 
-	// 	Create pciNetDevice object with all relevent info
+	// 	Create pciNetDevice object with all relevant info
 	return &pciDevice{
 		basePciDevice: dev,
 		pfAddr:        pfAddr,

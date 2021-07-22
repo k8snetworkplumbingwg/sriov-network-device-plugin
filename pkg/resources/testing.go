@@ -18,9 +18,10 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
-var (
-	root   *os.File
-	tmpDir string
+const (
+	notifyTimeout = 5 * time.Second
+	dialTimeout   = 10 * time.Second
+	startTimeout  = 5 * time.Second
 )
 
 // Implementation of pluginapi.RegistrationServer for use in tests.
@@ -43,8 +44,7 @@ func createFakeRegistrationServer(sockDir, endpoint string, failOnRegister, plug
 
 func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.ClientConn, error) {
 	sockPath := path.Join(s.sockDir, s.pluginEndpoint)
-	timeout := 10 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
 	c, err := grpc.DialContext(ctx, sockPath, grpc.WithInsecure(), grpc.WithBlock(),
@@ -70,7 +70,7 @@ func (s *fakeRegistrationServer) getInfo(ctx context.Context, client registerapi
 }
 
 func (s *fakeRegistrationServer) notifyPlugin(client registerapi.RegistrationClient, registered bool, errStr string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
 	defer cancel()
 
 	status := &registerapi.RegistrationStatus{
@@ -104,7 +104,7 @@ func (s *fakeRegistrationServer) registerPlugin() error {
 		return err
 	}
 
-	if err = s.notifyPlugin(client, true, ""); err != nil {
+	if err := s.notifyPlugin(client, true, ""); err != nil {
 		return err
 	}
 
@@ -131,8 +131,10 @@ func (s *fakeRegistrationServer) start() {
 	}
 	s.grpcServer = grpc.NewServer()
 	pluginapi.RegisterRegistrationServer(s.grpcServer, s)
-	go s.grpcServer.Serve(l)
-	s.waitForServer(5 * time.Second)
+	go func() {
+		_ = s.grpcServer.Serve(l)
+	}()
+	_ = s.waitForServer(startTimeout)
 }
 
 func (s *fakeRegistrationServer) waitForServer(timeout time.Duration) error {
@@ -165,7 +167,7 @@ type fakeListAndWatchServer struct {
 func (s *fakeListAndWatchServer) Send(resp *pluginapi.ListAndWatchResponse) error {
 	s.sendCalls++
 	if s.sendCallToFail == s.sendCalls {
-		return fmt.Errorf("Fake error")
+		return fmt.Errorf("fake error")
 	}
 	s.updates <- true
 	return nil

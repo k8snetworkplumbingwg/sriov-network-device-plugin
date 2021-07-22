@@ -13,7 +13,7 @@ import (
 )
 
 //https://npf.io/2015/06/testing-exec-command
-func FakeExecCommand(outs string, exitCode string) func(string, ...string) *exec.Cmd {
+func FakeExecCommand(outs, exitCode string) func(string, ...string) *exec.Cmd {
 	return func(command string, args ...string) *exec.Cmd {
 		cs := []string{"-test.run=TestHelperProcess", "--", command}
 		cs = append(cs, args...)
@@ -38,7 +38,7 @@ func TestHelperProcess(t *testing.T) {
 		}
 	}
 
-	fmt.Fprintf(os.Stdout, os.Getenv("OUTS"))
+	fmt.Printf("%s", os.Getenv("OUTS"))
 	os.Exit(exitCode)
 }
 

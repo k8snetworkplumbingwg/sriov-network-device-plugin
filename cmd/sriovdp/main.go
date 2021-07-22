@@ -81,10 +81,9 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// Catch termination signals
-	select {
-	case sig := <-sigCh:
-		glog.Infof("Received signal \"%v\", shutting down.", sig)
-		rm.stopAllServers()
-		return
+	sig := <-sigCh
+	glog.Infof("Received signal \"%v\", shutting down.", sig)
+	if err := rm.stopAllServers(); err != nil {
+		glog.Errorf("stopping servers produced error: %s", err.Error())
 	}
 }

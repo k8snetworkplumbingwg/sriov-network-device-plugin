@@ -16,13 +16,15 @@ package netdevice_test
 
 import (
 	"fmt"
+
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
-	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,15 +65,15 @@ var _ = Describe("NetResourcePool", func() {
 			// fake1 will have 2 device specs
 			fake1 := &mocks.PciNetDevice{}
 			fake1ds := []*pluginapi.DeviceSpec{
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
 			fake1.On("GetDeviceSpecs").Return(fake1ds)
 
 			// fake2 will have 1 device spec
 			fake2 := &mocks.PciNetDevice{}
 			fake2ds := []*pluginapi.DeviceSpec{
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake2"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake2"},
 			}
 			fake2.On("GetDeviceSpecs").Return(fake2ds)
 

@@ -37,7 +37,6 @@ var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
 func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceFactory {
-
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
@@ -61,7 +60,7 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 }
 
 // GetDefaultInfoProvider returns an instance of DeviceInfoProvider using name as string
-func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr string, name string) types.DeviceInfoProvider {
+func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr, name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
 		return resources.NewVfioInfoProvider(pciAddr)
@@ -98,8 +97,7 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 
 // GetResourcePool returns an instance of resourcePool
 func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
-
-	devicePool := make(map[string]types.PciDevice, 0)
+	devicePool := make(map[string]types.PciDevice)
 	apiDevices := make(map[string]*pluginapi.Device)
 	for _, dev := range filteredDevice {
 		pciAddr := dev.GetPciAddr()

@@ -21,15 +21,14 @@ import (
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 func TestFactory(t *testing.T) {
@@ -280,10 +279,10 @@ var _ = Describe("Factory", func() {
 				Expect(rs).To(BeNil())
 			})
 		})
-		Context("when resouce pool uses overriden prefix", func() {
+		Context("when resource pool uses overridden prefix", func() {
 			f := factory.NewResourceFactory("fake", "fake", true)
 			rp := mocks.ResourcePool{}
-			rp.On("GetResourcePrefix").Return("overriden").
+			rp.On("GetResourcePrefix").Return("overridden").
 				On("GetResourceName").Return("fake")
 			rs, e := f.GetResourceServer(&rp)
 			It("should not fail", func() {

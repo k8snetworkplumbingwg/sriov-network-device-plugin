@@ -68,15 +68,13 @@ func newResourceManager(cp *cliParams) *resourceManager {
 	}
 }
 
-//readConfig reads and validate configurations from Config file
+// readConfig reads and validate configurations from Config file
 func (rm *resourceManager) readConfig() error {
-
 	resources := &types.ResourceConfList{}
 	rawBytes, err := ioutil.ReadFile(rm.configFile)
 
 	if err != nil {
 		return fmt.Errorf("error reading file %s, %v", rm.configFile, err)
-
 	}
 
 	glog.Infof("raw ResourceList: %s", rawBytes)
@@ -89,11 +87,8 @@ func (rm *resourceManager) readConfig() error {
 		// Validate deviceType
 		if conf.DeviceType == "" {
 			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
-		} else {
-			// Check if the DeviceType is supported
-			if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
-				return fmt.Errorf("unsupported deviceType:  \"%s\"", conf.DeviceType)
-			}
+		} else if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
+			return fmt.Errorf("unsupported deviceType:  \"%s\"", conf.DeviceType)
 		}
 		if conf.SelectorObj, err = rm.rFactory.GetDeviceFilter(conf); err == nil {
 			rm.configList = append(rm.configList, &resources.ResourceList[i])
@@ -101,7 +96,6 @@ func (rm *resourceManager) readConfig() error {
 			glog.Warningf("unable to get SelectorObj from selectors list:'%s' for deviceType: %s error: %s",
 				*conf.Selectors, conf.DeviceType, err)
 		}
-
 	}
 	glog.Infof("unmarshalled ResourceList: %+v", resources.ResourceList)
 	return nil
@@ -182,7 +176,7 @@ func (rm *resourceManager) validConfigs() bool {
 			return false
 		}
 
-		// resourcePrefix might be overriden for a given resource pool
+		// resourcePrefix might be overridden for a given resource pool
 		resourcePrefix := rm.cliParams.resourcePrefix
 		if conf.ResourcePrefix != "" {
 			resourcePrefix = conf.ResourcePrefix
@@ -212,7 +206,6 @@ func (rm *resourceManager) validConfigs() bool {
 }
 
 func (rm *resourceManager) discoverHostDevices() error {
-
 	pci, err := ghw.PCI()
 	if err != nil {
 		return fmt.Errorf("discoverDevices(): error getting PCI info: %v", err)
@@ -225,7 +218,9 @@ func (rm *resourceManager) discoverHostDevices() error {
 
 	for k, v := range types.SupportedDevices {
 		if dp, ok := rm.deviceProviders[k]; ok {
-			dp.AddTargetDevices(devices, v)
+			if err := dp.AddTargetDevices(devices, v); err != nil {
+				glog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
+			}
 		}
 	}
 	return nil

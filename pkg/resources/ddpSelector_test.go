@@ -18,7 +18,7 @@ var _ = Describe("DdpSelector", func() {
 				profiles := []string{"GTPv1-C", "PPPoE"}
 				sel := resources.NewDdpSelector(profiles)
 				fmt.Printf("%#v", sel)
-				//Expect(sel.GetDPProfiles()).To(ConsistOf(profiles))
+				// Expect(sel.GetDPProfiles()).To(ConsistOf(profiles))
 			})
 		})
 		Context("filtering", func() {
