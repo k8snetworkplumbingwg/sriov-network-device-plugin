@@ -83,11 +83,7 @@ See the [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) reposito
 ### Get SR-IOV Network Device Plugin container image
 #### GitHub
 ```
-$ docker pull ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:stable-amd64
-```
-#### Docker
-```
-$ docker pull docker.io/nfvpe/sriov-device-plugin:${LATEST_TAGGED_RELEASE}
+$ docker pull ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
 ```
 
 #### Build image locally
