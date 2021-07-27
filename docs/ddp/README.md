@@ -29,6 +29,8 @@ For Intel® Ethernet Controller X710, a DDP package can be loaded into the NIC u
 ## Short step by step configuration for E810 & X710 series NICs
 ### Install DDP packages
 #### Intel® Ethernet Controller E810
+Minimum verson of SRIOV Network Device Plugin needed is 3.3.2 to support DDP Profiles on E800 series NIC's. 
+
 By default, ice driver will automatically load the default DDP package. If you require additional protocals beyond the default set available, download and extract the DDP package into your device firmware folder, typically `/lib/firmware/intel/ice/ddp`.
 Additional packages to suit your use-case can be found at [Intel® download center](https://downloadcenter.intel.com/search?keyword=Dynamic+Device+Personalization)
 
