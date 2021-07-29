@@ -106,16 +106,16 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 	}
 
 	if len(ifNames) > 0 { // there's at least one interface name found
-		for iIfName := range ifNames {
-			link, err := netlink.LinkByName(ifNames[iIfName])
+		for _, ifName := range ifNames {
+			link, err := netlink.LinkByName(ifName)
 			if err != nil {
-				glog.Errorf("expected to get valid host interface with name %s: %q", ifNames[iIfName], err)
+				glog.Errorf("expected to get valid host interface with name %s: %q", ifName, err)
 			}
 
 			routes, err := netlink.RouteList(link, netlink.FAMILY_V4) // IPv6 routes: all interface has at least one link local route entry
-			for iRoute := range routes {
-				if routes[iRoute].Dst == nil {
-					glog.Infof("excluding interface %s:  default route found: %+v", ifNames[iIfName], routes[iRoute])
+			for _, r := range routes {
+				if r.Dst == nil {
+					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
 					return true, nil
 				}
 			}
