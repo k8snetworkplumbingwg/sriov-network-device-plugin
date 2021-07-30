@@ -30,6 +30,11 @@ linters-settings:
       - whyNoLint
       - wrapperFunc
       - unnamedResult
+    settings:
+      hugeParam:
+        sizeThreshold: 512
+      rangeValCopy:
+        sizeThreshold: 512
   gocyclo:
     min-complexity: 15
   goimports:
