@@ -69,12 +69,12 @@ jobs:
     name: Hadolint
     steps:
     - uses: actions/checkout@v2
-    - uses: brpaz/hadolint-action@v1.2.1
+    - uses: brpaz/hadolint-action@v1.5.0
       name: Run Hadolint
       with:
        dockerfile: ./images/Dockerfile
        ignore: DL3018 # DL3018: GH issue 368
-    - uses: brpaz/hadolint-action@v1.2.1
+    - uses: brpaz/hadolint-action@v1.5.0
       with:
         dockerfile: Dockerfile.rhel7
         ignore: DL3018 # DL3018: GH issue 368
