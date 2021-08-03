@@ -59,7 +59,7 @@ func GetPfAddr(pciAddr string) (string, error) {
 // GetPfName returns SRIOV PF name for the given VF
 // If device is not VF then it will return its own ifname if exist else empty string
 func GetPfName(pciAddr string) (string, error) {
-	path := filepath.Join(sysBusPci, pciAddr, "physfn/net")
+	path := filepath.Join(sysBusPci, pciAddr, "physfn", "net")
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -78,7 +78,6 @@ func GetPfName(pciAddr string) (string, error) {
 		return files[0].Name(), nil
 	}
 	return "", fmt.Errorf("the PF name is not found for device %s", pciAddr)
-
 }
 
 // IsSriovPF check if a pci device SRIOV capable given its pci address
@@ -121,7 +120,7 @@ func GetVFList(pf string) (vfList []string, err error) {
 	pfDir := filepath.Join(sysBusPci, pf)
 	_, err = os.Lstat(pfDir)
 	if err != nil {
-		err = fmt.Errorf("Error. Could not get PF directory information for device: %s, Err: %v", pf, err)
+		err = fmt.Errorf("error. Could not get PF directory information for device: %s, Err: %v", pf, err)
 		return
 	}
 
@@ -132,7 +131,7 @@ func GetVFList(pf string) (vfList []string, err error) {
 		return
 	}
 
-	//Read all VF directory and get add VF PCI addr to the vfList
+	// Read all VF directory and get add VF PCI addr to the vfList
 	for _, dir := range vfDirs {
 		dirInfo, err := os.Lstat(dir)
 		if err == nil && (dirInfo.Mode()&os.ModeSymlink != 0) {
@@ -151,18 +150,18 @@ func GetPciAddrFromVFID(pf string, vf int) (pciAddr string, err error) {
 	vfDir := fmt.Sprintf("%s/%s/virtfn%d", sysBusPci, pf, vf)
 	dirInfo, err := os.Lstat(vfDir)
 	if err != nil {
-		err = fmt.Errorf("Error. Could not get directory information for device: %s, VF: %v. Err: %v", pf, vf, err)
+		err = fmt.Errorf("could not get directory information for device: %s, VF: %v. Err: %v", pf, vf, err)
 		return "", err
 	}
 
 	if (dirInfo.Mode() & os.ModeSymlink) == 0 {
-		err = fmt.Errorf("Error. No symbolic link between virtual function and PCI - Device: %s, VF: %v", pf, vf)
+		err = fmt.Errorf("no symbolic link between virtual function and PCI - Device: %s, VF: %v", pf, vf)
 		return
 	}
 
 	pciInfo, err := os.Readlink(vfDir)
 	if err != nil {
-		err = fmt.Errorf("Error. Cannot read symbolic link between virtual function and PCI - Device: %s, VF: %v. Err: %v", pf, vf, err)
+		err = fmt.Errorf("cannot read symbolic link between virtual function and PCI - Device: %s, VF: %v. Err: %v", pf, vf, err)
 		return
 	}
 
@@ -204,11 +203,10 @@ func GetDevNode(pciAddr string) int {
 // This function will only return 'false' if the 'operstate' file of the device is readable
 // and holds value anything other than "up". Or else we assume link is up.
 func IsNetlinkStatusUp(dev string) bool {
-
 	if opsFiles, err := filepath.Glob(filepath.Join(sysBusPci, dev, "net", "*", "operstate")); err == nil {
 		for _, f := range opsFiles {
-			bytes, err := ioutil.ReadFile(f)
-			if err != nil || strings.TrimSpace(string(bytes)) != "up" {
+			b, err := ioutil.ReadFile(f)
+			if err != nil || strings.TrimSpace(string(b)) != "up" {
 				return false
 			}
 		}
@@ -218,11 +216,11 @@ func IsNetlinkStatusUp(dev string) bool {
 
 // ValidPciAddr validates PciAddr given as string with host system
 func ValidPciAddr(addr string) (string, error) {
-	//Check system pci address
+	// Check system pci address
 
 	// sysbus pci address regex
-	var validLongID = regexp.MustCompile(`^0{4}:[0-9a-f]{2}:[0-9a-f]{2}.[0-7]{1}$`)
-	var validShortID = regexp.MustCompile(`^[0-9a-f]{2}:[0-9a-f]{2}.[0-7]{1}$`)
+	var validLongID = regexp.MustCompile(`^0{4}:[0-9a-f]{2}:[0-9a-f]{2}.[0-7]$`)
+	var validShortID = regexp.MustCompile(`^[0-9a-f]{2}:[0-9a-f]{2}.[0-7]$`)
 
 	if validLongID.MatchString(addr) {
 		return addr, deviceExist(addr)
@@ -245,10 +243,7 @@ func deviceExist(addr string) error {
 
 // SriovConfigured returns true if sriov_numvfs reads > 0 else false
 func SriovConfigured(addr string) bool {
-	if GetVFconfigured(addr) > 0 {
-		return true
-	}
-	return false
+	return GetVFconfigured(addr) > 0
 }
 
 // ValidResourceName returns true if it contains permitted characters otherwise false
@@ -259,7 +254,7 @@ func ValidResourceName(name string) bool {
 }
 
 // GetVFIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
-func GetVFIODeviceFile(dev string) (devFileHost string, devFileContainer string, err error) {
+func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err error) {
 	// Get iommu group for this device
 	devPath := filepath.Join(sysBusPci, dev)
 	_, err = os.Lstat(devPath)
@@ -290,7 +285,7 @@ func GetVFIODeviceFile(dev string) (devFileHost string, devFileContainer string,
 		err = fmt.Errorf("GetVFIODeviceFile(): error reading symlink to iommu_group %v", err)
 		return
 	}
-	devFileContainer = filepath.Join("/dev/vfio", filepath.Base(linkName))
+	devFileContainer = filepath.Join("/dev", "vfio", filepath.Base(linkName))
 	devFileHost = devFileContainer
 
 	// Get a file path to the iommu group name
@@ -313,7 +308,6 @@ func GetVFIODeviceFile(dev string) (devFileHost string, devFileContainer string,
 
 // GetUIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
 func GetUIODeviceFile(dev string) (devFile string, err error) {
-
 	vfDir := filepath.Join(sysBusPci, dev, "uio")
 
 	_, err = os.Lstat(vfDir)
@@ -336,7 +330,6 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 
 // GetNetNames returns host net interface names as string for a PCI device from its pci address
 func GetNetNames(pciAddr string) ([]string, error) {
-	var names []string
 	netDir := filepath.Join(sysBusPci, pciAddr, "net")
 	if _, err := os.Lstat(netDir); err != nil {
 		return nil, fmt.Errorf("GetNetName(): no net directory under pci device %s: %q", pciAddr, err)
@@ -347,7 +340,7 @@ func GetNetNames(pciAddr string) ([]string, error) {
 		return nil, fmt.Errorf("GetNetName(): failed to read net directory %s: %q", netDir, err)
 	}
 
-	names = make([]string, 0)
+	names := make([]string, 0)
 	for _, f := range fInfos {
 		names = append(names, f.Name())
 	}
@@ -374,7 +367,7 @@ func GetVFID(pciAddr string) (vfID int, err error) {
 		return vfID, nil
 	}
 	if err != nil {
-		err = fmt.Errorf("Error. Could not get PF directory information for VF device: %s, Err: %v", pciAddr, err)
+		err = fmt.Errorf("could not get PF directory information for VF device: %s, Err: %v", pciAddr, err)
 		return vfID, err
 	}
 
@@ -384,7 +377,7 @@ func GetVFID(pciAddr string) (vfID int, err error) {
 		return vfID, err
 	}
 
-	//Read all VF directory and get VF ID
+	// Read all VF directory and get VF ID
 	for vfID := range vfDirs {
 		dirN := fmt.Sprintf("%s/virtfn%d", pfDir, vfID)
 		dirInfo, err := os.Lstat(dirN)

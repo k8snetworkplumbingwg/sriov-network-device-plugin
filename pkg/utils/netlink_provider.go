@@ -16,6 +16,7 @@ package utils
 
 import (
 	"fmt"
+
 	nl "github.com/vishvananda/netlink"
 )
 

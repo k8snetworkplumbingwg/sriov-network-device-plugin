@@ -37,14 +37,6 @@ func TestSriovdp(t *testing.T) {
 	RunSpecs(t, "Sriovdp Suite")
 }
 
-func assertShouldFail(err error, shouldFail bool) {
-	if shouldFail {
-		Expect(err).To(HaveOccurred())
-	} else {
-		Expect(err).NotTo(HaveOccurred())
-	}
-}
-
 var _ = Describe("Resource manager", func() {
 	var (
 		cp *cliParams
@@ -60,7 +52,7 @@ var _ = Describe("Resource manager", func() {
 		})
 		Context("when there's an error reading file", func() {
 			BeforeEach(func() {
-				os.RemoveAll("/tmp/sriovdp")
+				_ = os.RemoveAll("/tmp/sriovdp")
 			})
 			It("should fail", func() {
 				err := rm.readConfig()
@@ -73,7 +65,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				ioutil.WriteFile("/tmp/sriovdp/test_config", []byte("junk"), 0644)
+				_ = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte("junk"), 0644)
 			})
 			AfterEach(func() {
 				err := os.RemoveAll("/tmp/sriovdp")
@@ -181,7 +173,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				rm.readConfig()
+				_ = rm.readConfig()
 			})
 			It("should return false", func() {
 				defer fs.Use()()
@@ -215,7 +207,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				rm.readConfig()
+				_ = rm.readConfig()
 			})
 			It("should return false", func() {
 				defer fs.Use()()
@@ -292,15 +284,17 @@ var _ = Describe("Resource manager", func() {
 	DescribeTable("discovering devices",
 		func(fs *utils.FakeFilesystem) {
 			defer fs.Use()()
-			os.Setenv("GHW_CHROOT", fs.RootDir)
-			defer os.Unsetenv("GHW_CHROOT")
+			_ = os.Setenv("GHW_CHROOT", fs.RootDir)
+			defer func() {
+				_ = os.Unsetenv("GHW_CHROOT")
+			}()
 
 			rf := factory.NewResourceFactory("fake", "fake", true)
 
 			rm := &resourceManager{
 				rFactory: rf,
 				configList: []*types.ResourceConfig{
-					&types.ResourceConfig{
+					{
 						ResourceName: "fake",
 						DeviceType:   types.NetDeviceType,
 					},

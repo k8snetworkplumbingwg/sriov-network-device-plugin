@@ -71,10 +71,11 @@ var SupportedDevices = map[DeviceType]int{
 	AcceleratorType: 0x12,
 }
 
-// ResourceConfig contains configuration paremeters for a resource pool
+// ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
-	ResourcePrefix string           `json:"resourcePrefix,omitempty"` // optional resource prefix that will ovewrite global prefix specified in cli params
-	ResourceName   string           `json:"resourceName"`             // the resource name will be added with resource prefix in K8s api
+	// optional resource prefix that will overwrite	global prefix specified in cli params
+	ResourcePrefix string           `json:"resourcePrefix,omitempty"`
+	ResourceName   string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
 	DeviceType     DeviceType       `json:"deviceType,omitempty"`
 	Selectors      *json.RawMessage `json:"selectors,omitempty"`
 	SelectorObj    interface{}
@@ -96,7 +97,7 @@ type NetDeviceSelectors struct {
 	LinkTypes    []string `json:"linkTypes,omitempty"`
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
 	IsRdma       bool     // the resource support rdma
-	NeedVhostNet bool     // share vhost-net along the selected ressource
+	NeedVhostNet bool     // share vhost-net along the selected resource
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
@@ -118,11 +119,11 @@ type ResourceServer interface {
 	Stop() error
 	// Init initializes resourcePool
 	Init() error
-	// Watch watches for socket file deleteion and restart server if needed
+	// Watch watches for socket file deletion and restart server if needed
 	Watch()
 }
 
-// ResourceFactory is an interface to get instances of ResourcePool and ResouceServer
+// ResourceFactory is an interface to get instances of ResourcePool and ResourceServer
 type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
@@ -154,7 +155,7 @@ type DeviceProvider interface {
 	AddTargetDevices([]*ghw.PCIDevice, int) error
 	GetDiscoveredDevices() []*ghw.PCIDevice
 
-	// Get Devices runs through the Discovered Devices and returns a list of fully populated PciDevices accoring to the given ResourceConfig
+	// GetDevices runs through the Discovered Devices and returns a list of fully populated PciDevices according to the given ResourceConfig
 	GetDevices(*ResourceConfig) []PciDevice
 
 	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)

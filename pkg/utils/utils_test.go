@@ -241,7 +241,7 @@ var _ = Describe("In the utils package", func() {
 		),
 	)
 
-	DescribeTable("checking that device PCI addres is valid and device exists",
+	DescribeTable("checking that device PCI address is valid and device exists",
 		func(fs *FakeFilesystem, addr, expected string, shouldFail bool) {
 			defer fs.Use()()
 			actual, err := ValidPciAddr(addr)

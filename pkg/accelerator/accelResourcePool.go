@@ -31,7 +31,8 @@ type accelResourcePool struct {
 var _ types.ResourcePool = &accelResourcePool{}
 
 // NewAccelResourcePool returns an instance of resourcePool
-func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
+func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
+	devicePool map[string]types.PciDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
 	s, _ := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	return &accelResourcePool{
@@ -50,15 +51,12 @@ func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Dev
 	// Add device driver specific devices
 	for _, id := range deviceIDs {
 		if dev, ok := devicePool[id]; ok {
-			accelDev := dev.(types.AccelDevice) // convert generic PciDevice to AccelDevice
-			newSpecs := accelDev.GetDeviceSpecs()
+			newSpecs := dev.GetDeviceSpecs()
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)
 				}
-
 			}
-
 		}
 	}
 	return devSpecs

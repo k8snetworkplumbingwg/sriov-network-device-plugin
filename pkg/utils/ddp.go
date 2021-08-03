@@ -51,7 +51,6 @@ var ddpExecCommand = exec.Command
 
 // GetDDPProfiles returns running DDP profile name if available
 func GetDDPProfiles(dev string) (string, error) {
-
 	var stdout bytes.Buffer
 	cmd := ddpExecCommand("ddptool", "-l", "-a", "-j", "-s", dev)
 	cmd.Stdout = &stdout

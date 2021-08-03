@@ -15,8 +15,9 @@
 package resources
 
 import (
-	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+
+	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -30,7 +31,8 @@ type ResourcePoolImpl struct {
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
-func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
+	devicePool map[string]types.PciDevice) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
 		config:     rc,
 		devices:    apiDevices,
@@ -84,9 +86,7 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 				if !rp.DeviceSpecExist(devSpecs, ds) {
 					devSpecs = append(devSpecs, ds)
 				}
-
 			}
-
 		}
 	}
 	return devSpecs

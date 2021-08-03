@@ -136,7 +136,7 @@ var _ = Describe("AcceleratorProvider", func() {
 				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci"}
 				pa := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3", "0000:03:02.4"}
 
-				for i, _ := range mocked {
+				for i := range mocked {
 					mocked[i].
 						On("GetVendor").Return(ve[i]).
 						On("GetDeviceCode").Return(de[i]).
@@ -154,7 +154,8 @@ var _ = Describe("AcceleratorProvider", func() {
 					{"vendors", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
 					{"devices", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
 					{"drivers", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
-					{"pciAddresses", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}}, []types.PciDevice{all[0], all[3]}},
+					{"pciAddresses", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}},
+						[]types.PciDevice{all[0], all[3]}},
 				}
 
 				for _, tc := range testCases {

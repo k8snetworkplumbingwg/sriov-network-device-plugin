@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -74,11 +75,11 @@ var _ = Describe("Server", func() {
 
 			if shouldRunServer {
 				if shouldEnablePluginWatch {
-					rs.Start()
+					_ = rs.Start()
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fakeprefix")
 					rp.AssertCalled(t, "StoreDeviceInfoFile", "fakeprefix")
 				} else {
-					os.MkdirAll(pluginapi.DevicePluginPath, 0755)
+					_ = os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 					registrationServer.start()
 				}
 			}
@@ -159,7 +160,7 @@ var _ = Describe("Server", func() {
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
-				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
+				_ = os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 
 				registrationServer.start()
 				defer registrationServer.stop()
@@ -236,7 +237,7 @@ var _ = Describe("Server", func() {
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
-				os.MkdirAll(pluginapi.DevicePluginPath, 0755)
+				_ = os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 
 				registrationServer.start()
 				defer registrationServer.stop()
@@ -276,7 +277,7 @@ var _ = Describe("Server", func() {
 
 			rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
 
-			resp, err := rs.Allocate(nil, req)
+			resp, err := rs.Allocate(context.TODO(), req)
 
 			Expect(len(resp.GetContainerResponses())).To(Equal(expectedRespLength))
 
@@ -286,7 +287,7 @@ var _ = Describe("Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		},
-		Entry("allocating succesfully 1 deviceID",
+		Entry("allocating successfully 1 deviceID",
 			&pluginapi.AllocateRequest{
 				ContainerRequests: []*pluginapi.ContainerAllocateRequest{{DevicesIDs: []string{"00:00.01"}}},
 			},
@@ -305,7 +306,7 @@ var _ = Describe("Server", func() {
 	Describe("running PreStartContainer", func() {
 		It("should not fail", func() {
 			rs := &resourceServer{}
-			resp, err := rs.PreStartContainer(nil, nil)
+			resp, err := rs.PreStartContainer(context.TODO(), nil)
 			Expect(resp).NotTo(Equal(nil))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -313,7 +314,7 @@ var _ = Describe("Server", func() {
 	Describe("running GetDevicePluginOptions", func() {
 		It("should not fail", func() {
 			rs := &resourceServer{}
-			resp, err := rs.GetDevicePluginOptions(nil, nil)
+			resp, err := rs.GetDevicePluginOptions(context.TODO(), nil)
 			Expect(resp).NotTo(Equal(nil))
 			Expect(err).NotTo(HaveOccurred())
 		})

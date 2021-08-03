@@ -22,8 +22,8 @@ usage()
 }
 
 while [ "$1" != "" ]; do
-    PARAM=`echo $1 | awk -F= '{print $1}'`
-    VALUE=`echo $1 | awk -F= '{print $2}'`
+    PARAM="$(echo "$1" | awk -F= '{print $1}')"
+    VALUE="$(echo "$1" | awk -F= '{print $2}')"
     case $PARAM in
         -h | --help)
             usage
@@ -66,5 +66,6 @@ fi
 if [ "$CONFIG_FILE" != "" ]; then
     CLI_PARAMS="$CLI_PARAMS --config-file $CONFIG_FILE"
 fi
-
+set -f
+# shellcheck disable=SC2086
 exec $SRIOV_DP_SYS_BINARY_DIR/sriovdp $CLI_PARAMS

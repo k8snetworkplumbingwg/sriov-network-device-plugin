@@ -15,14 +15,14 @@
 package accelerator_test
 
 import (
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 )
 
 var _ = Describe("AccelResourcePool", func() {
@@ -48,15 +48,15 @@ var _ = Describe("AccelResourcePool", func() {
 			// fake1 will have 2 device specs
 			fake1 := &mocks.AccelDevice{}
 			fake1ds := []*pluginapi.DeviceSpec{
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
 			fake1.On("GetDeviceSpecs").Return(fake1ds)
 
 			// fake2 will have 1 device spec
 			fake2 := &mocks.AccelDevice{}
 			fake2ds := []*pluginapi.DeviceSpec{
-				&pluginapi.DeviceSpec{ContainerPath: "/fake/path", HostPath: "/dev/fake2"},
+				{ContainerPath: "/fake/path", HostPath: "/dev/fake2"},
 			}
 			fake2.On("GetDeviceSpecs").Return(fake2ds)
 

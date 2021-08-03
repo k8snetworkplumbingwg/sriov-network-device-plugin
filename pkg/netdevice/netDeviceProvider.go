@@ -26,6 +26,13 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
+const (
+	maxVendorNameLen  = 20
+	maxProductNameLen = 40
+	classIDBaseInt    = 16
+	classIDBitSize    = 64
+)
+
 type netDeviceProvider struct {
 	deviceList []*ghw.PCIDevice
 	rFactory   types.ResourceFactory
@@ -56,9 +63,8 @@ func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDev
 }
 
 func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
-
 	for _, device := range devices {
-		devClass, err := strconv.ParseInt(device.Class.ID, 16, 64)
+		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
 		if err != nil {
 			glog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
@@ -67,28 +73,24 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 		if devClass == int64(deviceCode) {
 			vendor := device.Vendor
 			vendorName := vendor.Name
-			if len(vendor.Name) > 20 {
+			if len(vendor.Name) > maxVendorNameLen {
 				vendorName = string([]byte(vendorName)[0:17]) + "..."
 			}
 			product := device.Product
 			productName := product.Name
-			if len(product.Name) > 40 {
+			if len(product.Name) > maxProductNameLen {
 				productName = string([]byte(productName)[0:37]) + "..."
 			}
-			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address, device.Class.ID, vendorName, productName)
-
+			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
+				device.Class.ID, vendorName, productName)
 			// exclude netdevice in-use in host
 			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
-
 				aPF := utils.IsSriovPF(device.Address)
-
 				if aPF && utils.SriovConfigured(device.Address) {
 					// do not add this device in net device list
 					continue
 				}
-
 				np.deviceList = append(np.deviceList, device)
-
 			}
 		}
 	}
@@ -124,7 +126,6 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 }
 
 func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
-
 	filteredDevice := devices
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
 	if !ok {
@@ -195,7 +196,6 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 	if nf.IsRdma {
 		rdmaDevices := make([]types.PciDevice, 0)
 		for _, dev := range filteredDevice {
-
 			if dev.(types.PciNetDevice).GetRdmaSpec().IsRdma() {
 				rdmaDevices = append(rdmaDevices, dev)
 			}
@@ -205,9 +205,7 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 
 	// convert to []PciNetDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
-	for i, d := range filteredDevice {
-		newDeviceList[i] = d
-	}
+	copy(newDeviceList, filteredDevice)
 
 	return newDeviceList, nil
 }

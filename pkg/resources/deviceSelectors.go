@@ -8,6 +8,11 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
+const (
+	rngSplitTotal   = 2
+	fieldSplitTotal = 2
+)
+
 // NewVendorSelector returns a DeviceSelector interface for vendor list
 func NewVendorSelector(vendors []string) types.DeviceSelector {
 	return &vendorSelector{vendors: vendors}
@@ -190,7 +195,7 @@ func isSelected(dev types.PciDevice, selector string) bool {
 		// The VFs 3,4 and 5 of the PF 'netpf0' will be included
 		// in selector pool
 		fields := strings.Split(selector, "#")
-		if len(fields) != 2 {
+		if len(fields) != fieldSplitTotal {
 			fmt.Printf("Failed to parse %s PF (name|address) selector, probably incorrect separator character usage\n", selector)
 			return false
 		}
@@ -198,7 +203,7 @@ func isSelected(dev types.PciDevice, selector string) bool {
 		for i := 0; i < len(entries); i++ {
 			if strings.Contains(entries[i], "-") {
 				rng := strings.Split(entries[i], "-")
-				if len(rng) != 2 {
+				if len(rng) != rngSplitTotal {
 					fmt.Printf("Failed to parse %s PF (name|address) selector, probably incorrect range character usage\n", selector)
 					return false
 				}

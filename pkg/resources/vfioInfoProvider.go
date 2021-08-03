@@ -16,9 +16,10 @@ package resources
 
 import (
 	"github.com/golang/glog"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 /*
@@ -31,16 +32,12 @@ type vfioInfoProvider struct {
 
 // NewVfioInfoProvider create instance of VFIO DeviceInfoProvider
 func NewVfioInfoProvider(pciAddr string) types.DeviceInfoProvider {
-
 	return &vfioInfoProvider{
 		pciAddr:   pciAddr,
 		vfioMount: "/dev/vfio/vfio",
 	}
-
 }
 
-// *****************************************************************
-/* DeviceInfoProvider Interface */
 func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
@@ -71,5 +68,3 @@ func (rp *vfioInfoProvider) GetMounts() []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }
-
-// *****************************************************************
