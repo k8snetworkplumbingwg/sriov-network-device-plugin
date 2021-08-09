@@ -124,7 +124,7 @@ var _ = Describe("Factory", func() {
 				}
 
 				var selectors json.RawMessage
-				err := selectors.UnmarshalJSON([]byte(`
+				err = selectors.UnmarshalJSON([]byte(`
 					[
 						{
 							"vendors": ["8086"],
@@ -187,7 +187,7 @@ var _ = Describe("Factory", func() {
 				}
 
 				var selectors json.RawMessage
-				err := selectors.UnmarshalJSON([]byte(`
+				err = selectors.UnmarshalJSON([]byte(`
 					[
 						{
 							"vendors": ["8086"],

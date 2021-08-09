@@ -110,9 +110,14 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 			link, err := netlink.LinkByName(ifName)
 			if err != nil {
 				glog.Errorf("expected to get valid host interface with name %s: %q", ifName, err)
+				continue
 			}
 
 			routes, err := netlink.RouteList(link, netlink.FAMILY_V4) // IPv6 routes: all interface has at least one link local route entry
+			if err != nil {
+				glog.Errorf("failed to get routes for interface: %s, %q", ifName, err)
+				continue
+			}
 			for _, r := range routes {
 				if r.Dst == nil {
 					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
@@ -125,6 +130,7 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 	return false, nil
 }
 
+//nolint:gocyclo
 func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
 	filteredDevice := devices
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
