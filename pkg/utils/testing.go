@@ -31,7 +31,7 @@ func (fs *FakeFilesystem) Use() func() {
 		}
 	}
 	for filename, body := range fs.Files {
-		err := ioutil.WriteFile(path.Join(fs.RootDir, filename), body, 0644)
+		err := ioutil.WriteFile(path.Join(fs.RootDir, filename), body, 0600)
 		if err != nil {
 			panic(fmt.Errorf("error creating fake file: %s", err.Error()))
 		}
@@ -48,7 +48,7 @@ func (fs *FakeFilesystem) Use() func() {
 	if err != nil {
 		panic(fmt.Errorf("error reading file: %s", err.Error()))
 	}
-	err = ioutil.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0644)
+	err = ioutil.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
 	if err != nil {
 		panic(fmt.Errorf("error creating fake file: %s", err.Error()))
 	}

@@ -27,6 +27,7 @@ import (
 
 var (
 	sysBusPci = "/sys/bus/pci/devices"
+	devDir    = "/dev"
 )
 
 const (
@@ -260,32 +261,32 @@ func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err er
 	_, err = os.Lstat(devPath)
 	if err != nil {
 		err = fmt.Errorf("GetVFIODeviceFile(): Could not get directory information for device: %s, Err: %v", dev, err)
-		return
+		return devFileHost, devFileContainer, err
 	}
 
 	iommuDir := filepath.Join(devPath, "iommu_group")
 	if err != nil {
 		err = fmt.Errorf("GetVFIODeviceFile(): error reading iommuDir %v", err)
-		return
+		return devFileHost, devFileContainer, err
 	}
 
 	dirInfo, err := os.Lstat(iommuDir)
 	if err != nil {
 		err = fmt.Errorf("GetVFIODeviceFile(): unable to find iommu_group %v", err)
-		return
+		return devFileHost, devFileContainer, err
 	}
 
 	if dirInfo.Mode()&os.ModeSymlink == 0 {
 		err = fmt.Errorf("GetVFIODeviceFile(): invalid symlink to iommu_group %v", err)
-		return
+		return devFileHost, devFileContainer, err
 	}
 
 	linkName, err := filepath.EvalSymlinks(iommuDir)
 	if err != nil {
 		err = fmt.Errorf("GetVFIODeviceFile(): error reading symlink to iommu_group %v", err)
-		return
+		return devFileHost, devFileContainer, err
 	}
-	devFileContainer = filepath.Join("/dev", "vfio", filepath.Base(linkName))
+	devFileContainer = filepath.Join(devDir, "vfio", filepath.Base(linkName))
 	devFileHost = devFileContainer
 
 	// Get a file path to the iommu group name
@@ -299,11 +300,11 @@ func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err er
 		// if the iommu group name == vfio-noiommu then we are in a VM, adjust path to vfio device
 		if vName == "vfio-noiommu" {
 			linkName = filepath.Join(filepath.Dir(linkName), "noiommu-"+filepath.Base(linkName))
-			devFileHost = filepath.Join("/dev/vfio", filepath.Base(linkName))
+			devFileHost = filepath.Join(devDir, "vfio", filepath.Base(linkName))
 		}
 	}
 
-	return
+	return devFileHost, devFileContainer, err
 }
 
 // GetUIODeviceFile returns a vfio device files for vfio-pci bound PCI device's PCI address
@@ -323,7 +324,7 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 
 	// uio directory should only contain one directory e.g uio1
 	// assuption is there's a corresponding device file in /dev e.g. /dev/uio1
-	devFile = filepath.Join("/dev", files[0].Name())
+	devFile = filepath.Join(devDir, files[0].Name())
 
 	return
 }

@@ -39,7 +39,6 @@ type cliParams struct {
 type resourceManager struct {
 	cliParams
 	pluginWatchMode bool
-	socketSuffix    string
 	rFactory        types.ResourceFactory
 	configList      []*types.ResourceConfig
 	resourceServers []types.ResourceServer

@@ -28,8 +28,6 @@ type pciDevice struct {
 	basePciDevice *ghw.PCIDevice
 	pfAddr        string
 	driver        string
-	vendor        string
-	product       string
 	vfID          int
 	numa          string
 	apiDevice     *pluginapi.Device

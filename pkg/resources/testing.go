@@ -47,11 +47,7 @@ func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.C
 	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
-	c, err := grpc.DialContext(ctx, sockPath, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}),
-	)
+	c, err := grpc.DialContext(ctx, "unix:"+sockPath, grpc.WithInsecure(), grpc.WithBlock())
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial socket %s, err: %v", sockPath, err)

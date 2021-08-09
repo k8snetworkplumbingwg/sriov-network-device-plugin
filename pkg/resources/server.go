@@ -15,6 +15,7 @@
 package resources
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -25,7 +26,6 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 
 	"github.com/golang/glog"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	registerapi "k8s.io/kubelet/pkg/apis/pluginregistration/v1"
@@ -71,11 +71,8 @@ func NewResourceServer(prefix, suffix string, pluginWatch bool, rp types.Resourc
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
-	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}))
+	kubeletEndpoint := "unix:" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
+	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure())
 	if err != nil {
 		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
 		return err
@@ -219,12 +216,8 @@ func (rs *resourceServer) Start() error {
 		}
 	}()
 	// Wait for server to start by launching a blocking connection
-	conn, err := grpc.Dial(rs.sockPath, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithTimeout(serverStartTimeout),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
-		}),
-	)
+	ctx, _ := context.WithTimeout(context.TODO(), serverStartTimeout)
+	conn, err := grpc.DialContext(ctx, "unix:"+rs.sockPath, grpc.WithInsecure(), grpc.WithBlock())
 
 	if err != nil {
 		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)
