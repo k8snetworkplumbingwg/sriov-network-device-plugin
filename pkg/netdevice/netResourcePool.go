@@ -28,15 +28,16 @@ import (
 
 type netResourcePool struct {
 	*resources.ResourcePoolImpl
-	selectors *types.NetDeviceSelectors
-	nadutils  types.NadUtils
+	selectors      *types.NetDeviceSelectors
+	nadutils       types.NadUtils
+	deviceProvider types.DeviceProvider
 }
 
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice, deviceProvider types.DeviceProvider) types.ResourcePool {
+	rp := resources.NewResourcePool(rc, apiDevices, devicePool, deviceProvider)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,

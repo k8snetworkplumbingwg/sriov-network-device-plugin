@@ -3,7 +3,7 @@
 #   This makefile was adapted from: https://github.com/vincentbernat/hellogopher/blob/feature/glide/Makefile
 #
 # Go environment
-GOPATH=$(CURDIR)/.gopath
+GOPATH=/home/e0ne/working
 GOBIN=$(CURDIR)/bin
 # Go tools
 GOLINT = $(GOBIN)/golint

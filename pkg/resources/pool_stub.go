@@ -22,19 +22,21 @@ import (
 
 // ResourcePoolImpl implements stub ResourcePool interface
 type ResourcePoolImpl struct {
-	config     *types.ResourceConfig
-	devices    map[string]*pluginapi.Device
-	devicePool map[string]types.PciDevice
+	config         *types.ResourceConfig
+	devices        map[string]*pluginapi.Device
+	devicePool     map[string]types.PciDevice
+	deviceProvider types.DeviceProvider
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
-func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice, deviceProvider types.DeviceProvider) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
-		config:     rc,
-		devices:    apiDevices,
-		devicePool: devicePool,
+		config:         rc,
+		devices:        apiDevices,
+		devicePool:     devicePool,
+		deviceProvider: deviceProvider,
 	}
 }
 
@@ -67,7 +69,38 @@ func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
 
 // Probe - does device healthcheck. Not implemented
 func (rp *ResourcePoolImpl) Probe() bool {
-	// TO-DO: Implement this
+	if rp.deviceProvider != nil {
+
+		// TODO: Move cmd.sriovdb.manager.discoverHostDevices method to ResourcePoolImpl
+		// to get this logic working
+		devices := rp.deviceProvider.GetDevices(rp.config)
+		filteredDevices, err := rp.deviceProvider.GetFilteredDevices(devices, rp.config)
+		if err != nil {
+			return false
+		}
+
+		// TODO: remove copy-paste from resourceFactory.GetResourcePool
+		if len(filteredDevices) != len(rp.devices) {
+			// changed
+			devicePool := make(map[string]types.PciDevice, 0)
+			apiDevices := make(map[string]*pluginapi.Device)
+			for _, dev := range filteredDevices {
+				pciAddr := dev.GetPciAddr()
+				devicePool[pciAddr] = dev
+				apiDevices[pciAddr] = dev.GetAPIDevice()
+				glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
+					dev.GetPciAddr(),
+					dev.GetVendor(),
+					dev.GetDeviceCode(),
+					dev.GetDriver())
+			}
+			// TODO: we should not override existing devices.
+			// TODO: only update current list with new devices
+			rp.devices = apiDevices
+			return true
+		}
+		return false
+	}
 	return false
 }
 

@@ -127,7 +127,7 @@ type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
-	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
+	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice, deviceProvider DeviceProvider) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)

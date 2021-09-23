@@ -97,7 +97,7 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice, deviceProvider types.DeviceProvider) (types.ResourcePool, error) {
 
 	devicePool := make(map[string]types.PciDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)
@@ -116,14 +116,8 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 	var err error
 	switch rc.DeviceType {
 	case types.NetDeviceType:
-		if len(filteredDevice) > 0 {
-			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
-				nadUtils := rf.GetNadUtils()
-				rPool = netdevice.NewNetResourcePool(nadUtils, rc, apiDevices, devicePool)
-			} else {
-				err = fmt.Errorf("invalid device list for NetDeviceType")
-			}
-		}
+			nadUtils := rf.GetNadUtils()
+			rPool = netdevice.NewNetResourcePool(nadUtils, rc, apiDevices, devicePool, deviceProvider)
 	case types.AcceleratorType:
 		if len(filteredDevice) > 0 {
 			if _, ok := filteredDevice[0].(types.AccelDevice); ok {

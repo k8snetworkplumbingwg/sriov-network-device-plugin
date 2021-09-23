@@ -312,6 +312,7 @@ func (rs *resourceServer) cleanUp() error {
 
 func (rs *resourceServer) triggerUpdate() {
 	rp := rs.resourcePool
+	glog.Infof("checkIntervals: %s", rs.checkIntervals)
 	if rs.checkIntervals > 0 {
 		go func() {
 			for {

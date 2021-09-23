@@ -32,7 +32,7 @@ var _ types.ResourcePool = &accelResourcePool{}
 
 // NewAccelResourcePool returns an instance of resourcePool
 func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device, devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+	rp := resources.NewResourcePool(rc, apiDevices, devicePool, nil)
 	s, _ := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	return &accelResourcePool{
 		ResourcePoolImpl: rp,
