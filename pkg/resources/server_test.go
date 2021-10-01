@@ -104,11 +104,11 @@ var _ = Describe("Server", func() {
 		Entry("when can't connect to Kubelet should fail", false, false, true, true),
 		Entry("when device plugin unable to register with Kubelet should fail", true, false, true, true),
 		Entry("when Kubelet unable to register with device plugin should fail", true, true, true, true),
-		// Entry("successfully shouldn't fail", true, false, false, false),
-		// Entry("successfully shouldn't fail with plugin watcher enabled", true, true, false, false),
+		Entry("successfully shouldn't fail", true, false, false, false),
+		Entry("successfully shouldn't fail with plugin watcher enabled", true, true, false, false),
 	)
 	Describe("initializating server", func() {
-		XContext("in all scenarios", func() {
+		Context("in all scenarios", func() {
 			var err error
 			BeforeEach(func() {
 				fs := &utils.FakeFilesystem{}
@@ -142,7 +142,7 @@ var _ = Describe("Server", func() {
 			fs = &utils.FakeFilesystem{}
 		})
 		Context("starting, restarting and stopping the resource server", func() {
-			XIt("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func(done Done) {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.DeprecatedSockDir = fs.RootDir
@@ -183,7 +183,7 @@ var _ = Describe("Server", func() {
 
 				close(done)
 			}, 12.0)
-			XIt("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func(done Done) {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.SockDir = fs.RootDir
@@ -219,7 +219,7 @@ var _ = Describe("Server", func() {
 			}, 12.0)
 		})
 		Context("starting, watching and stopping the resource server", func() {
-			XIt("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func(done Done) {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.DeprecatedSockDir = fs.RootDir
