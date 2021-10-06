@@ -1,5 +1,5 @@
 name: build-test-lint
-on: [push, pull_request, workflow_call]
+on: [push, pull_request]
 jobs:
   build:
     name: build
