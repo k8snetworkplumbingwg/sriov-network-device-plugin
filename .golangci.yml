@@ -1,4 +1,6 @@
 # Tested with golangci-lint ver. 1.37
+run:
+  timeout: 3m
 linters-settings:
   depguard:
     list-type: blacklist
