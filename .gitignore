@@ -1,3 +1,6 @@
+/.gopath/*
+/build/*
+
 # Created by https://www.gitignore.io/api/go,macos,linux,windows,visualstudiocode
 
 ### Go ###
