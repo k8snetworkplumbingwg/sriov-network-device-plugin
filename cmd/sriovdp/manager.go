@@ -103,6 +103,7 @@ func (rm *resourceManager) readConfig() error {
 func (rm *resourceManager) initServers() error {
 	rf := rm.rFactory
 	glog.Infof("number of config: %d\n", len(rm.configList))
+	deviceAllocated := make(map[string]bool)
 	for _, rc := range rm.configList {
 		// Create new ResourcePool
 		glog.Infof("")
@@ -123,12 +124,12 @@ func (rm *resourceManager) initServers() error {
 			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
 			continue
 		}
+		filteredDevices = rm.excludeAllocatedDevices(filteredDevices, deviceAllocated)
 		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
 			return err
 		}
-
 		// Create ResourceServer with this ResourcePool
 		s, err := rf.GetResourceServer(rPool)
 		if err != nil {
@@ -139,6 +140,19 @@ func (rm *resourceManager) initServers() error {
 		rm.resourceServers = append(rm.resourceServers, s)
 	}
 	return nil
+}
+
+func (rm *resourceManager) excludeAllocatedDevices(filteredDevices []types.PciDevice, deviceAllocated map[string]bool) []types.PciDevice {
+	filteredDevicesTemp := []types.PciDevice{}
+	for _, dev := range filteredDevices {
+		if !deviceAllocated[dev.GetPciAddr()] {
+			deviceAllocated[dev.GetPciAddr()] = true
+			filteredDevicesTemp = append(filteredDevicesTemp, dev)
+		} else {
+			glog.Warningf("Cannot add PCI Address [%s]. Already allocated.", dev.GetPciAddr())
+		}
+	}
+	return filteredDevicesTemp
 }
 
 func (rm *resourceManager) startAllServers() error {
