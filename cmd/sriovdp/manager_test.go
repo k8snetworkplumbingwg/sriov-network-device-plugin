@@ -255,7 +255,7 @@ var _ = Describe("Resource manager", func() {
 					mockedRf := &mocks.ResourceFactory{}
 					mockedRf.On("GetResourcePool", rc, devs).Return(rp, nil).
 						On("GetResourceServer", rp).Return(mockedServer, nil)
-
+					dev.On("GetPciAddr").Return("0000:01:10.0")
 					dp.On("GetDevices", rc).Return(devs)
 					rm := &resourceManager{
 						rFactory:   mockedRf,

@@ -160,6 +160,134 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+	Describe("getting exclusive resource pool for netdevice", func() {
+		Context("with all types of selectors used and matching devices found", func() {
+			defer utils.UseFakeLinks()()
+			var (
+				rp   types.ResourcePool
+				rp2  types.ResourcePool
+				err  error
+				devs []types.PciDevice
+			)
+			BeforeEach(func() {
+				f := factory.NewResourceFactory("fake", "fake", true)
+				devs = make([]types.PciDevice, 4)
+				vendors := []string{"8086", "8086", "8086", "8086"}
+				codes := []string{"1111", "1111", "1111", "1111"}
+				drivers := []string{"iavf", "iavf", "vfio-pci", "vfio-pci"}
+				pciAddr := []string{"0000:03:02.0", "0000:03:02.0", "0000:03:02.0", "0000:03:02.0"}
+				pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
+				rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
+				linkTypes := []string{"ether", "infiniband", "other", "other2"}
+				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+				for i := range devs {
+					d := &mocks.PciNetDevice{}
+					d.On("GetVendor").Return(vendors[i]).
+						On("GetDeviceCode").Return(codes[i]).
+						On("GetDriver").Return(drivers[i]).
+						On("GetPciAddr").Return(pciAddr[i]).
+						On("GetPFName").Return(pfNames[i]).
+						On("GetPfPciAddr").Return(rootDevices[i]).
+						On("GetAPIDevice").Return(&pluginapi.Device{}).
+						On("GetLinkType").Return(linkTypes[i]).
+						On("GetDDPProfiles").Return(ddpProfiles[i])
+					devs[i] = d
+				}
+
+				var selectors json.RawMessage
+				err = selectors.UnmarshalJSON([]byte(`
+						{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["iavf","vfio-pci"],
+							"pciAddresses": ["0000:03:02.0"],
+							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}
+					`),
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				var selectors2 json.RawMessage
+				err = selectors2.UnmarshalJSON([]byte(`
+						{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["iavf","vfio-pci"],
+							"pciAddresses": ["0000:03:02.0"],
+							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}
+					`),
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				c := &types.ResourceConfig{
+					ResourceName: "fake",
+					Selectors:    &selectors,
+					DeviceType:   types.NetDeviceType,
+				}
+				deviceAllocated := make(map[string]bool)
+				dp := f.GetDeviceProvider(c.DeviceType)
+				c.SelectorObj, err = f.GetDeviceFilter(c)
+				Expect(err).NotTo(HaveOccurred())
+				filteredDevices, err := dp.GetFilteredDevices(devs, c)
+				Expect(err).NotTo(HaveOccurred())
+
+				filteredDevicesTemp := []types.PciDevice{}
+				for _, dev := range filteredDevices {
+					if !deviceAllocated[dev.GetPciAddr()] {
+						deviceAllocated[dev.GetPciAddr()] = true
+						filteredDevicesTemp = append(filteredDevicesTemp, dev)
+					}
+				}
+				filteredDevices = filteredDevicesTemp
+
+				rp, err = f.GetResourcePool(c, filteredDevices)
+				Expect(err).NotTo(HaveOccurred())
+
+				// Second config definition
+				c2 := &types.ResourceConfig{
+					ResourceName: "fake",
+					Selectors:    &selectors2,
+					DeviceType:   types.NetDeviceType,
+				}
+
+				dp2 := f.GetDeviceProvider(c2.DeviceType)
+				c2.SelectorObj, err = f.GetDeviceFilter(c2)
+				Expect(err).NotTo(HaveOccurred())
+				filteredDevices, err = dp2.GetFilteredDevices(devs, c2)
+				Expect(err).NotTo(HaveOccurred())
+
+				filteredDevicesTemp = []types.PciDevice{}
+				for _, dev := range filteredDevices {
+					if !deviceAllocated[dev.GetPciAddr()] {
+						deviceAllocated[dev.GetPciAddr()] = true
+						filteredDevicesTemp = append(filteredDevicesTemp, dev)
+					}
+				}
+				filteredDevices = filteredDevicesTemp
+
+				rp2, err = f.GetResourcePool(c2, filteredDevices)
+				Expect(err).NotTo(HaveOccurred())
+
+			})
+			It("should return valid exclusive resource pool", func() {
+				Expect(rp).NotTo(BeNil())
+				Expect(rp.GetDevices()).To(HaveLen(1))
+				Expect(rp.GetDevices()).To(HaveKey("0000:03:02.0"))
+				// Check second resource pool to make sure nothing got added to it.
+				Expect(rp2).Should(BeNil())
+			})
+			It("should not fail", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
 	Describe("getting resource pool for accelerator", func() {
 		Context("with all types of selectors used and matching devices found", func() {
 			defer utils.UseFakeLinks()()
