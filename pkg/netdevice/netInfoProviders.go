@@ -76,7 +76,15 @@ func (rip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		glog.Errorf("GetDeviceSpecs(): /dev/vhost-net doesn't exist")
 		return nil
 	}
-	return GetVhostNetDeviceSpec()
+	deviceSpec := GetVhostNetDeviceSpec()
+
+	if !TunDeviceExist() {
+		glog.Errorf("GetDeviceSpecs(): /dev/net/tun doesn't exist")
+		return nil
+	}
+	deviceSpec = append(deviceSpec, GetTunDeviceSpec()...)
+
+	return deviceSpec
 }
 
 func (rip *vhostNetInfoProvider) GetEnvVal() string {

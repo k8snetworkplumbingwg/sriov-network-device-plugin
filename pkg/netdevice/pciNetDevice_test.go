@@ -247,7 +247,7 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
 				Expect(dev.GetNetName()).To(Equal(""))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
-				Expect(dev.GetDeviceSpecs()).To(HaveLen(3)) // /dev/vfio/vfio0 and default /dev/vfio/vfio + vhost-net
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/vfio0 and default /dev/vfio/vfio + vhost-net + tun
 				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
 				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
 				Expect(dev.GetLinkType()).To(Equal(""))

@@ -232,7 +232,7 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                                           |
 | "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
 | "isRdma"      | N        | Mount RDMA resources                                           | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
-| "needVhostNet"| N        | Share /dev/vhost-net                                           | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
+| "needVhostNet"| N        | Share /dev/vhost-net and /dev/net/tun                          | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
 
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
