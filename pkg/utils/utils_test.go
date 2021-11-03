@@ -1,9 +1,15 @@
 package utils
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	nl "github.com/vishvananda/netlink"
+
+	mocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 )
 
 func assertShouldFail(err error, shouldFail bool) {
@@ -395,8 +401,15 @@ var _ = Describe("In the utils package", func() {
 		),
 	)
 
-	DescribeTable("getting PF names",
+	DescribeTable("getting PF names legacy",
 		func(fs *FakeFilesystem, device string, expected string, shouldFail bool) {
+			fakeNetlinkProvider := mocks.NetlinkProvider{}
+			fakeNetlinkProvider.
+				On("GetDevLinkDeviceEswitchAttrs",
+					mock.AnythingOfType("string")).
+				Return(&nl.DevlinkDevEswitchAttr{Mode: "legacy"}, nil)
+			SetNetlinkProviderInst(&fakeNetlinkProvider)
+
 			defer fs.Use()()
 			actual, err := GetPfName(device)
 			Expect(actual).To(Equal(expected))
@@ -404,8 +417,15 @@ var _ = Describe("In the utils package", func() {
 		},
 		Entry("device doesn't exist", &FakeFilesystem{}, "0000:01:10.0", nil, true),
 		Entry("device is a VF and interface name exists",
-			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/physfn/net/fakePF"}},
-			"0000:01:10.0", "fakePF", false,
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:01:10.0",
+					"sys/bus/pci/devices/0000:01:00.0/net/fakePF",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:01:10.0/physfn/": "../0000:01:00.0",
+				},
+			}, "0000:01:10.0", "fakePF", false,
 		),
 		Entry("device is a VF and interface name does not exist",
 			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/physfn/net/"}},
@@ -425,6 +445,66 @@ var _ = Describe("In the utils package", func() {
 				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net": []byte("junk")},
 			},
 			"0000:01:10.0", "", true,
+		),
+	)
+
+	DescribeTable("getting PF names switchdev",
+		func(fs *FakeFilesystem, device string, expected string, shouldFail bool) {
+			fakeNetlinkProvider := mocks.NetlinkProvider{}
+			fakeNetlinkProvider.
+				On("GetDevLinkDeviceEswitchAttrs", "devlinkDeviceSwitchdev").
+				Return(&nl.DevlinkDevEswitchAttr{Mode: "switchdev"}, nil).
+				On("GetDevLinkDeviceEswitchAttrs", "nonDevlinkDevice").
+				Return(nil, fmt.Errorf("devlink error: no such device")).
+				On("GetDevLinkDeviceEswitchAttrs", "nonSriovDevice").
+				Return(nil, fmt.Errorf("devlink error: operation not supported")).
+				On("GetDevLinkDeviceEswitchAttrs", "unknownDevice").
+				Return(nil, fmt.Errorf("unknown error"))
+			SetNetlinkProviderInst(&fakeNetlinkProvider)
+
+			fakeSriovnetProvider := mocks.SriovnetProvider{}
+			fakeSriovnetProvider.
+				On("GetUplinkRepresentor", mock.AnythingOfType("string")).
+				Return("fakeSwitchdevPF", nil)
+			SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+			defer fs.Use()()
+			actual, err := GetPfName(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device is a VF and PF is in switchdev mode",
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:01:10.0",
+					"sys/bus/pci/devices/devlinkDeviceSwitchdev/net/fakePF",
+					"sys/bus/pci/devices/devlinkDeviceSwitchdev/net/fakeVF",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:01:10.0/physfn/": "../devlinkDeviceSwitchdev",
+				},
+			},
+			"0000:01:10.0", "fakeSwitchdevPF", false,
+		),
+		Entry("device is a PF in switchdev mode",
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/devlinkDeviceSwitchdev/net/fakePF",
+				},
+			},
+			"devlinkDeviceSwitchdev", "fakeSwitchdevPF", false,
+		),
+		Entry("device is a PF and doesn't support eswitch mode query",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/nonDevlinkDevice/net/fakeIF"}},
+			"nonDevlinkDevice", "fakeIF", false,
+		),
+		Entry("device is a PF and doesn't support eswitch mode query",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/nonSriovDevice/net/fakeIF"}},
+			"nonSriovDevice", "fakeIF", false,
+		),
+		Entry("device is a PF and eswitch query failed",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/unknownDevice/net/fakeIF"}},
+			"unknownDevice", "", true,
 		),
 	)
 

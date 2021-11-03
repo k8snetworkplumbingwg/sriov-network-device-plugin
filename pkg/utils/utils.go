@@ -23,6 +23,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 var (
@@ -31,8 +33,9 @@ var (
 )
 
 const (
-	totalVfFile      = "sriov_totalvfs"
-	configuredVfFile = "sriov_numvfs"
+	totalVfFile          = "sriov_totalvfs"
+	configuredVfFile     = "sriov_numvfs"
+	eswitchModeSwitchdev = "switchdev"
 )
 
 // DetectPluginWatchMode returns true if plugins registry directory exist
@@ -60,6 +63,30 @@ func GetPfAddr(pciAddr string) (string, error) {
 // GetPfName returns SRIOV PF name for the given VF
 // If device is not VF then it will return its own ifname if exist else empty string
 func GetPfName(pciAddr string) (string, error) {
+	pfEswitchMode, err := GetPfEswitchMode(pciAddr)
+	if err != nil {
+		errString := strings.ToLower(fmt.Sprint(err))
+		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
+		// fall back to the default implementation
+		if strings.Contains(errString, "no such device") || strings.Contains(errString, "operation not supported") {
+			glog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
+		} else {
+			return "", err
+		}
+	}
+
+	if pfEswitchMode == "" {
+		glog.Warningf("Failed to retrieve eswitch mode with devlink query for device %s", pciAddr)
+	} else if pfEswitchMode == eswitchModeSwitchdev {
+		name, err := GetSriovnetProvider().GetUplinkRepresentor(pciAddr)
+
+		if err != nil {
+			return "", err
+		}
+
+		return name, nil
+	}
+
 	path := filepath.Join(sysBusPci, pciAddr, "physfn", "net")
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -392,4 +419,18 @@ func GetVFID(pciAddr string) (vfID int, err error) {
 	// The requested VF not found
 	vfID = -1
 	return vfID, nil
+}
+
+// GetPfEswitchMode returns PF's eswitch mode for the given VF
+// If device is not VF then it will return its own eswitch mode
+func GetPfEswitchMode(pciAddr string) (string, error) {
+	pfAddr, err := GetPfAddr(pciAddr)
+	if err != nil {
+		return "", fmt.Errorf("error getting PF PCI address for device %s %v", pciAddr, err)
+	}
+	devLinkDeviceAttrs, err := GetNetlinkProvider().GetDevLinkDeviceEswitchAttrs(pfAddr)
+	if err != nil {
+		return "", err
+	}
+	return devLinkDeviceAttrs.Mode, nil
 }
