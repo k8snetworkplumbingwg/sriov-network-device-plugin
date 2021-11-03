@@ -12,6 +12,29 @@ type NetlinkProvider struct {
 	mock.Mock
 }
 
+// GetDevLinkDeviceEswitchAttrs provides a mock function with given fields: ifName
+func (_m *NetlinkProvider) GetDevLinkDeviceEswitchAttrs(ifName string) (*netlink.DevlinkDevEswitchAttr, error) {
+	ret := _m.Called(ifName)
+
+	var r0 *netlink.DevlinkDevEswitchAttr
+	if rf, ok := ret.Get(0).(func(string) *netlink.DevlinkDevEswitchAttr); ok {
+		r0 = rf(ifName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*netlink.DevlinkDevEswitchAttr)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(ifName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetLinkAttrs provides a mock function with given fields: ifName
 func (_m *NetlinkProvider) GetLinkAttrs(ifName string) (*netlink.LinkAttrs, error) {
 	ret := _m.Called(ifName)

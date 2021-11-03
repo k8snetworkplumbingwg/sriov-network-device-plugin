@@ -83,6 +83,9 @@ func SetDefaultMockNetlinkProvider() {
 	mockProvider.
 		On("GetLinkAttrs", mock.AnythingOfType("string")).
 		Return(&nl.LinkAttrs{EncapType: "fakeLinkType"}, nil)
+	mockProvider.
+		On("GetDevLinkDeviceEswitchAttrs", mock.AnythingOfType("string")).
+		Return(&nl.DevlinkDevEswitchAttr{Mode: "fakeMode"}, nil)
 
 	SetNetlinkProviderInst(&mockProvider)
 }

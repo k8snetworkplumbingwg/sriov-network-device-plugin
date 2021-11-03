@@ -24,6 +24,8 @@ import (
 type NetlinkProvider interface {
 	// GetLinkAttrs returns a net device's link attributes.
 	GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
+	// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
+	GetDevLinkDeviceEswitchAttrs(ifName string) (*nl.DevlinkDevEswitchAttr, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -43,6 +45,15 @@ func (defaultNetlinkProvider) GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
 		return nil, fmt.Errorf("error getting link attributes for net device %s %v", ifName, err)
 	}
 	return link.Attrs(), nil
+}
+
+// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
+func (defaultNetlinkProvider) GetDevLinkDeviceEswitchAttrs(pfAddr string) (*nl.DevlinkDevEswitchAttr, error) {
+	dev, err := nl.DevLinkGetDeviceByName("pci", pfAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devlink device attributes for net device %s %v", pfAddr, err)
+	}
+	return &(dev.Attrs.Eswitch), nil
 }
 
 // SetNetlinkProviderInst sets a passed instance of NetlinkProvider to be used by unit test in other packages
