@@ -243,6 +243,18 @@ func (h *Handle) NeighListExecute(msg Ndmsg) ([]Neigh, error) {
 			// Ignore messages from other interfaces
 			continue
 		}
+		if msg.Family != 0 && ndm.Family != msg.Family {
+			continue
+		}
+		if msg.State != 0 && ndm.State != msg.State {
+			continue
+		}
+		if msg.Type != 0 && ndm.Type != msg.Type {
+			continue
+		}
+		if msg.Flags != 0 && ndm.Flags != msg.Flags {
+			continue
+		}
 
 		neigh, err := NeighDeserialize(m)
 		if err != nil {
@@ -396,7 +408,6 @@ func neighSubscribeAt(newNs, curNs netns.NsHandle, ch chan<- NeighUpdate, done <
 					continue
 				}
 				if m.Header.Type == unix.NLMSG_ERROR {
-					native := nl.NativeEndian()
 					error := int32(native.Uint32(m.Data[0:4]))
 					if error == 0 {
 						continue
