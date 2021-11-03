@@ -53,7 +53,7 @@ var _ = Describe("PciNetDevice", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -86,7 +86,7 @@ var _ = Describe("PciNetDevice", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -111,7 +111,7 @@ var _ = Describe("PciNetDevice", func() {
 					},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -148,7 +148,7 @@ var _ = Describe("PciNetDevice", func() {
 				},
 			}
 			defer fs.Use()()
-			defer utils.UseFakeLinks()()
+			utils.SetDefaultMockNetlinkProvider()
 
 			rdma1 := &mocks.RdmaSpec{}
 			// fake1 will have 2 RDMA device specs
@@ -182,7 +182,7 @@ var _ = Describe("PciNetDevice", func() {
 
 			It("should populate Rdma device specs if isRdma", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 				dev, err := netdevice.NewPciNetDevice(in1, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
@@ -198,7 +198,7 @@ var _ = Describe("PciNetDevice", func() {
 			})
 			It("but not otherwise", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
@@ -240,7 +240,7 @@ var _ = Describe("PciNetDevice", func() {
 			in := &ghw.PCIDevice{Address: "0000:00:00.1"}
 			It("should add the vhost-net deviceSpec", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
@@ -263,7 +263,7 @@ var _ = Describe("PciNetDevice", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/driver": []byte("not a symlink")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
@@ -287,7 +287,7 @@ var _ = Describe("PciNetDevice", func() {
 					},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{

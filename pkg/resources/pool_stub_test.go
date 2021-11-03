@@ -49,7 +49,7 @@ var _ = Describe("PoolStub", func() {
 		Context("for valid devices", func() {
 			It("should return valid DeviceSpec array", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
@@ -76,7 +76,7 @@ var _ = Describe("PoolStub", func() {
 		Context("for valid devices", func() {
 			It("should return valid envs array", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
@@ -99,7 +99,7 @@ var _ = Describe("PoolStub", func() {
 		Context("for valid devices", func() {
 			It("should return valid mounts array", func() {
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)

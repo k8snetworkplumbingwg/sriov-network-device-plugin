@@ -5,6 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/stretchr/testify/mock"
+	nl "github.com/vishvananda/netlink"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 )
 
 // FakeFilesystem allows to setup isolated fake files structure used for the tests.
@@ -69,4 +74,15 @@ func (fs *FakeFilesystem) Use() func() {
 			panic(fmt.Errorf("error tearing down fake filesystem: %s", err.Error()))
 		}
 	}
+}
+
+// SetDefaultMockNetlinkProvider sets a mocked instance of NetlinkProvider to be used by unit test in other packages
+func SetDefaultMockNetlinkProvider() {
+	mockProvider := mocks.NetlinkProvider{}
+
+	mockProvider.
+		On("GetLinkAttrs", mock.AnythingOfType("string")).
+		Return(&nl.LinkAttrs{EncapType: "fakeLinkType"}, nil)
+
+	SetNetlinkProviderInst(&mockProvider)
 }

@@ -83,7 +83,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 
 	linkType := ""
 	if len(ifName) > 0 {
-		la, err := utils.GetLinkAttrs(ifName)
+		la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
 		if err != nil {
 			return nil, err
 		}
