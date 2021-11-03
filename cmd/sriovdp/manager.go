@@ -120,11 +120,11 @@ func (rm *resourceManager) initServers() error {
 		if err != nil {
 			glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
 		}
+		filteredDevices = rm.excludeAllocatedDevices(filteredDevices, deviceAllocated)
 		if len(filteredDevices) < 1 {
 			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
 			continue
 		}
-		filteredDevices = rm.excludeAllocatedDevices(filteredDevices, deviceAllocated)
 		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
