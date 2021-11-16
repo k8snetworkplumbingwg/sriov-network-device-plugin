@@ -23,3 +23,21 @@ func GetVhostNetDeviceSpec() []*pluginapi.DeviceSpec {
 
 	return deviceSpec
 }
+
+// TunDeviceExist returns true if /dev/net/tun exists
+func TunDeviceExist() bool {
+	_, err := os.Stat("/dev/net/tun")
+	return err == nil
+}
+
+// GetTunDeviceSpec returns an instance of DeviceSpec for Tun
+func GetTunDeviceSpec() []*pluginapi.DeviceSpec {
+	deviceSpec := make([]*pluginapi.DeviceSpec, 0)
+	deviceSpec = append(deviceSpec, &pluginapi.DeviceSpec{
+		HostPath:      "/dev/net/tun",
+		ContainerPath: "/dev/net/tun",
+		Permissions:   "mrw",
+	})
+
+	return deviceSpec
+}
