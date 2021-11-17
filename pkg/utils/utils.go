@@ -64,22 +64,16 @@ func GetPfAddr(pciAddr string) (string, error) {
 // If device is not VF then it will return its own ifname if exist else empty string
 func GetPfName(pciAddr string) (string, error) {
 	pfEswitchMode, err := GetPfEswitchMode(pciAddr)
-	if err != nil {
-		errString := strings.ToLower(fmt.Sprint(err))
+	if pfEswitchMode == "" {
 		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
 		// fall back to the default implementation
-		if strings.Contains(errString, "no such device") || strings.Contains(errString, "operation not supported") {
+		if err == nil || strings.Contains(strings.ToLower(fmt.Sprint(err)), "no such device") {
 			glog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
 		} else {
 			return "", err
 		}
-	}
-
-	if pfEswitchMode == "" {
-		glog.Warningf("Failed to retrieve eswitch mode with devlink query for device %s", pciAddr)
 	} else if pfEswitchMode == eswitchModeSwitchdev {
 		name, err := GetSriovnetProvider().GetUplinkRepresentor(pciAddr)
-
 		if err != nil {
 			return "", err
 		}
