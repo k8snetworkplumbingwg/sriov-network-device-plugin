@@ -20,45 +20,43 @@ import (
 	nl "github.com/vishvananda/netlink"
 )
 
-var (
-	// getLinkByName is a function that retrieves nl.Link object according to
-	// a provided netdev name.
-	getLinkByName = nl.LinkByName
-)
+// NetlinkProvider is a wrapper type over netlink library
+type NetlinkProvider interface {
+	// GetLinkAttrs returns a net device's link attributes.
+	GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
+	// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
+	GetDevLinkDeviceEswitchAttrs(ifName string) (*nl.DevlinkDevEswitchAttr, error)
+}
+
+type defaultNetlinkProvider struct {
+}
+
+var netlinkProvider NetlinkProvider = &defaultNetlinkProvider{}
+
+// GetNetlinkProvider will be invoked by functions in other packages that would need access to the netlink library
+func GetNetlinkProvider() NetlinkProvider {
+	return netlinkProvider
+}
 
 // GetLinkAttrs returns a net device's link attributes.
-func GetLinkAttrs(ifName string) (*nl.LinkAttrs, error) {
-	link, err := getLinkByName(ifName)
+func (defaultNetlinkProvider) GetLinkAttrs(ifName string) (*nl.LinkAttrs, error) {
+	link, err := nl.LinkByName(ifName)
 	if err != nil {
 		return nil, fmt.Errorf("error getting link attributes for net device %s %v", ifName, err)
 	}
 	return link.Attrs(), nil
 }
 
-type fakeLink struct {
-	nl.LinkAttrs
-}
-
-func (fl fakeLink) Attrs() *nl.LinkAttrs {
-	return &fl.LinkAttrs
-}
-
-func (fl fakeLink) Type() string {
-	return "fakeType"
-}
-
-// GetFakeLinkByName retrieve a fake nl.Link object
-func getFakeLinkByName(string) (nl.Link, error) {
-	attrs := nl.LinkAttrs{EncapType: "fakeLinkType"}
-	return fakeLink{LinkAttrs: attrs}, nil
-}
-
-// UseFakeLinks causes GetLinkByName to retrieve fake netlink Link object
-// return value intended to be used in unit-tests as deffered method to
-// restore GetLinkByName to be the actual netlink implementation.
-func UseFakeLinks() func() {
-	getLinkByName = getFakeLinkByName
-	return func() {
-		getLinkByName = nl.LinkByName
+// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
+func (defaultNetlinkProvider) GetDevLinkDeviceEswitchAttrs(pfAddr string) (*nl.DevlinkDevEswitchAttr, error) {
+	dev, err := nl.DevLinkGetDeviceByName("pci", pfAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devlink device attributes for net device %s %v", pfAddr, err)
 	}
+	return &(dev.Attrs.Eswitch), nil
+}
+
+// SetNetlinkProviderInst sets a passed instance of NetlinkProvider to be used by unit test in other packages
+func SetNetlinkProviderInst(inst NetlinkProvider) {
+	netlinkProvider = inst
 }

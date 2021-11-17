@@ -42,7 +42,7 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -71,7 +71,7 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -95,7 +95,7 @@ var _ = Describe("Accelerator", func() {
 					},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
@@ -114,7 +114,7 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/driver": []byte("not a symlink")},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
@@ -137,7 +137,7 @@ var _ = Describe("Accelerator", func() {
 					},
 				}
 				defer fs.Use()()
-				defer utils.UseFakeLinks()()
+				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{

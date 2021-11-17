@@ -91,7 +91,7 @@ var _ = Describe("Factory", func() {
 	)
 	Describe("getting resource pool for netdevice", func() {
 		Context("with all types of selectors used and matching devices found", func() {
-			defer utils.UseFakeLinks()()
+			utils.SetDefaultMockNetlinkProvider()
 			var (
 				rp   types.ResourcePool
 				err  error
@@ -162,7 +162,7 @@ var _ = Describe("Factory", func() {
 	})
 	Describe("getting exclusive resource pool for netdevice", func() {
 		Context("with all types of selectors used and matching devices found", func() {
-			defer utils.UseFakeLinks()()
+			utils.SetDefaultMockNetlinkProvider()
 			var (
 				rp   types.ResourcePool
 				rp2  types.ResourcePool
@@ -290,7 +290,7 @@ var _ = Describe("Factory", func() {
 	})
 	Describe("getting resource pool for accelerator", func() {
 		Context("with all types of selectors used and matching devices found", func() {
-			defer utils.UseFakeLinks()()
+			utils.SetDefaultMockNetlinkProvider()
 			var (
 				rp   types.ResourcePool
 				err  error
