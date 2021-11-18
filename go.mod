@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
-	github.com/vishvananda/netlink v1.1.1-0.20210518155637-4cb3795f2ccb
+	github.com/vishvananda/netlink v1.1.1-0.20211101163509-b10eb8fe5cf6
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d // indirect
 	golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e // indirect
 	google.golang.org/grpc v1.28.1

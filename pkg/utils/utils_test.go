@@ -457,7 +457,7 @@ var _ = Describe("In the utils package", func() {
 				On("GetDevLinkDeviceEswitchAttrs", "nonDevlinkDevice").
 				Return(nil, fmt.Errorf("devlink error: no such device")).
 				On("GetDevLinkDeviceEswitchAttrs", "nonSriovDevice").
-				Return(nil, fmt.Errorf("devlink error: operation not supported")).
+				Return(&nl.DevlinkDevEswitchAttr{Mode: ""}, nil).
 				On("GetDevLinkDeviceEswitchAttrs", "unknownDevice").
 				Return(nil, fmt.Errorf("unknown error"))
 			SetNetlinkProviderInst(&fakeNetlinkProvider)
