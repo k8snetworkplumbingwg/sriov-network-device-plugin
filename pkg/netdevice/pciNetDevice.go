@@ -82,7 +82,13 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	}
 
 	linkType := ""
-	if len(ifName) > 0 {
+	if _, err = utils.GetNetlinkProvider().GetDevLinkDevice(pciAddr); err == nil {
+		linkType = "ether"
+	}
+
+	if err != nil && len(ifName) > 0 {
+		glog.Warningf("Devlink query for device %s named %s is not supported trying netlink", pciAddr, ifName)
+
 		la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
 		if err != nil {
 			return nil, err
