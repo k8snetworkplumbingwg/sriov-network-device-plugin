@@ -171,6 +171,9 @@ type DeviceProvider interface {
 	GetDevices(*ResourceConfig) []PciDevice
 
 	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)
+
+	// ValidConfig performs validation of DeviceType-specific configuration
+	ValidConfig(*ResourceConfig) bool
 }
 
 // PciDevice provides an interface to get generic device specific information

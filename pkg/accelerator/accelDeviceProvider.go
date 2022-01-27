@@ -130,3 +130,12 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc 
 
 	return newDeviceList, nil
 }
+
+func (ap *accelDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
+	_, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
+	if !ok {
+		glog.Errorf("unable to convert SelectorObj to AccelDeviceSelectors")
+		return false
+	}
+	return true
+}

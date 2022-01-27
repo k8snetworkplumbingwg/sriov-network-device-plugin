@@ -230,3 +230,17 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 
 	return newDeviceList, nil
 }
+
+// ValidConfig performs validation of NetDeviceSelectors
+func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
+	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if !ok {
+		glog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
+		return false
+	}
+	if nf.IsRdma && nf.VdpaType != "" {
+		glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
+		return false
+	}
+	return true
+}
