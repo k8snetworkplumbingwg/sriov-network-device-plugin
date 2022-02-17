@@ -214,12 +214,13 @@ The "deviceType" value determines which selectors are supported for that device.
 #### Common selectors
 All device types support following common device selectors.
 
-|   Field        | Required |                Description                |         Type/Defaults          |   Example/Accepted values        |
-|----------------|----------|-------------------------------------------|--------------------------------|----------------------------------|
-| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086", "15b3"]      |
-| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "1889", "1018"] |
-| "drivers"      | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]          |
-| "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null`  | "pciAddresses": ["0000:03:02.0"] |
+|   Field        | Required | Description                              | Type/Defaults                 | Example/Accepted values             |
+|----------------|----------|------------------------------------------|-------------------------------|-------------------------------------|
+| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null` | "vendors": ["8086", "15b3"]         |
+| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null` | "devices": ["154c", "1889", "1018"] |
+| "drivers"      | N        | Target device driver names as string     | `string` list Default: `null` | "drivers": ["vfio-pci"]             |
+| "pciAddresses" | N        | Target device's pci address as string    | `string` list Default: `null` | "pciAddresses": ["0000:03:02.0"]    |
+| "vfOnly"       | N        | Skip PF interfaces                       | `bool` Default: `false`        | "vfOnly": true                      |
 
 
 #### Extended selectors for device type "netDevice"

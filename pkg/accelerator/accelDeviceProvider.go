@@ -22,6 +22,7 @@ import (
 	"github.com/jaypipes/ghw"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 const (
@@ -122,6 +123,17 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc 
 		if selector, err := rf.GetSelector("pciAddresses", af.PciAddresses); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
+	}
+
+	if af.VfOnly {
+		vfOnlyDevices := make([]types.PciDevice, 0)
+		for _, dev := range filteredDevice {
+			if !utils.IsSriovPF(dev.GetPciAddr()) {
+				vfOnlyDevices = append(vfOnlyDevices, dev)
+			}
+		}
+
+		filteredDevice = vfOnlyDevices
 	}
 
 	// convert to []AccelDevice to []PciDevice

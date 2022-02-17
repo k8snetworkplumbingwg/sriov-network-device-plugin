@@ -209,6 +209,17 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		filteredDevice = rdmaDevices
 	}
 
+	if nf.VfOnly {
+		vfOnlyDevices := make([]types.PciDevice, 0)
+		for _, dev := range filteredDevice {
+			if !utils.IsSriovPF(dev.GetPciAddr()) {
+				vfOnlyDevices = append(vfOnlyDevices, dev)
+			}
+		}
+
+		filteredDevice = vfOnlyDevices
+	}
+
 	// convert to []PciNetDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
 	copy(newDeviceList, filteredDevice)

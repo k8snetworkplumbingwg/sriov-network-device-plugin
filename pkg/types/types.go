@@ -87,6 +87,7 @@ type DeviceSelectors struct {
 	Devices      []string `json:"devices,omitempty"`
 	Drivers      []string `json:"drivers,omitempty"`
 	PciAddresses []string `json:"pciAddresses,omitempty"`
+	VfOnly       bool     `json:"vfOnly,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields
