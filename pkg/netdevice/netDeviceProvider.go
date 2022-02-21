@@ -86,7 +86,7 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 			// exclude netdevice in-use in host
 			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
 				aPF := utils.IsSriovPF(device.Address)
-				if aPF && utils.SriovConfigured(device.Address) {
+				if aPF {
 					// do not add this device in net device list
 					continue
 				}
