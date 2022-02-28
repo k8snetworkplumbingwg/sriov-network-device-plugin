@@ -29,7 +29,8 @@
 
 ## SR-IOV Network Device Plugin
 
-The SR-IOV Network Device Plugin is Kubernetes device plugin for discovering and advertising SR-IOV virtual functions (VFs) available on a Kubernetes host.
+The SR-IOV Network Device Plugin is Kubernetes device plugin for discovering and advertising networking resources in the
+form of SR-IOV virtual functions (VFs) and PCI physical functions (PFs) available on a Kubernetes host.
 
 ## Features
 
@@ -42,17 +43,19 @@ The SR-IOV Network Device Plugin is Kubernetes device plugin for discovering and
 - Extensible to support new device types with minimal effort if not already supported
 - Works within virtual deployments of Kubernetes that do not have virtualized-iommu support (VFIO No-IOMMU support)
 
-To deploy workloads with SR-IOV VF this plugin needs to work together with the following two CNI components:
+To deploy workloads with SR-IOV VF or PCI PF, this plugin needs to work together with the following two CNI components:
 
 - Any CNI meta plugin supporting Device Plugin based network provisioning (Multus CNI, or DANM)
 
   - Retrieves allocated network device information of a Pod
 
-- SR-IOV CNI
-
-  - During Pod creation, plumbs allocated SR-IOV VF to a Pods network namespace using VF information given by the meta plugin
-
-  - On Pod deletion, reset and release the VF from the Pod
+- A CNI capable of consuming the network device allocated to the Pod
+  - SR-IOV CNI (for SR-IOV VFs)
+    - During Pod creation, plumbs allocated SR-IOV VF to a Pods network namespace using VF information given by the meta plugin
+    - On Pod deletion, reset and release the VF from the Pod
+  - Host device CNI (for PCI PFs)
+    - During Pod creation, plumbs the allocated network device to the Pods network namespace using device information given by the meta plugin
+    - On Pod deletion, reset and release the allocated network device from the Pod
 
 
 Please follow the [Quick Start](#quick-start) for multi network interface support in Kubernetes.
