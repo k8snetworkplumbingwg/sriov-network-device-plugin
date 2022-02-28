@@ -71,7 +71,7 @@ func GetPfName(pciAddr string) (string, error) {
 	if pfEswitchMode == "" {
 		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
 		// fall back to the default implementation
-		if err == nil || strings.Contains(strings.ToLower(fmt.Sprint(err)), "no such device") {
+		if err == nil || strings.Contains(strings.ToLower(fmt.Sprint(err)), "error getting devlink device attributes for net device") {
 			glog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
 		} else {
 			return "", err
