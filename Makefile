@@ -95,7 +95,6 @@ test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint | $(BASE) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
-	go mod tidy
 	$Q cd $(BASE) && go test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
 test-xml: fmt lint | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
