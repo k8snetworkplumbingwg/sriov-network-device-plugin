@@ -12,6 +12,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
+	github.com/spf13/afero v1.4.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/vishvananda/netlink v1.1.1-0.20211101163509-b10eb8fe5cf6
 	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
