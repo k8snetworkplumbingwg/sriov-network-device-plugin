@@ -447,7 +447,7 @@ var _ = Describe("In the utils package", func() {
 				On("GetDevLinkDeviceEswitchAttrs", "devlinkDeviceSwitchdev").
 				Return(&nl.DevlinkDevEswitchAttr{Mode: "switchdev"}, nil).
 				On("GetDevLinkDeviceEswitchAttrs", "nonDevlinkDevice").
-				Return(nil, fmt.Errorf("devlink error: no such device")).
+				Return(nil, fmt.Errorf("error getting devlink device attributes for net device")).
 				On("GetDevLinkDeviceEswitchAttrs", "nonSriovDevice").
 				Return(&nl.DevlinkDevEswitchAttr{Mode: ""}, nil).
 				On("GetDevLinkDeviceEswitchAttrs", "unknownDevice").
