@@ -28,6 +28,9 @@ import (
 
 var (
 	sysBusPci = "/sys/bus/pci/devices"
+	// SysBusAux is the location of auxiliary devices in the system fs
+	SysBusAux = "/sys/bus/auxiliary/devices"
+	auxDevRe  = regexp.MustCompile(`^(\S+\.){2}\d+$`)
 	devDir    = "/dev"
 )
 
@@ -422,4 +425,38 @@ func GetPfEswitchMode(pciAddr string) (string, error) {
 		return "", err
 	}
 	return devLinkDeviceAttrs.Mode, nil
+}
+
+// GetAuxNetDevicesFromPci returns list of auxiliary devices paths for specified PCI address
+func GetAuxNetDevicesFromPci(pciAddr string) ([]string, error) {
+	auxDevs := make([]string, 0)
+	baseDev := filepath.Join(sysBusPci, pciAddr)
+	files, err := os.ReadDir(baseDev)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		if auxDevRe.MatchString(file.Name()) {
+			auxDevs = append(auxDevs, file.Name())
+		}
+	}
+	return auxDevs, nil
+}
+
+// GetUplinkRepresentorFromAuxDev returns name of the Uplink for specified Auxiliary device
+func GetUplinkRepresentorFromAuxDev(auxDev string) (string, error) {
+	return GetSriovnetProvider().GetUplinkRepresentorFromAux(auxDev)
+}
+
+// GetAuxDevIfName returns host net interface name of auxiliary device
+func GetAuxDevIfName(auxDev string) (string, error) {
+	netDir := filepath.Join(SysBusAux, auxDev, "net")
+	files, err := os.ReadDir(netDir)
+	if err != nil {
+		return "", err
+	}
+	if len(files) == 0 {
+		return "", fmt.Errorf("GetAuxDevIfName(): no interfaces found for %s device", auxDev)
+	}
+	return files[0].Name(), nil
 }

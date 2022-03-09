@@ -52,11 +52,29 @@ func (np *netDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 
 func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
 	newPciDevices := make([]types.PciDevice, 0)
-	for _, device := range np.deviceList {
-		if newDevice, err := NewPciNetDevice(device, np.rFactory, rc); err == nil {
-			newPciDevices = append(newPciDevices, newDevice)
-		} else {
-			glog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
+	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if !ok {
+		glog.Errorf("netdevice GetDevices(): unable to convert SelectorObj to NetDeviceSelectors")
+		return newPciDevices
+	}
+
+	if len(nf.AuxDevices) == 0 {
+		glog.Infof("netdevice GetDevices(): processing PciNetDevices")
+		for _, device := range np.deviceList {
+			if newDevice, err := NewPciNetDevice(device, np.rFactory, rc); err == nil {
+				newPciDevices = append(newPciDevices, newDevice)
+			} else {
+				glog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
+			}
+		}
+	} else {
+		glog.Infof("netdevice GetDevices(): processing AuxNetDevices")
+		for _, device := range np.deviceList {
+			if auxDevices, err := NewAuxNetDevices(device, np.rFactory, rc); err == nil {
+				newPciDevices = append(newPciDevices, auxDevices...)
+			} else {
+				glog.Errorf("netdevice GetDevices(): failed to get auxiliary devices: %q", err)
+			}
 		}
 	}
 	return newPciDevices
@@ -224,7 +242,13 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		filteredDevice = vdpaDevices
 	}
 
-	// convert to []PciNetDevice to []PciDevice
+	if len(nf.AuxDevices) > 0 {
+		if selector, err := rf.GetSelector("auxDevices", nf.AuxDevices); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
+	// convert []PciNetDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
 	copy(newDeviceList, filteredDevice)
 

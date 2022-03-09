@@ -110,6 +110,7 @@ type NetDeviceSelectors struct {
 	IsRdma       bool     // the resource support rdma
 	NeedVhostNet bool     // share vhost-net along the selected resource
 	VdpaType     VdpaType `json:"vdpaType,omitempty"`
+	AuxDevices   []string `json:"auxDevices,omitempty"`
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields

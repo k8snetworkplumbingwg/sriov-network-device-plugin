@@ -57,6 +57,8 @@ github.com/Mellanox/rdmamap v1.0.0 h1:5OQX6n85GDKetHP9wBqxy/0Ce2+taRg+4nSTsNOCyK
 github.com/Mellanox/rdmamap v1.0.0/go.mod h1:fN+/V9lf10ABnDCwTaXRjeeWijLt2iVLETnK+sx/LY8=
 github.com/Mellanox/sriovnet v1.0.3 h1:Nlmxr2mkp16aIP4CJcsnqCczxQQgOuzNDm/nu9qTBZ8=
 github.com/Mellanox/sriovnet v1.0.3/go.mod h1:8TlYc3iOTEvUM+WAbC7MU6U6JXqIfhl2DcWIGVUsjIE=
+github.com/Mellanox/sriovnet v1.1.0 h1:j3KnktNJMHWPTqWXlf27OzQG0ahRO+88NauMjlazyko=
+github.com/Mellanox/sriovnet v1.1.0/go.mod h1:P2Epf+52ZaPknkR60EUOvLABXZh3FBymcHPsUfikRVE=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/purell v1.0.0/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=

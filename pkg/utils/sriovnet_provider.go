@@ -7,6 +7,7 @@ import (
 // SriovnetProvider is a wrapper type over sriovnet library
 type SriovnetProvider interface {
 	GetUplinkRepresentor(vfPciAddress string) (string, error)
+	GetUplinkRepresentorFromAux(auxDev string) (string, error)
 }
 
 type defaultSriovnetProvider struct {
@@ -26,4 +27,8 @@ func GetSriovnetProvider() SriovnetProvider {
 
 func (defaultSriovnetProvider) GetUplinkRepresentor(vfPciAddress string) (string, error) {
 	return sriovnet.GetUplinkRepresentor(vfPciAddress)
+}
+
+func (defaultSriovnetProvider) GetUplinkRepresentorFromAux(auxDev string) (string, error) {
+	return sriovnet.GetUplinkRepresentorFromAux(auxDev)
 }

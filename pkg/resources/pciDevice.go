@@ -114,7 +114,7 @@ func (pd *pciDevice) GetDeviceCode() string {
 }
 
 func (pd *pciDevice) GetPciAddr() string {
-	return pd.basePciDevice.Address
+	return pd.apiDevice.ID
 }
 
 func (pd *pciDevice) GetDriver() string {

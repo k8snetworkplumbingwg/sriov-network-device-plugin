@@ -1,7 +1,7 @@
 # github.com/Mellanox/rdmamap v1.0.0
 ## explicit; go 1.13
 github.com/Mellanox/rdmamap
-# github.com/Mellanox/sriovnet v1.0.3
+# github.com/Mellanox/sriovnet v1.1.0
 ## explicit; go 1.13
 github.com/Mellanox/sriovnet
 github.com/Mellanox/sriovnet/pkg/utils/filesystem

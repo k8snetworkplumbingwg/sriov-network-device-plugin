@@ -30,6 +30,27 @@ func (_m *SriovnetProvider) GetUplinkRepresentor(vfPciAddress string) (string, e
 	return r0, r1
 }
 
+// GetUplinkRepresentorFromAux provides a mock function with given fields: auxDev
+func (_m *SriovnetProvider) GetUplinkRepresentorFromAux(auxDev string) (string, error) {
+	ret := _m.Called(auxDev)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(auxDev)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(auxDev)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 type NewSriovnetProviderT interface {
 	mock.TestingT
 	Cleanup(func())

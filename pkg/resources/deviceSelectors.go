@@ -167,6 +167,33 @@ func (s *linkTypeSelector) Filter(inDevices []types.PciDevice) []types.PciDevice
 	return filteredList
 }
 
+// NewAuxDeviceSelector returns a NetDevSelector interface for netDev list
+func NewAuxDeviceSelector(devices []string) types.DeviceSelector {
+	return &auxDeviceSelector{auxDevices: devices}
+}
+
+type auxDeviceSelector struct {
+	auxDevices []string
+}
+
+func (s *auxDeviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
+	filteredList := make([]types.PciDevice, 0)
+	for _, dev := range inDevices {
+		// auxiliary devices have <driver_name>.<device>.<id> instead of pciAddress
+		chunks := strings.Split(dev.GetAPIDevice().ID, ".")
+		if len(chunks) != 3 {
+			// XXX expected that inDevices is auxiliary devices list but
+			// we got pci devices. Just skip for now.
+			continue
+		}
+		if contains(s.auxDevices, chunks[1]) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+
+	return filteredList
+}
+
 func contains(hay []string, needle string) bool {
 	for _, s := range hay {
 		if s == needle {

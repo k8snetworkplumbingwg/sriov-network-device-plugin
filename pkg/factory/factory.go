@@ -90,6 +90,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewLinkTypeSelector(values), nil
 	case "ddpProfiles":
 		return resources.NewDdpSelector(values), nil
+	case "auxDevices":
+		return resources.NewAuxDeviceSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}

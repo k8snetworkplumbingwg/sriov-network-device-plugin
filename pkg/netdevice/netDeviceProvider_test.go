@@ -76,7 +76,7 @@ var _ = Describe("NetDeviceProvider", func() {
 			p := netdevice.NewNetDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.NetDeviceType,
-				SelectorObj: types.NetDeviceSelectors{
+				SelectorObj: &types.NetDeviceSelectors{
 					DeviceSelectors: types.DeviceSelectors{},
 				},
 			}
