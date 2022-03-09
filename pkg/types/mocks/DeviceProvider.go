@@ -82,3 +82,17 @@ func (_m *DeviceProvider) GetFilteredDevices(_a0 []types.PciDevice, _a1 *types.R
 
 	return r0, r1
 }
+
+// ValidConfig provides a mock function with given fields: _a0
+func (_m *DeviceProvider) ValidConfig(_a0 *types.ResourceConfig) bool {
+	ret := _m.Called(_a0)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) bool); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}

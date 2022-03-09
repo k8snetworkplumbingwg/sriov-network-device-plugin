@@ -212,6 +212,11 @@ func (rm *resourceManager) validConfigs() bool {
 			return false
 		}
 
+		// Check DeviceType-specific configuration
+		if !rm.deviceProviders[conf.DeviceType].ValidConfig(conf) {
+			return false
+		}
+
 		resourceNames[resourceName] = resourceName
 	}
 

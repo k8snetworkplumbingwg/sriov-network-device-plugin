@@ -209,9 +209,38 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		filteredDevice = rdmaDevices
 	}
 
+	// filter for vDPA-capable devices
+	if nf.VdpaType != "" {
+		vdpaDevices := make([]types.PciDevice, 0)
+		for _, dev := range filteredDevice {
+			vdpaDev := dev.(types.PciNetDevice).GetVdpaDevice()
+			if vdpaDev == nil {
+				continue
+			}
+			if vType := vdpaDev.GetType(); vType != types.VdpaInvalidType && vType == nf.VdpaType {
+				vdpaDevices = append(vdpaDevices, dev)
+			}
+		}
+		filteredDevice = vdpaDevices
+	}
+
 	// convert to []PciNetDevice to []PciDevice
 	newDeviceList := make([]types.PciDevice, len(filteredDevice))
 	copy(newDeviceList, filteredDevice)
 
 	return newDeviceList, nil
+}
+
+// ValidConfig performs validation of NetDeviceSelectors
+func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
+	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if !ok {
+		glog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
+		return false
+	}
+	if nf.IsRdma && nf.VdpaType != "" {
+		glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
+		return false
+	}
+	return true
 }

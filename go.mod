@@ -8,6 +8,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/jaypipes/ghw v0.6.0
 	github.com/jaypipes/pcidb v0.5.0
+	github.com/k8snetworkplumbingwg/govdpa v0.1.3
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20201119153432-9d213757d22d
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0

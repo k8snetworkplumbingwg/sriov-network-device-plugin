@@ -37,11 +37,21 @@ const (
 // DeviceType is custom type to define supported device types
 type DeviceType string
 
+// VdpaType is a type to define the supported vdpa device types
+type VdpaType string
+
 const (
 	// NetDeviceType is DeviceType for network class devices
 	NetDeviceType DeviceType = "netDevice"
 	// AcceleratorType is DeviceType for accelerator class devices
 	AcceleratorType DeviceType = "accelerator"
+
+	// VdpaVirtioType is VdpaType for virtio-net devices
+	VdpaVirtioType VdpaType = "virtio"
+	// VdpaVhostType is VdpaType for vhost-vdpa devices
+	VdpaVhostType VdpaType = "vhost"
+	// VdpaInvalidType is VdpaType to represent an invalid or unsupported type
+	VdpaInvalidType VdpaType = "invalid"
 )
 
 // SupportedDevices is map of 'device identifier as string' to 'device class hexcode as int'
@@ -98,6 +108,7 @@ type NetDeviceSelectors struct {
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
 	IsRdma       bool     // the resource support rdma
 	NeedVhostNet bool     // share vhost-net along the selected resource
+	VdpaType     VdpaType `json:"vdpaType,omitempty"`
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
@@ -130,6 +141,7 @@ type ResourceFactory interface {
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
+	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
 	GetNadUtils() NadUtils
@@ -159,6 +171,9 @@ type DeviceProvider interface {
 	GetDevices(*ResourceConfig) []PciDevice
 
 	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)
+
+	// ValidConfig performs validation of DeviceType-specific configuration
+	ValidConfig(*ResourceConfig) bool
 }
 
 // PciDevice provides an interface to get generic device specific information
@@ -187,6 +202,7 @@ type PciNetDevice interface {
 	GetLinkType() string
 	GetRdmaSpec() RdmaSpec
 	GetDDPProfiles() string
+	GetVdpaDevice() VdpaDevice
 }
 
 // AccelDevice extends PciDevice interface
@@ -221,4 +237,11 @@ type RdmaSpec interface {
 type NadUtils interface {
 	SaveDeviceInfoFile(resourceName string, deviceID string, devInfo *nettypes.DeviceInfo) error
 	CleanDeviceInfoFile(resourceName string, deviceID string) error
+}
+
+// VdpaDevice is an interface to access vDPA device information
+type VdpaDevice interface {
+	GetPath() string
+	GetParent() string
+	GetType() VdpaType
 }
