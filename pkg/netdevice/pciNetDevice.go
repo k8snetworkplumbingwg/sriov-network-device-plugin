@@ -73,7 +73,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		}
 	}
 
-	pciDev, err := resources.NewPciDevice(dev, rFactory, infoProviders)
+	pciDev, err := resources.NewPciDevice(dev, rFactory, rc, infoProviders)
 	if err != nil {
 		return nil, err
 	}

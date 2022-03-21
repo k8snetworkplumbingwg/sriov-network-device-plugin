@@ -51,7 +51,7 @@ func (ap *accelDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
 	newPciDevices := make([]types.PciDevice, 0)
 	for _, device := range ap.deviceList {
-		if newDevice, err := NewAccelDevice(device, ap.rFactory); err == nil {
+		if newDevice, err := NewAccelDevice(device, ap.rFactory, rc); err == nil {
 			newPciDevices = append(newPciDevices, newDevice)
 		} else {
 			glog.Errorf("accelerator GetDevices() error creating new device: %q", err)
