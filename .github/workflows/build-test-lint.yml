@@ -74,10 +74,6 @@ jobs:
       with:
        dockerfile: ./images/Dockerfile
        ignore: DL3018 # DL3018: GH issue 368
-    - uses: brpaz/hadolint-action@v1.5.0
-      with:
-        dockerfile: Dockerfile.rhel7
-        ignore: DL3018 DL3033 # DL3018/DL3033: GH issue 368
 
   go-check:
     runs-on: ubuntu-latest
