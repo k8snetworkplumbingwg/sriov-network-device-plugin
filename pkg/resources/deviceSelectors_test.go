@@ -5,6 +5,8 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -268,6 +270,40 @@ var _ = Describe("DeviceSelectors", func() {
 
 				Expect(filtered).To(ContainElement(&dev0))
 				Expect(filtered).NotTo(ContainElement(&dev1))
+			})
+		})
+	})
+
+	Describe("auxDevices selector", func() {
+		Context("filtering", func() {
+			It("should return devices matching the correct auxiliary device", func() {
+				auxDevices := []string{"bar"}
+				sel := resources.NewAuxDeviceSelector(auxDevices)
+
+				dev0 := mocks.PciDevice{}
+				dev0.On("GetAPIDevice").Return(&pluginapi.Device{ID: "foo.bar.0"})
+				dev1 := mocks.PciDevice{}
+				dev1.On("GetAPIDevice").Return(&pluginapi.Device{ID: "foo.baz.0"})
+
+				in := []types.PciDevice{&dev0, &dev1}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).NotTo(ContainElement(&dev1))
+			})
+			It("should return all the matched devices", func() {
+				auxDevices := []string{"bar", "baz"}
+				sel := resources.NewAuxDeviceSelector(auxDevices)
+
+				dev0 := mocks.PciDevice{}
+				dev0.On("GetAPIDevice").Return(&pluginapi.Device{ID: "foo.bar.0"})
+				dev1 := mocks.PciDevice{}
+				dev1.On("GetAPIDevice").Return(&pluginapi.Device{ID: "foo.baz.0"})
+
+				in := []types.PciDevice{&dev0, &dev1}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(Equal(in))
 			})
 		})
 	})

@@ -23,6 +23,7 @@ import (
 
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/pcidb"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -119,19 +120,19 @@ var _ = Describe("NetDeviceProvider", func() {
 			It("should correctly filter devices", func() {
 				rf := factory.NewResourceFactory("fake", "fake", false)
 				p := netdevice.NewNetDeviceProvider(rf)
-				all := make([]types.PciDevice, 5)
-				mocked := make([]mocks.PciNetDevice, 5)
+				all := make([]types.PciDevice, 8)
+				mocked := make([]mocks.PciNetDevice, 8)
 
-				ve := []string{"8086", "8086", "1111", "2222", "3333"}
-				de := []string{"abcd", "123a", "abcd", "2222", "1024"}
-				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci"}
-				pa := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3", "0000:03:02.4"}
-				pf := []string{"eth0", "eth0", "eth1", "net0", "net0"}
-				ro := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3", "0000:86:00.4"}
-				lt := []string{"ether", "infiniband", "ether", "ether", "fake"}
-				dd := []string{"E710 PPPoE and PPPoL2TPv2", "fake", "fake", "gtp", "profile"}
-				rd := []bool{false, true, false, false, true}
-				vd := []string{"vhost", "vhost", "", "", "virtio"}
+				ve := []string{"8086", "8086", "1111", "2222", "3333", "beaf", "beaf", "beaf"}
+				de := []string{"abcd", "123a", "abcd", "2222", "1024", "beaf", "beaf", "beaf"}
+				md := []string{"igb_uio", "igb_uio", "igb_uio", "iavf", "vfio-pci", "foo", "foo", "foo"}
+				pa := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3", "0000:03:02.4", "foo.bar.0", "foo.baz.0", "foo.baz.1"}
+				pf := []string{"eth0", "eth0", "eth1", "net0", "net0", "eth2", "eth2", "eth2"}
+				ro := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3", "0000:86:00.4", "0000:86:00.5", "0000:86:00.6", "0000:86:00.7"}
+				lt := []string{"ether", "infiniband", "ether", "ether", "fake", "", "", ""}
+				dd := []string{"E710 PPPoE and PPPoL2TPv2", "fake", "fake", "gtp", "profile", "", "", ""}
+				rd := []bool{false, true, false, false, true, false, false, false}
+				vd := []string{"vhost", "vhost", "", "", "virtio", "", "", ""}
 
 				rdmaYes := &mocks.RdmaSpec{}
 				rdmaYes.On("IsRdma").Return(true)
@@ -154,7 +155,8 @@ var _ = Describe("NetDeviceProvider", func() {
 						On("GetPFName").Return(pf[i]).
 						On("GetPfPciAddr").Return(ro[i]).
 						On("GetLinkType").Return(lt[i]).
-						On("GetDDPProfiles").Return(dd[i])
+						On("GetDDPProfiles").Return(dd[i]).
+						On("GetAPIDevice").Return(&pluginapi.Device{ID: pa[i]})
 
 					if rd[i] {
 						mocked[i].On("GetRdmaSpec").Return(rdmaYes)
@@ -190,6 +192,8 @@ var _ = Describe("NetDeviceProvider", func() {
 					{"rdma", &types.NetDeviceSelectors{IsRdma: true}, []types.PciDevice{all[1], all[4]}},
 					{"vdpa-vhost", &types.NetDeviceSelectors{VdpaType: "vhost"}, []types.PciDevice{all[0], all[1]}},
 					{"vdpa-virtio", &types.NetDeviceSelectors{VdpaType: "virtio"}, []types.PciDevice{all[4]}},
+					{"auxDevices", &types.NetDeviceSelectors{AuxDevices: []string{"bar"}}, []types.PciDevice{all[5]}},
+					{"auxDevices multi", &types.NetDeviceSelectors{AuxDevices: []string{"bar", "baz"}}, []types.PciDevice{all[5], all[6], all[7]}},
 				}
 
 				for _, tc := range testCases {

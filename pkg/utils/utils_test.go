@@ -518,4 +518,59 @@ var _ = Describe("In the utils package", func() {
 			},
 			"0000:01:10.0", 2, false),
 	)
+
+	DescribeTable("getting auxiliary devices from PCI",
+		func(fs *FakeFilesystem, device string, expected []string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetAuxNetDevicesFromPci(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device is not valid", &FakeFilesystem{}, "0000:01:00.0", nil, true),
+		Entry("device directory is empty",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:00.0"}},
+			"0000:01:00.0", make([]string, 0), false,
+		),
+		Entry("no auxiliary devices",
+			&FakeFilesystem{
+				Dirs: []string{"sys/bus/pci/devices/0000:01:00.0"},
+				Files: map[string][]byte{
+					"sys/bus/pci/devices/0000:01:00.0/some_file":       []byte("content"),
+					"sys/bus/pci/devices/0000:01:00.0/some_other_file": []byte("content"),
+				},
+			},
+			"0000:01:00.0", make([]string, 0), false,
+		),
+		Entry("auxiliary devices exists",
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:01:00.0/foo.bar.1",
+					"sys/bus/pci/devices/0000:01:00.0/foo.bar.2",
+				},
+				Files: map[string][]byte{
+					"sys/bus/pci/devices/0000:01:00.0/some_file":       []byte("content"),
+					"sys/bus/pci/devices/0000:01:00.0/some_other_file": []byte("content"),
+				},
+			},
+			"0000:01:00.0", []string{"foo.bar.1", "foo.bar.2"}, false,
+		),
+	)
+
+	DescribeTable("getting auxiliary device host net interface name",
+		func(fs *FakeFilesystem, device string, expected string, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetAuxDevIfName(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device net directory doesn't exist",
+			&FakeFilesystem{Dirs: []string{"sys/bus/auxiliary/devices/foo.bar.3"}}, "foo.bar.3", "", true,
+		),
+		Entry("no net names",
+			&FakeFilesystem{Dirs: []string{"sys/bus/auxiliary/devices/foo.bar.3/net"}}, "foo.bar.3", "", true,
+		),
+		Entry("net name exists",
+			&FakeFilesystem{Dirs: []string{"sys/bus/auxiliary/devices/foo.bar.3/net/eth0"}}, "foo.bar.3", "eth0", false,
+		),
+	)
 })
