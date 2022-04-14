@@ -92,6 +92,67 @@ var _ = Describe("Resource manager", func() {
 						"resourceList": [{
 								"resourceName": "intel_sriov_netdevice",
 								"selectors": {
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"]
+								},
+								"envs": {
+									"var1": {
+										"foo":"bar",	
+										"bar":"foo"
+									}
+								}
+							},
+							{
+								"resourceName": "intel_sriov_dpdk",
+								"selectors": {
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"],
+									"drivers": ["vfio-pci"]
+								}
+							}
+						]
+					}`), 0644)
+				if testErr != nil {
+					panic(testErr)
+				}
+				err = rm.readConfig()
+			})
+			AfterEach(func() {
+				testErr := os.RemoveAll("/tmp/sriovdp")
+				if testErr != nil {
+					panic(testErr)
+				}
+				rm = nil
+				cp = nil
+			})
+			It("shouldn't fail", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should load resources list", func() {
+				Expect(len(rm.configList)).To(Equal(2))
+			})
+			It("one of resources should have envs defined", func() {
+				Expect(rm.configList).Should(
+					ContainElement(
+						WithTransform(
+							func(rc *types.ResourceConfig) map[string]types.IDToValueMapping {
+								return rc.Envs
+							},
+							Not(BeNil()))))
+			})
+		})
+		Context("when config reading is successful", func() {
+			var err error
+			BeforeEach(func() {
+				// add err handling
+				testErr := os.MkdirAll("/tmp/sriovdp", 0755)
+				if testErr != nil {
+					panic(testErr)
+				}
+				testErr = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+						"resourceList": [{
+								"resourceName": "intel_sriov_netdevice",
+								"selectors": {
 									"isRdma": false,
 									"vendors": ["8086"],
 									"devices": ["154c", "10ed"],

@@ -330,19 +330,23 @@ func (rs *resourceServer) triggerUpdate() {
 }
 
 func (rs *resourceServer) getEnvs(deviceIDs []string) map[string]string {
-	envs := make(map[string]string)
-	key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", rs.resourceNamePrefix, rs.resourcePool.GetResourceName())
-	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
-	envVals := rs.resourcePool.GetEnvs(deviceIDs)
-	values := ""
-	lastIndex := len(envVals) - 1
-	for i, s := range envVals {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[key] = values
+	envs := rs.resourcePool.GetEnvs(deviceIDs)
 	return envs
+	//
+	//envs := make(map[string]string)
+	//key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", rs.resourceNamePrefix, rs.resourcePool.GetResourceName())
+	//key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+	//envVals := rs.resourcePool.GetEnvs(deviceIDs)
+	//values := ""
+	//lastIndex := len(envVals) - 1
+	//for i, s := range envVals {
+	//	values += s
+	//	if i == lastIndex {
+	//		break
+	//	}
+	//	values += ","
+	//}
+	//rs.resourcePool.GetDevices()
+	//envs[key] = values
+	//return envs
 }

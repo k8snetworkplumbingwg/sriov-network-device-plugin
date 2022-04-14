@@ -271,7 +271,7 @@ var _ = Describe("Server", func() {
 				On("GetDeviceSpecs", []string{"00:00.01"}).
 				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}).
 				On("GetEnvs", []string{"00:00.01"}).
-				Return([]string{"00:00.01"}).
+				Return(map[string]string{"sss": "00:00.01"}).
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
 
@@ -320,7 +320,7 @@ var _ = Describe("Server", func() {
 		})
 	})
 	DescribeTable("getting env variables",
-		func(in []string, expected map[string]string) {
+		func(in map[string]string, expected map[string]string) {
 			fs := &utils.FakeFilesystem{}
 			defer fs.Use()()
 			deviceIDs := []string{"fakeid"}
@@ -338,7 +338,7 @@ var _ = Describe("Server", func() {
 			}
 		},
 		Entry("some values",
-			[]string{"fakeId0", "fakeId1"},
+			map[string]string{"PCIDEVICE_FAKE_COM_FAKE": "fakeId0,fakeId1"},
 			map[string]string{
 				"PCIDEVICE_FAKE_COM_FAKE": "fakeId0,fakeId1",
 			},

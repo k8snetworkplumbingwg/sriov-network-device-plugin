@@ -80,6 +80,13 @@ var _ = Describe("PoolStub", func() {
 
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
+				rc.ResourceName = "test_resource"
+				rc.ResourcePrefix = "test_prefix"
+				rc.Envs = map[string]types.IDToValueMapping{
+					"token": {
+						"0000:00:00.2": "tokenb",
+					},
+				}
 				rp = resources.NewResourcePool(rc,
 					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
@@ -89,9 +96,9 @@ var _ = Describe("PoolStub", func() {
 				)
 				envs := rp.GetEnvs(devs)
 
-				expected := []string{"0000:00:00.1", "0000:00:00.2"}
 				Expect(envs).To(HaveLen(2))
-				Expect(envs).To(ConsistOf(expected))
+				Expect(envs).To(HaveKeyWithValue("PCIDEVICE_TEST_PREFIX_TEST_RESOURCE", "0000:00:00.1,0000:00:00.2"))
+				Expect(envs).To(HaveKeyWithValue("PCIDEVICE_TEST_PREFIX_TEST_RESOURCE_TOKEN", ",tokenb"))
 			})
 		})
 	})

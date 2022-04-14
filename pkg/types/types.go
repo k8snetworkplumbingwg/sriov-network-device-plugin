@@ -16,7 +16,6 @@ package types
 
 import (
 	"encoding/json"
-
 	"github.com/jaypipes/ghw"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -89,7 +88,11 @@ type ResourceConfig struct {
 	DeviceType     DeviceType       `json:"deviceType,omitempty"`
 	Selectors      *json.RawMessage `json:"selectors,omitempty"`
 	SelectorObj    interface{}
+	Envs           map[string]IDToValueMapping `json:"envs,omitempty"`
 }
+
+// IDToValueMapping lkslks
+type IDToValueMapping map[string]string
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
@@ -155,7 +158,7 @@ type ResourcePool interface {
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
-	GetEnvs(deviceIDs []string) []string
+	GetEnvs(deviceIDs []string) map[string]string
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error

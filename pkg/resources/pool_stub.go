@@ -15,10 +15,11 @@
 package resources
 
 import (
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
-
+	"fmt"
 	"github.com/golang/glog"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"strings"
 )
 
 // ResourcePoolImpl implements stub ResourcePool interface
@@ -93,7 +94,19 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 }
 
 // GetEnvs returns a list of device specific Env values for device IDs
-func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) []string {
+func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) (res map[string]string) {
+	res = map[string]string{}
+
+	buildEnvName := func(envName string) string {
+		key := fmt.Sprintf("%s_%s_%s_%s", "PCIDEVICE", rp.GetResourcePrefix(), rp.GetResourceName(), envName)
+		key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+		return strings.TrimSuffix(key, "_")
+	}
+
+	buildEnvValue := func(values []string) string {
+		return strings.Join(values, ",")
+	}
+
 	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
 	devEnvs := make([]string, 0)
 
@@ -105,7 +118,18 @@ func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) []string {
 		}
 	}
 
-	return devEnvs
+	res[buildEnvName("")] = buildEnvValue(devEnvs)
+
+	for envName, envMapping := range rp.GetConfig().Envs {
+		values := make([]string, 0)
+		for _, device := range devEnvs {
+			v := envMapping[device]
+			values = append(values, v)
+		}
+		res[buildEnvName(string(envName))] = buildEnvValue(values)
+	}
+
+	return res
 }
 
 // GetMounts returns a list of Mount for device IDs
