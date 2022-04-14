@@ -10,6 +10,7 @@ GOLINT = $(GOBIN)/golint
 GOCOVMERGE = $(GOBIN)/gocovmerge
 GOCOV = $(GOBIN)/gocov
 GOCOVXML = $(GOBIN)/gocov-xml
+GCOV2LCOV = $(GOBIN)/gcov2lcov
 GO2XUNIT = $(GOBIN)/go2xunit
 # Package info
 BINARY_NAME=sriovdp
@@ -80,6 +81,9 @@ $(GOCOVMERGE): | $(BASE) ; $(info  building gocovmerge...)
 $(GOCOV): | $(BASE) ; $(info  building gocov...)
 	$Q go get github.com/axw/gocov/...
 
+$(GCOV2LCOV): | $(BASE) ; $(info  building gcov2lcov...)
+	$Q go get github.com/jandelgado/gcov2lcov
+
 $(GOCOVXML): | $(BASE) ; $(info  building gocov-xml...)
 	$Q go get github.com/AlekSi/gocov-xml
 
@@ -102,8 +106,8 @@ test-xml: fmt lint | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...)
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
 .PHONY: test-coverage test-coverage-tools
-test-coverage-tools: | $(GOCOVMERGE) $(GOCOV) $(GOCOVXML)
-test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage.$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+test-coverage-tools: | $(GOCOVMERGE) $(GOCOV) $(GOCOVXML) $(GCOV2LCOV)
+test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage
 test-coverage: fmt lint test-coverage-tools | $(BASE) ; $(info  Running coverage tests...) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)/coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
@@ -117,6 +121,7 @@ test-coverage: fmt lint test-coverage-tools | $(BASE) ; $(info  Running coverage
 	$Q $(GOCOVMERGE) $(COVERAGE_DIR)/coverage/*.cover > $(COVERAGE_PROFILE)
 	$Q go tool cover -html=$(COVERAGE_PROFILE) -o $(COVERAGE_HTML)
 	$Q $(GOCOV) convert $(COVERAGE_PROFILE) | $(GOCOVXML) > $(COVERAGE_XML)
+	$Q $(GCOV2LCOV) -infile $(COVERAGE_PROFILE) -outfile $(COVERAGE_DIR)/lcov.info
 
 .PHONY: lint
 lint: | $(BASE) $(GOLINT) ; $(info  Running golint...) @ ## Run golint on all source files

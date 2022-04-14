@@ -23,6 +23,7 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           GOOS: ${{ matrix.goos }}
         run: make build
+
   test:
     runs-on: ubuntu-latest
     needs: build
@@ -42,16 +43,45 @@ jobs:
       - name: Go test
         run: make test
 
+  test-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    name: test-coverage
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16.x
+
+      - uses: actions/checkout@v2
+
+      - name: Install hwdata
+        run: sudo apt-get install hwdata -y
+
+      - name: Go test with coverage
+        run: make test-coverage
+      
+      - name: Coveralls
+        uses: coverallsapp/github-action@1.1.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: test/coverage/lcov.info
+
   golangci:
     name: Golangci-lint
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16.x
       - uses: actions/checkout@v2
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.37
+
   shellcheck:
     name: Shellcheck
     runs-on: ubuntu-latest
