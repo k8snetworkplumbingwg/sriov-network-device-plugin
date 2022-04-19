@@ -83,6 +83,9 @@ func (rm *resourceManager) readConfig() error {
 
 	for i := range resources.ResourceList {
 		conf := &resources.ResourceList[i]
+		if conf.ResourcePrefix == "" {
+			conf.ResourcePrefix = rm.resourcePrefix
+		}
 		// Validate deviceType
 		if conf.DeviceType == "" {
 			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
