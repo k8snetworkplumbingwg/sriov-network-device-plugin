@@ -122,11 +122,15 @@ func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) (res map[string]string) 
 
 	for envName, envMapping := range rp.GetConfig().Envs {
 		values := make([]string, 0)
+
 		for _, device := range devEnvs {
 			v := envMapping[device]
+			if shared := envMapping["*"]; v == "" && shared != "" {
+				v = shared
+			}
 			values = append(values, v)
 		}
-		res[buildEnvName(string(envName))] = buildEnvValue(values)
+		res[buildEnvName(envName)] = buildEnvValue(values)
 	}
 
 	return res
