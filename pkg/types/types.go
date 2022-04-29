@@ -87,7 +87,7 @@ type ResourceConfig struct {
 	ResourcePrefix  string           `json:"resourcePrefix,omitempty"`
 	ResourceName    string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
 	DeviceType      DeviceType       `json:"deviceType,omitempty"`
-	ExcludeTopology bool             `json:"exclude_topology,omitempty"`
+	ExcludeTopology bool             `json:"excludeTopology,omitempty"`
 	Selectors       *json.RawMessage `json:"selectors,omitempty"`
 	SelectorObj     interface{}
 }
