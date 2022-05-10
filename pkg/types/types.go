@@ -84,11 +84,12 @@ var SupportedDevices = map[DeviceType]int{
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
 	// optional resource prefix that will overwrite	global prefix specified in cli params
-	ResourcePrefix string           `json:"resourcePrefix,omitempty"`
-	ResourceName   string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	DeviceType     DeviceType       `json:"deviceType,omitempty"`
-	Selectors      *json.RawMessage `json:"selectors,omitempty"`
-	SelectorObj    interface{}
+	ResourcePrefix  string           `json:"resourcePrefix,omitempty"`
+	ResourceName    string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	DeviceType      DeviceType       `json:"deviceType,omitempty"`
+	ExcludeTopology bool             `json:"excludeTopology,omitempty"`
+	Selectors       *json.RawMessage `json:"selectors,omitempty"`
+	SelectorObj     interface{}
 }
 
 // DeviceSelectors contains common device selectors fields

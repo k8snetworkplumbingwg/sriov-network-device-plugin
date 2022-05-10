@@ -46,7 +46,8 @@ func nodeToStr(nodeNum int) string {
 // NewPciDevice returns an instance of PciDevice interface
 // A list of DeviceInfoProviders can be set externally.
 // If empty, the default driver-based selection provided by ResourceFactory will be used
-func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProviders []types.DeviceInfoProvider) (types.PciDevice, error) {
+func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig,
+	infoProviders []types.DeviceInfoProvider) (types.PciDevice, error) {
 	pciAddr := dev.Address
 
 	// Get PF PCI address
@@ -70,8 +71,11 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, infoProvid
 	if len(infoProviders) == 0 {
 		infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(pciAddr, driverName))
 	}
+	nodeNum := -1
+	if !rc.ExcludeTopology {
+		nodeNum = utils.GetDevNode(pciAddr)
+	}
 
-	nodeNum := utils.GetDevNode(pciAddr)
 	apiDevice := &pluginapi.Device{
 		ID:     pciAddr,
 		Health: pluginapi.Healthy,

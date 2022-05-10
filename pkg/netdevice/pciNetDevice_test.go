@@ -123,6 +123,32 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
+			It("should not populate topology due to config option being set", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
+						"sys/kernel/iommu_groups/0",
+						"sys/bus/pci/drivers/vfio-pci",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
+						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+					},
+					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+				}
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+
+				f := factory.NewResourceFactory("fake", "fake", true)
+				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				rc := &types.ResourceConfig{ExcludeTopology: true}
+
+				dev, err := netdevice.NewPciNetDevice(in, f, rc)
+
+				Expect(dev.GetAPIDevice().Topology).To(BeNil())
+				Expect(dev.GetNumaInfo()).To(Equal(""))
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 		Context("with two devices but only one of them being RDMA", func() {
 			rc := &types.ResourceConfig{
