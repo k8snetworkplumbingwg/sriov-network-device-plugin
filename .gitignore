@@ -1,5 +1,6 @@
 /.gopath/*
 /build/*
+/test/coverage*
 
 # Created by https://www.gitignore.io/api/go,macos,linux,windows,visualstudiocode
 

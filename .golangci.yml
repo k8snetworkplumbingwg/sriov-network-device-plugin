@@ -1,6 +1,13 @@
 # Tested with golangci-lint ver. 1.37
 run:
   timeout: 3m
+  skip-dirs:
+    - vendor/
+    - .github/
+    - deployments/
+    - docs/
+    - images/
+
 linters-settings:
   depguard:
     list-type: blacklist
@@ -110,11 +117,3 @@ issues:
         - lll
         - stylecheck
         - goconst
-
-run:
-  skip-dirs:
-    - vendor/
-    - .github/
-    - deployments/
-    - docs/
-    - images/
