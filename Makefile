@@ -73,22 +73,22 @@ $(BUILDDIR)/$(BINARY_NAME): $(GOFILES) | $(BUILDDIR)
 	@cd $(BASE)/cmd/$(BINARY_NAME) && CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -tags no_openssl -v
 
 $(GOLINT): | $(BASE) ; $(info  building golint...)
-	$Q go get -u golang.org/x/lint/golint
+	$Q go install golang.org/x/lint/golint@latest
 
 $(GOCOVMERGE): | $(BASE) ; $(info  building gocovmerge...)
-	$Q go get github.com/wadey/gocovmerge
+	$Q go install github.com/wadey/gocovmerge@latest
 
 $(GOCOV): | $(BASE) ; $(info  building gocov...)
-	$Q go get github.com/axw/gocov/...
+	$Q go install github.com/axw/gocov/gocov@v1.1.0
 
 $(GCOV2LCOV): | $(BASE) ; $(info  building gcov2lcov...)
-	$Q go get github.com/jandelgado/gcov2lcov
+	$Q go install github.com/jandelgado/gcov2lcov@latest
 
 $(GOCOVXML): | $(BASE) ; $(info  building gocov-xml...)
-	$Q go get github.com/AlekSi/gocov-xml
+	$Q go install github.com/AlekSi/gocov-xml@latest
 
 $(GO2XUNIT): | $(BASE) ; $(info  building go2xunit...)
-	$Q go get github.com/tebeka/go2xunit
+	$Q go install github.com/tebeka/go2xunit@latest
 
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
 .PHONY: $(TEST_TARGETS) test-xml check test tests
