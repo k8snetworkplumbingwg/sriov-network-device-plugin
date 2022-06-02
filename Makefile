@@ -12,6 +12,7 @@ GOCOV = $(GOBIN)/gocov
 GOCOVXML = $(GOBIN)/gocov-xml
 GCOV2LCOV = $(GOBIN)/gcov2lcov
 GO2XUNIT = $(GOBIN)/go2xunit
+GOMOCKERY = $(GOBIN)/mockery
 # Package info
 BINARY_NAME=sriovdp
 PACKAGE=sriov-network-device-plugin
@@ -90,6 +91,9 @@ $(GOCOVXML): | $(BASE) ; $(info  building gocov-xml...)
 $(GO2XUNIT): | $(BASE) ; $(info  building go2xunit...)
 	$Q go install github.com/tebeka/go2xunit@latest
 
+$(GOMOCKERY): | $(BASE) ; $(info  building go2xunit...)
+	$Q go install github.com/vektra/mockery/v2@latest
+
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
 .PHONY: $(TEST_TARGETS) test-xml check test tests
 test-bench:   ARGS=-run=__absolutelynothing__ -bench=. ## Run benchmarks
@@ -150,6 +154,12 @@ clean: ; $(info  Cleaning...) @ ## Cleanup everything
 	@rm -rf $(BUILDDIR)
 	@rm -rf $(GOBIN)
 	@rm -rf test/
+
+.PHONY: mockery
+mockery: | $(BASE) $(GOMOCKERY) ; $(info  Running mockery...) @ ## Run golint on all source files
+#	$Q cd $(BASE)/pkg/types && rm -rf mocks && $(GOMOCKERY) --all 2>/dev/null
+	$Q $(GOMOCKERY) --name=".*" --dir=pkg/types --output=pkg/types/mocks --recursive=false --log-level=debug
+	$Q $(GOMOCKERY) --name=".*" --dir=pkg/utils --output=pkg/utils/mocks --recursive=false --log-level=debug
 
 .PHONY: help
 help: ; @ ## Display this help message
