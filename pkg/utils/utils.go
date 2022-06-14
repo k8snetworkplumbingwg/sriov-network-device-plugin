@@ -17,7 +17,6 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -71,7 +70,7 @@ func GetPfName(pciAddr string) (string, error) {
 	if pfEswitchMode == "" {
 		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
 		// fall back to the default implementation
-		if err == nil || strings.Contains(strings.ToLower(fmt.Sprint(err)), "error getting devlink device attributes for net device") {
+		if err == nil || strings.Contains(strings.ToLower(err.Error()), "error getting devlink device attributes for net device") {
 			glog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
 		} else {
 			return "", err
@@ -86,7 +85,7 @@ func GetPfName(pciAddr string) (string, error) {
 	}
 
 	path := filepath.Join(sysBusPci, pciAddr, "physfn", "net")
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -120,7 +119,7 @@ func IsSriovVF(pciAddr string) bool {
 // GetVFconfigured returns number of VF configured for a PF
 func GetVFconfigured(pf string) int {
 	configuredVfPath := filepath.Join(sysBusPci, pf, configuredVfFile)
-	vfs, err := ioutil.ReadFile(configuredVfPath)
+	vfs, err := os.ReadFile(configuredVfPath)
 	if err != nil {
 		return 0
 	}
@@ -190,7 +189,7 @@ func GetPciAddrFromVFID(pf string, vf int) (pciAddr string, err error) {
 // GetSriovVFcapacity returns SRIOV VF capacity
 func GetSriovVFcapacity(pf string) int {
 	totalVfFilePath := filepath.Join(sysBusPci, pf, totalVfFile)
-	vfs, err := ioutil.ReadFile(totalVfFilePath)
+	vfs, err := os.ReadFile(totalVfFilePath)
 	if err != nil {
 		return 0
 	}
@@ -205,7 +204,7 @@ func GetSriovVFcapacity(pf string) int {
 // GetDevNode returns the numa node of a PCI device, -1 if none is specified or error.
 func GetDevNode(pciAddr string) int {
 	devNodePath := filepath.Join(sysBusPci, pciAddr, "numa_node")
-	node, err := ioutil.ReadFile(devNodePath)
+	node, err := os.ReadFile(devNodePath)
 	if err != nil {
 		return -1
 	}
@@ -223,7 +222,7 @@ func GetDevNode(pciAddr string) int {
 func IsNetlinkStatusUp(dev string) bool {
 	if opsFiles, err := filepath.Glob(filepath.Join(sysBusPci, dev, "net", "*", "operstate")); err == nil {
 		for _, f := range opsFiles {
-			b, err := ioutil.ReadFile(f)
+			b, err := os.ReadFile(f)
 			if err != nil || strings.TrimSpace(string(b)) != "up" {
 				return false
 			}
@@ -310,7 +309,7 @@ func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err er
 	namePath := filepath.Join(linkName, "name")
 	// Read the iommu group name
 	// The name file will not exist on baremetal
-	vfioName, errName := ioutil.ReadFile(namePath)
+	vfioName, errName := os.ReadFile(namePath)
 	if errName == nil {
 		vName := strings.TrimSpace(string(vfioName))
 
@@ -333,7 +332,7 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 		return "", fmt.Errorf("GetUIODeviceFile(): could not get directory information for device: %s Err: %v", vfDir, err)
 	}
 
-	files, err := ioutil.ReadDir(vfDir)
+	files, err := os.ReadDir(vfDir)
 
 	if err != nil {
 		return
@@ -353,7 +352,7 @@ func GetNetNames(pciAddr string) ([]string, error) {
 		return nil, fmt.Errorf("GetNetName(): no net directory under pci device %s: %q", pciAddr, err)
 	}
 
-	fInfos, err := ioutil.ReadDir(netDir)
+	fInfos, err := os.ReadDir(netDir)
 	if err != nil {
 		return nil, fmt.Errorf("GetNetName(): failed to read net directory %s: %q", netDir, err)
 	}

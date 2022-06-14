@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -65,7 +64,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				_ = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte("junk"), 0644)
+				_ = os.WriteFile("/tmp/sriovdp/test_config", []byte("junk"), 0644)
 			})
 			AfterEach(func() {
 				err := os.RemoveAll("/tmp/sriovdp")
@@ -88,7 +87,7 @@ var _ = Describe("Resource manager", func() {
 				if testErr != nil {
 					panic(testErr)
 				}
-				testErr = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+				testErr = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 						"resourceList": [{
 								"resourceName": "intel_sriov_netdevice",
 								"selectors": {
@@ -159,7 +158,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "invalid-name",
 						"selectors": {
@@ -186,7 +185,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "duplicate",
 						"selectors": {
@@ -220,7 +219,7 @@ var _ = Describe("Resource manager", func() {
 				if err != nil {
 					panic(err)
 				}
-				err = ioutil.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
 						"resourceName": "wrong_config",
 						"selectors": {

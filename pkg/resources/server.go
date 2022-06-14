@@ -172,6 +172,12 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 	}
 }
 
+// TODO: (SchSeba) check if we want to use this function
+func (rs *resourceServer) GetPreferredAllocation(ctx context.Context,
+	request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+	return &pluginapi.PreferredAllocationResponse{}, nil
+}
+
 func (rs *resourceServer) PreStartContainer(ctx context.Context,
 	psRqt *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
@@ -179,7 +185,8 @@ func (rs *resourceServer) PreStartContainer(ctx context.Context,
 
 func (rs *resourceServer) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{
-		PreStartRequired: false,
+		PreStartRequired:                false,
+		GetPreferredAllocationAvailable: false,
 	}, nil
 }
 
@@ -309,7 +316,7 @@ func (rs *resourceServer) cleanUp() error {
 		errors = append(errors, err.Error())
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ","))
+		return fmt.Errorf("%s", strings.Join(errors, ","))
 	}
 	return nil
 }
