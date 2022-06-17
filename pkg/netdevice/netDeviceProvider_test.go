@@ -51,6 +51,89 @@ var _ = Describe("NetDeviceProvider", func() {
 				Expect(devs).To(BeEmpty())
 			})
 		})
+		Context("when PF has SRIOV VFs and SFs", func() {
+			fs := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:00:00.1",
+					"sys/bus/pci/devices/0000:00:00.1/fake.sf.0",
+					"sys/bus/pci/devices/0000:00:00.1/fake.sf.1",
+					"sys/bus/pci/devices/0000:00:00.2",
+					"sys/bus/pci/devices/0000:00:00.3",
+					"sys/bus/auxiliary/devices",
+					"sys/bus/pci/drivers/fake",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/fake",
+					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/fake",
+					"sys/bus/pci/devices/0000:00:00.3/driver": "../../../../bus/pci/drivers/fake",
+				},
+				Files: map[string][]byte{
+					"sys/bus/pci/devices/0000:00:00.1/sriov_numvfs":   []byte("32"),
+					"sys/bus/pci/devices/0000:00:00.1/sriov_totalvfs": []byte("64"),
+				},
+			}
+
+			defer fs.Use()()
+
+			rf := factory.NewResourceFactory("fake", "fake", true)
+			p := netdevice.NewNetDeviceProvider(rf)
+			configVFs := &types.ResourceConfig{
+				DeviceType: types.NetDeviceType,
+				SelectorObj: &types.NetDeviceSelectors{
+					DeviceSelectors: types.DeviceSelectors{},
+				},
+			}
+			configSFs := &types.ResourceConfig{
+				DeviceType: types.NetDeviceType,
+				SelectorObj: &types.NetDeviceSelectors{
+					DeviceSelectors: types.DeviceSelectors{},
+					AuxDevices:      []string{"sf"},
+				},
+			}
+			pf := &ghw.PCIDevice{
+				Address: "0000:00:00.1",
+				Class:   &pcidb.Class{ID: "1024"},
+				Vendor:  &pcidb.Vendor{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbb"},
+				Product: &pcidb.Product{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbb"},
+			}
+
+			vf1 := &ghw.PCIDevice{
+				Address: "0000:00:00.2",
+				Class:   &pcidb.Class{ID: "1024"},
+				Vendor:  &pcidb.Vendor{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbb"},
+				Product: &pcidb.Product{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbb"},
+			}
+
+			vf2 := &ghw.PCIDevice{
+				Address: "0000:00:00.3",
+				Class:   &pcidb.Class{ID: "1024"},
+				Vendor:  &pcidb.Vendor{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbb"},
+				Product: &pcidb.Product{Name: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbb"},
+			}
+
+			devsToAdd := []*ghw.PCIDevice{vf1, vf2, pf}
+
+			err := p.AddTargetDevices(devsToAdd, 0x1024)
+			dDevs := p.GetDiscoveredDevices()
+			vfDevs := p.GetDevices(configVFs)
+			sfDevs := p.GetDevices(configSFs)
+			It("shouldn't return an error", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should return 3 device on GetDiscoveredDevices()", func() {
+				Expect(dDevs).To(HaveLen(3))
+			})
+			It("should return 2 VFs on GetDevices()", func() {
+				Expect(vfDevs).To(HaveLen(2))
+				Expect(vfDevs[0].GetPciAddr()).To(Equal("0000:00:00.2"))
+				Expect(vfDevs[1].GetPciAddr()).To(Equal("0000:00:00.3"))
+			})
+			It("should return 2 SFs on GetDevices()", func() {
+				Expect(sfDevs).To(HaveLen(2))
+				Expect(sfDevs[0].GetPciAddr()).To(Equal("fake.sf.0"))
+				Expect(sfDevs[1].GetPciAddr()).To(Equal("fake.sf.1"))
+			})
+		})
 	})
 	Describe("adding 3 target devices", func() {
 		Context("when 2 are valid devices, but 1 is a PF with SRIOV configured and 1 is invalid", func() {
@@ -107,8 +190,8 @@ var _ = Describe("NetDeviceProvider", func() {
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should return only 1 device on GetDiscoveredDevices()", func() {
-				Expect(dDevs).To(HaveLen(1))
+			It("should return 2 device on GetDiscoveredDevices()", func() {
+				Expect(dDevs).To(HaveLen(2))
 			})
 			It("should return only 1 device on GetDevices()", func() {
 				Expect(devs).To(HaveLen(1))

@@ -61,6 +61,11 @@ func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDev
 	if len(nf.AuxDevices) == 0 {
 		glog.Infof("netdevice GetDevices(): processing PciNetDevices")
 		for _, device := range np.deviceList {
+			aPF := utils.IsSriovPF(device.Address)
+			if aPF && utils.SriovConfigured(device.Address) {
+				// do not process this net device
+				continue
+			}
 			if newDevice, err := NewPciNetDevice(device, np.rFactory, rc); err == nil {
 				newPciDevices = append(newPciDevices, newDevice)
 			} else {
@@ -103,11 +108,6 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 				device.Class.ID, vendorName, productName)
 			// exclude netdevice in-use in host
 			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
-				aPF := utils.IsSriovPF(device.Address)
-				if aPF && utils.SriovConfigured(device.Address) {
-					// do not add this device in net device list
-					continue
-				}
 				np.deviceList = append(np.deviceList, device)
 			}
 		}
