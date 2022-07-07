@@ -131,21 +131,7 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 
 func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 	methodID := fmt.Sprintf("ListAndWatch(%s)", rs.resourcePool.GetResourceName()) // for logging purpose
-	glog.Infof("%s invoked", methodID)
-	// Send initial list of devices
-	devs := make([]*pluginapi.Device, 0)
 	resp := new(pluginapi.ListAndWatchResponse)
-	for _, dev := range rs.resourcePool.GetDevices() {
-		devs = append(devs, dev)
-	}
-	resp.Devices = devs
-	glog.Infof("%s: send devices %v\n", methodID, resp)
-
-	if err := stream.Send(resp); err != nil {
-		glog.Errorf("%s: error: cannot update device states: %v\n", methodID, err)
-		rs.grpcServer.Stop()
-		return err
-	}
 
 	// listen for events: if updateSignal send new list of devices
 	for {

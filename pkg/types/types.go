@@ -17,7 +17,6 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/jaypipes/ghw"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
@@ -139,7 +138,7 @@ type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
-	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
+	GetResourcePool(rc *ResourceConfig, deviceProvider DeviceProvider, allocated *map[string]bool) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
@@ -163,9 +162,8 @@ type ResourcePool interface {
 
 // DeviceProvider provides interface for device discovery
 type DeviceProvider interface {
-	// AddTargetDevices adds a list of devices in a DeviceProvider that matches the 'device class hexcode as int'
-	AddTargetDevices([]*ghw.PCIDevice, int) error
-	GetDiscoveredDevices() []*ghw.PCIDevice
+	// DiscoverDevices updates the list of devices in a DeviceProvider that matches the right 'device class hexcode as int'
+	DiscoverDevices()
 
 	// GetDevices runs through the Discovered Devices and returns a list of fully populated PciDevices according to the given ResourceConfig
 	GetDevices(*ResourceConfig) []PciDevice

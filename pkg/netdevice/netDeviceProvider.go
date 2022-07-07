@@ -46,8 +46,38 @@ func NewNetDeviceProvider(rf types.ResourceFactory) types.DeviceProvider {
 	}
 }
 
-func (np *netDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
-	return np.deviceList
+func (np *netDeviceProvider) DiscoverDevices() {
+	pci, err := ghw.PCI()
+	if err != nil {
+		glog.Errorf("DiscoverDevices(): error getting PCI info: %v", err)
+		return
+	}
+	np.deviceList = make([]*ghw.PCIDevice, 0)
+
+	allDevices := pci.ListDevices()
+	if len(allDevices) == 0 {
+		glog.Warningf("DiscoverDevices(): no PCI network device found")
+	}
+
+	for _, device := range allDevices {
+		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
+		if err != nil {
+			glog.Warningf("netdevice DiscoverDevices(): unable to parse device class for device %+v %q", device, err)
+			continue
+		}
+
+		if devClass == int64(types.SupportedDevices[types.NetDeviceType]) {
+			// exclude netdevice in-use in host
+			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
+				aPF := utils.IsSriovPF(device.Address)
+				if aPF && utils.SriovConfigured(device.Address) {
+					// do not add this device in net device list
+					continue
+				}
+				np.deviceList = append(np.deviceList, device)
+			}
+		}
+	}
 }
 
 func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
@@ -60,41 +90,6 @@ func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDev
 		}
 	}
 	return newPciDevices
-}
-
-func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
-	for _, device := range devices {
-		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
-		if err != nil {
-			glog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
-			continue
-		}
-
-		if devClass == int64(deviceCode) {
-			vendor := device.Vendor
-			vendorName := vendor.Name
-			if len(vendor.Name) > maxVendorNameLen {
-				vendorName = string([]byte(vendorName)[0:17]) + "..."
-			}
-			product := device.Product
-			productName := product.Name
-			if len(product.Name) > maxProductNameLen {
-				productName = string([]byte(productName)[0:37]) + "..."
-			}
-			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
-				device.Class.ID, vendorName, productName)
-			// exclude netdevice in-use in host
-			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
-				aPF := utils.IsSriovPF(device.Address)
-				if aPF && utils.SriovConfigured(device.Address) {
-					// do not add this device in net device list
-					continue
-				}
-				np.deviceList = append(np.deviceList, device)
-			}
-		}
-	}
-	return nil
 }
 
 // hasDefaultRoute returns true if PCI network device is default route interface
@@ -120,7 +115,6 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 			}
 			for _, r := range routes {
 				if r.Dst == nil {
-					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
 					return true, nil
 				}
 			}

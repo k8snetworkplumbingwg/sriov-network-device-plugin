@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/glog"
-	"github.com/jaypipes/ghw"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -115,17 +114,7 @@ func (rm *resourceManager) initServers() error {
 			return fmt.Errorf("error getting device provider")
 		}
 
-		devices := dp.GetDevices(rc)
-		filteredDevices, err := dp.GetFilteredDevices(devices, rc)
-		if err != nil {
-			glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
-		}
-		filteredDevices = rm.excludeAllocatedDevices(filteredDevices, deviceAllocated)
-		if len(filteredDevices) < 1 {
-			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
-			continue
-		}
-		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
+		rPool, err := rm.rFactory.GetResourcePool(rc, dp, &deviceAllocated)
 		if err != nil {
 			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
 			return err
@@ -221,25 +210,4 @@ func (rm *resourceManager) validConfigs() bool {
 	}
 
 	return true
-}
-
-func (rm *resourceManager) discoverHostDevices() error {
-	pci, err := ghw.PCI()
-	if err != nil {
-		return fmt.Errorf("discoverDevices(): error getting PCI info: %v", err)
-	}
-
-	devices := pci.ListDevices()
-	if len(devices) == 0 {
-		glog.Warningf("discoverDevices(): no PCI network device found")
-	}
-
-	for k, v := range types.SupportedDevices {
-		if dp, ok := rm.deviceProviders[k]; ok {
-			if err := dp.AddTargetDevices(devices, v); err != nil {
-				glog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
-			}
-		}
-	}
-	return nil
 }

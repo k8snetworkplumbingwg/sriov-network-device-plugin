@@ -15,6 +15,8 @@
 package resources
 
 import (
+	"fmt"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 
 	"github.com/golang/glog"
@@ -23,20 +25,20 @@ import (
 
 // ResourcePoolImpl implements stub ResourcePool interface
 type ResourcePoolImpl struct {
-	config     *types.ResourceConfig
-	devices    map[string]*pluginapi.Device
-	devicePool map[string]types.PciDevice
+	config         *types.ResourceConfig
+	devicePool     []types.PciDevice
+	deviceProvider types.DeviceProvider
+	allocated      *map[string]bool
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
-func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
-	devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+func NewResourcePool(rc *types.ResourceConfig, deviceProvider types.DeviceProvider, allocated *map[string]bool) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
-		config:     rc,
-		devices:    apiDevices,
-		devicePool: devicePool,
+		config:         rc,
+		deviceProvider: deviceProvider,
+		allocated:      allocated,
 	}
 }
 
@@ -61,16 +63,76 @@ func (rp *ResourcePoolImpl) GetResourcePrefix() string {
 	return rp.config.ResourcePrefix
 }
 
+func pciDeviceToPluginapiDevice(toConvert []types.PciDevice) map[string]*pluginapi.Device {
+	apiDevices := make(map[string]*pluginapi.Device, 0)
+
+	for _, dev := range toConvert {
+		pciAddr := dev.GetPciAddr()
+		apiDevices[pciAddr] = dev.GetAPIDevice()
+	}
+	return apiDevices
+}
+
 // GetDevices returns a map of Kubelet API devices
 func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
-	// returns all devices from devices[]
-	return rp.devices
+	return pciDeviceToPluginapiDevice(rp.devicePool)
 }
 
 // Probe - does device healthcheck. Not implemented
 func (rp *ResourcePoolImpl) Probe() bool {
-	// TO-DO: Implement this
-	return false
+	devToString := func(d types.PciDevice) string {
+		return fmt.Sprintf("%s,%s,%s\n", d.GetPciAddr(), d.GetVendor(), d.GetDriver())
+	}
+
+	toSet := func(l []types.PciDevice) map[string]types.PciDevice {
+		ret := make(map[string]types.PciDevice, 0)
+		for _, d := range l {
+			ret[devToString(d)] = d
+		}
+		return ret
+	}
+
+	changed := false
+	rp.deviceProvider.DiscoverDevices()
+	devices := rp.deviceProvider.GetDevices(rp.config)
+	filteredDevices, _ := rp.deviceProvider.GetFilteredDevices(devices, rp.config)
+
+	filteredDevicesMap := toSet(filteredDevices)
+	devicePoolMap := toSet(rp.devicePool)
+
+	for k, d := range filteredDevicesMap {
+		if _, ok := devicePoolMap[k]; !ok {
+			if _, ok := (*rp.allocated)[devToString(d)]; !ok {
+				glog.Infof("ResourcePool probe(): new device found: %-12s\t%-12s", d.GetPciAddr(), d.GetVendor())
+				(*rp.allocated)[devToString(d)] = true
+				changed = true
+			}
+		}
+	}
+
+	for k, d := range devicePoolMap {
+		if _, ok := filteredDevicesMap[k]; !ok {
+			glog.Infof("ResourcePool probe(): old device removed: %-12s\t%-12s", d.GetPciAddr(), d.GetVendor())
+			changed = true
+			delete(*rp.allocated, devToString(d))
+		}
+	}
+
+	if changed {
+		rp.devicePool = filteredDevices
+	}
+
+	return changed
+}
+
+func (rp *ResourcePoolImpl) getDeviceWithID() map[string]types.PciDevice {
+	deviceWithID := make(map[string]types.PciDevice, 0)
+
+	for _, dev := range rp.devicePool {
+		pciAddr := dev.GetPciAddr()
+		deviceWithID[pciAddr] = dev
+	}
+	return deviceWithID
 }
 
 // GetDeviceSpecs returns list of plugin API device specs for a list of device IDs
@@ -78,9 +140,11 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
+	deviceWithID := rp.getDeviceWithID()
+
 	// Add vfio group specific devices
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := deviceWithID[id]; ok {
 			newSpecs := dev.GetDeviceSpecs()
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
@@ -97,9 +161,11 @@ func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) []string {
 	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
 	devEnvs := make([]string, 0)
 
+	deviceWithID := rp.getDeviceWithID()
+
 	// Consolidates all Envs
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := deviceWithID[id]; ok {
 			env := dev.GetEnvVal()
 			devEnvs = append(devEnvs, env)
 		}
@@ -113,8 +179,10 @@ func (rp *ResourcePoolImpl) GetMounts(deviceIDs []string) []*pluginapi.Mount {
 	glog.Infof("GetMounts(): for devices: %v", deviceIDs)
 	devMounts := make([]*pluginapi.Mount, 0)
 
+	deviceWithID := rp.getDeviceWithID()
+
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := deviceWithID[id]; ok {
 			mnt := dev.GetMounts()
 			devMounts = append(devMounts, mnt...)
 		}
@@ -134,7 +202,13 @@ func (rp *ResourcePoolImpl) DeviceSpecExist(specs []*pluginapi.DeviceSpec, newSp
 
 // GetDevicePool returns PciDevice pool as a map
 func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.PciDevice {
-	return rp.devicePool
+	deviceWithID := make(map[string]types.PciDevice, 0)
+
+	for _, dev := range rp.devicePool {
+		pciAddr := dev.GetPciAddr()
+		deviceWithID[pciAddr] = dev
+	}
+	return deviceWithID
 }
 
 // StoreDeviceInfoFile does nothing. DeviceType-specific ResourcePools might

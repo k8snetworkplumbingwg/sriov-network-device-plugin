@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
@@ -96,40 +95,15 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
-	devicePool := make(map[string]types.PciDevice)
-	apiDevices := make(map[string]*pluginapi.Device)
-	for _, dev := range filteredDevice {
-		pciAddr := dev.GetPciAddr()
-		devicePool[pciAddr] = dev
-		apiDevices[pciAddr] = dev.GetAPIDevice()
-		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
-			dev.GetPciAddr(),
-			dev.GetVendor(),
-			dev.GetDeviceCode(),
-			dev.GetDriver())
-	}
-
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceProvider types.DeviceProvider, allocated *map[string]bool) (types.ResourcePool, error) {
 	var rPool types.ResourcePool
 	var err error
 	switch rc.DeviceType {
 	case types.NetDeviceType:
-		if len(filteredDevice) > 0 {
-			if _, ok := filteredDevice[0].(types.PciNetDevice); ok {
-				nadUtils := rf.GetNadUtils()
-				rPool = netdevice.NewNetResourcePool(nadUtils, rc, apiDevices, devicePool)
-			} else {
-				err = fmt.Errorf("invalid device list for NetDeviceType")
-			}
-		}
+		nadUtils := rf.GetNadUtils()
+		rPool = netdevice.NewNetResourcePool(nadUtils, rc, deviceProvider, allocated)
 	case types.AcceleratorType:
-		if len(filteredDevice) > 0 {
-			if _, ok := filteredDevice[0].(types.AccelDevice); ok {
-				rPool = accelerator.NewAccelResourcePool(rc, apiDevices, devicePool)
-			} else {
-				err = fmt.Errorf("invalid device list for AcceleratorType")
-			}
-		}
+		rPool = accelerator.NewAccelResourcePool(rc, deviceProvider, allocated)
 	default:
 		err = fmt.Errorf("cannot create resourcePool: invalid device type %s", rc.DeviceType)
 	}

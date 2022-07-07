@@ -35,9 +35,8 @@ type netResourcePool struct {
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
-	devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, deviceProvider types.DeviceProvider, allocated *map[string]bool) types.ResourcePool {
+	rp := resources.NewResourcePool(rc, deviceProvider, allocated)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,
@@ -51,11 +50,11 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
-	devicePool := rp.GetDevicePool()
+	deviceWithID := rp.GetDevicePool()
 
 	// Add device driver specific and rdma specific devices
 	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
+		if dev, ok := deviceWithID[id]; ok {
 			netDev := dev.(types.PciNetDevice) // convert generic PciDevice to PciNetDevice
 			newSpecs := netDev.GetDeviceSpecs()
 			for _, ds := range newSpecs {

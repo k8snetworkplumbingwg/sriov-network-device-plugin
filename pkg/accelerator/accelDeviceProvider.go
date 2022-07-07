@@ -60,32 +60,30 @@ func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciD
 	return newPciDevices
 }
 
-func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
-	for _, device := range devices {
+func (ap *accelDeviceProvider) DiscoverDevices() {
+	pci, err := ghw.PCI()
+	if err != nil {
+		glog.Errorf("DiscoverDevices(): error getting PCI info: %v", err)
+		return
+	}
+	ap.deviceList = make([]*ghw.PCIDevice, 0)
+
+	allDevices := pci.ListDevices()
+	if len(allDevices) == 0 {
+		glog.Warningf("DiscoverDevices(): no PCI network device found")
+	}
+
+	for _, device := range allDevices {
 		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
 		if err != nil {
-			glog.Warningf("accelerator AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
+			glog.Warningf("accelerator DiscoverDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
-		if devClass == int64(deviceCode) {
-			vendor := device.Vendor
-			vendorName := vendor.Name
-			if len(vendor.Name) > maxVendorName {
-				vendorName = string([]byte(vendorName)[0:17]) + "..."
-			}
-			product := device.Product
-			productName := product.Name
-			if len(product.Name) > maxProductName {
-				productName = string([]byte(productName)[0:37]) + "..."
-			}
-			glog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
-				device.Class.ID, vendorName, productName)
-
+		if devClass == int64(types.SupportedDevices[types.AcceleratorType]) {
 			ap.deviceList = append(ap.deviceList, device)
 		}
 	}
-	return nil
 }
 
 func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
