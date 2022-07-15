@@ -108,10 +108,6 @@ func (pd *pciDevice) GetDriver() string {
 	return pd.driver
 }
 
-func (pd *pciDevice) IsSriovPF() bool {
-	return false
-}
-
 func (pd *pciDevice) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	dSpecs := make([]*pluginapi.DeviceSpec, 0)
 	for _, infoProvider := range pd.infoProviders {

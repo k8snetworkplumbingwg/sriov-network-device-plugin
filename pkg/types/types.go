@@ -184,7 +184,6 @@ type PciDevice interface {
 	GetDeviceCode() string
 	GetPciAddr() string
 	GetPfPciAddr() string
-	IsSriovPF() bool
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	GetEnvVal() string
 	GetMounts() []*pluginapi.Mount
