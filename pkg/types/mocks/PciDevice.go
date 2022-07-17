@@ -145,20 +145,6 @@ func (_m *PciDevice) GetPfPciAddr() string {
 	return r0
 }
 
-// GetSubClass provides a mock function with given fields:
-func (_m *PciDevice) GetSubClass() string {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
 // GetVFID provides a mock function with given fields:
 func (_m *PciDevice) GetVFID() int {
 	ret := _m.Called()

@@ -125,10 +125,6 @@ func (pd *pciDevice) IsSriovPF() bool {
 	return false
 }
 
-func (pd *pciDevice) GetSubClass() string {
-	return pd.basePciDevice.Subclass.ID
-}
-
 func (pd *pciDevice) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	dSpecs := make([]*pluginapi.DeviceSpec, 0)
 	for _, infoProvider := range pd.infoProviders {
