@@ -56,7 +56,6 @@ var _ = Describe("Accelerator", func() {
 				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
 				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(out.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to negative numa_node", func() {
@@ -82,7 +81,6 @@ var _ = Describe("Accelerator", func() {
 				out, err := accelerator.NewAccelDevice(in, f, config)
 
 				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to missing numa_node", func() {
@@ -107,7 +105,6 @@ var _ = Describe("Accelerator", func() {
 				out, err := accelerator.NewAccelDevice(in, f, config)
 
 				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to config excluding topology being set", func() {
@@ -133,7 +130,6 @@ var _ = Describe("Accelerator", func() {
 				out, err := accelerator.NewAccelDevice(in, f, config)
 
 				Expect(out.GetAPIDevice().Topology).To(BeNil())
-				Expect(out.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})

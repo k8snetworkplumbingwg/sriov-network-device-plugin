@@ -15,8 +15,6 @@
 package resources
 
 import (
-	"strconv"
-
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 
@@ -29,18 +27,8 @@ type pciDevice struct {
 	pfAddr        string
 	driver        string
 	vfID          int
-	numa          string
 	apiDevice     *pluginapi.Device
 	infoProviders []types.DeviceInfoProvider
-}
-
-// Convert NUMA node number to string.
-// A node of -1 represents "unknown" and is converted to the empty string.
-func nodeToStr(nodeNum int) string {
-	if nodeNum >= 0 {
-		return strconv.Itoa(nodeNum)
-	}
-	return ""
 }
 
 // NewPciDevice returns an instance of PciDevice interface
@@ -97,7 +85,6 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.
 		vfID:          vfID,
 		apiDevice:     apiDevice,
 		infoProviders: infoProviders,
-		numa:          nodeToStr(nodeNum),
 	}, nil
 }
 
@@ -155,8 +142,4 @@ func (pd *pciDevice) GetAPIDevice() *pluginapi.Device {
 
 func (pd *pciDevice) GetVFID() int {
 	return pd.vfID
-}
-
-func (pd *pciDevice) GetNumaInfo() string {
-	return pd.numa
 }

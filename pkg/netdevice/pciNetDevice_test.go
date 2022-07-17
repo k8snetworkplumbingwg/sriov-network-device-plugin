@@ -69,7 +69,6 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to negative numa_node", func() {
@@ -95,7 +94,6 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetAPIDevice().Topology).To(BeNil())
-				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to missing numa_node", func() {
@@ -120,7 +118,6 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetAPIDevice().Topology).To(BeNil())
-				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not populate topology due to config option being set", func() {
@@ -146,7 +143,6 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetAPIDevice().Topology).To(BeNil())
-				Expect(dev.GetNumaInfo()).To(Equal(""))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -218,7 +214,6 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo1.AssertExpectations(t)
 			})
@@ -234,7 +229,6 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo2.AssertExpectations(t)
 			})
@@ -278,7 +272,6 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
 				Expect(dev.GetLinkType()).To(Equal(""))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(dev.GetNumaInfo()).To(Equal("0"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -409,7 +402,6 @@ var _ = Describe("PciNetDevice", func() {
 					}}))
 				Expect(dev1.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev1.GetVdpaDevice()).To(Equal(fakeVdpaVhost))
-				Expect(dev1.GetNumaInfo()).To(Equal("0"))
 				Expect(err1).NotTo(HaveOccurred())
 
 				Expect(dev2.GetDriver()).To(Equal("ifcvf"))
@@ -417,7 +409,6 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev2.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev2.GetVdpaDevice()).To(Equal(fakeVdpaVirtio))
-				Expect(dev2.GetNumaInfo()).To(Equal("0"))
 				Expect(err2).NotTo(HaveOccurred())
 			})
 			It("should generate empty deviceSpecs if ResourceConfig type does not match vdpa driver", func() {
@@ -429,11 +420,9 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev1.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev1.GetDeviceSpecs()).To(HaveLen(0))
-				Expect(dev1.GetNumaInfo()).To(Equal("0"))
 				Expect(err1).NotTo(HaveOccurred())
 				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
-				Expect(dev2.GetNumaInfo()).To(Equal("0"))
 				Expect(err2).NotTo(HaveOccurred())
 			})
 		})

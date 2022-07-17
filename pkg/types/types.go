@@ -190,7 +190,6 @@ type PciDevice interface {
 	GetMounts() []*pluginapi.Mount
 	GetAPIDevice() *pluginapi.Device
 	GetVFID() int
-	GetNumaInfo() string
 }
 
 // PciNetDevice extends PciDevice interface
