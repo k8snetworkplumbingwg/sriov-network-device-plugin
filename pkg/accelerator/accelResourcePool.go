@@ -31,9 +31,8 @@ type accelResourcePool struct {
 var _ types.ResourcePool = &accelResourcePool{}
 
 // NewAccelResourcePool returns an instance of resourcePool
-func NewAccelResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
-	devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+func NewAccelResourcePool(rc *types.ResourceConfig, devicePool map[string]types.PciDevice) types.ResourcePool {
+	rp := resources.NewResourcePool(rc, devicePool)
 	s, _ := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	return &accelResourcePool{
 		ResourcePoolImpl: rp,
