@@ -18,6 +18,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -55,18 +56,18 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 			if vdpaDev == nil {
 				glog.Warningf("No vDPA device found for device %s", dev.Address)
 			} else {
-				infoProviders = append(infoProviders, NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
+				infoProviders = append(infoProviders, infoprovider.NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
 			}
 		} else if nf.IsRdma {
 			if rdmaSpec.IsRdma() {
-				infoProviders = append(infoProviders, NewRdmaInfoProvider(rdmaSpec))
+				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
 			} else {
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
 			}
 		}
 		if nf.NeedVhostNet {
 			if VhostNetDeviceExist() {
-				infoProviders = append(infoProviders, NewVhostNetInfoProvider())
+				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
 				glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
 			}

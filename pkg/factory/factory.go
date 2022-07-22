@@ -21,6 +21,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -62,11 +63,11 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr, name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
-		return resources.NewVfioInfoProvider(pciAddr)
+		return infoprovider.NewVfioInfoProvider(pciAddr)
 	case "uio", "igb_uio":
-		return resources.NewUioInfoProvider(pciAddr)
+		return infoprovider.NewUioInfoProvider(pciAddr)
 	default:
-		return resources.NewGenericInfoProvider(pciAddr)
+		return infoprovider.NewGenericInfoProvider(pciAddr)
 	}
 }
 

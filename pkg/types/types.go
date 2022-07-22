@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/jaypipes/ghw"
+	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
@@ -79,6 +80,12 @@ Processing accelerators subclasses. ref: https://pci-ids.ucw.cz/read/PD/12
 var SupportedDevices = map[DeviceType]int{
 	NetDeviceType:   0x02,
 	AcceleratorType: 0x12,
+}
+
+// SupportedVdpaTypes is a map of 'vdpa device type as string' to 'vdpa device driver as string'
+var SupportedVdpaTypes = map[VdpaType]string{
+	VdpaVirtioType: kvdpa.VirtioVdpaDriver,
+	VdpaVhostType:  kvdpa.VhostVdpaDriver,
 }
 
 // ResourceConfig contains configuration parameters for a resource pool
