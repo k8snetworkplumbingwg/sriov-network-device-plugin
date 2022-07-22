@@ -27,7 +27,7 @@ import (
 var _ = Describe("AccelResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
 		rc := &types.ResourceConfig{ResourceName: "fake", ResourcePrefix: "fake"}
-		pcis := map[string]types.PciDevice{}
+		pcis := map[string]types.HostDevice{}
 
 		rp := accelerator.NewAccelResourcePool(rc, pcis)
 
@@ -62,7 +62,7 @@ var _ = Describe("AccelResourcePool", func() {
 			fake3ds := []*pluginapi.DeviceSpec{}
 			fake2.On("GetDeviceSpecs").Return(fake3ds)
 
-			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
+			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
 			rp := accelerator.NewAccelResourcePool(rc, pcis)
 

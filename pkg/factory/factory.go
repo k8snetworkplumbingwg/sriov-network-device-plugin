@@ -97,13 +97,13 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
-	devicePool := make(map[string]types.PciDevice)
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.HostDevice) (types.ResourcePool, error) {
+	devicePool := make(map[string]types.HostDevice)
 	for _, dev := range filteredDevice {
-		pciAddr := dev.GetPciAddr()
-		devicePool[pciAddr] = dev
-		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
-			dev.GetPciAddr(),
+		id := dev.GetDeviceID()
+		devicePool[id] = dev
+		glog.Infof("device added: [identifier: %s, vendor: %s, device: %s, driver: %s]",
+			id,
 			dev.GetVendor(),
 			dev.GetDeviceCode(),
 			dev.GetDriver())

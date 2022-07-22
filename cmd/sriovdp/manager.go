@@ -142,14 +142,14 @@ func (rm *resourceManager) initServers() error {
 	return nil
 }
 
-func (rm *resourceManager) excludeAllocatedDevices(filteredDevices []types.PciDevice, deviceAllocated map[string]bool) []types.PciDevice {
-	filteredDevicesTemp := []types.PciDevice{}
+func (rm *resourceManager) excludeAllocatedDevices(filteredDevices []types.HostDevice, deviceAllocated map[string]bool) []types.HostDevice {
+	filteredDevicesTemp := []types.HostDevice{}
 	for _, dev := range filteredDevices {
-		if !deviceAllocated[dev.GetPciAddr()] {
-			deviceAllocated[dev.GetPciAddr()] = true
+		if !deviceAllocated[dev.GetDeviceID()] {
+			deviceAllocated[dev.GetDeviceID()] = true
 			filteredDevicesTemp = append(filteredDevicesTemp, dev)
 		} else {
-			glog.Warningf("Cannot add PCI Address [%s]. Already allocated.", dev.GetPciAddr())
+			glog.Warningf("Cannot add device [%s]. Already allocated.", dev.GetDeviceID())
 		}
 	}
 	return filteredDevicesTemp

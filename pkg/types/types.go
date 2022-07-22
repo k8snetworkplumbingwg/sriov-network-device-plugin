@@ -147,7 +147,7 @@ type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
-	GetResourcePool(rc *ResourceConfig, deviceList []PciDevice) (ResourcePool, error)
+	GetResourcePool(rc *ResourceConfig, deviceList []HostDevice) (ResourcePool, error)
 	GetRdmaSpec(string) RdmaSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
@@ -175,33 +175,45 @@ type DeviceProvider interface {
 	AddTargetDevices([]*ghw.PCIDevice, int) error
 	GetDiscoveredDevices() []*ghw.PCIDevice
 
-	// GetDevices runs through the Discovered Devices and returns a list of fully populated PciDevices according to the given ResourceConfig
-	GetDevices(*ResourceConfig) []PciDevice
+	// GetDevices runs through the Discovered Devices and returns a list of fully populated HostDevices according to the given ResourceConfig
+	GetDevices(*ResourceConfig) []HostDevice
 
-	GetFilteredDevices([]PciDevice, *ResourceConfig) ([]PciDevice, error)
+	GetFilteredDevices([]HostDevice, *ResourceConfig) ([]HostDevice, error)
 
 	// ValidConfig performs validation of DeviceType-specific configuration
 	ValidConfig(*ResourceConfig) bool
 }
 
-// PciDevice provides an interface to get generic device specific information
-type PciDevice interface {
-	GetVendor() string
-	GetDriver() string
-	GetDeviceCode() string
-	GetPciAddr() string
-	GetPfPciAddr() string
+// APIDevice provides an interface to expose device information to Kubernetes API
+type APIDevice interface {
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	GetEnvVal() string
 	GetMounts() []*pluginapi.Mount
 	GetAPIDevice() *pluginapi.Device
+}
+
+// HostDevice provides an interface to get generic device information
+type HostDevice interface {
+	APIDevice
+	GetVendor() string
+	GetDriver() string
+	GetDeviceID() string
+	GetDeviceCode() string
+}
+
+// PciDevice provides an interface to get PCI device specific information
+// extends HostDevice interface
+type PciDevice interface {
+	HostDevice
+	GetPciAddr() string
+	GetPfPciAddr() string
 	GetVFID() int
 }
 
 // PciNetDevice extends PciDevice interface
 type PciNetDevice interface {
 	PciDevice
-	GetPFName() string
+	GetPfNetName() string
 	GetNetName() string
 	GetLinkSpeed() string
 	GetLinkType() string
@@ -224,7 +236,7 @@ type DeviceInfoProvider interface {
 
 // DeviceSelector provides an interface for filtering a list of devices
 type DeviceSelector interface {
-	Filter([]PciDevice) []PciDevice
+	Filter([]HostDevice) []HostDevice
 }
 
 // LinkWatcher in interface to watch Network link status

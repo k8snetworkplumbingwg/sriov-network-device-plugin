@@ -48,16 +48,16 @@ func (ap *accelDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 	return ap.deviceList
 }
 
-func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
-	newPciDevices := make([]types.PciDevice, 0)
+func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDevice {
+	newHostDevices := make([]types.HostDevice, 0)
 	for _, device := range ap.deviceList {
 		if newDevice, err := NewAccelDevice(device, ap.rFactory, rc); err == nil {
-			newPciDevices = append(newPciDevices, newDevice)
+			newHostDevices = append(newHostDevices, newDevice)
 		} else {
 			glog.Errorf("accelerator GetDevices() error creating new device: %q", err)
 		}
 	}
-	return newPciDevices
+	return newHostDevices
 }
 
 func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
@@ -88,7 +88,7 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 	return nil
 }
 
-func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
+func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig) ([]types.HostDevice, error) {
 	filteredDevice := devices
 	af, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
 	if !ok {
@@ -124,8 +124,8 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc 
 		}
 	}
 
-	// convert to []AccelDevice to []PciDevice
-	newDeviceList := make([]types.PciDevice, len(filteredDevice))
+	// convert to []AccelDevice to []HostDevice
+	newDeviceList := make([]types.HostDevice, len(filteredDevice))
 	copy(newDeviceList, filteredDevice)
 
 	return newDeviceList, nil

@@ -28,7 +28,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev1 := mocks.PciNetDevice{}
 				dev1.On("GetVendor").Return("15b3")
 
-				in := []types.PciDevice{&dev0, &dev1}
+				in := []types.HostDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))
@@ -54,7 +54,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev1 := mocks.PciNetDevice{}
 				dev1.On("GetDeviceCode").Return("154c")
 
-				in := []types.PciDevice{&dev0, &dev1}
+				in := []types.HostDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))
@@ -80,7 +80,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev1 := mocks.PciNetDevice{}
 				dev1.On("GetDriver").Return("i40evf")
 
-				in := []types.PciDevice{&dev0, &dev1}
+				in := []types.HostDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))
@@ -110,7 +110,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev3 := mocks.PciNetDevice{}
 				dev3.On("GetPciAddr").Return("0000:03:02.3")
 
-				in := []types.PciDevice{&dev0, &dev1, &dev2, &dev3}
+				in := []types.HostDevice{&dev0, &dev1, &dev2, &dev3}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))
@@ -134,38 +134,40 @@ var _ = Describe("DeviceSelectors", func() {
 				sel := resources.NewPfNameSelector(netDevs)
 
 				dev0 := mocks.PciNetDevice{}
-				dev0.On("GetPFName").Return("ens0")
+				dev0.On("GetPfNetName").Return("ens0")
+				dev0.On("GetVFID").Return(-1)
 				dev1 := mocks.PciNetDevice{}
-				dev1.On("GetPFName").Return("eth0")
+				dev1.On("GetPfNetName").Return("eth0")
+				dev1.On("GetVFID").Return(-1)
 				dev2 := mocks.PciNetDevice{}
-				dev2.On("GetPFName").Return("ens2f0")
+				dev2.On("GetPfNetName").Return("ens2f0")
 				dev2.On("GetVFID").Return(1)
 				dev3 := mocks.PciNetDevice{}
-				dev3.On("GetPFName").Return("ens2f1")
+				dev3.On("GetPfNetName").Return("ens2f1")
 				dev3.On("GetVFID").Return(0)
 				dev4 := mocks.PciNetDevice{}
-				dev4.On("GetPFName").Return("ens2f1")
+				dev4.On("GetPfNetName").Return("ens2f1")
 				dev4.On("GetVFID").Return(1)
 				dev5 := mocks.PciNetDevice{}
-				dev5.On("GetPFName").Return("ens2f1")
+				dev5.On("GetPfNetName").Return("ens2f1")
 				dev5.On("GetVFID").Return(2)
 				dev6 := mocks.PciNetDevice{}
-				dev6.On("GetPFName").Return("ens2f1")
+				dev6.On("GetPfNetName").Return("ens2f1")
 				dev6.On("GetVFID").Return(3)
 				dev7 := mocks.PciNetDevice{}
-				dev7.On("GetPFName").Return("ens2f1")
+				dev7.On("GetPfNetName").Return("ens2f1")
 				dev7.On("GetVFID").Return(4)
 				dev8 := mocks.PciNetDevice{}
-				dev8.On("GetPFName").Return("ens2f1")
+				dev8.On("GetPfNetName").Return("ens2f1")
 				dev8.On("GetVFID").Return(5)
 				dev9 := mocks.PciNetDevice{}
-				dev9.On("GetPFName").Return("ens2f1")
+				dev9.On("GetPfNetName").Return("ens2f1")
 				dev9.On("GetVFID").Return(6)
 				dev10 := mocks.PciNetDevice{}
-				dev10.On("GetPFName").Return("ens2f1")
+				dev10.On("GetPfNetName").Return("ens2f1")
 				dev10.On("GetVFID").Return(7)
 
-				in := []types.PciDevice{&dev0, &dev1, &dev2,
+				in := []types.HostDevice{&dev0, &dev1, &dev2,
 					&dev3, &dev4, &dev5,
 					&dev6, &dev7, &dev8,
 					&dev9, &dev10}
@@ -194,8 +196,10 @@ var _ = Describe("DeviceSelectors", func() {
 
 				dev0 := mocks.PciNetDevice{}
 				dev0.On("GetPfPciAddr").Return("0000:86:00.0")
+				dev0.On("GetVFID").Return(-1)
 				dev1 := mocks.PciNetDevice{}
 				dev1.On("GetPfPciAddr").Return("0000:a0:00.0")
+				dev1.On("GetVFID").Return(-1)
 				dev2 := mocks.PciNetDevice{}
 				dev2.On("GetPfPciAddr").Return("0000:86:00.1")
 				dev2.On("GetVFID").Return(1)
@@ -224,7 +228,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev10.On("GetPfPciAddr").Return("0000:86:00.2")
 				dev10.On("GetVFID").Return(7)
 
-				in := []types.PciDevice{&dev0, &dev1, &dev2,
+				in := []types.HostDevice{&dev0, &dev1, &dev2,
 					&dev3, &dev4, &dev5,
 					&dev6, &dev7, &dev8,
 					&dev9, &dev10}
@@ -263,7 +267,7 @@ var _ = Describe("DeviceSelectors", func() {
 				dev1 := mocks.PciNetDevice{}
 				dev1.On("GetLinkType").Return("infiniband")
 
-				in := []types.PciDevice{&dev0, &dev1}
+				in := []types.HostDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))

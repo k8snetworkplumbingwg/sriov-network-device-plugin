@@ -98,6 +98,8 @@ var _ = Describe("AcceleratorProvider", func() {
 			devInvalid := &ghw.PCIDevice{
 				Address: "0000:00:00.3",
 				Class:   &pcidb.Class{ID: "completely unparsable"},
+				Vendor:  &pcidb.Vendor{},
+				Product: &pcidb.Product{},
 			}
 
 			devNoSysFs := &ghw.PCIDevice{
@@ -128,7 +130,7 @@ var _ = Describe("AcceleratorProvider", func() {
 			It("should correctly filter devices", func() {
 				rf := factory.NewResourceFactory("fake", "fake", false)
 				p := accelerator.NewAccelDeviceProvider(rf)
-				all := make([]types.PciDevice, 5)
+				all := make([]types.HostDevice, 5)
 				mocked := make([]mocks.AccelDevice, 5)
 
 				ve := []string{"8086", "8086", "1111", "2222", "3333"}
@@ -149,13 +151,13 @@ var _ = Describe("AcceleratorProvider", func() {
 				testCases := []struct {
 					name     string
 					sel      *types.AccelDeviceSelectors
-					expected []types.PciDevice
+					expected []types.HostDevice
 				}{
-					{"vendors", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
-					{"devices", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
-					{"drivers", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
+					{"vendors", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.HostDevice{all[0], all[1]}},
+					{"devices", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.HostDevice{all[0], all[2]}},
+					{"drivers", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.HostDevice{all[0], all[1], all[2]}},
 					{"pciAddresses", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}},
-						[]types.PciDevice{all[0], all[3]}},
+						[]types.HostDevice{all[0], all[3]}},
 				}
 
 				for _, tc := range testCases {

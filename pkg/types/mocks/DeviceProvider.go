@@ -29,15 +29,15 @@ func (_m *DeviceProvider) AddTargetDevices(_a0 []*ghw.PCIDevice, _a1 int) error 
 }
 
 // GetDevices provides a mock function with given fields: _a0
-func (_m *DeviceProvider) GetDevices(_a0 *types.ResourceConfig) []types.PciDevice {
+func (_m *DeviceProvider) GetDevices(_a0 *types.ResourceConfig) []types.HostDevice {
 	ret := _m.Called(_a0)
 
-	var r0 []types.PciDevice
-	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) []types.PciDevice); ok {
+	var r0 []types.HostDevice
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig) []types.HostDevice); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]types.PciDevice)
+			r0 = ret.Get(0).([]types.HostDevice)
 		}
 	}
 
@@ -61,20 +61,20 @@ func (_m *DeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 }
 
 // GetFilteredDevices provides a mock function with given fields: _a0, _a1
-func (_m *DeviceProvider) GetFilteredDevices(_a0 []types.PciDevice, _a1 *types.ResourceConfig) ([]types.PciDevice, error) {
+func (_m *DeviceProvider) GetFilteredDevices(_a0 []types.HostDevice, _a1 *types.ResourceConfig) ([]types.HostDevice, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 []types.PciDevice
-	if rf, ok := ret.Get(0).(func([]types.PciDevice, *types.ResourceConfig) []types.PciDevice); ok {
+	var r0 []types.HostDevice
+	if rf, ok := ret.Get(0).(func([]types.HostDevice, *types.ResourceConfig) []types.HostDevice); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]types.PciDevice)
+			r0 = ret.Get(0).([]types.HostDevice)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]types.PciDevice, *types.ResourceConfig) error); ok {
+	if rf, ok := ret.Get(1).(func([]types.HostDevice, *types.ResourceConfig) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

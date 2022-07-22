@@ -39,7 +39,7 @@ var _ = Describe("NetResourcePool", func() {
 			ResourcePrefix: "fake",
 			SelectorObj:    &types.NetDeviceSelectors{},
 		}
-		pcis := map[string]types.PciDevice{}
+		pcis := map[string]types.HostDevice{}
 
 		rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 
@@ -79,7 +79,7 @@ var _ = Describe("NetResourcePool", func() {
 			fake3ds := []*pluginapi.DeviceSpec{}
 			fake3.On("GetDeviceSpecs").Return(fake3ds)
 
-			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
+			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
 			rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 
@@ -113,7 +113,7 @@ var _ = Describe("NetResourcePool", func() {
 			fake2 := &mocks.PciNetDevice{}
 			fake2.On("GetPciAddr").Return("0000:01:00.2").
 				On("GetVdpaDevice").Return(nil)
-			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2}
+			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2}
 
 			It("should call nadutils to create a well formatted DeviceInfo object", func() {
 				nadutils := &mocks.NadUtils{}
@@ -172,7 +172,7 @@ var _ = Describe("NetResourcePool", func() {
 			fake2.On("GetPciAddr").Return("0000:01:00.2").
 				On("GetVdpaDevice").Return(fakeVdpa2)
 
-			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2}
+			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2}
 
 			It("should call nadutils to create a well formatted DeviceInfo object", func() {
 				nadutils := &mocks.NadUtils{}

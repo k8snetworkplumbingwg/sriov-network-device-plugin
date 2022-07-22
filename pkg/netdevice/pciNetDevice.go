@@ -111,7 +111,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	}, nil
 }
 
-func (nd *pciNetDevice) GetPFName() string {
+func (nd *pciNetDevice) GetPfNetName() string {
 	return nd.pfName
 }
 
