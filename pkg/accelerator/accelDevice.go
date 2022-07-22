@@ -17,7 +17,7 @@ package accelerator
 import (
 	"github.com/jaypipes/ghw"
 
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
@@ -29,7 +29,7 @@ type accelDevice struct {
 // NewAccelDevice returns an instance of AccelDevice interface
 func NewAccelDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory,
 	rc *types.ResourceConfig) (types.AccelDevice, error) {
-	pciDev, err := resources.NewPciDevice(dev, rFactory, rc, nil)
+	pciDev, err := devices.NewPciDevice(dev, rFactory, rc, nil)
 	if err != nil {
 		return nil, err
 	}

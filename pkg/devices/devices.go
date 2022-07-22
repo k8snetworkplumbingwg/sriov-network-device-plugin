@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resources
+package devices
 
 import (
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-
 	"github.com/jaypipes/ghw"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 type pciDevice struct {
@@ -77,7 +77,7 @@ func NewPciDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.
 		}
 	}
 
-	// 	Create pciNetDevice object with all relevant info
+	// Create pciNetDevice object with all relevant info
 	return &pciDevice{
 		basePciDevice: dev,
 		pfAddr:        pfAddr,

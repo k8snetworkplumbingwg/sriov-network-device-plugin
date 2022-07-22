@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package netdevice
+package devices
 
 import (
 	"github.com/golang/glog"
-	vdpa "github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
+	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 type vdpaDevice struct {
-	vdpa.VdpaDevice
+	kvdpa.VdpaDevice
 }
 
 // GetType returns the VdpaType associated with the VdpaDevice

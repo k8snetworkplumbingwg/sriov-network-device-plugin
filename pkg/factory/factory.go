@@ -21,6 +21,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -135,11 +136,11 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 }
 
 func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
-	return netdevice.NewRdmaSpec(pciAddrs)
+	return devices.NewRdmaSpec(pciAddrs)
 }
 
 func (rf *resourceFactory) GetVdpaDevice(pciAddr string) types.VdpaDevice {
-	return netdevice.GetVdpaDevice(pciAddr)
+	return devices.GetVdpaDevice(pciAddr)
 }
 
 // GetDeviceProvider returns an instance of DeviceProvider based on DeviceType

@@ -18,8 +18,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
@@ -66,7 +66,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 			}
 		}
 		if nf.NeedVhostNet {
-			if VhostNetDeviceExist() {
+			if infoprovider.VhostNetDeviceExist() {
 				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
 				glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
@@ -74,7 +74,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		}
 	}
 
-	pciDev, err := resources.NewPciDevice(dev, rFactory, rc, infoProviders)
+	pciDev, err := devices.NewPciDevice(dev, rFactory, rc, infoProviders)
 	if err != nil {
 		return nil, err
 	}
