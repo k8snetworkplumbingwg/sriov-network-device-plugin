@@ -103,20 +103,6 @@ func (_m *AccelDevice) GetMounts() []*v1beta1.Mount {
 	return r0
 }
 
-// GetNumaInfo provides a mock function with given fields:
-func (_m *AccelDevice) GetNumaInfo() string {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
 // GetPciAddr provides a mock function with given fields:
 func (_m *AccelDevice) GetPciAddr() string {
 	ret := _m.Called()
@@ -133,20 +119,6 @@ func (_m *AccelDevice) GetPciAddr() string {
 
 // GetPfPciAddr provides a mock function with given fields:
 func (_m *AccelDevice) GetPfPciAddr() string {
-	ret := _m.Called()
-
-	var r0 string
-	if rf, ok := ret.Get(0).(func() string); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// GetSubClass provides a mock function with given fields:
-func (_m *AccelDevice) GetSubClass() string {
 	ret := _m.Called()
 
 	var r0 string
