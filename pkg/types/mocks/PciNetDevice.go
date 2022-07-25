@@ -261,20 +261,6 @@ func (_m *PciNetDevice) GetVendor() string {
 	return r0
 }
 
-// IsSriovPF provides a mock function with given fields:
-func (_m *PciNetDevice) IsSriovPF() bool {
-	ret := _m.Called()
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 type NewPciNetDeviceT interface {
 	mock.TestingT
 	Cleanup(func())
