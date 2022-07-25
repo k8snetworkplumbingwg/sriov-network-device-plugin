@@ -24,18 +24,15 @@ import (
 // ResourcePoolImpl implements stub ResourcePool interface
 type ResourcePoolImpl struct {
 	config     *types.ResourceConfig
-	devices    map[string]*pluginapi.Device
 	devicePool map[string]types.PciDevice
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
-func NewResourcePool(rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
-	devicePool map[string]types.PciDevice) *ResourcePoolImpl {
+func NewResourcePool(rc *types.ResourceConfig, devicePool map[string]types.PciDevice) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
 		config:     rc,
-		devices:    apiDevices,
 		devicePool: devicePool,
 	}
 }
@@ -63,8 +60,11 @@ func (rp *ResourcePoolImpl) GetResourcePrefix() string {
 
 // GetDevices returns a map of Kubelet API devices
 func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
-	// returns all devices from devices[]
-	return rp.devices
+	devices := make(map[string]*pluginapi.Device)
+	for id, dev := range rp.devicePool {
+		devices[id] = dev.GetAPIDevice()
+	}
+	return devices
 }
 
 // Probe - does device healthcheck. Not implemented

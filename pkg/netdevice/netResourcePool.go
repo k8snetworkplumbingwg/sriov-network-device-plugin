@@ -35,9 +35,9 @@ type netResourcePool struct {
 var _ types.ResourcePool = &netResourcePool{}
 
 // NewNetResourcePool returns an instance of resourcePool
-func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig, apiDevices map[string]*pluginapi.Device,
+func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig,
 	devicePool map[string]types.PciDevice) types.ResourcePool {
-	rp := resources.NewResourcePool(rc, apiDevices, devicePool)
+	rp := resources.NewResourcePool(rc, devicePool)
 	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,

@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -40,10 +39,9 @@ var _ = Describe("NetResourcePool", func() {
 			ResourcePrefix: "fake",
 			SelectorObj:    &types.NetDeviceSelectors{},
 		}
-		devs := map[string]*v1beta1.Device{}
 		pcis := map[string]types.PciDevice{}
 
-		rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+		rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 
 		It("should return a valid instance of the pool", func() {
 			Expect(rp).ToNot(BeNil())
@@ -60,7 +58,6 @@ var _ = Describe("NetResourcePool", func() {
 					IsRdma: false,
 				},
 			}
-			devs := map[string]*v1beta1.Device{}
 
 			// fake1 will have 2 device specs
 			fake1 := &mocks.PciNetDevice{}
@@ -84,7 +81,7 @@ var _ = Describe("NetResourcePool", func() {
 
 			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
-			rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+			rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 
 			devIDs := []string{"fake1", "fake2"}
 
@@ -110,7 +107,6 @@ var _ = Describe("NetResourcePool", func() {
 				},
 			}
 
-			devs := map[string]*v1beta1.Device{}
 			fake1 := &mocks.PciNetDevice{}
 			fake1.On("GetPciAddr").Return("0000:01:00.1").
 				On("GetVdpaDevice").Return(nil)
@@ -135,7 +131,7 @@ var _ = Describe("NetResourcePool", func() {
 						}
 						return nil
 					})
-				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.StoreDeviceInfoFile("fakeOrg.io")
 				nadutils.AssertExpectations(t)
 				Expect(err).ToNot(HaveOccurred())
@@ -144,7 +140,7 @@ var _ = Describe("NetResourcePool", func() {
 				nadutils := &mocks.NadUtils{}
 				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1").Return(nil)
 				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2").Return(nil)
-				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.CleanDeviceInfoFile("fakeOrg.io")
 				nadutils.AssertExpectations(t)
 				Expect(err).ToNot(HaveOccurred())
@@ -159,7 +155,6 @@ var _ = Describe("NetResourcePool", func() {
 				},
 			}
 
-			devs := map[string]*v1beta1.Device{}
 			fakeVdpa1 := &mocks.VdpaDevice{}
 			fakeVdpa1.On("GetParent").Return("vdpa1").
 				On("GetPath").Return("/dev/vhost-vdpa5").
@@ -203,7 +198,7 @@ var _ = Describe("NetResourcePool", func() {
 						}
 						return nil
 					})
-				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.StoreDeviceInfoFile("fakeOrg.io")
 				Expect(err).ToNot(HaveOccurred())
 				nadutils.AssertExpectations(t)
@@ -212,7 +207,7 @@ var _ = Describe("NetResourcePool", func() {
 				nadutils := &mocks.NadUtils{}
 				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1").Return(nil)
 				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2").Return(nil)
-				rp := netdevice.NewNetResourcePool(nadutils, rc, devs, pcis)
+				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.CleanDeviceInfoFile("fakeOrg.io")
 				Expect(err).ToNot(HaveOccurred())
 				nadutils.AssertExpectations(t)

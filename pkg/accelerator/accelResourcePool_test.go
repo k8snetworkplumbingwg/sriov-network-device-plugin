@@ -17,7 +17,6 @@ package accelerator_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
@@ -28,10 +27,9 @@ import (
 var _ = Describe("AccelResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
 		rc := &types.ResourceConfig{ResourceName: "fake", ResourcePrefix: "fake"}
-		devs := map[string]*v1beta1.Device{}
 		pcis := map[string]types.PciDevice{}
 
-		rp := accelerator.NewAccelResourcePool(rc, devs, pcis)
+		rp := accelerator.NewAccelResourcePool(rc, pcis)
 
 		It("should return a valid instance of the pool", func() {
 			Expect(rp).ToNot(BeNil())
@@ -43,7 +41,6 @@ var _ = Describe("AccelResourcePool", func() {
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
 			}
-			devs := map[string]*v1beta1.Device{}
 
 			// fake1 will have 2 device specs
 			fake1 := &mocks.AccelDevice{}
@@ -67,7 +64,7 @@ var _ = Describe("AccelResourcePool", func() {
 
 			pcis := map[string]types.PciDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
-			rp := accelerator.NewAccelResourcePool(rc, devs, pcis)
+			rp := accelerator.NewAccelResourcePool(rc, pcis)
 
 			devIDs := []string{"fake1", "fake2"}
 

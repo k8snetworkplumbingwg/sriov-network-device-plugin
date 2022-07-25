@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("PoolStub", func() {
+var _ = Describe("ResourcePool", func() {
 	var (
 		fs     *utils.FakeFilesystem
 		f      types.ResourceFactory
@@ -54,7 +54,6 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
-					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
@@ -81,7 +80,6 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
-					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
@@ -104,7 +102,6 @@ var _ = Describe("PoolStub", func() {
 				d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
 				d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
 				rp = resources.NewResourcePool(rc,
-					map[string]*pluginapi.Device{},
 					map[string]types.PciDevice{
 						"0000:00:00.1": d1,
 						"0000:00:00.2": d2,
@@ -118,6 +115,27 @@ var _ = Describe("PoolStub", func() {
 				Expect(mounts).To(ConsistOf(expected))
 			})
 
+		})
+	})
+	Describe("GetDevices", func() {
+		It("Returns API devices for PCIDevices in the pool", func() {
+			defer fs.Use()()
+			utils.SetDefaultMockNetlinkProvider()
+
+			d1, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.1"}, f, rc)
+			d2, _ = netdevice.NewPciNetDevice(&ghw.PCIDevice{Address: "0000:00:00.2"}, f, rc)
+			rp = resources.NewResourcePool(rc,
+				map[string]types.PciDevice{
+					"0000:00:00.1": d1,
+					"0000:00:00.2": d2,
+				},
+			)
+			devices := rp.GetDevices()
+			Expect(devices).To(HaveLen(2))
+			Expect(devices).To(HaveKey("0000:00:00.1"))
+			Expect(devices).To(HaveKey("0000:00:00.2"))
+			Expect(devices["0000:00:00.1"].ID).To(Equal("0000:00:00.1"))
+			Expect(devices["0000:00:00.2"].ID).To(Equal("0000:00:00.2"))
 		})
 	})
 })
