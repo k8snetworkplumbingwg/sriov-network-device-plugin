@@ -24,74 +24,80 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 var _ = Describe("Devices", func() {
-	Describe("PciDevice", func() {
-		Context("Create new PciDevice", func() {
+	Describe("GenPciDevice", func() {
+		Context("Create new GenPciDevice", func() {
 			It("should populate fields", func() {
-				fs := &utils.FakeFilesystem{
-					Dirs: []string{
-						"sys/bus/pci/devices/0000:00:00.0",
-						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-						"sys/kernel/iommu_groups/0",
-						"sys/bus/pci/drivers/fake",
-					},
-					Symlinks: map[string]string{
-						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/fake",
-						"sys/bus/pci/devices/0000:00:00.1/physfn":      "../0000:00:00.0",
-						"sys/bus/pci/devices/0000:00:00.0/virtfn0":     "../0000:00:00.1",
-					},
-				}
-				defer fs.Use()()
+				pciAddr := "0000:00:00.1"
+				in := &ghw.PCIDevice{Address: pciAddr}
+				dev, err := devices.NewGenPciDevice(in)
 
-				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-					Vendor:  &pcidb.Vendor{},
-					Product: &pcidb.Product{},
-				}
-				rc := &types.ResourceConfig{}
-				infoProviders := make([]types.DeviceInfoProvider, 0)
-
-				dev, err := devices.NewPciDevice(in, f, rc, infoProviders)
-
-				Expect(dev.GetDriver()).To(Equal("fake"))
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
-				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
-				Expect(dev.GetVFID()).To(Equal(0))
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetPciAddr()).To(Equal(pciAddr))
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
-		Context("device's PF name is not available", func() {
-			It("device should be added", func() {
+	})
+	Describe("GenNetDevice", func() {
+		Context("Create new GenNetDevice", func() {
+			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
-					Dirs: []string{"sys/bus/pci/devices/0000:00:00.1"},
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.0/net/ens1f0",
+						"sys/bus/pci/devices/0000:00:00.1/net/fakeIfName",
+					},
 					Symlinks: map[string]string{
-						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+						"sys/bus/pci/devices/0000:00:00.1/physfn":  "../0000:00:00.0",
+						"sys/bus/pci/devices/0000:00:00.0/virtfn0": "../0000:00:00.1",
 					},
 				}
 				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
 				in := &ghw.PCIDevice{
 					Address: "0000:00:00.1",
 					Vendor:  &pcidb.Vendor{},
 					Product: &pcidb.Product{},
 				}
-				rc := &types.ResourceConfig{}
-				infoProviders := make([]types.DeviceInfoProvider, 0)
+				dev, err := devices.NewGenNetDevice(in, true)
 
-				dev, err := devices.NewPciDevice(in, f, rc, infoProviders)
-
-				Expect(dev).NotTo(BeNil())
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetPfNetName()).To(Equal("ens1f0"))
+				Expect(dev.GetPfPciAddr()).To(Equal("0000:00:00.0"))
+				Expect(dev.GetNetName()).To(Equal("fakeIfName"))
+				Expect(dev.GetLinkSpeed()).To(Equal(""))
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetVFID()).To(Equal(0))
+				Expect(dev.IsRdma()).To(Equal(true))
+			})
+			It("device's PF name is not available", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.1",
+						"sys/bus/pci/devices/0000:00:00.0/net",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/physfn":  "../0000:00:00.0",
+						"sys/bus/pci/devices/0000:00:00.0/virtfn0": "../0000:00:00.1",
+					},
+				}
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+
+				in := &ghw.PCIDevice{
+					Address: "0000:00:00.1",
+					Vendor:  &pcidb.Vendor{},
+					Product: &pcidb.Product{},
+				}
+				dev, err := devices.NewGenNetDevice(in, false)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetPfNetName()).To(Equal(""))
 			})
 		})
 	})

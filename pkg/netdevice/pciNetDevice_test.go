@@ -73,8 +73,7 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetNetName()).To(Equal("eth0"))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
@@ -85,7 +84,9 @@ var _ = Describe("PciNetDevice", func() {
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
 				SelectorObj: &types.NetDeviceSelectors{
-					IsRdma: true,
+					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+						IsRdma: true,
+					},
 				},
 			}
 			fs := &utils.FakeFilesystem{
@@ -98,10 +99,6 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
 					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/mlx5_core",
 				},
-				Files: map[string][]byte{
-					"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0"),
-					"sys/bus/pci/devices/0000:00:00.2/numa_node": []byte("0"),
-				},
 			}
 
 			rdma1 := &mocks.RdmaSpec{}
@@ -112,9 +109,8 @@ var _ = Describe("PciNetDevice", func() {
 			}
 			rdma1.On("IsRdma").Return(true).On("GetRdmaDeviceSpec").Return(fake1ds)
 
-			// fake2 will have 0 rdma device specs to trigger error msg
 			rdma2 := &mocks.RdmaSpec{}
-			rdma2.On("IsRdma").Return(false).On("GetRdmaDeviceSpec").Return([]*pluginapi.DeviceSpec{})
+			rdma2.On("IsRdma").Return(false)
 
 			f := &mocks.ResourceFactory{}
 
@@ -140,15 +136,10 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in1, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetNetName()).To(Equal(""))
-				Expect(dev.GetLinkType()).To(Equal(""))
-				Expect(dev.GetRdmaSpec()).NotTo(BeNil())
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeTrue())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(2))
+				Expect(dev.IsRdma()).To(BeTrue())
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
 				Expect(dev.GetMounts()).To(HaveLen(0))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo1.AssertExpectations(t)
 				rdma1.AssertExpectations(t)
@@ -159,15 +150,10 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetNetName()).To(Equal("eth1"))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.2"))
-				Expect(dev.GetRdmaSpec()).NotTo(BeNil())
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))
-				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo2.AssertExpectations(t)
 				rdma2.AssertExpectations(t)
@@ -193,7 +179,6 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
 					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
 				},
-				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 			}
 
 			f := factory.NewResourceFactory("fake", "fake", true)
@@ -205,13 +190,9 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
-				Expect(dev.GetNetName()).To(Equal(""))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/0 and default /dev/vfio/vfio + vhost-net + tun
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
-				Expect(dev.GetLinkType()).To(Equal(""))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -250,9 +231,6 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
 					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/ifcvf",
 				},
-				Files: map[string][]byte{
-					"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0"),
-					"sys/bus/pci/devices/0000:00:00.2/numa_node": []byte("0")},
 			}
 
 			rc_vhost := &types.ResourceConfig{
@@ -293,9 +271,7 @@ var _ = Describe("PciNetDevice", func() {
 			// 0000:00:00.2 -> virtio
 			f := &mocks.ResourceFactory{}
 			f.On("GetVdpaDevice", "0000:00:00.1").Return(fakeVdpaVhost).
-				On("GetRdmaSpec", "0000:00:00.1").Return(nil).
 				On("GetVdpaDevice", "0000:00:00.2").Return(fakeVdpaVirtio).
-				On("GetRdmaSpec", "0000:00:00.2").Return(nil).
 				On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return(defaultInfo1).
 				On("GetDefaultInfoProvider", "0000:00:00.2", "ifcvf").Return(defaultInfo2)
 
@@ -318,14 +294,12 @@ var _ = Describe("PciNetDevice", func() {
 						Permissions:   "mrw",
 					}}))
 				Expect(dev1.GetMounts()).To(HaveLen(0))
-				Expect(dev1.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev1.GetVdpaDevice()).To(Equal(fakeVdpaVhost))
 				Expect(err1).NotTo(HaveOccurred())
 
 				Expect(dev2.GetDriver()).To(Equal("ifcvf"))
 				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
-				Expect(dev2.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(dev2.GetMounts()).To(HaveLen(0))
 				Expect(dev2.GetVdpaDevice()).To(Equal(fakeVdpaVirtio))
 				Expect(err2).NotTo(HaveOccurred())

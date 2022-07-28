@@ -156,7 +156,7 @@ var _ = Describe("AcceleratorProvider", func() {
 					{"vendors", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.HostDevice{all[0], all[1]}},
 					{"devices", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.HostDevice{all[0], all[2]}},
 					{"drivers", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.HostDevice{all[0], all[1], all[2]}},
-					{"pciAddresses", &types.AccelDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}},
+					{"pciAddresses", &types.AccelDeviceSelectors{GenericPciDeviceSelectors: types.GenericPciDeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}},
 						[]types.HostDevice{all[0], all[3]}},
 				}
 

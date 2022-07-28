@@ -63,12 +63,10 @@ var _ = Describe("HostDevice", func() {
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/fake",
 				},
 				Symlinks: map[string]string{
-					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/fake",
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/fake",
 				},
 				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 			}
@@ -93,12 +91,10 @@ var _ = Describe("HostDevice", func() {
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/vfio-pci",
 				},
 				Symlinks: map[string]string{
-					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/vfio-pci",
 				},
 				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
 			}
@@ -119,12 +115,10 @@ var _ = Describe("HostDevice", func() {
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/vfio-pci",
 				},
 				Symlinks: map[string]string{
-					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/vfio-pci",
 				},
 			}
 			defer fs.Use()()
@@ -144,12 +138,10 @@ var _ = Describe("HostDevice", func() {
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/vfio-pci",
 				},
 				Symlinks: map[string]string{
-					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
+					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/vfio-pci",
 				},
 				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 			}

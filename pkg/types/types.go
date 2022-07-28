@@ -101,20 +101,30 @@ type ResourceConfig struct {
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
-	Vendors      []string `json:"vendors,omitempty"`
-	Devices      []string `json:"devices,omitempty"`
-	Drivers      []string `json:"drivers,omitempty"`
+	Vendors []string `json:"vendors,omitempty"`
+	Devices []string `json:"devices,omitempty"`
+	Drivers []string `json:"drivers,omitempty"`
+}
+
+// GenericPciDeviceSelectors contains common PCI device selectors fields
+type GenericPciDeviceSelectors struct {
 	PciAddresses []string `json:"pciAddresses,omitempty"`
+}
+
+// GenericNetDeviceSelectors contains common net device selectors fields
+type GenericNetDeviceSelectors struct {
+	PfNames     []string `json:"pfNames,omitempty"`
+	RootDevices []string `json:"rootDevices,omitempty"`
+	LinkTypes   []string `json:"linkTypes,omitempty"`
+	IsRdma      bool     // the resource support rdma
 }
 
 // NetDeviceSelectors contains network device related selectors fields
 type NetDeviceSelectors struct {
 	DeviceSelectors
-	PfNames      []string `json:"pfNames,omitempty"`
-	RootDevices  []string `json:"rootDevices,omitempty"`
-	LinkTypes    []string `json:"linkTypes,omitempty"`
+	GenericPciDeviceSelectors
+	GenericNetDeviceSelectors
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
-	IsRdma       bool     // the resource support rdma
 	NeedVhostNet bool     // share vhost-net along the selected resource
 	VdpaType     VdpaType `json:"vdpaType,omitempty"`
 }
@@ -122,6 +132,7 @@ type NetDeviceSelectors struct {
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
 type AccelDeviceSelectors struct {
 	DeviceSelectors
+	GenericPciDeviceSelectors
 }
 
 // ResourceConfList is list of ResourceConfig
@@ -201,23 +212,29 @@ type HostDevice interface {
 	GetDeviceCode() string
 }
 
-// PciDevice provides an interface to get PCI device specific information
+// PciDevice provides an interface to get generic PCI device information
 // extends HostDevice interface
 type PciDevice interface {
 	HostDevice
 	GetPciAddr() string
-	GetPfPciAddr() string
-	GetVFID() int
 }
 
-// PciNetDevice extends PciDevice interface
+// NetDevice provides an interface to get generic network device information
+type NetDevice interface {
+	HostDevice
+	GetPfNetName() string
+	GetPfPciAddr() string
+	GetNetName() string
+	GetLinkType() string
+	GetLinkSpeed() string
+	GetVFID() int
+	IsRdma() bool
+}
+
+// PciNetDevice extends PciDevice and NetDevice interfaces
 type PciNetDevice interface {
 	PciDevice
-	GetPfNetName() string
-	GetNetName() string
-	GetLinkSpeed() string
-	GetLinkType() string
-	GetRdmaSpec() RdmaSpec
+	NetDevice
 	GetDDPProfiles() string
 	GetVdpaDevice() VdpaDevice
 }

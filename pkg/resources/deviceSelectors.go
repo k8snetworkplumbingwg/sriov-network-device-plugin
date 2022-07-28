@@ -105,12 +105,12 @@ type pfNameSelector struct {
 func (s *pfNameSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
 	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		pfName := dev.(types.PciNetDevice).GetPfNetName()
+		pfName := dev.(types.NetDevice).GetPfNetName()
 		if pfName == "" {
 			// Exclude devices that doesn't have a PF name
 			continue
 		}
-		devIdx := dev.(types.PciNetDevice).GetVFID()
+		devIdx := dev.(types.NetDevice).GetVFID()
 		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
 			if isSelected(devIdx, selector) {
@@ -134,12 +134,12 @@ type rootDeviceSelector struct {
 func (s *rootDeviceSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
 	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		rootDevice := dev.(types.PciNetDevice).GetPfPciAddr()
+		rootDevice := dev.(types.NetDevice).GetPfPciAddr()
 		if rootDevice == "" {
 			// Exclude devices that doesn't have a root PCI device
 			continue
 		}
-		devIdx := dev.(types.PciNetDevice).GetVFID()
+		devIdx := dev.(types.NetDevice).GetVFID()
 		selector := getItem(s.rootDevices, rootDevice)
 		if selector != "" {
 			if isSelected(devIdx, selector) {
@@ -162,7 +162,7 @@ type linkTypeSelector struct {
 func (s *linkTypeSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
 	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		linkType := dev.(types.PciNetDevice).GetLinkType()
+		linkType := dev.(types.NetDevice).GetLinkType()
 		if contains(s.linkTypes, linkType) {
 			filteredList = append(filteredList, dev)
 		}

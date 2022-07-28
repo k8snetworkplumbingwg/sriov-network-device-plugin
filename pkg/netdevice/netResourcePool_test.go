@@ -55,7 +55,9 @@ var _ = Describe("NetResourcePool", func() {
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
 				SelectorObj: &types.NetDeviceSelectors{
-					IsRdma: false,
+					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+						IsRdma: false,
+					},
 				},
 			}
 
@@ -103,7 +105,9 @@ var _ = Describe("NetResourcePool", func() {
 				ResourceName:   "fakeResource",
 				ResourcePrefix: "fakeOrg.io",
 				SelectorObj: &types.NetDeviceSelectors{
-					IsRdma: true,
+					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+						IsRdma: true,
+					},
 				},
 			}
 

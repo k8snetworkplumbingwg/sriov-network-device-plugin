@@ -21,20 +21,26 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
-// accelDevice extends pciDevice
+// accelDevice extends HostDevice and embedds GenPciDevice
 type accelDevice struct {
-	types.PciDevice
+	types.HostDevice
+	devices.GenPciDevice
 }
 
 // NewAccelDevice returns an instance of AccelDevice interface
 func NewAccelDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory,
 	rc *types.ResourceConfig) (types.AccelDevice, error) {
-	pciDev, err := devices.NewPciDevice(dev, rFactory, rc, nil)
+	hostDev, err := devices.NewHostDeviceImpl(dev, dev.Address, rFactory, rc, nil)
+	if err != nil {
+		return nil, err
+	}
+	pciDev, err := devices.NewGenPciDevice(dev)
 	if err != nil {
 		return nil, err
 	}
 
 	return &accelDevice{
-		PciDevice: pciDev,
+		HostDevice:   hostDev,
+		GenPciDevice: *pciDev,
 	}, nil
 }

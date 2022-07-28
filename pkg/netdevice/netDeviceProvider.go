@@ -202,7 +202,7 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 	if nf.IsRdma {
 		rdmaDevices := make([]types.HostDevice, 0)
 		for _, dev := range filteredDevice {
-			if dev.(types.PciNetDevice).GetRdmaSpec().IsRdma() {
+			if dev.(types.NetDevice).IsRdma() {
 				rdmaDevices = append(rdmaDevices, dev)
 			}
 		}
