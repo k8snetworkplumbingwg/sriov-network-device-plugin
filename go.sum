@@ -53,10 +53,8 @@ github.com/Azure/go-autorest/tracing v0.5.0/go.mod h1:r/s2XiOKccPW3HrqB+W0TQzfbt
 github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBpUA79WCAKPPZVC2DeU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Mellanox/rdmamap v1.0.0 h1:5OQX6n85GDKetHP9wBqxy/0Ce2+taRg+4nSTsNOCyKQ=
-github.com/Mellanox/rdmamap v1.0.0/go.mod h1:fN+/V9lf10ABnDCwTaXRjeeWijLt2iVLETnK+sx/LY8=
-github.com/Mellanox/sriovnet v1.0.3 h1:Nlmxr2mkp16aIP4CJcsnqCczxQQgOuzNDm/nu9qTBZ8=
-github.com/Mellanox/sriovnet v1.0.3/go.mod h1:8TlYc3iOTEvUM+WAbC7MU6U6JXqIfhl2DcWIGVUsjIE=
+github.com/Mellanox/rdmamap v1.1.0 h1:A/W1wAXw+6vm58f3VklrIylgV+eDJlPVIMaIKuxgUT4=
+github.com/Mellanox/rdmamap v1.1.0/go.mod h1:fN+/V9lf10ABnDCwTaXRjeeWijLt2iVLETnK+sx/LY8=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/purell v1.0.0/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
@@ -279,6 +277,8 @@ github.com/k8snetworkplumbingwg/govdpa v0.1.4 h1:e6mM7JFZkLVJeMQw3px96EigHAhnb4V
 github.com/k8snetworkplumbingwg/govdpa v0.1.4/go.mod h1:UQR1xu7A+nnRK1dkLEi12OnNL0OiBPpIKOYDuaQQkck=
 github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20201119153432-9d213757d22d h1:9QbZltQGRFe7temwcTDjj8rIbow48Gv6mIKOxuks+OI=
 github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.1-0.20201119153432-9d213757d22d/go.mod h1:+1DpV8uIwteAhxNO0lgRox8gHkTG6w3OeDfAlg+qqjA=
+github.com/k8snetworkplumbingwg/sriovnet v1.1.1-0.20221018183610-ecc82a4b8cfd h1:5su0j908djTCco0QDSy02R8t4tTl/AvO2CC/Soy2NBQ=
+github.com/k8snetworkplumbingwg/sriovnet v1.1.1-0.20221018183610-ecc82a4b8cfd/go.mod h1:ayPUsmD4bA0nnlw6RT4di6WFRafn9kbfKcYbyZ792PU=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
@@ -393,7 +393,6 @@ github.com/stretchr/testify v1.7.1 h1:5TQK59W5E3v0r2duFAb7P95B6hEeOyEnHRa8MjYSMT
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/urfave/cli/v2 v2.2.0/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 github.com/vishvananda/netlink v1.1.0/go.mod h1:cTgwzPIzzgDAYoQrMm0EdrjRUBkTqKYppBueQtXaqoE=
-github.com/vishvananda/netlink v1.1.1-0.20210518155637-4cb3795f2ccb/go.mod h1:twkDnbuQxJYemMlGd4JFIcuhgX83tXhKS2B/PRMpOho=
 github.com/vishvananda/netlink v1.1.1-0.20211101163509-b10eb8fe5cf6 h1:167a2omrzz+nN9Of6lN/0yOB9itzw+IOioRThNZ30jA=
 github.com/vishvananda/netlink v1.1.1-0.20211101163509-b10eb8fe5cf6/go.mod h1:twkDnbuQxJYemMlGd4JFIcuhgX83tXhKS2B/PRMpOho=
 github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df/go.mod h1:JP3t17pCcGlemwknint6hfoeCVQrEMVwxRLRjXpq+BU=

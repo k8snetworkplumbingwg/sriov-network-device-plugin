@@ -1,11 +1,6 @@
-# github.com/Mellanox/rdmamap v1.0.0
+# github.com/Mellanox/rdmamap v1.1.0
 ## explicit; go 1.13
 github.com/Mellanox/rdmamap
-# github.com/Mellanox/sriovnet v1.0.3
-## explicit; go 1.13
-github.com/Mellanox/sriovnet
-github.com/Mellanox/sriovnet/pkg/utils/filesystem
-github.com/Mellanox/sriovnet/pkg/utils/netlinkops
 # github.com/PuerkitoBio/purell v1.1.1
 ## explicit
 github.com/PuerkitoBio/purell
@@ -102,6 +97,11 @@ github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
+# github.com/k8snetworkplumbingwg/sriovnet v1.1.1-0.20221018183610-ecc82a4b8cfd
+## explicit; go 1.18
+github.com/k8snetworkplumbingwg/sriovnet
+github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/filesystem
+github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/netlinkops
 # github.com/mailru/easyjson v0.7.6
 ## explicit; go 1.12
 github.com/mailru/easyjson/buffer

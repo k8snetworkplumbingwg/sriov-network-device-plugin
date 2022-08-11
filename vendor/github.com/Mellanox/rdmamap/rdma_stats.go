@@ -2,7 +2,7 @@ package rdmamap
 
 import (
 	"fmt"
-	"github.com/vishvananda/netns"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/vishvananda/netns"
 )
 
 type RdmaStatEntry struct {
@@ -29,14 +31,16 @@ type RdmaStats struct {
 }
 
 func readCounter(name string) uint64 {
-
 	fd, err := os.OpenFile(name, os.O_RDONLY, 0444)
 	if err != nil {
 		return 0
 	}
 	defer fd.Close()
 
-	fd.Seek(0, os.SEEK_SET)
+	if _, err = fd.Seek(0, io.SeekStart); err != nil {
+		return 0
+	}
+
 	data, err := ioutil.ReadAll(fd)
 	if err != nil {
 		return 0
@@ -47,16 +51,20 @@ func readCounter(name string) uint64 {
 	return value
 }
 
+//nolint:prealloc
 func getCountersFromDir(path string) ([]RdmaStatEntry, error) {
-
 	var stats []RdmaStatEntry
 
 	fd, err := os.Open(path)
 	if err != nil {
 		return stats, err
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
+
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return stats, err
+	}
 
 	for _, file := range fileInfos {
 		if file.IsDir() {
@@ -72,7 +80,6 @@ func getCountersFromDir(path string) ([]RdmaStatEntry, error) {
 // Get RDMA Sysfs stats from counters directory of a port of a rdma device
 // Port number starts from 1.
 func GetRdmaSysfsStats(rdmaDevice string, port int) ([]RdmaStatEntry, error) {
-
 	path := filepath.Join(RdmaClassDir, rdmaDevice,
 		RdmaPortsdir, strconv.Itoa(port), RdmaCountersDir)
 
@@ -83,7 +90,6 @@ func GetRdmaSysfsStats(rdmaDevice string, port int) ([]RdmaStatEntry, error) {
 // Get RDMA Sysfs stats from hw_counters directory of a port of a rdma device
 // Port number starts from 1.
 func GetRdmaSysfsHwStats(rdmaDevice string, port int) ([]RdmaStatEntry, error) {
-
 	path := filepath.Join(RdmaClassDir, rdmaDevice,
 		RdmaPortsdir, strconv.Itoa(port), RdmaHwCountersDir)
 
@@ -121,8 +127,12 @@ func GetRdmaSysfsAllPortsStats(rdmaDevice string) (RdmaStats, error) {
 	if err != nil {
 		return allstats, err
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
+
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return allstats, err
+	}
 
 	for i, file := range fileInfos {
 		if fileInfos[i].Name() == "." || fileInfos[i].Name() == ".." {
@@ -142,7 +152,6 @@ func GetRdmaSysfsAllPortsStats(rdmaDevice string) (RdmaStats, error) {
 }
 
 func printRdmaStats(device string, stats *RdmaStats) {
-
 	for _, portstats := range stats.PortStats {
 		fmt.Printf("device: %s, port: %d\n", device, portstats.Port)
 		fmt.Println("Hw stats:")
@@ -157,9 +166,9 @@ func printRdmaStats(device string, stats *RdmaStats) {
 }
 
 // Get RDMA statistics of a docker container.
-// containerId is prefixed matched against the running docker containers,
+// containerID is prefixed matched against the running docker containers,
 // so a non ambiguous short identifier can be supplied as well.
-func GetDockerContainerRdmaStats(containerId string) {
+func GetDockerContainerRdmaStats(containerID string) {
 	// Lock the OS Thread so we don't accidentally switch namespaces
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -170,21 +179,23 @@ func GetDockerContainerRdmaStats(containerId string) {
 		return
 	}
 
-	nsHandle, err := netns.GetFromDocker(containerId)
+	nsHandle, err := netns.GetFromDocker(containerID)
 	if err != nil {
-		log.Println("Invalid docker id: ", containerId)
+		log.Println("Invalid docker id: ", containerID)
 		return
 	}
-	netns.Set(nsHandle)
+	if netns.Set(nsHandle) != nil {
+		return
+	}
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		netns.Set(originalHandle)
+		_ = netns.Set(originalHandle)
 		return
 	}
 	log.Printf("Net Interfaces: %v\n", ifaces)
 	for _, iface := range ifaces {
-		if iface.Name == "lo" {
+		if iface.Name == loopBackIfName {
 			continue
 		}
 		rdmadev, err := GetRdmaDeviceForNetdevice(iface.Name)
@@ -198,5 +209,5 @@ func GetDockerContainerRdmaStats(containerId string) {
 		}
 		printRdmaStats(rdmadev, &rdmastats)
 	}
-	netns.Set(originalHandle)
+	_ = netns.Set(originalHandle)
 }

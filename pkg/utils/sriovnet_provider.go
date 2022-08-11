@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/Mellanox/sriovnet"
+	"github.com/k8snetworkplumbingwg/sriovnet"
 )
 
 // SriovnetProvider is a wrapper type over sriovnet library

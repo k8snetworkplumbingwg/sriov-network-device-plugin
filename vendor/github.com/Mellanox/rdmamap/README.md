@@ -1,3 +1,8 @@
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Mellanox/rdmamap)](https://goreportcard.com/report/github.com/Mellanox/rdmamap)
+[![Build Status](https://travis-ci.com/Mellanox/rdmamap.svg?branch=master)](https://travis-ci.com/Mellanox/rdmamap)
+[![Coverage Status](https://coveralls.io/repos/github/Mellanox/rdmamap/badge.svg)](https://coveralls.io/github/Mellanox/rdmamap)
+
 # rdmamap
 
 This is golang package that provides map of rdma device with its character and network devices.

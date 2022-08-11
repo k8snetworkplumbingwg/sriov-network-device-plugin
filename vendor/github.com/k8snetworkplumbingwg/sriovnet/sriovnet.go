@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/vishvananda/netlink"
 
-	utilfs "github.com/Mellanox/sriovnet/pkg/utils/filesystem"
-	"github.com/Mellanox/sriovnet/pkg/utils/netlinkops"
+	utilfs "github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/filesystem"
+	"github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/netlinkops"
 )
 
 const (
@@ -24,7 +24,11 @@ const (
 	ibEncapType    = "infiniband"
 )
 
-var virtFnRe = regexp.MustCompile(`virtfn(\d+)`)
+var (
+	virtFnRe          = regexp.MustCompile(`virtfn(\d+)`)
+	pciAddressRe      = regexp.MustCompile(`^[0-9a-f]{4}:[0-9a-f]{2}:[01][0-9a-f].[0-7]$`)
+	auxiliaryDeviceRe = regexp.MustCompile(`^(\S+\.){2}\d+$`)
+)
 
 type VfObj struct {
 	Index      int
@@ -429,27 +433,6 @@ func GetVfIndexByPciAddress(vfPciAddress string) (int, error) {
 	return -1, fmt.Errorf("vf index for %s not found", vfPciAddress)
 }
 
-// GetNetDevicesFromPci gets a PCI address (e.g '0000:03:00.1') and
-// returns the correlate list of netdevices
-func GetNetDevicesFromPci(pciAddress string) ([]string, error) {
-	pciDir := filepath.Join(PciSysDir, pciAddress, "net")
-	_, err := utilfs.Fs.Stat(pciDir)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get a network device with pci address %v %v", pciAddress, err)
-	}
-
-	netDevicesFiles, err := utilfs.Fs.ReadDir(pciDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get network device name in %v %v", pciDir, err)
-	}
-
-	netDevices := make([]string, 0, len(netDevicesFiles))
-	for _, netDeviceFile := range netDevicesFiles {
-		netDevices = append(netDevices, strings.TrimSpace(netDeviceFile.Name()))
-	}
-	return netDevices, nil
-}
-
 // GetPfPciFromVfPci retrieves the parent PF PCI address of the provided VF PCI address in D:B:D.f format
 func GetPfPciFromVfPci(vfPciAddress string) (string, error) {
 	pfPath := filepath.Join(PciSysDir, vfPciAddress, "physfn")
@@ -463,4 +446,43 @@ func GetPfPciFromVfPci(vfPciAddress string) (string, error) {
 		return pf, fmt.Errorf("could not find PF PCI Address")
 	}
 	return pf, err
+}
+
+// GetNetDevicesFromPci gets a PCI address (e.g '0000:03:00.1') and
+// returns the correlate list of netdevices
+func GetNetDevicesFromPci(pciAddress string) ([]string, error) {
+	pciDir := filepath.Join(PciSysDir, pciAddress, "net")
+	return getFileNamesFromPath(pciDir)
+}
+
+// GetPciFromNetDevice returns the PCI address associated with a network device name
+func GetPciFromNetDevice(name string) (string, error) {
+	devPath := filepath.Join(NetSysDir, name)
+
+	realPath, err := utilfs.Fs.Readlink(devPath)
+	if err != nil {
+		return "", fmt.Errorf("device %s not found: %s", name, err)
+	}
+
+	parent := filepath.Dir(realPath)
+	base := filepath.Base(parent)
+	// Devices can have their PCI device sysfs entry at different levels:
+	// PF, VF, SF representor:
+	//   /sys/devices/pci0000:00/.../0000:03:00.0/net/p0
+	//   /sys/devices/pci0000:00/.../0000:03:00.0/net/pf0hpf
+	//   /sys/devices/pci0000:00/.../0000:03:00.0/net/pf0vf0
+	//   /sys/devices/pci0000:00/.../0000:03:00.0/net/pf0sf0
+	// SF port:
+	//   /sys/devices/pci0000:00/.../0000:03:00.0/mlx5_core.sf.3/net/enp3s0f0s1
+	// This loop allows detecting any of them.
+	for parent != "/" && !pciAddressRe.MatchString(base) {
+		parent = filepath.Dir(parent)
+		base = filepath.Base(parent)
+	}
+	// If we stopped on '/' and the base was never a proper PCI address,
+	// then 'netdev' is not a PCI device.
+	if !pciAddressRe.MatchString(base) {
+		return "", fmt.Errorf("device %s is not a PCI device: %s", name, realPath)
+	}
+	return base, nil
 }
