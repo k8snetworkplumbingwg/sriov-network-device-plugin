@@ -37,11 +37,17 @@
 ## SR-IOV Network Device Plugin
 
 The SR-IOV Network Device Plugin is Kubernetes device plugin for discovering and advertising networking resources in the
-form of SR-IOV virtual functions (VFs) and PCI physical functions (PFs) available on a Kubernetes host.
+form of:
+- SR-IOV virtual functions (VFs)
+- PCI physical functions (PFs)
+- Auxiliary network devices, in particular Subfunctions (SFs)
+
+which are available on a Kubernetes host
 
 ## Features
 
 - Handles SR-IOV capable/not-capable devices (NICs and Accelerators alike)
+- Handles PCI backed Auxiliary network devices (**at the moment SFs only**)
 - Supports devices with both Kernel and userspace (UIO and VFIO) drivers
 - Allows resource grouping using "Selector"
 - User configurable resourceName
@@ -50,7 +56,7 @@ form of SR-IOV virtual functions (VFs) and PCI physical functions (PFs) availabl
 - Extensible to support new device types with minimal effort if not already supported
 - Works within virtual deployments of Kubernetes that do not have virtualized-iommu support (VFIO No-IOMMU support)
 
-To deploy workloads with SR-IOV VF or PCI PF, this plugin needs to work together with the following two CNI components:
+To deploy workloads with SR-IOV VF, Auxiliary network devices or PCI PF, this plugin needs to work together with the following two CNI components:
 
 - Any CNI meta plugin supporting Device Plugin based network provisioning (Multus CNI, or DANM)
 
@@ -79,12 +85,16 @@ The following  NICs were tested with this implementation. However, other SR-IOV 
 - Mellanox ConnectX-5® Ex
 - Mellanox ConnectX-6®
 - Mellanox ConnectX-6® Dx
+- Mellanox BlueField-2®
 
 ## Quick Start
 
-### Creating SR-IOV Virtual Functions
+### Creating network functions
 
-Before starting the SR-IOV Network Device Plugin you will need to create SR-IOV Virtual Functions on your system. [The VF Setup doc will guide you through that process.](docs/vf-setup.md)
+Before starting the SR-IOV Network Device Plugin you will need to create desired network functions on your system. Docs below will guide you through that process.
+
+- [Creating SR-IOV Virtual Functions](docs/vf-setup.md)
+- [Creating Subfunctions](docs/subfunctions/README.md)
 
 ### Install SR-IOV CNI
 
@@ -220,6 +230,17 @@ This plugin creates device plugin endpoints based on the configurations given in
                     "vendors": ["8086"],
                     "devices": ["0d90"]
             }
+        },
+        {
+            "resourceName": "bf2_sf",
+            "resourcePrefix": "nvidia.com",
+            "deviceType": "auxNetDevice",
+            "selectors": {
+                "vendors": ["15b3"],
+                "devices": ["a2d6"],
+                "pfNames": ["p0#1-5"],
+                "auxTypes": ["sf"]
+            }
         }
 
     ]
@@ -228,13 +249,14 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 `"resourceList"` should contain a list of config objects. Each config object may consist of following fields:
 
-|      Field       | Required |                                                    Description                                                    |                     Type/Defaults                     |                     Example/Accepted values                     |
-|------------------|----------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------------|
-| "resourceName"   | Y        | Endpoint resource name. Should not contain special characters including hyphens and must be unique in the scope of the resource prefix | string                                                | "sriov_net_A"                                                   |
-| "resourcePrefix" | N        | Endpoint resource prefix name override. Should not contain special characters                                     | string Default : "intel.com"                          | "yourcompany.com"                                               |
-| "deviceType"     | N        | Device Type for a resource pool.                                                                                  | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice"          |
-| "excludeTopology" | N       | Exclude advertising of device's NUMA topology          | bool Default: "false"    | "excludeTopology": true          |
-| "selectors"      | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                             | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]} |
+|       Field       | Required |                                                              Description                                                               |                     Type/Defaults                     |                         Example/Accepted values                        |
+|-------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|------------------------------------------------------------------------|
+| "resourceName"    | Y        | Endpoint resource name. Should not contain special characters including hyphens and must be unique in the scope of the resource prefix | string                                                | "sriov_net_A"                                                          |
+| "resourcePrefix"  | N        | Endpoint resource prefix name override. Should not contain special characters                                                          | string Default : "intel.com"                          | "yourcompany.com"                                                      |
+| "deviceType"      | N        | Device Type for a resource pool.                                                                                                       | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice", "auxNetDevice" |
+| "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
+| "selectors"       | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                                                  | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]}        |
+
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
@@ -242,36 +264,51 @@ Note: "resourceName" must be unique only in the scope of a given prefix, includi
 
 The "deviceType" value determines which selectors are supported for that device. Each selector evaluated in order as listed in selector tables below.
 
-#### Common selectors
+#### Accelerator devices selectors
+This selectors are applicable when "deviceType" is "accelerator".
 
-All device types support following common device selectors.
+|     Field      | Required |                Description                |         Type/Defaults         |       Example/Accepted values       |
+|----------------|----------|-------------------------------------------|-------------------------------|-------------------------------------|
+| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null` | "vendors": ["8086", "15b3"]         |
+| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null` | "devices": ["154c", "1889", "1018"] |
+| "drivers"      | N        | Target device driver names as string      | `string` list Default: `null` | "drivers": ["vfio-pci"]             |
+| "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null` | "pciAddresses": ["0000:03:02.0"]    |
 
-|   Field        | Required |                Description                |         Type/Defaults          |   Example/Accepted values        |
-|----------------|----------|-------------------------------------------|--------------------------------|----------------------------------|
-| "vendors"      | N        | Target device's vendor Hex code as string | `string` list Default: `null`  | "vendors": ["8086", "15b3"]      |
-| "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null`  | "devices": ["154c", "1889", "1018"] |
-| "drivers"      | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]          |
-| "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null`  | "pciAddresses": ["0000:03:02.0"] |
 
-#### Extended selectors for device type "netDevice"
+#### Network devices selector
+This selector is applicable when "deviceType" is "netDevice"(note: this is default)
 
-This selector is applicable when "deviceType" is "netDevice"(note: this is default). In addition to the common selectors from above table, the "netDevice" also supports following selectors.
 
-|     Field     | Required |                          Description                           |                   Type/Defaults                   |                               Example/Accepted values                                |
-|---------------|----------|----------------------------------------------------------------|---------------------------------------------------|--------------------------------------------------------------------------------------|
-| "pfNames"     | N        | VFs from PF matches list of PF names                           | `string` list Default: `null`                     | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
-| "rootDevices"     | N        | VFs from PF matches list of PF PCI addresses               | `string` list Default: `null`                     | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
-| "linkTypes"   | N        | The link type of the net device associated with the PCI device | `string` list Default: `null`                     | "linkTypes": ["ether"]                                                                           |
-| "ddpProfiles" | N        | A map of device selectors                                      | `string` list Default: `null`                     | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
-| "isRdma"      | N        | Mount RDMA resources. Incompatible with vdpaType               | `bool`  values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
-| "needVhostNet"| N        | Share /dev/vhost-net and /dev/net/tun                          | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
-| "vdpaType"    | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true    | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                           |
+|     Field      | Required |                               Description                                |                    Type/Defaults                    |                                     Example/Accepted values                                      |
+|----------------|----------|--------------------------------------------------------------------------|-----------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| "vendors"      | N        | Target device's vendor Hex code as string                                | `string` list Default: `null`                       | "vendors": ["8086", "15b3"]                                                                      |
+| "devices"      | N        | Target Devices' device Hex code as string                                | `string` list Default: `null`                       | "devices": ["154c", "1889", "1018"]                                                              |
+| "drivers"      | N        | Target device driver names as string                                     | `string` list Default: `null`                       | "drivers": ["vfio-pci"]                                                                          |
+| "pciAddresses" | N        | Target device's pci address as string                                    | `string` list Default: `null`                       | "pciAddresses": ["0000:03:02.0"]                                                                 |
+| "pfNames"      | N        | functions from PF matches list of PF names                               | `string` list Default: `null`                       | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
+| "rootDevices"  | N        | functions from PF matches list of PF PCI addresses                       | `string` list Default: `null`                       | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
+| "linkTypes"    | N        | The link type of the net device associated with the PCI device           | `string` list Default: `null`                       | "linkTypes": ["ether"]                                                                           |
+| "isRdma"       | N        | Mount RDMA resources. Incompatible with vdpaType                         | `bool` values `true` or `false` Default: `false`    | "isRdma": `true`                                                                                 |
+| "ddpProfiles"  | N        | A map of device selectors                                                | `string` list Default: `null`                       | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
+| "needVhostNet" | N        | Share /dev/vhost-net and /dev/net/tun                                    | `bool` values `true` or `false` Default: `false`    | "needVhostNet": `true`                                                                           |
+| "vdpaType"     | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                              |
+
+
+#### Auxiliary network devices selectors
+This selector is applicable when "deviceType" is "auxNetDevice".
+
+|     Field     | Required |                                                              Description                                                               |                  Type/Defaults                   |                                     Example/Accepted values                                      |
+|---------------|----------|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| "vendors"     | N        | Target device's vendor Hex code as string                                                                                              | `string` list Default: `null`                    | "vendors": ["8086", "15b3"]                                                                      |
+| "devices"     | N        | Parent PCI device Hex code as string                                                                                                   | `string` list Default: `null`                    | "devices": ["154c", "1889", "1018"]                                                              |
+| "drivers"     | N        | Target device driver names as string                                                                                                   | `string` list Default: `null`                    | "drivers": ["vfio-pci"]                                                                          |
+| "pfNames"     | N        | functions from PF matches list of PF names                                                                                             | `string` list Default: `null`                    | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
+| "rootDevices" | N        | functions from PF matches list of PF PCI addresses                                                                                     | `string` list Default: `null`                    | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
+| "linkTypes"   | N        | The link type of the net device associated with the PCI device                                                                         | `string` list Default: `null`                    | "linkTypes": ["ether"]                                                                           |
+| "isRdma"      | N        | Mount RDMA resources. Incompatible with vdpaType                                                                                       | `bool` values `true` or `false` Default: `false` | "isRdma": `true`                                                                                 |
+| "auxTypes"    | N        | List of vendor specific auxiliary network device types. Device type can be determined by its name: <driver_name>.<kind_of_a_type>.<id> | `string` list Default: `null`                    | "auxTypes": ["sf", "eth"]                                                                        |
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
-
-#### Extended selectors for device type "accelerator"
-
-This selector is applicable when "deviceType" is "accelerator". The "accelerator" device type currently supports only the common selectors.
 
 ### Command line arguments
 
@@ -303,41 +340,41 @@ Usage of ./sriovdp:
 
 ### Assumptions
 
-This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Required device drivers could be loaded on system boot-up time by allow-listing/deny-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
+This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Same with a SFs. Required device drivers could be loaded on system boot-up time by allow-listing/deny-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
 For example, if the driver type is uio (i.e. igb_uio.ko) then there are specific device files to add in Device Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
 The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
 
-The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". Each "resource pool" then applies its selectors on this list and add devices that satisfies the selector's constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
+The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". If device type is Auxiliary network device (auxNetDevice), then for each discovered PCI device of type Netdevice plugin discovers auxiliry devices. Each "resource pool" then applies its selectors on this list and add devices that satisfies the selector's constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
 
 1. "vendors"      - The vendor hex code of device
 2. "devices"      - The device hex code of device
 3. "drivers"      - The driver name the device is registered with
-4. "pciAddresses" - The pci address of the device in BDF notation
-5. "pfNames"      - The Physical function name
-6. "rootDevices"  - The Physical function PCI address
-7. "linkTypes"    - The link type of the net device associated with the PCI device.
+4. "pciAddresses" - The pci address of the device in BDF notation (if device type is accelerator or netDevice)
+5. "auxTypes"     - The type of auxiliary network device (if device type is auxNetDevice).
+6. "pfNames"      - The Physical function name
+7. "rootDevices"  - The Physical function PCI address
+8. "linkTypes"    - The link type of the net device associated with the PCI device
 
-The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs for a pool in the below format:
-
-````json
-"<PFName>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
+The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs/SFs for a pool in the below format
+````
+"<PFName>#<SingleFunc>,<FirstFunc>-<LastFunc>,<SingleFunc>,<SingleFunc>,<FirstFunc>-<LastFunc>"
 ````
 
 Or
 
 ````json
-"<RootDevice>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
+"<RootDevice>#<SingleFunc>,<FirstFunc>-<LastFunc>,<SingleFunc>,<SingleFunc>,<FirstFunc>-<LastFunc>"
 ````
 
 Where:
 
     `<PFName>`     - is the PF interface name
     `<RootDevice>` - is the PF PCI address
-    `<SingleVF>`   - is a single VF index (0-based) that is included into the pool
-    `<FirstVF>`    - is the first VF index (0-based) that is included into the range
-    `<LastVF>`     - is the last VF index (0-based) that is included into the range
+    `<SingleFunc>` - is a single function index (0-based) that is included into the pool
+    `<FirstFunc>`  - is the first function index (0-based) that is included into the range
+    `<LastFunc>`   - is the last function index (0-based) that is included into the range
 
 Example:
 
@@ -353,13 +390,13 @@ The selector for PCI address `0000:86:00.0` and VF 0, 1, 3, 4 will look like:
 "rootDevices": ["0000:86:00.0#0-1,3,4"]
 ````
 
-If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs of this interface are going to the pool.
+If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs or SFs of this interface are going to the pool.
 
 ### Workflow
 
 - Load device's (Physical function if it is SR-IOV capable) kernel module and bind the driver to the PF
-- Create required Virtual functions
-- Bind all VF with right drivers
+- Create required VFs or SFs
+- Bind all VFs with right drivers
 - Create a resource config map
 - Run SR-IOV Network Device Plugin (as daemonset)
 
