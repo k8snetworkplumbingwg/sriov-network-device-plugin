@@ -110,7 +110,7 @@ func (s *pfNameSelector) Filter(inDevices []types.HostDevice) []types.HostDevice
 			// Exclude devices that doesn't have a PF name
 			continue
 		}
-		devIdx := dev.(types.NetDevice).GetVFID()
+		devIdx := dev.(types.NetDevice).GetFuncID()
 		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
 			if isSelected(devIdx, selector) {
@@ -139,7 +139,7 @@ func (s *rootDeviceSelector) Filter(inDevices []types.HostDevice) []types.HostDe
 			// Exclude devices that doesn't have a root PCI device
 			continue
 		}
-		devIdx := dev.(types.NetDevice).GetVFID()
+		devIdx := dev.(types.NetDevice).GetFuncID()
 		selector := getItem(s.rootDevices, rootDevice)
 		if selector != "" {
 			if isSelected(devIdx, selector) {
@@ -190,12 +190,12 @@ func getItem(hay []string, needle string) string {
 
 func isSelected(devIdx int, selector string) bool {
 	if strings.Contains(selector, "#") {
-		// Selector does contain VF index in next format:
-		// <PFName>#<VFIndexStart>-<VFIndexEnd> or
-		// <PFAddr>#<VFIndexStart>-<VFIndexEnd>
-		// In this case both <VFIndexStart> and <VFIndexEnd>
+		// Selector does contain index in next format:
+		// <PFName>#<IndexStart>-<IndexEnd> or
+		// <PFAddr>#<IndexStart>-<IndexEnd>
+		// In this case both <IndexStart> and <IndexEnd>
 		// are included in range, for example: "netpf0#3-5"
-		// The VFs 3,4 and 5 of the PF 'netpf0' will be included
+		// Functions 3,4 and 5 of the PF 'netpf0' will be included
 		// in selector pool
 		fields := strings.Split(selector, "#")
 		if len(fields) != fieldSplitTotal {
@@ -224,12 +224,12 @@ func isSelected(devIdx int, selector string) bool {
 					return true
 				}
 			} else {
-				vfid, err := strconv.Atoi(entries[i])
+				funcid, err := strconv.Atoi(entries[i])
 				if err != nil {
 					fmt.Printf("Failed to parse %s PF (name|address) selector, index is incorrect\n", selector)
 					return false
 				}
-				if devIdx == vfid {
+				if devIdx == funcid {
 					return true
 				}
 			}

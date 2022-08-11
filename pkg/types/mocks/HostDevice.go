@@ -117,20 +117,6 @@ func (_m *HostDevice) GetMounts() []*v1beta1.Mount {
 	return r0
 }
 
-// GetVFID provides a mock function with given fields:
-func (_m *HostDevice) GetVFID() int {
-	ret := _m.Called()
-
-	var r0 int
-	if rf, ok := ret.Get(0).(func() int); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int)
-	}
-
-	return r0
-}
-
 // GetVendor provides a mock function with given fields:
 func (_m *HostDevice) GetVendor() string {
 	ret := _m.Called()

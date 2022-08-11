@@ -26,6 +26,8 @@ type NetlinkProvider interface {
 	GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
 	// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
 	GetDevLinkDeviceEswitchAttrs(ifName string) (*nl.DevlinkDevEswitchAttr, error)
+	// GetIPv4RouteList returns a list of IPv4 routes for specified interface
+	GetIPv4RouteList(ifName string) ([]nl.Route, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -54,6 +56,15 @@ func (defaultNetlinkProvider) GetDevLinkDeviceEswitchAttrs(pfAddr string) (*nl.D
 		return nil, fmt.Errorf("error getting devlink device attributes for net device %s %v", pfAddr, err)
 	}
 	return &(dev.Attrs.Eswitch), nil
+}
+
+// GetIPv4RouteList returns a list of IPv4 routes for specified interface
+func (defaultNetlinkProvider) GetIPv4RouteList(ifName string) ([]nl.Route, error) {
+	link, err := nl.LinkByName(ifName)
+	if err != nil {
+		return []nl.Route{}, err
+	}
+	return nl.RouteList(link, nl.FAMILY_V4)
 }
 
 // SetNetlinkProviderInst sets a passed instance of NetlinkProvider to be used by unit test in other packages

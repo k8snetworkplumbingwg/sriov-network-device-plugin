@@ -55,7 +55,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 				infoProviders = append(infoProviders, infoprovider.NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
 			}
 		} else if nf.IsRdma {
-			rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
+			rdmaSpec := rFactory.GetRdmaSpec(types.NetDeviceType, dev.Address)
 			if rdmaSpec.IsRdma() {
 				isRdma = true
 				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
@@ -82,7 +82,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		return nil, err
 	}
 
-	netDev, err := devices.NewGenNetDevice(dev, isRdma)
+	netDev, err := devices.NewGenNetDevice(dev.Address, types.NetDeviceType, isRdma)
 	if err != nil {
 		return nil, err
 	}

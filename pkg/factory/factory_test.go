@@ -194,7 +194,7 @@ var _ = Describe("Factory", func() {
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
 						On("GetDDPProfiles").Return(ddpProfiles[i]).
-						On("GetVFID").Return(-1)
+						On("GetFuncID").Return(-1)
 					devs[i] = d
 				}
 
@@ -394,12 +394,15 @@ var _ = Describe("Factory", func() {
 	Describe("getting rdma spec", func() {
 		Context("check c rdma spec", func() {
 			f := factory.NewResourceFactory("fake", "fake", true)
-			rs := f.GetRdmaSpec("0000:00:00.1")
-			isRdma := rs.IsRdma()
-			deviceSpec := rs.GetRdmaDeviceSpec()
-			It("shoud return valid rdma spec", func() {
-				Expect(isRdma).ToNot(BeTrue())
-				Expect(deviceSpec).To(HaveLen(0))
+			rs1 := f.GetRdmaSpec(types.NetDeviceType, "0000:00:00.1")
+			rs2 := f.GetRdmaSpec(types.AcceleratorType, "0000:00:00.2")
+			It("shoud return valid rdma spec for netdevice", func() {
+				Expect(rs1).ToNot(BeNil())
+				Expect(rs1.IsRdma()).ToNot(BeTrue())
+				Expect(rs1.GetRdmaDeviceSpec()).To(HaveLen(0))
+			})
+			It("shoud return nil for accelerator", func() {
+				Expect(rs2).To(BeNil())
 			})
 		})
 	})

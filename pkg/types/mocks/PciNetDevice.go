@@ -115,6 +115,20 @@ func (_m *PciNetDevice) GetEnvVal() string {
 	return r0
 }
 
+// GetFuncID provides a mock function with given fields:
+func (_m *PciNetDevice) GetFuncID() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
 // GetLinkSpeed provides a mock function with given fields:
 func (_m *PciNetDevice) GetLinkSpeed() string {
 	ret := _m.Called()
@@ -210,20 +224,6 @@ func (_m *PciNetDevice) GetPfPciAddr() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// GetVFID provides a mock function with given fields:
-func (_m *PciNetDevice) GetVFID() int {
-	ret := _m.Called()
-
-	var r0 int
-	if rf, ok := ret.Get(0).(func() int); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int)
 	}
 
 	return r0

@@ -114,21 +114,23 @@ var _ = Describe("PciNetDevice", func() {
 
 			f := &mocks.ResourceFactory{}
 
+			pciAddr1 := "0000:00:00.1"
 			mockInfo1 := &mocks.DeviceInfoProvider{}
-			mockInfo1.On("GetEnvVal").Return("0000:00:00.1")
+			mockInfo1.On("GetEnvVal").Return(pciAddr1)
 			mockInfo1.On("GetDeviceSpecs").Return(nil)
 			mockInfo1.On("GetMounts").Return(nil)
+			pciAddr2 := "0000:00:00.2"
 			mockInfo2 := &mocks.DeviceInfoProvider{}
-			mockInfo2.On("GetEnvVal").Return("0000:00:00.2")
+			mockInfo2.On("GetEnvVal").Return(pciAddr2)
 			mockInfo2.On("GetDeviceSpecs").Return(nil)
 			mockInfo2.On("GetMounts").Return(nil)
-			f.On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return(mockInfo1).
-				On("GetDefaultInfoProvider", "0000:00:00.2", "mlx5_core").Return(mockInfo2).
-				On("GetRdmaSpec", "0000:00:00.1").Return(rdma1).
-				On("GetRdmaSpec", "0000:00:00.2").Return(rdma2)
+			f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return(mockInfo1).
+				On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return(mockInfo2).
+				On("GetRdmaSpec", types.NetDeviceType, pciAddr1).Return(rdma1).
+				On("GetRdmaSpec", types.NetDeviceType, pciAddr2).Return(rdma2)
 
-			in1 := newPciDeviceFn("0000:00:00.1")
-			in2 := newPciDeviceFn("0000:00:00.2")
+			in1 := newPciDeviceFn(pciAddr1)
+			in2 := newPciDeviceFn(pciAddr2)
 
 			It("should populate Rdma device specs if isRdma", func() {
 				defer fs.Use()()
@@ -137,7 +139,7 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				Expect(dev.IsRdma()).To(BeTrue())
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(dev.GetEnvVal()).To(Equal(pciAddr1))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(err).NotTo(HaveOccurred())
@@ -150,7 +152,7 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.2"))
+				Expect(dev.GetEnvVal()).To(Equal(pciAddr2))
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))

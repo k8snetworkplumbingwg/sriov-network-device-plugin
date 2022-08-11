@@ -159,7 +159,7 @@ type ResourceFactory interface {
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []HostDevice) (ResourcePool, error)
-	GetRdmaSpec(string) RdmaSpec
+	GetRdmaSpec(DeviceType, string) RdmaSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
@@ -244,8 +244,8 @@ type NetDevice interface {
 	GetLinkType() string
 	// GetLinkType returns link type of the devuce
 	GetLinkSpeed() string
-	// GetVFID returns ID > -1 if device is a PCI Virtual Function
-	GetVFID() int
+	// GetFuncID returns ID > -1 if device is a PCI Virtual Function or Scalable Function
+	GetFuncID() int
 	// IsRdma returns true if device is RDMA capable
 	IsRdma() bool
 }

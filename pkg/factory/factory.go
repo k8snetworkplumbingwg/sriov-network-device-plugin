@@ -135,8 +135,14 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 	return rPool, err
 }
 
-func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
-	return devices.NewRdmaSpec(pciAddrs)
+func (rf *resourceFactory) GetRdmaSpec(dt types.DeviceType, deviceID string) types.RdmaSpec {
+	//nolint: exhaustive
+	switch dt {
+	case types.NetDeviceType:
+		return devices.NewRdmaSpec(deviceID)
+	default:
+		return nil
+	}
 }
 
 func (rf *resourceFactory) GetVdpaDevice(pciAddr string) types.VdpaDevice {

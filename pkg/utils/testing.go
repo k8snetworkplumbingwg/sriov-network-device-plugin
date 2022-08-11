@@ -90,6 +90,9 @@ func SetDefaultMockNetlinkProvider() {
 	mockProvider.
 		On("GetDevLinkDeviceEswitchAttrs", mock.AnythingOfType("string")).
 		Return(&nl.DevlinkDevEswitchAttr{Mode: "fakeMode"}, nil)
+	mockProvider.
+		On("GetIPv4RouteList", mock.AnythingOfType("string")).
+		Return([]nl.Route{{Dst: nil}}, nil)
 
 	SetNetlinkProviderInst(&mockProvider)
 }

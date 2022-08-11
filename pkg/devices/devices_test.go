@@ -18,12 +18,14 @@
 package devices_test
 
 import (
+	"fmt"
+
 	"github.com/jaypipes/ghw"
-	"github.com/jaypipes/pcidb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
@@ -42,7 +44,17 @@ var _ = Describe("Devices", func() {
 		})
 	})
 	Describe("GenNetDevice", func() {
-		Context("Create new GenNetDevice", func() {
+		Context("Unsupported device type", func() {
+			It("AcceleratorType", func() {
+				dev, err := devices.NewGenNetDevice("0000:00:00.1", types.AcceleratorType, true)
+
+				expectedErr := fmt.Errorf("generic netdevices not supported for type %s", types.AcceleratorType)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedErr))
+				Expect(dev).To(BeNil())
+			})
+		})
+		Context("Create new GenNetDevice for PciNetDeviceType", func() {
 			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
 					Dirs: []string{
@@ -57,12 +69,8 @@ var _ = Describe("Devices", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-					Vendor:  &pcidb.Vendor{},
-					Product: &pcidb.Product{},
-				}
-				dev, err := devices.NewGenNetDevice(in, true)
+				pciAddr := "0000:00:00.1"
+				dev, err := devices.NewGenNetDevice(pciAddr, types.NetDeviceType, true)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
@@ -71,7 +79,7 @@ var _ = Describe("Devices", func() {
 				Expect(dev.GetNetName()).To(Equal("fakeIfName"))
 				Expect(dev.GetLinkSpeed()).To(Equal(""))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
-				Expect(dev.GetVFID()).To(Equal(0))
+				Expect(dev.GetFuncID()).To(Equal(0))
 				Expect(dev.IsRdma()).To(Equal(true))
 			})
 			It("device's PF name is not available", func() {
@@ -88,12 +96,8 @@ var _ = Describe("Devices", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-					Vendor:  &pcidb.Vendor{},
-					Product: &pcidb.Product{},
-				}
-				dev, err := devices.NewGenNetDevice(in, false)
+				pciAddr := "0000:00:00.1"
+				dev, err := devices.NewGenNetDevice(pciAddr, types.NetDeviceType, false)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
