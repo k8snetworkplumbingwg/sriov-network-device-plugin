@@ -25,6 +25,22 @@ func (_m *RdmaProvider) GetRdmaCharDevices(rdmaDeviceName string) []string {
 	return r0
 }
 
+// GetRdmaDevicesForAuxdev provides a mock function with given fields: deviceID
+func (_m *RdmaProvider) GetRdmaDevicesForAuxdev(deviceID string) []string {
+	ret := _m.Called(deviceID)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(deviceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	return r0
+}
+
 // GetRdmaDevicesForPcidev provides a mock function with given fields: pciAddr
 func (_m *RdmaProvider) GetRdmaDevicesForPcidev(pciAddr string) []string {
 	ret := _m.Called(pciAddr)

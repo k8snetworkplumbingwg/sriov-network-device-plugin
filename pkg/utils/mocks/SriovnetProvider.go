@@ -9,6 +9,94 @@ type SriovnetProvider struct {
 	mock.Mock
 }
 
+// GetAuxNetDevicesFromPci provides a mock function with given fields: pciAddr
+func (_m *SriovnetProvider) GetAuxNetDevicesFromPci(pciAddr string) ([]string, error) {
+	ret := _m.Called(pciAddr)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(pciAddr)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(pciAddr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetNetDevicesFromAux provides a mock function with given fields: auxDev
+func (_m *SriovnetProvider) GetNetDevicesFromAux(auxDev string) ([]string, error) {
+	ret := _m.Called(auxDev)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(auxDev)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(auxDev)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPfPciFromAux provides a mock function with given fields: auxDev
+func (_m *SriovnetProvider) GetPfPciFromAux(auxDev string) (string, error) {
+	ret := _m.Called(auxDev)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(auxDev)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(auxDev)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSfIndexByAuxDev provides a mock function with given fields: auxDev
+func (_m *SriovnetProvider) GetSfIndexByAuxDev(auxDev string) (int, error) {
+	ret := _m.Called(auxDev)
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func(string) int); ok {
+		r0 = rf(auxDev)
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(auxDev)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUplinkRepresentor provides a mock function with given fields: vfPciAddress
 func (_m *SriovnetProvider) GetUplinkRepresentor(vfPciAddress string) (string, error) {
 	ret := _m.Called(vfPciAddress)
@@ -23,6 +111,27 @@ func (_m *SriovnetProvider) GetUplinkRepresentor(vfPciAddress string) (string, e
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(vfPciAddress)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetUplinkRepresentorFromAux provides a mock function with given fields: auxDev
+func (_m *SriovnetProvider) GetUplinkRepresentorFromAux(auxDev string) (string, error) {
+	ret := _m.Called(auxDev)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(auxDev)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(auxDev)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -275,4 +275,26 @@ var _ = Describe("DeviceSelectors", func() {
 			})
 		})
 	})
+	Describe("auxTypes selector", func() {
+		Context("filtering", func() {
+			It("should return devices matching the correct aux type", func() {
+				auxTypes := []string{"bar", "baz"}
+				sel := resources.NewAuxTypeSelector(auxTypes)
+
+				dev0 := mocks.AuxNetDevice{}
+				dev0.On("GetAuxType").Return("bar")
+				dev1 := mocks.AuxNetDevice{}
+				dev1.On("GetAuxType").Return("baz")
+				dev2 := mocks.AuxNetDevice{}
+				dev2.On("GetAuxType").Return("")
+
+				in := []types.HostDevice{&dev0, &dev1, &dev2}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).To(ContainElement(&dev1))
+				Expect(filtered).NotTo(ContainElement(&dev2))
+			})
+		})
+	})
 })

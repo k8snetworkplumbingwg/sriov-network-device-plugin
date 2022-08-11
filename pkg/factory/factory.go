@@ -21,6 +21,7 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/auxnetdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
@@ -91,6 +92,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewLinkTypeSelector(values), nil
 	case "ddpProfiles":
 		return resources.NewDdpSelector(values), nil
+	case "auxTypes":
+		return resources.NewAuxTypeSelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
@@ -129,6 +132,14 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 				err = fmt.Errorf("invalid device list for AcceleratorType")
 			}
 		}
+	case types.AuxNetDeviceType:
+		if len(filteredDevice) > 0 {
+			if _, ok := filteredDevice[0].(types.AuxNetDevice); ok {
+				rPool = auxnetdevice.NewAuxNetResourcePool(rc, devicePool)
+			} else {
+				err = fmt.Errorf("invalid device list for AuxNetDeviceType")
+			}
+		}
 	default:
 		err = fmt.Errorf("cannot create resourcePool: invalid device type %s", rc.DeviceType)
 	}
@@ -140,6 +151,8 @@ func (rf *resourceFactory) GetRdmaSpec(dt types.DeviceType, deviceID string) typ
 	switch dt {
 	case types.NetDeviceType:
 		return devices.NewRdmaSpec(deviceID)
+	case types.AuxNetDeviceType:
+		return devices.NewAuxRdmaSpec(deviceID)
 	default:
 		return nil
 	}
@@ -156,6 +169,8 @@ func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DevicePr
 		return netdevice.NewNetDeviceProvider(rf)
 	case types.AcceleratorType:
 		return accelerator.NewAccelDeviceProvider(rf)
+	case types.AuxNetDeviceType:
+		return auxnetdevice.NewAuxNetDeviceProvider(rf)
 	default:
 		return nil
 	}
@@ -183,6 +198,15 @@ func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (interface{
 
 		glog.Infof("accelerator device selector for resource %s is %+v", rc.ResourceName, accelDeviceSelector)
 		return accelDeviceSelector, nil
+	case types.AuxNetDeviceType:
+		auxNetDeviceSelector := &types.AuxNetDeviceSelectors{}
+
+		if err := json.Unmarshal(*rc.Selectors, auxNetDeviceSelector); err != nil {
+			return nil, fmt.Errorf("error unmarshalling AuxNetDevice selector bytes %v", err)
+		}
+
+		glog.Infof("auxiliary network device selector for resource %s is %+v", rc.ResourceName, auxNetDeviceSelector)
+		return auxNetDeviceSelector, nil
 	default:
 		return nil, fmt.Errorf("unable to get deviceFilter, invalid deviceType %s", rc.DeviceType)
 	}

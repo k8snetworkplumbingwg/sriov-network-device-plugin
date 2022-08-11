@@ -58,6 +58,20 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 			return nil, err
 		}
 		netNames, _ = utils.GetNetNames(deviceID)
+	case types.AuxNetDeviceType:
+		if pfName, err = utils.GetSriovnetProvider().GetUplinkRepresentorFromAux(deviceID); err != nil {
+			// AuxNetDeviceType by design should have PF, return error if failed to get PF name
+			return nil, err
+		}
+		if pfAddr, err = utils.GetSriovnetProvider().GetPfPciFromAux(deviceID); err != nil {
+			return nil, err
+		}
+		// Only SF auxiliary devices can have an index, for other (-1, err) returned.
+		// TODO review this check in the future if other auxiliary device types are added
+		if funcID, err = utils.GetSriovnetProvider().GetSfIndexByAuxDev(deviceID); err != nil {
+			return nil, err
+		}
+		netNames, _ = utils.GetSriovnetProvider().GetNetDevicesFromAux(deviceID)
 	default:
 		return nil, fmt.Errorf("generic netdevices not supported for type %s", dt)
 	}

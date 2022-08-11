@@ -46,6 +46,8 @@ const (
 	NetDeviceType DeviceType = "netDevice"
 	// AcceleratorType is DeviceType for accelerator class devices
 	AcceleratorType DeviceType = "accelerator"
+	// AuxNetDeviceType is DeviceType for auxiliary network devices
+	AuxNetDeviceType DeviceType = "auxNetDevice"
 
 	// VdpaVirtioType is VdpaType for virtio-net devices
 	VdpaVirtioType VdpaType = "virtio"
@@ -78,8 +80,9 @@ Processing accelerators subclasses. ref: https://pci-ids.ucw.cz/read/PD/12
 01	AI Inference Accelerator
 */
 var SupportedDevices = map[DeviceType]int{
-	NetDeviceType:   0x02,
-	AcceleratorType: 0x12,
+	NetDeviceType:    0x02,
+	AcceleratorType:  0x12,
+	AuxNetDeviceType: 0x02,
 }
 
 // SupportedVdpaTypes is a map of 'vdpa device type as string' to 'vdpa device driver as string'
@@ -133,6 +136,13 @@ type NetDeviceSelectors struct {
 type AccelDeviceSelectors struct {
 	DeviceSelectors
 	GenericPciDeviceSelectors
+}
+
+// AuxNetDeviceSelectors contains auxiliary device related selector fields
+type AuxNetDeviceSelectors struct {
+	DeviceSelectors
+	GenericNetDeviceSelectors
+	AuxTypes []string `json:"auxTypes,omitempty"`
 }
 
 // ResourceConfList is list of ResourceConfig
@@ -265,6 +275,13 @@ type PciNetDevice interface {
 // represents generic PCI accelerator device
 type AccelDevice interface {
 	PciDevice
+}
+
+// AuxNetDevice extends NetDevice interface
+type AuxNetDevice interface {
+	NetDevice
+	// GetAuxType returns type of auxiliary device
+	GetAuxType() string
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information

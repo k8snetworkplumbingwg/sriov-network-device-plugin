@@ -27,6 +27,7 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 )
 
 var _ = Describe("Devices", func() {
@@ -102,6 +103,58 @@ var _ = Describe("Devices", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
 				Expect(dev.GetPfNetName()).To(Equal(""))
+			})
+		})
+		Context("Create new GenNetDevice for AuxNetDeviceType", func() {
+			It("should populate fields", func() {
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", "foo.bar.0").Return("ens1f0", nil).
+					On("GetPfPciFromAux", "foo.bar.0").Return("0000:00:00.0", nil).
+					On("GetSfIndexByAuxDev", "foo.bar.0").Return(1, nil).
+					On("GetNetDevicesFromAux", "foo.bar.0").Return([]string{"fakeIfName"}, nil)
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				dev, err := devices.NewGenNetDevice("foo.bar.0", types.AuxNetDeviceType, true)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetPfNetName()).To(Equal("ens1f0"))
+				Expect(dev.GetPfPciAddr()).To(Equal("0000:00:00.0"))
+				Expect(dev.GetNetName()).To(Equal("fakeIfName"))
+				Expect(dev.GetLinkSpeed()).To(Equal(""))
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetFuncID()).To(Equal(1))
+				Expect(dev.IsRdma()).To(Equal(true))
+			})
+			It("no SF index for auxiliary device", func() {
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", "foo.bar.0").Return("", nil).
+					On("GetPfPciFromAux", "foo.bar.0").Return("", nil).
+					On("GetSfIndexByAuxDev", "foo.bar.0").Return(-1, fmt.Errorf("NO ID"))
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				dev, err := devices.NewGenNetDevice("foo.bar.0", types.AuxNetDeviceType, false)
+
+				Expect(err).To(HaveOccurred())
+				Expect(dev).To(BeNil())
+			})
+			It("no net names for the device found", func() {
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", "foo.bar.0").Return("", nil).
+					On("GetPfPciFromAux", "foo.bar.0").Return("", nil).
+					On("GetSfIndexByAuxDev", "foo.bar.0").Return(0, nil).
+					On("GetNetDevicesFromAux", "foo.bar.0").Return([]string{""}, fmt.Errorf("NO NAMES"))
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				dev, err := devices.NewGenNetDevice("foo.bar.0", types.AuxNetDeviceType, false)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(dev).ToNot(BeNil())
+				Expect(dev.GetNetName()).To(Equal(""))
+				Expect(dev.GetLinkType()).To(Equal(""))
 			})
 		})
 	})

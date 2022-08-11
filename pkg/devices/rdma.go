@@ -55,6 +55,12 @@ func NewRdmaSpec(pciAddr string) types.RdmaSpec {
 	return newRdmaSpec(rdmaResources)
 }
 
+// NewAuxRdmaSpec returns the RdmaSpec for auxiliary device ID
+func NewAuxRdmaSpec(deviceID string) types.RdmaSpec {
+	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForAuxdev(deviceID)
+	return newRdmaSpec(rdmaResources)
+}
+
 func (r *rdmaSpec) IsRdma() bool {
 	return r.isSupportRdma
 }

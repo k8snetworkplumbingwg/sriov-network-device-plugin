@@ -170,6 +170,26 @@ func (s *linkTypeSelector) Filter(inDevices []types.HostDevice) []types.HostDevi
 	return filteredList
 }
 
+// NewAuxTypeSelector returns an interface for auxTypes list
+func NewAuxTypeSelector(auxTypes []string) types.DeviceSelector {
+	return &auxTypeSelector{auxTypes: auxTypes}
+}
+
+type auxTypeSelector struct {
+	auxTypes []string
+}
+
+func (s *auxTypeSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
+	for _, dev := range inDevices {
+		auxType := dev.(types.AuxNetDevice).GetAuxType()
+		if contains(s.auxTypes, auxType) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+	return filteredList
+}
+
 func contains(hay []string, needle string) bool {
 	for _, s := range hay {
 		if s == needle {

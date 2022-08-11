@@ -586,4 +586,14 @@ var _ = Describe("In the utils package", func() {
 		Entry("parsing empty ID string", "", 0, true),
 		Entry("parsing incorrect ID string", "not_a_number", 0, true),
 	)
+	DescribeTable("checking parsing auxiliary device type",
+		func(deviceID string, expected string) {
+			actual := ParseAuxDeviceType(deviceID)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("wrong deviceID string layout (PCI device string)", "0000:12:34.0", ""),
+		Entry("wrong deviceID string layout (id not a number)", "driver_name.type.id", ""),
+		Entry("wrong deviceID string layout (negative id number)", "driver_name.type.-4", ""),
+		Entry("valid deviceID string", "driver_name.type.123", "type"),
+	)
 })

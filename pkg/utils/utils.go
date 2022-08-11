@@ -28,6 +28,9 @@ import (
 
 var (
 	sysBusPci = "/sys/bus/pci/devices"
+	// golangci-lint doesn't see it is used in the testing.go
+	//nolint: unused
+	sysBusAux = "/sys/bus/auxiliary/devices"
 	devDir    = "/dev"
 )
 
@@ -476,4 +479,18 @@ func NormalizeProductName(product string) string {
 // ParseDeviceID returns device ID parsed from the string as 64bit integer
 func ParseDeviceID(deviceID string) (int64, error) {
 	return strconv.ParseInt(deviceID, classIDBaseInt, classIDBitSize)
+}
+
+// ParseAuxDeviceType returns auxiliary device type parsed from device ID
+func ParseAuxDeviceType(deviceID string) string {
+	chunks := strings.Split(deviceID, ".")
+	// auxiliary device name is of form <driver_name>.<kind_of_a_type>.<id> where id is an unsigned integer
+	//nolint: gomnd
+	if len(chunks) == 3 {
+		if id, err := strconv.Atoi(chunks[2]); err == nil && id >= 0 {
+			return chunks[1]
+		}
+	}
+	// not an auxiliary device
+	return ""
 }
