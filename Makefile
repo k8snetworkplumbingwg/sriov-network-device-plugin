@@ -21,7 +21,7 @@ ORG_PATH=github.com/k8snetworkplumbingwg
 BUILDDIR=$(CURDIR)/build
 REPO_PATH=$(ORG_PATH)/$(PACKAGE)
 BASE=$(GOPATH)/src/$(REPO_PATH)
-PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./... | grep -v "^$(PACKAGE)/vendor/"))
+PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./... | grep -v /test/ | grep -v "^$(PACKAGE)/vendor/"))
 GOFILES = $(shell find . -name *.go | grep -vE "(\/vendor\/)|(_test.go)")
 # Test artifacts and settings
 TESTPKGS = $(shell env GOPATH=$(GOPATH) go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
@@ -107,10 +107,10 @@ test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint | $(BASE) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests
-	$Q cd $(BASE) && go test $(go list ./... | grep -v /test/) -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
+	$Q cd $(BASE) && go test $(go list ./...) -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
 test-xml: fmt lint | $(BASE) $(GO2XUNIT) ; $(info  running $(NAME:%=% )tests...) @ ## Run tests with xUnit output
-	$Q cd $(BASE) && 2>&1 go test $(go list ./... | grep -v /test/) -timeout 20s -v $(TESTPKGS) | tee test/tests.output
+	$Q cd $(BASE) && 2>&1 go test $(go list ./...) -timeout 20s -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
 
 .PHONY: test-coverage test-coverage-tools

@@ -154,12 +154,14 @@ func PCIAddressFromString(address string) *PCIAddress {
 		if matches[1] != "" {
 			dom = matches[2]
 		}
-		return &PCIAddress{
+		xd := &PCIAddress{
 			Domain:   dom,
 			Bus:      matches[3],
 			Slot:     matches[4],
 			Function: matches[5],
 		}
+		fmt.Printf("PCIAddressFromString: %v\n", xd)
+		return xd
 	}
 	return nil
 }

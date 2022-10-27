@@ -26,7 +26,7 @@ func deletePod(ci coreclient.CoreV1Interface, pod *corev1.Pod, timeout time.Dura
 
 // waitForPodRecreation waits for pod selected by selector to get deleted and recreated with daemonset
 func waitForPodRecreation(core coreclient.CoreV1Interface, oldPodName, ns string, selectors map[string]string, timeout,
-	 interval time.Duration) error {
+	interval time.Duration) error {
 	if err := waitForPodDeletion(core, oldPodName, ns, timeout, interval); err != nil {
 		return err
 	}

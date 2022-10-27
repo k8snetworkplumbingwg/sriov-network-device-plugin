@@ -13,7 +13,7 @@ import (
 )
 
 func createDsYaml(dsName, dsNamespace, imageName, imageTag string) string {
-  return `apiVersion: apps/v1
+	return `apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: ` + dsName + `
@@ -100,8 +100,8 @@ func DeleteDpDaemonset(ac *appsclient.AppsV1Client, name, namespace string) erro
 }
 
 // WaitForDeviceListUpdate waits for DP pod to start and update list of available devices
-func WaitForDeviceListUpdate(ci coreclient.CoreV1Interface, namespace *string, 
-  selectors map[string]string, timeout, interval time.Duration) (bool, error) {
+func WaitForDeviceListUpdate(ci coreclient.CoreV1Interface, namespace *string,
+	selectors map[string]string, timeout, interval time.Duration) (bool, error) {
 	isUpdated := false
 	pods, err := getPodWithSelectors(ci, namespace, selectors)
 	if err != nil {
@@ -114,8 +114,8 @@ func WaitForDeviceListUpdate(ci coreclient.CoreV1Interface, namespace *string,
 	if err = waitForPodRecreation(ci, dpPod.Name, *namespace, selectors, timeout, interval); err != nil {
 		return isUpdated, err
 	}
-  pods, err = getPodWithSelectors(ci, namespace, selectors)
-  if err != nil {
+	pods, err = getPodWithSelectors(ci, namespace, selectors)
+	if err != nil {
 		return isUpdated, err
 	}
 	dpPod = pods.Items[0]

@@ -65,7 +65,7 @@ func init() {
 	numOfVfNetdev = flag.Int("numofvfnetdev", 4, "Number of VFs with kernel driver (e.g. iavf)")
 	numOfVfVfio = flag.Int("numofvfvfio", 2, "Number of VFs with vfio-pci driver")
 	numOfVfioVfForSelectedPf = flag.Int("numofvfiovfforselectedpf", 2,
-							   "Number of VFs with vfio-pci driver enabled on slected PF")
+		"Number of VFs with vfio-pci driver enabled on slected PF")
 }
 
 func TestSriovTests(t *testing.T) {
