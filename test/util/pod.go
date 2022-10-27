@@ -49,6 +49,8 @@ func waitForPodStateRunning(core coreclient.CoreV1Interface, podName, ns string,
 			return true, nil
 		case corev1.PodFailed, corev1.PodSucceeded:
 			return false, ErrPodNotRunning
+		case corev1.PodPending, corev1.PodUnknown:
+			return false, nil
 		default:
 			return false, nil
 		}
@@ -89,7 +91,7 @@ func getPodWithSelectors(ci coreclient.CoreV1Interface, namespace *string,
 }
 
 // waitForDpResourceUpdate waits for DP to send update
-func waitForDpResourceUpdate(ci coreclient.CoreV1Interface, pod corev1.Pod, timeout,
+func waitForDpResourceUpdate(ci coreclient.CoreV1Interface, pod *corev1.Pod, timeout,
 	interval time.Duration) (bool, error) {
 	isUpdated := false
 
@@ -109,7 +111,7 @@ func waitForDpResourceUpdate(ci coreclient.CoreV1Interface, pod corev1.Pod, time
 }
 
 // checkForDpResourceUpdate checks if device plugin's resource list has been updated
-func checkForDpResourceUpdate(ci coreclient.CoreV1Interface, pod corev1.Pod) (bool, error) {
+func checkForDpResourceUpdate(ci coreclient.CoreV1Interface, pod *corev1.Pod) (bool, error) {
 	isUpdated := false
 	res := ci.Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{})
 

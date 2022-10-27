@@ -108,10 +108,10 @@ func WaitForDeviceListUpdate(ci coreclient.CoreV1Interface, namespace *string,
 		return isUpdated, err
 	}
 	dpPod := pods.Items[0]
-	if err = deletePod(ci, &dpPod, timeout); err != nil {
+	if err := deletePod(ci, &dpPod, timeout); err != nil {
 		return isUpdated, err
 	}
-	if err = waitForPodRecreation(ci, dpPod.Name, *namespace, selectors, timeout, interval); err != nil {
+	if err := waitForPodRecreation(ci, dpPod.Name, *namespace, selectors, timeout, interval); err != nil {
 		return isUpdated, err
 	}
 	pods, err = getPodWithSelectors(ci, namespace, selectors)
@@ -119,5 +119,5 @@ func WaitForDeviceListUpdate(ci coreclient.CoreV1Interface, namespace *string,
 		return isUpdated, err
 	}
 	dpPod = pods.Items[0]
-	return waitForDpResourceUpdate(ci, dpPod, timeout, interval)
+	return waitForDpResourceUpdate(ci, &dpPod, timeout, interval)
 }

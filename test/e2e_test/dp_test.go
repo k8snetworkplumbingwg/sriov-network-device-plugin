@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/test/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -43,7 +44,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -70,7 +71,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -96,7 +97,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -127,7 +128,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -154,7 +155,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -180,7 +181,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -208,7 +209,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)
@@ -239,7 +240,7 @@ var _ = Describe("SR-IOV device plugin testing", func() {
 				}]
 			}`
 
-			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, &cmData, timeout)
+			isCmDeployed, _ := util.DeployCm(cs, testCmName, testNs, cmData, timeout)
 			Expect(isCmDeployed).To(Equal(true))
 
 			isUpdated, err := util.WaitForDeviceListUpdate(cs, testNs, dpSelectors, timeout, interval)

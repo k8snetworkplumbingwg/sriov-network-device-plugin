@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/test/util"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsclient "k8s.io/client-go/kubernetes/typed/apps/v1"

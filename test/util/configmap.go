@@ -12,7 +12,7 @@ import (
 
 // DeployCm deploys configmap
 func DeployCm(ci coreclient.CoreV1Interface, testCmName, testNs *string,
-	cmData *map[string]string, timeout time.Duration) (bool, error) {
+	cmData map[string]string, timeout time.Duration) (bool, error) {
 	configMap := prepareConfigMap(testCmName, testNs, cmData)
 	err := createConfigMap(ci, configMap, timeout)
 	if err != nil {
@@ -22,7 +22,7 @@ func DeployCm(ci coreclient.CoreV1Interface, testCmName, testNs *string,
 }
 
 // DeleteCm deletes ConfigMap
-func DeleteCm(ci coreclient.CoreV1Interface, name *string, namespace *string) error {
+func DeleteCm(ci coreclient.CoreV1Interface, name, namespace *string) error {
 	err := ci.ConfigMaps(*namespace).Delete(context.TODO(), *name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("DeleteCm: %w", err)
@@ -32,11 +32,11 @@ func DeleteCm(ci coreclient.CoreV1Interface, name *string, namespace *string) er
 }
 
 // PrepareConfigMap prepare SR-IOV device plugin ConfigMap
-func prepareConfigMap(name *string, namespace *string, data *map[string]string) *corev1.ConfigMap {
+func prepareConfigMap(name, namespace *string, data map[string]string) *corev1.ConfigMap {
 	configMap := &corev1.ConfigMap{}
 	configMap.Name = *name
 	configMap.Namespace = *namespace
-	configMap.Data = *data
+	configMap.Data = data
 	return configMap
 }
 
