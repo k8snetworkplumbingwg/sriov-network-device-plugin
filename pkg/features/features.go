@@ -21,6 +21,8 @@ const (
 
 	// Deprecated - feature that will be deprecated in 2 releases
 	Deprecated = string("DEPRECATED")
+
+	splitLength = 2
 )
 
 // List of supported features
@@ -101,7 +103,7 @@ func (fg *FeatureGate) isFeatureSupported(featureName string) bool {
 
 func (fg *FeatureGate) set(featureName string, status bool) error {
 	if !fg.isFeatureSupported(featureName) {
-		return fmt.Errorf("Feature %s is not supported", featureName)
+		return fmt.Errorf("feature %s is not supported", featureName)
 	}
 	fg.enabled[featureName] = status
 	if status && fg.knownFeatures[featureName].Maturity == Deprecated {
@@ -125,13 +127,13 @@ func (fg *FeatureGate) SetFromMap(valuesToSet map[string]bool) error {
 func (fg *FeatureGate) SetFromString(value string) error {
 	featureMap := make(map[string]bool)
 	for _, s := range strings.Split(value, ",") {
-		if len(s) == 0 {
+		if s == "" {
 			continue
 		}
 		splitted := strings.Split(s, "=")
 		key := strings.TrimSpace(splitted[0])
-		if len(splitted) != 2 {
-			if len(splitted) > 2 {
+		if len(splitted) != splitLength {
+			if len(splitted) > splitLength {
 				return fmt.Errorf("too many values for %s", key)
 			}
 			return fmt.Errorf("enablement value for %s is missing", key)

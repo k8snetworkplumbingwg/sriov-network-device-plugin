@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 var cfg *Config
@@ -41,7 +41,7 @@ func newConfig() *Config {
 // ReadConfig loads config
 func (cfg *Config) ReadConfig(configFile string) error {
 	allCfg := make(map[string]json.RawMessage)
-	rawBytes, err := ioutil.ReadFile(configFile)
+	rawBytes, err := os.ReadFile(configFile)
 
 	if err != nil {
 		return fmt.Errorf("error reading file %s, %v", configFile, err)
