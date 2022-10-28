@@ -20,10 +20,10 @@ import (
 const (
 	interval           = time.Second * 2
 	timeout            = time.Second * 60
-	imageName          = "docker.io/nfvpe/sriov-device-plugin"
+	imageName          = "ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin"
 	dsName             = "kube-sriov-device-plugin"
 	serviceAccountName = "sriov-device-plugin"
-	defaultImageTag    = "v3.3"
+	defaultImageTag    = "latest"
 )
 
 var (
