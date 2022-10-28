@@ -31,10 +31,17 @@ $ ./scripts/e2e_setup_cluster.sh
 
     That gives total of 4 PFs and 6 VFs. However interface that has been moved to kind container's netns cannot be discovered by deviceplugin, therefor for purpose of the test the total number of devices will be 9 (6 VFs + 3 PFs).
 
-3. Run the test:
+3. Export GitHub SHA, build test image and load it into kind cluster:
+    ```
+    export GITHUB_SHA=aaabbbccc
+    make test-image
+    kind load docker-image ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:$GITHUB_SHA
+    ```
+
+4. Run the test:
 
     ```
-    $ cd test/e2e && go test
+    $ cd test/e2e_test && go test
     ```
 
     The number of interfaces for test (in case of hardware configuration that differs from the presented) can be configured on test start via following configuration flags:
