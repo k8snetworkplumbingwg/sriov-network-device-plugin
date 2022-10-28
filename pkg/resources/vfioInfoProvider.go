@@ -23,7 +23,7 @@ import (
 )
 
 /*
-   vfioInfoProvider implements DeviceInfoProvider
+vfioInfoProvider implements DeviceInfoProvider
 */
 type vfioInfoProvider struct {
 	pciAddr   string

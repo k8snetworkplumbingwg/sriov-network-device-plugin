@@ -16,6 +16,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,7 +65,7 @@ func main() {
 	}
 
 	config.NewConfig()
-	
+
 	cfg, err := config.GetConfig()
 	if err != nil {
 		glog.Fatalf("error while getting config: %v", err)
@@ -77,9 +78,7 @@ func main() {
 		return
 	}
 
-	features.NewFeatureGate()
-
-	fg, err := features.GetFeatureGate()
+	fg, err := prepareFeaturegates()
 	if err != nil {
 		glog.Fatalf("error while getting feature gate: %v", err)
 		return
@@ -103,18 +102,11 @@ func main() {
 		return
 	}
 
-	glog.Infof("Initializing resource servers")
-	if err := rm.initServers(); err != nil {
-		glog.Errorf("error initializing resource servers %v", err)
+	if err := startServers(rm); err != nil {
+		glog.Error(err)
 		return
 	}
 
-	glog.Infof("Starting all servers...")
-	if err := rm.startAllServers(); err != nil {
-		glog.Errorf("error starting resource servers %v\n", err)
-		return
-	}
-	glog.Infof("All servers started.")
 	glog.Infof("Listening for term signals")
 	// respond to syscalls for termination
 	sigCh := make(chan os.Signal, 1)
@@ -126,4 +118,23 @@ func main() {
 	if err := rm.stopAllServers(); err != nil {
 		glog.Errorf("stopping servers produced error: %s", err.Error())
 	}
+}
+
+func prepareFeaturegates() (*features.FeatureGate, error) {
+	features.NewFeatureGate()
+	return features.GetFeatureGate()
+}
+
+func startServers(rm *resourceManager) error {
+	glog.Infof("Initializing resource servers")
+	if err := rm.initServers(); err != nil {
+		return fmt.Errorf("error initializing resource servers %w", err)
+	}
+
+	glog.Infof("Starting all servers...")
+	if err := rm.startAllServers(); err != nil {
+		return fmt.Errorf("error starting resource servers %w", err)
+	}
+	glog.Infof("All servers started.")
+	return nil
 }

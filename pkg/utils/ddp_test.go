@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-//https://npf.io/2015/06/testing-exec-command
+// https://npf.io/2015/06/testing-exec-command
 func FakeExecCommand(outs, exitCode string) func(string, ...string) *exec.Cmd {
 	return func(command string, args ...string) *exec.Cmd {
 		cs := []string{"-test.run=TestHelperProcess", "--", command}
@@ -25,7 +25,7 @@ func FakeExecCommand(outs, exitCode string) func(string, ...string) *exec.Cmd {
 	}
 }
 
-//https://npf.io/2015/06/testing-exec-command
+// https://npf.io/2015/06/testing-exec-command
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return

@@ -27,8 +27,11 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
-/*vdpaTypeToDriver translates vdpaTypes (as specified in the netDevice selectors)
-  to vdpa bus drivers*/
+/*
+vdpaTypeToDriver translates vdpaTypes (as specified in the netDevice selectors)
+
+	to vdpa bus drivers
+*/
 var supportedVdpaTypes = map[types.VdpaType]string{
 	types.VdpaVirtioType: vdpa.VirtioVdpaDriver,
 	types.VdpaVhostType:  vdpa.VhostVdpaDriver,
