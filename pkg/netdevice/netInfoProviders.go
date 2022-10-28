@@ -25,7 +25,7 @@ import (
 )
 
 /*
-   rdmaInfoProvider provides the RDMA information
+rdmaInfoProvider provides the RDMA information
 */
 type rdmaInfoProvider struct {
 	rdmaSpec types.RdmaSpec
@@ -58,7 +58,7 @@ func (rip *rdmaInfoProvider) GetMounts() []*pluginapi.Mount {
 }
 
 /*
-   VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
+VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
 */
 type vhostNetInfoProvider struct {
 }
