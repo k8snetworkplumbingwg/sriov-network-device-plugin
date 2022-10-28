@@ -29,7 +29,10 @@ check_requirements() {
   fi
 
   echo "### verify test device is a netdevice"
-  ip link show "$test_pf" 2>&1 > /dev/null
+  if ! ip link show "$test_pf";
+  then
+    echo "ERROR: Failed to move netdev to KinD network namespace" && exit 5
+  fi
 }
 
 retry() {
@@ -48,7 +51,7 @@ retry() {
     fi
     echo "Exit code: '$status'. Sleeping '$delay' seconds before retrying"
     sleep $delay
-    let retries--
+    (( retries=retries+1 ))
   done
   return $status
 }
@@ -74,8 +77,10 @@ echo "## find KinD's container network namespace"
 kind_netns="$(docker inspect "$kind_container" | grep netns | awk '{print $2}' | sed 's/[\"\,]//g')"
 [ -z "${kind_netns}" ] && echo "could not find KinD's network namespace"
 echo "## move test PF to KinD's container"
-ip link set dev "$test_pf" netns "$kind_netns"
-[ "$?" -ne 0 ] && echo "ERROR: Failed to move netdev to KinD network namespace" && exit 5
+if ! ip link set dev "$test_pf" netns "$kind_netns";
+then
+  echo "ERROR: Failed to move netdev to KinD network namespace" && exit 5
+fi
 echo "## moved '$test_pf' into kind's container's netns '$kind_netns'"
 echo "## label KinD's control-plane-node as worker"
 kubectl label node kind-control-plane node-role.kubernetes.io/worker= --overwrite
