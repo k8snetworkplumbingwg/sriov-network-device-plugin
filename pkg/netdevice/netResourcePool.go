@@ -69,7 +69,7 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 }
 
 // StoreDeviceInfoFile stores the Device Info files according to the
-//  k8snetworkplumbingwg/device-info-spec
+// k8snetworkplumbingwg/device-info-spec
 func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error {
 	var devInfo nettypes.DeviceInfo
 	for id, dev := range rp.GetDevicePool() {
