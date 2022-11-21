@@ -27,9 +27,10 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
-// vdpaTypeToDriver translates vdpaTypes (as specified in the netDevice selectors)
-// to vdpa bus drivers
-
+/*
+vdpaTypeToDriver translates vdpaTypes (as specified in the netDevice selectors)
+to vdpa bus drivers
+*/
 var supportedVdpaTypes = map[types.VdpaType]string{
 	types.VdpaVirtioType: vdpa.VirtioVdpaDriver,
 	types.VdpaVhostType:  vdpa.VhostVdpaDriver,
@@ -41,13 +42,26 @@ type vdpaDevice struct {
 
 // GetType returns the VdpaType associated with the VdpaDevice
 func (v *vdpaDevice) GetType() types.VdpaType {
-	currentDriver := v.GetDriver()
+	currentDriver := v.VdpaDevice.Driver()
 	for vtype, driver := range supportedVdpaTypes {
 		if driver == currentDriver {
 			return vtype
 		}
 	}
 	return types.VdpaInvalidType
+}
+
+func (v *vdpaDevice) GetParent() string {
+	return v.VdpaDevice.Name()
+}
+
+func (v *vdpaDevice) GetPath() string {
+	path, err := v.ParentDevicePath()
+	if err != nil {
+		glog.Infof("%s - No path for vDPA device found: %v", v.Name(), err)
+		return ""
+	}
+	return path
 }
 
 // GetVdpaDevice returns a VdpaDevice from a given VF PCI address
