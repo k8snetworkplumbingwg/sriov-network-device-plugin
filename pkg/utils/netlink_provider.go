@@ -26,6 +26,8 @@ type NetlinkProvider interface {
 	GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
 	// GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
 	GetDevLinkDeviceEswitchAttrs(ifName string) (*nl.DevlinkDevEswitchAttr, error)
+	// GetDevLinkDevice returns a devlink device
+	GetDevLinkDevice(pfAddr string) (*nl.DevlinkDevice, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -45,6 +47,15 @@ func (defaultNetlinkProvider) GetLinkAttrs(ifName string) (*nl.LinkAttrs, error)
 		return nil, fmt.Errorf("error getting link attributes for net device %s %v", ifName, err)
 	}
 	return link.Attrs(), nil
+}
+
+// GetDevLinkDevice returns a devlink device
+func (defaultNetlinkProvider) GetDevLinkDevice(pfAddr string) (*nl.DevlinkDevice, error) {
+	dev, err := nl.DevLinkGetDeviceByName("pci", pfAddr)
+	if err != nil {
+		return nil, fmt.Errorf("error getting devlink device for net device %s %v", pfAddr, err)
+	}
+	return dev, nil
 }
 
 // GetDevLinkDeviceEswitchAttrs returns a devlink device's attributes
