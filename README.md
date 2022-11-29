@@ -6,27 +6,33 @@
 
 ## Table of Contents
 
-- [SR-IOV Network Device Plugin](#sr-iov-network-device-plugin)
-- [Features](#features)
-  - [Supported SR-IOV NICs](#supported-sr-iov-nics)
-- [Quick Start](#quick-start)
-  - [Install SR-IOV CNI](#install-sr-iov-cni)
-  - [Get SR-IOV Network Device Plugin container image](#get-sr-iov-network-device-plugin-container-image)
-  - [Install SR-IOV Network Device Plugin](#install-sr-iov-network-device-plugin)
-  - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
-- [Configurations](#configurations)
-  - [Config parameters](#config-parameters)
-  - [Command line arguments](#command-line-arguments)
-  - [Assumptions](#assumptions)
-  - [Workflow](#workflow)
-- [Example deployments](#example-deployments)
+- [SR-IOV Network Device Plugin for Kubernetes](#sr-iov-network-device-plugin-for-kubernetes)
+  - [Table of Contents](#table-of-contents)
+  - [SR-IOV Network Device Plugin](#sr-iov-network-device-plugin)
+  - [Features](#features)
+    - [Supported SR-IOV NICs](#supported-sr-iov-nics)
+  - [Quick Start](#quick-start)
+    - [Creating SR-IOV Virtual Functions](#creating-sr-iov-virtual-functions)
+    - [Install SR-IOV CNI](#install-sr-iov-cni)
+    - [Get SR-IOV Network Device Plugin container image](#get-sr-iov-network-device-plugin-container-image)
+    - [Install SR-IOV Network Device Plugin](#install-sr-iov-network-device-plugin)
+    - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
+  - [Configurations](#configurations)
+    - [Config parameters](#config-parameters)
+    - [Command line arguments](#command-line-arguments)
+    - [Assumptions](#assumptions)
+    - [Workflow](#workflow)
+  - [Example deployments](#example-deployments)
     - [Deploy the Device Plugin](#deploy-the-device-plugin)
     - [Deploy SR-IOV workloads when Multus is used](#deploy-sr-iov-workloads-when-multus-is-used)
     - [Deploy SR-IOV workloads when DANM is used](#deploy-sr-iov-workloads-when-danm-is-used)
     - [Pod device information](#pod-device-information)
-- [Virtual Deployments Support](#virtual-deployments-support)
-- [Multi Architecture Support](#multi-architecture-support)
-- [Issues and Contributing](#issues-and-contributing)
+  - [Virtual Deployments Support](#virtual-deployments-support)
+    - [Configure Device Plugin extended selectors in virtual environments](#configure-device-plugin-extended-selectors-in-virtual-environments)
+  - [CNI plugins in virtual environments](#cni-plugins-in-virtual-environments)
+    - [Virtual environments with no iommu](#virtual-environments-with-no-iommu)
+  - [Multi Architecture Support](#multi-architecture-support)
+  - [Issues and Contributing](#issues-and-contributing)
 
 ## SR-IOV Network Device Plugin
 
@@ -58,21 +64,21 @@ To deploy workloads with SR-IOV VF or PCI PF, this plugin needs to work together
     - During Pod creation, plumbs the allocated network device to the Pods network namespace using device information given by the meta plugin
     - On Pod deletion, reset and release the allocated network device from the Pod
 
-
 Please follow the [Quick Start](#quick-start) for multi network interface support in Kubernetes.
 
 ### Supported SR-IOV NICs
 
 The following  NICs were tested with this implementation. However, other SR-IOV capable NICs should work as well.
- - Intel® E800 Series
- - Intel® X700 Series
- - Intel® 82599ES
- - Mellanox ConnectX-4®
- - Mellanox Connectx-4® Lx EN Adapter
- - Mellanox ConnectX-5®
- - Mellanox ConnectX-5® Ex
- - Mellanox ConnectX-6®
- - Mellanox ConnectX-6® Dx
+
+- Intel® Ethernet 800 Series (E810)
+- Intel® Ethernet 700 Series (XL710, X710, XXV710, X72
+- Intel® Ethernet 500 Series (82599, X520, X540, X550)
+- Mellanox ConnectX-4®
+- Mellanox Connectx-4® Lx EN Adapter
+- Mellanox ConnectX-5®
+- Mellanox ConnectX-5® Ex
+- Mellanox ConnectX-6®
+- Mellanox ConnectX-6® Dx
 
 ## Quick Start
 
@@ -85,56 +91,71 @@ Before starting the SR-IOV Network Device Plugin you will need to create SR-IOV 
 See the [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) repository for build and installation instructions. Supported from SR-IOV CNI release 2.0+.
 
 ### Get SR-IOV Network Device Plugin container image
+
 #### GitHub
-```
+
+```sh
 $ docker pull ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
 ```
 
 #### Build image locally
-```
+
+```sh
 $ make image
 ```
+
 > On a successful build, a docker image with tag `ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest` will be created. You will need to build this image on each node. Alternatively, you could use a local docker registry to host this image.
 
 ### Install SR-IOV Network Device Plugin
+
 #### Deploy config map
+
 Create a ConfigMap that defines SR-IOV resource pool configuration
 
 > Make sure to update the 'config.json' entry in the configMap data to reflect your resource configuration for the device plugin. See [Configurations](#configurations) section for supported configuration parameters.
 
-```
+```sh
 $ kubectl create -f deployments/configMap.yaml
 ```
+
 #### Deploy daemonset
-```
+
+```sh
 $ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
 ```
+
 > For K8s version v1.15 or earlier use `deployments/k8s-v1.10-v1.15/sriovdp-daemonset.yaml` instead.
 
-
 ### Install one compatible CNI meta plugin
+
 A compatible CNI meta-plugin installation is required for SR-IOV CNI plugin to be able to get allocated VF's deviceID in order to configure it.
 
 #### Option 1 - Multus
 
 ##### Install Multus
+
 Please refer to Multus [Quickstart Installation Guide](https://github.com/k8snetworkplumbingwg/multus-cni#quickstart-installation-guide) to install Multus.
 
 ##### Network Object CRDs
 
-Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group(NPWG). Please refer to [Multus documentation](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/README.md) for more information.
+Multus uses Custom Resource Definitions(CRDs) for defining additional network attachements. These network attachment CRDs follow the standards defined by K8s Network Plumbing Working Group (NPWG). Please refer to [Multus documentation](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/README.md) for more information.
+
 1. Create the SR-IOV Network CRD
-```
+
+```sh
 $ kubectl create -f deployments/sriov-crd.yaml
 ```
 
 #### Option 2 - DANM
+
 This section explains an example deployment of SR-IOV Network Device Plugin in Kubernetes if you choose DANM as your meta plugin.
 
 ##### Install DANM
+
 Refer to [DANM deployment documentation](https://github.com/nokia/danm/blob/master/deployment-guide.md) for detailed instructions.
 
 ##### Create SR-IOV type networks
+
 DANM supports the Device Plugin based SR-IOV provisioning with the dynamic level.
 Refer to the [DAMN User Guide documentation](https://github.com/nokia/danm/blob/master/user-guide.md) for detailed instructions.
 For example manifest objects refer to [SR-IOV demo](https://github.com/nokia/danm/tree/master/example/device_plugin_demo)
@@ -209,7 +230,6 @@ This plugin creates device plugin endpoints based on the configurations given in
 
 `"resourceList"` should contain a list of config objects. Each config object may consist of following fields:
 
-
 |      Field       | Required |                                                    Description                                                    |                     Type/Defaults                     |                     Example/Accepted values                     |
 |------------------|----------|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|-----------------------------------------------------------------|
 | "resourceName"   | Y        | Endpoint resource name. Should not contain special characters including hyphens and must be unique in the scope of the resource prefix | string                                                | "sriov_net_A"                                                   |
@@ -218,14 +238,14 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "excludeTopology" | N       | Exclude advertising of device's NUMA topology          | bool Default: "false"    | "excludeTopology": true          |
 | "selectors"      | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                             | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]} |
 
-
-
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
 #### Device selectors
+
 The "deviceType" value determines which selectors are supported for that device. Each selector evaluated in order as listed in selector tables below.
 
 #### Common selectors
+
 All device types support following common device selectors.
 
 |   Field        | Required |                Description                |         Type/Defaults          |   Example/Accepted values        |
@@ -235,8 +255,8 @@ All device types support following common device selectors.
 | "drivers"      | N        | Target device driver names as string      | `string` list Default: `null`  | "drivers": ["vfio-pci"]          |
 | "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null`  | "pciAddresses": ["0000:03:02.0"] |
 
-
 #### Extended selectors for device type "netDevice"
+
 This selector is applicable when "deviceType" is "netDevice"(note: this is default). In addition to the common selectors from above table, the "netDevice" also supports following selectors.
 
 |     Field     | Required |                          Description                           |                   Type/Defaults                   |                               Example/Accepted values                                |
@@ -249,10 +269,10 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "needVhostNet"| N        | Share /dev/vhost-net and /dev/net/tun                          | `bool`  values `true` or `false` Default: `false` | "needVhostNet": `true`                                                                           |
 | "vdpaType"    | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true    | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                           |
 
-
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
 
 #### Extended selectors for device type "accelerator"
+
 This selector is applicable when "deviceType" is "accelerator". The "accelerator" device type currently supports only the common selectors.
 
 ### Command line arguments
@@ -297,18 +317,19 @@ The device plugin will initially discover all PCI network resources in the host 
 2. "devices"      - The device hex code of device
 3. "drivers"      - The driver name the device is registered with
 4. "pciAddresses" - The pci address of the device in BDF notation
-4. "pfNames"      - The Physical function name
-5. "rootDevices"  - The Physical function PCI address
-6. "linkTypes"    - The link type of the net device associated with the PCI device.
+5. "pfNames"      - The Physical function name
+6. "rootDevices"  - The Physical function PCI address
+7. "linkTypes"    - The link type of the net device associated with the PCI device.
 
 The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs for a pool in the below format:
-````
+
+````json
 "<PFName>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
 ````
 
 Or
 
-````
+````json
 "<RootDevice>#<SingleVF>,<FirstVF>-<LastVF>,<SingleVF>,<SingleVF>,<FirstVF>-<LastVF>"
 ````
 
@@ -322,16 +343,19 @@ Where:
 
 Example:
 
-The selector for interface named `netpf0` and VF 0, 2 upto 7 (included 2 and 7) and 9 will look like:
-````
+The selector for interface named `netpf0` and VF 0, 2 up to 7 (included 2 and 7) and 9 will look like:
+
+````json
 "pfNames": ["netpf0#0,2-7,9"]
 ````
+
 The selector for PCI address `0000:86:00.0` and VF 0, 1, 3, 4 will look like:
-````
+
+````json
 "rootDevices": ["0000:86:00.0#0-1,3,4"]
 ````
-If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs of this interface are going to the pool.
 
+If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs of this interface are going to the pool.
 
 ### Workflow
 
@@ -358,14 +382,16 @@ $ kubectl get node node1 -o json | jq '.status.allocatable'
 }
 
 ```
+
 ## Example deployments
 
 We assume that you have working K8s cluster configured with one of the supported meta plugins for multi-network support. Please see [Features](#features) and [Quick Start](#quick-start) sections for more information on required CNI plugins.
 
 ### Deploy the Device Plugin
+
 The [images](./images) directory contains example Dockerfile, sample specs along with build scripts to deploy the SR-IOV Network Device Plugin as daemonset. Please see [README.md](./images/README.md) for more information about the Docker images.
 
-````
+````sh
 # Create ConfigMap
 $ kubectl create -f deployments/configMap.yaml
 configmap/sriovdp-config created
@@ -382,24 +408,25 @@ kube-system   kube-sriov-device-plugin-amd64-46wpv   1/1     Running   0        
 ````
 
 ### Deploy SR-IOV workloads when Multus is used
+
 There are some example Pod specs and related network CRD yaml files in [deployments](./deployments) directory for a sample deployment with Multus.
 
 Leave the SR-IOV Network Device Plugin running and open a new terminal session for following steps.
 
 #### Deploy test Pod connecting to pre-created SR-IOV network
 
-````
+````sh
 $ kubectl create -f pod-tc1.yaml
 pod "testpod1" created
 
 $ kubectl get pods
 NAME                  READY     STATUS    RESTARTS   AGE
-testpod1        	  1/1       Running   0          3s
+testpod1              1/1       Running   0          3s
 ````
 
 #### Verify Pod network interfaces
 
-````
+````sh
 $ kubectl exec -it testpod1 -- ip addr show
 
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
@@ -418,7 +445,7 @@ $ kubectl exec -it testpod1 -- ip addr show
 
 #### Verify Pod routing table
 
-````
+````sh
 $ kubectl exec -it testpod1 -- route -n
 
 Kernel IP routing table
@@ -430,9 +457,10 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 ````
 
 ### Deploy SR-IOV workloads when DANM is used
+
 #### Verify the existence of the example SR-IOV networks
 
-````
+````sh
 [cloudadmin@controller-1 ~]$ kubectl get dnet -n example-sriov
 NAME         AGE
 management   6s
@@ -441,10 +469,11 @@ sriov-b      13m
 ````
 
 #### Connect your networks to existing SR-IOV Device Pools
+
 The Spec.Options.device_pool mandatory parameter denotes the Device Pool used by the network.
 Make sure this parameter is set to the name(s) of your existing SR-IOV Device Pool(s)!
 
-````
+````sh
 [cloudadmin@controller-1 ~]$ kubectl describe node 172.31.3.154 | grep -A8 Allocatable
 Allocatable:
  cpu:                          6
@@ -464,9 +493,10 @@ Allocatable:
 ````
 
 #### Deploy demo Pod connecting to pre-created SR-IOV networks
+
 First, make sure that your Pod asks appropriate number of Devices from the right Device Pools:
 
-````
+````sh
 [cloudadmin@controller-1 ~]$ grep -B1 sriov_ sriov_pod.yaml
       requests:
         nokia.k8s.io/sriov_ens2f1: '2'
@@ -476,14 +506,14 @@ First, make sure that your Pod asks appropriate number of Devices from the right
 
 Then instantiate the Pod:
 
-````
+````sh
 [cloudadmin@controller-1 ~]$ kubectl create -f sriov_pod.yaml
 pod/sriov-pod created
 ````
 
 #### Verify status and the network connections of the demo Pod
 
-````
+````sh
 [cloudadmin@controller-1 ~]$ kubectl get pod sriov-pod -n example-sriov
 NAME        READY   STATUS    RESTARTS   AGE
 sriov-pod   1/1     Running   0          111s
@@ -512,7 +542,6 @@ The allocated device information is exported in Container's environment variable
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
 
-
 ## Virtual Deployments Support
 
 ### Configure Device Plugin extended selectors in virtual environments
@@ -536,17 +565,20 @@ For more information refer to [this](./docs/dpdk/README-virt.md).
 ## Multi Architecture Support
 
 The supported architectures:
-* AMD64
-* ARM64
-* PPC64LE
+
+- AMD64
+- ARM64
+- PPC64LE
 
 Buiding image for AMD64:
-```
+
+```sh
 $ DOCKERFILE=Dockerfile make image
 ```
 
 Buiding image for PPC64LE:
-```
+
+```sh
 $ DOCKERFILE=images/Dockerfile.ppc64le TAG=ghcr.io/k8snetworkplumbingwg/sriov-device-plugin:latest-ppc64le make image
 ```
 
