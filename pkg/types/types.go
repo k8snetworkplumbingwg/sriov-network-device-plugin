@@ -197,49 +197,72 @@ type DeviceProvider interface {
 
 // APIDevice provides an interface to expose device information to Kubernetes API
 type APIDevice interface {
+	// GetDeviceSpecs returns a list of specs which describes host devices
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	// GetEnvVal returns environment variable associated with device
 	GetEnvVal() string
+	// GetMounts returns a list of host volumes associated with device
 	GetMounts() []*pluginapi.Mount
+	// GetAPIDevice returns k8s API device
 	GetAPIDevice() *pluginapi.Device
 }
 
 // HostDevice provides an interface to get generic device information
+// represents generic device used by the plugin
 type HostDevice interface {
 	APIDevice
+	// GetVendor returns vendor identifier number of the device
 	GetVendor() string
+	// GetDriver returns driver name of the device
 	GetDriver() string
+	// GetDeviceID returns device unique identifier, for ex. PCI address
 	GetDeviceID() string
+	// GetDeviceCode returns identifier number of the device
 	GetDeviceCode() string
 }
 
 // PciDevice provides an interface to get generic PCI device information
+// represents generic functionality of all PCI devices
 // extends HostDevice interface
 type PciDevice interface {
 	HostDevice
+	// GetPciAddr returns PCI address of the device
 	GetPciAddr() string
 }
 
 // NetDevice provides an interface to get generic network device information
+// represents generic network device
 type NetDevice interface {
 	HostDevice
+	// GetPfNetName returns netdevice name of the parent PCI device
 	GetPfNetName() string
+	// GetPfPciAddr returns PCI address of the parent PCI device
 	GetPfPciAddr() string
+	// GetNetName returns netdevice name of the device
 	GetNetName() string
+	// GetLinkSpeed returns link speed of the devuce
 	GetLinkType() string
+	// GetLinkType returns link type of the devuce
 	GetLinkSpeed() string
+	// GetVFID returns ID > -1 if device is a PCI Virtual Function
 	GetVFID() int
+	// IsRdma returns true if device is RDMA capable
 	IsRdma() bool
 }
 
 // PciNetDevice extends PciDevice and NetDevice interfaces
+// represents generic PCI network device
 type PciNetDevice interface {
 	PciDevice
 	NetDevice
+	// GetDDPProfiles returns DDP profile if device is Intel Ethernet 700 Series NIC
 	GetDDPProfiles() string
+	// GetVdpaDevice returns VDPA device
 	GetVdpaDevice() VdpaDevice
 }
 
 // AccelDevice extends PciDevice interface
+// represents generic PCI accelerator device
 type AccelDevice interface {
 	PciDevice
 }
