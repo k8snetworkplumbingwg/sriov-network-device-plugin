@@ -100,11 +100,11 @@ func (_m *ResourceFactory) GetRdmaSpec(_a0 string) types.RdmaSpec {
 }
 
 // GetResourcePool provides a mock function with given fields: rc, deviceList
-func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.PciDevice) (types.ResourcePool, error) {
+func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList []types.HostDevice) (types.ResourcePool, error) {
 	ret := _m.Called(rc, deviceList)
 
 	var r0 types.ResourcePool
-	if rf, ok := ret.Get(0).(func(*types.ResourceConfig, []types.PciDevice) types.ResourcePool); ok {
+	if rf, ok := ret.Get(0).(func(*types.ResourceConfig, []types.HostDevice) types.ResourcePool); ok {
 		r0 = rf(rc, deviceList)
 	} else {
 		if ret.Get(0) != nil {
@@ -113,7 +113,7 @@ func (_m *ResourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*types.ResourceConfig, []types.PciDevice) error); ok {
+	if rf, ok := ret.Get(1).(func(*types.ResourceConfig, []types.HostDevice) error); ok {
 		r1 = rf(rc, deviceList)
 	} else {
 		r1 = ret.Error(1)

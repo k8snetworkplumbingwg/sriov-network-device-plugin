@@ -16,6 +16,7 @@ package accelerator_test
 
 import (
 	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -28,6 +29,14 @@ import (
 
 var _ = Describe("Accelerator", func() {
 	Describe("creating new accelerator device", func() {
+		pciAddr := "0000:00:00.1"
+		newPciDeviceFn := func() *ghw.PCIDevice {
+			return &ghw.PCIDevice{
+				Address: pciAddr,
+				Vendor:  &pcidb.Vendor{ID: ""},
+				Product: &pcidb.Product{ID: ""},
+			}
+		}
 		Context("successfully", func() {
 			It("should return AccelDevice object instance", func() {
 				fs := &utils.FakeFilesystem{
@@ -43,17 +52,16 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
 				out, err := accelerator.NewAccelDevice(in, f, config)
 
 				// TODO: assert other fields once implemented
 				Expect(out.GetDriver()).To(Equal("vfio-pci"))
-				Expect(out.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(out.GetEnvVal()).To(Equal(pciAddr))
 				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
 				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
@@ -72,10 +80,9 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
 				out, err := accelerator.NewAccelDevice(in, f, config)
@@ -96,10 +103,9 @@ var _ = Describe("Accelerator", func() {
 					},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
 				out, err := accelerator.NewAccelDevice(in, f, config)
@@ -121,10 +127,9 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("1")},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{ExcludeTopology: true}
 
 				out, err := accelerator.NewAccelDevice(in, f, config)
@@ -140,12 +145,9 @@ var _ = Describe("Accelerator", func() {
 					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/driver": []byte("not a symlink")},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-				}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
 				dev, err := accelerator.NewAccelDevice(in, f, config)
@@ -164,18 +166,15 @@ var _ = Describe("Accelerator", func() {
 					},
 				}
 				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-				}
+				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
 				dev, err := accelerator.NewAccelDevice(in, f, config)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+				Expect(dev.GetEnvVal()).To(Equal(pciAddr))
 			})
 		})
 	})

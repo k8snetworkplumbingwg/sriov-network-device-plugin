@@ -18,25 +18,22 @@ import (
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
-// pciNetDevice extends pciDevice
+// pciNetDevice extends HostDevice and embedds GenPciDevice and GenNetDevice
 type pciNetDevice struct {
-	types.PciDevice
-	ifName    string
-	pfName    string
-	linkSpeed string
-	rdmaSpec  types.RdmaSpec
-	linkType  string
-	vdpaDev   types.VdpaDevice
+	types.HostDevice
+	devices.GenPciDevice
+	devices.GenNetDevice
+	vdpaDev types.VdpaDevice
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
-	var ifName string
 	infoProviders := make([]types.DeviceInfoProvider, 0)
 	var vdpaDev types.VdpaDevice
 
@@ -46,7 +43,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	}
 
 	infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(dev.Address, driverName))
-	rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
+	isRdma := false
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
 	if ok {
 		// Add InfoProviders based on Selector data
@@ -55,79 +52,47 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 			if vdpaDev == nil {
 				glog.Warningf("No vDPA device found for device %s", dev.Address)
 			} else {
-				infoProviders = append(infoProviders, NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
+				infoProviders = append(infoProviders, infoprovider.NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
 			}
 		} else if nf.IsRdma {
+			rdmaSpec := rFactory.GetRdmaSpec(dev.Address)
 			if rdmaSpec.IsRdma() {
-				infoProviders = append(infoProviders, NewRdmaInfoProvider(rdmaSpec))
+				isRdma = true
+				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
 			} else {
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
 			}
 		}
 		if nf.NeedVhostNet {
-			if VhostNetDeviceExist() {
-				infoProviders = append(infoProviders, NewVhostNetInfoProvider())
+			if infoprovider.VhostNetDeviceExist() {
+				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
 				glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
 			}
 		}
 	}
 
-	pciDev, err := resources.NewPciDevice(dev, rFactory, rc, infoProviders)
+	hostDev, err := devices.NewHostDeviceImpl(dev, dev.Address, rFactory, rc, infoProviders)
 	if err != nil {
 		return nil, err
 	}
 
-	pciAddr := pciDev.GetPciAddr()
-	netDevs, _ := utils.GetNetNames(pciAddr)
-	if len(netDevs) == 0 {
-		ifName = ""
-	} else {
-		ifName = netDevs[0]
-	}
-	pfName, err := utils.GetPfName(pciAddr)
+	pciDev, err := devices.NewGenPciDevice(dev)
 	if err != nil {
-		glog.Warningf("unable to get PF name %q", err.Error())
+		return nil, err
 	}
 
-	linkType := ""
-	if len(ifName) > 0 {
-		la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
-		if err != nil {
-			return nil, err
-		}
-		linkType = la.EncapType
+	netDev, err := devices.NewGenNetDevice(dev, isRdma)
+	if err != nil {
+		return nil, err
 	}
 
 	return &pciNetDevice{
-		PciDevice: pciDev,
-		ifName:    ifName,
-		pfName:    pfName,
-		linkSpeed: "", // TO-DO: Get this using utils pkg
-		rdmaSpec:  rdmaSpec,
-		linkType:  linkType,
-		vdpaDev:   vdpaDev,
+		HostDevice:   hostDev,
+		GenPciDevice: *pciDev,
+		GenNetDevice: *netDev,
+		vdpaDev:      vdpaDev,
 	}, nil
-}
-
-func (nd *pciNetDevice) GetPFName() string {
-	return nd.pfName
-}
-
-func (nd *pciNetDevice) GetNetName() string {
-	return nd.ifName
-}
-
-func (nd *pciNetDevice) GetLinkSpeed() string {
-	return nd.linkSpeed
-}
-
-func (nd *pciNetDevice) GetRdmaSpec() types.RdmaSpec {
-	return nd.rdmaSpec
-}
-
-func (nd *pciNetDevice) GetLinkType() string {
-	return nd.linkType
 }
 
 func (nd *pciNetDevice) GetDDPProfiles() string {

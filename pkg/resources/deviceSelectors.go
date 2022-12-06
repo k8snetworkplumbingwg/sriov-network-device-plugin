@@ -22,8 +22,8 @@ type vendorSelector struct {
 	vendors []string
 }
 
-func (s *vendorSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *vendorSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
 		devVendor := dev.GetVendor()
 		if contains(s.vendors, devVendor) {
@@ -42,8 +42,8 @@ type deviceSelector struct {
 	devices []string
 }
 
-func (s *deviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *deviceSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
 		devCode := dev.GetDeviceCode()
 		if contains(s.devices, devCode) {
@@ -62,8 +62,8 @@ type driverSelector struct {
 	drivers []string
 }
 
-func (s *driverSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *driverSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
 		devDriver := dev.GetDriver()
 		if contains(s.drivers, devDriver) {
@@ -82,10 +82,11 @@ type pciAddressSelector struct {
 	pciAddresses []string
 }
 
-func (s *pciAddressSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *pciAddressSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		if contains(s.pciAddresses, dev.GetPciAddr()) {
+		pciAddr := dev.(types.PciDevice).GetPciAddr()
+		if contains(s.pciAddresses, pciAddr) {
 			filteredList = append(filteredList, dev)
 		}
 	}
@@ -101,17 +102,18 @@ type pfNameSelector struct {
 	pfNames []string
 }
 
-func (s *pfNameSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *pfNameSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		pfName := dev.(types.PciNetDevice).GetPFName()
+		pfName := dev.(types.NetDevice).GetPfNetName()
 		if pfName == "" {
 			// Exclude devices that doesn't have a PF name
 			continue
 		}
+		devIdx := dev.(types.NetDevice).GetVFID()
 		selector := getItem(s.pfNames, pfName)
 		if selector != "" {
-			if isSelected(dev, selector) {
+			if isSelected(devIdx, selector) {
 				filteredList = append(filteredList, dev)
 			}
 		}
@@ -129,17 +131,18 @@ type rootDeviceSelector struct {
 	rootDevices []string
 }
 
-func (s *rootDeviceSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *rootDeviceSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		rootDevice := dev.(types.PciNetDevice).GetPfPciAddr()
+		rootDevice := dev.(types.NetDevice).GetPfPciAddr()
 		if rootDevice == "" {
 			// Exclude devices that doesn't have a root PCI device
 			continue
 		}
+		devIdx := dev.(types.NetDevice).GetVFID()
 		selector := getItem(s.rootDevices, rootDevice)
 		if selector != "" {
-			if isSelected(dev, selector) {
+			if isSelected(devIdx, selector) {
 				filteredList = append(filteredList, dev)
 			}
 		}
@@ -156,10 +159,10 @@ type linkTypeSelector struct {
 	linkTypes []string
 }
 
-func (s *linkTypeSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (s *linkTypeSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		linkType := dev.(types.PciNetDevice).GetLinkType()
+		linkType := dev.(types.NetDevice).GetLinkType()
 		if contains(s.linkTypes, linkType) {
 			filteredList = append(filteredList, dev)
 		}
@@ -185,7 +188,7 @@ func getItem(hay []string, needle string) string {
 	return ""
 }
 
-func isSelected(dev types.PciDevice, selector string) bool {
+func isSelected(devIdx int, selector string) bool {
 	if strings.Contains(selector, "#") {
 		// Selector does contain VF index in next format:
 		// <PFName>#<VFIndexStart>-<VFIndexEnd> or
@@ -217,8 +220,7 @@ func isSelected(dev types.PciDevice, selector string) bool {
 					fmt.Printf("Failed to parse %s PF (name|address) selector, end range is incorrect\n", selector)
 					return false
 				}
-				vfID := dev.GetVFID()
-				if vfID >= rngSt && vfID <= rngEnd {
+				if devIdx >= rngSt && devIdx <= rngEnd {
 					return true
 				}
 			} else {
@@ -227,8 +229,7 @@ func isSelected(dev types.PciDevice, selector string) bool {
 					fmt.Printf("Failed to parse %s PF (name|address) selector, index is incorrect\n", selector)
 					return false
 				}
-				vfID := dev.GetVFID()
-				if vfID == vfid {
+				if devIdx == vfid {
 					return true
 				}
 			}

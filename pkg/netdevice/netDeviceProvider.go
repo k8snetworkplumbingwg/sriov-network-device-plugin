@@ -50,16 +50,16 @@ func (np *netDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 	return np.deviceList
 }
 
-func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.PciDevice {
-	newPciDevices := make([]types.PciDevice, 0)
+func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDevice {
+	newHostDevices := make([]types.HostDevice, 0)
 	for _, device := range np.deviceList {
 		if newDevice, err := NewPciNetDevice(device, np.rFactory, rc); err == nil {
-			newPciDevices = append(newPciDevices, newDevice)
+			newHostDevices = append(newHostDevices, newDevice)
 		} else {
 			glog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
 		}
 	}
-	return newPciDevices
+	return newHostDevices
 }
 
 func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
@@ -131,7 +131,7 @@ func hasDefaultRoute(pciAddr string) (bool, error) {
 }
 
 //nolint:gocyclo
-func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *types.ResourceConfig) ([]types.PciDevice, error) {
+func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig) ([]types.HostDevice, error) {
 	filteredDevice := devices
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
 	if !ok {
@@ -200,9 +200,9 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 
 	// filter for rdma devices
 	if nf.IsRdma {
-		rdmaDevices := make([]types.PciDevice, 0)
+		rdmaDevices := make([]types.HostDevice, 0)
 		for _, dev := range filteredDevice {
-			if dev.(types.PciNetDevice).GetRdmaSpec().IsRdma() {
+			if dev.(types.NetDevice).IsRdma() {
 				rdmaDevices = append(rdmaDevices, dev)
 			}
 		}
@@ -211,7 +211,7 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 
 	// filter for vDPA-capable devices
 	if nf.VdpaType != "" {
-		vdpaDevices := make([]types.PciDevice, 0)
+		vdpaDevices := make([]types.HostDevice, 0)
 		for _, dev := range filteredDevice {
 			vdpaDev := dev.(types.PciNetDevice).GetVdpaDevice()
 			if vdpaDev == nil {
@@ -224,8 +224,8 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.PciDevice, rc *t
 		filteredDevice = vdpaDevices
 	}
 
-	// convert to []PciNetDevice to []PciDevice
-	newDeviceList := make([]types.PciDevice, len(filteredDevice))
+	// convert to []PciNetDevice to []HostDevice
+	newDeviceList := make([]types.HostDevice, len(filteredDevice))
 	copy(newDeviceList, filteredDevice)
 
 	return newDeviceList, nil

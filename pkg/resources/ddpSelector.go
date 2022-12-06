@@ -13,8 +13,8 @@ func NewDdpSelector(profiles []string) types.DeviceSelector {
 	return &ddpSelector{profiles: profiles}
 }
 
-func (ds *ddpSelector) Filter(inDevices []types.PciDevice) []types.PciDevice {
-	filteredList := make([]types.PciDevice, 0)
+func (ds *ddpSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
 
 	for _, dev := range inDevices {
 		ddpProfile := dev.(types.PciNetDevice).GetDDPProfiles()

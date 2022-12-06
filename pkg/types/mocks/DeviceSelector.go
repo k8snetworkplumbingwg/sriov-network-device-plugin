@@ -13,15 +13,15 @@ type DeviceSelector struct {
 }
 
 // Filter provides a mock function with given fields: _a0
-func (_m *DeviceSelector) Filter(_a0 []types.PciDevice) []types.PciDevice {
+func (_m *DeviceSelector) Filter(_a0 []types.HostDevice) []types.HostDevice {
 	ret := _m.Called(_a0)
 
-	var r0 []types.PciDevice
-	if rf, ok := ret.Get(0).(func([]types.PciDevice) []types.PciDevice); ok {
+	var r0 []types.HostDevice
+	if rf, ok := ret.Get(0).(func([]types.HostDevice) []types.HostDevice); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]types.PciDevice)
+			r0 = ret.Get(0).([]types.HostDevice)
 		}
 	}
 

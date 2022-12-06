@@ -57,6 +57,20 @@ func (_m *PciNetDevice) GetDeviceCode() string {
 	return r0
 }
 
+// GetDeviceID provides a mock function with given fields:
+func (_m *PciNetDevice) GetDeviceID() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetDeviceSpecs provides a mock function with given fields:
 func (_m *PciNetDevice) GetDeviceSpecs() []*v1beta1.DeviceSpec {
 	ret := _m.Called()
@@ -159,8 +173,8 @@ func (_m *PciNetDevice) GetNetName() string {
 	return r0
 }
 
-// GetPFName provides a mock function with given fields:
-func (_m *PciNetDevice) GetPFName() string {
+// GetPfNetName provides a mock function with given fields:
+func (_m *PciNetDevice) GetPfNetName() string {
 	ret := _m.Called()
 
 	var r0 string
@@ -196,22 +210,6 @@ func (_m *PciNetDevice) GetPfPciAddr() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// GetRdmaSpec provides a mock function with given fields:
-func (_m *PciNetDevice) GetRdmaSpec() types.RdmaSpec {
-	ret := _m.Called()
-
-	var r0 types.RdmaSpec
-	if rf, ok := ret.Get(0).(func() types.RdmaSpec); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(types.RdmaSpec)
-		}
 	}
 
 	return r0
@@ -256,6 +254,20 @@ func (_m *PciNetDevice) GetVendor() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// IsRdma provides a mock function with given fields:
+func (_m *PciNetDevice) IsRdma() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
 	}
 
 	return r0

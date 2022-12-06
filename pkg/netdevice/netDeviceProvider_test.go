@@ -95,7 +95,9 @@ var _ = Describe("NetDeviceProvider", func() {
 			}
 
 			devInvalid := &ghw.PCIDevice{
-				Class: &pcidb.Class{ID: "completely unparsable"},
+				Class:   &pcidb.Class{ID: "completely unparsable"},
+				Vendor:  &pcidb.Vendor{},
+				Product: &pcidb.Product{},
 			}
 
 			devsToAdd := []*ghw.PCIDevice{dev1, dev2, devInvalid}
@@ -119,7 +121,7 @@ var _ = Describe("NetDeviceProvider", func() {
 			It("should correctly filter devices", func() {
 				rf := factory.NewResourceFactory("fake", "fake", false)
 				p := netdevice.NewNetDeviceProvider(rf)
-				all := make([]types.PciDevice, 5)
+				all := make([]types.HostDevice, 5)
 				mocked := make([]mocks.PciNetDevice, 5)
 
 				ve := []string{"8086", "8086", "1111", "2222", "3333"}
@@ -151,16 +153,13 @@ var _ = Describe("NetDeviceProvider", func() {
 						On("GetDeviceCode").Return(de[i]).
 						On("GetDriver").Return(md[i]).
 						On("GetPciAddr").Return(pa[i]).
-						On("GetPFName").Return(pf[i]).
+						On("GetPfNetName").Return(pf[i]).
 						On("GetPfPciAddr").Return(ro[i]).
 						On("GetLinkType").Return(lt[i]).
-						On("GetDDPProfiles").Return(dd[i])
+						On("GetDDPProfiles").Return(dd[i]).
+						On("GetVFID").Return(-1).
+						On("IsRdma").Return(rd[i])
 
-					if rd[i] {
-						mocked[i].On("GetRdmaSpec").Return(rdmaYes)
-					} else {
-						mocked[i].On("GetRdmaSpec").Return(rdmaNo)
-					}
 					switch vd[i] {
 					case "vhost":
 						mocked[i].On("GetVdpaDevice").Return(vdpaVhost)
@@ -176,20 +175,20 @@ var _ = Describe("NetDeviceProvider", func() {
 				testCases := []struct {
 					name     string
 					sel      *types.NetDeviceSelectors
-					expected []types.PciDevice
+					expected []types.HostDevice
 				}{
-					{"vendors", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.PciDevice{all[0], all[1]}},
-					{"devices", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.PciDevice{all[0], all[2]}},
-					{"drivers", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.PciDevice{all[0], all[1], all[2]}},
-					{"pciAddresses", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}}, []types.PciDevice{all[0], all[3]}},
-					{"pfNames", &types.NetDeviceSelectors{PfNames: []string{"net0", "eth1"}}, []types.PciDevice{all[2], all[3], all[4]}},
-					{"rootDevices", &types.NetDeviceSelectors{RootDevices: []string{"0000:86:00.0", "0000:86:00.4"}}, []types.PciDevice{all[0], all[4]}},
-					{"linkTypes", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband"}}, []types.PciDevice{all[1]}},
-					{"linkTypes multi", &types.NetDeviceSelectors{LinkTypes: []string{"infiniband", "fake"}}, []types.PciDevice{all[1], all[4]}},
-					{"ddpProfiles", &types.NetDeviceSelectors{DDPProfiles: []string{"E710 PPPoE and PPPoL2TPv2"}}, []types.PciDevice{all[0]}},
-					{"rdma", &types.NetDeviceSelectors{IsRdma: true}, []types.PciDevice{all[1], all[4]}},
-					{"vdpa-vhost", &types.NetDeviceSelectors{VdpaType: "vhost"}, []types.PciDevice{all[0], all[1]}},
-					{"vdpa-virtio", &types.NetDeviceSelectors{VdpaType: "virtio"}, []types.PciDevice{all[4]}},
+					{"vendors", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Vendors: []string{"8086"}}}, []types.HostDevice{all[0], all[1]}},
+					{"devices", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Devices: []string{"abcd"}}}, []types.HostDevice{all[0], all[2]}},
+					{"drivers", &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"igb_uio"}}}, []types.HostDevice{all[0], all[1], all[2]}},
+					{"pciAddresses", &types.NetDeviceSelectors{GenericPciDeviceSelectors: types.GenericPciDeviceSelectors{PciAddresses: []string{"0000:03:02.0", "0000:03:02.3"}}}, []types.HostDevice{all[0], all[3]}},
+					{"pfNames", &types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{PfNames: []string{"net0", "eth1"}}}, []types.HostDevice{all[2], all[3], all[4]}},
+					{"rootDevices", &types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{RootDevices: []string{"0000:86:00.0", "0000:86:00.4"}}}, []types.HostDevice{all[0], all[4]}},
+					{"linkTypes", &types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{LinkTypes: []string{"infiniband"}}}, []types.HostDevice{all[1]}},
+					{"linkTypes multi", &types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{LinkTypes: []string{"infiniband", "fake"}}}, []types.HostDevice{all[1], all[4]}},
+					{"ddpProfiles", &types.NetDeviceSelectors{DDPProfiles: []string{"E710 PPPoE and PPPoL2TPv2"}}, []types.HostDevice{all[0]}},
+					{"rdma", &types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true}}, []types.HostDevice{all[1], all[4]}},
+					{"vdpa-vhost", &types.NetDeviceSelectors{VdpaType: "vhost"}, []types.HostDevice{all[0], all[1]}},
+					{"vdpa-virtio", &types.NetDeviceSelectors{VdpaType: "virtio"}, []types.HostDevice{all[4]}},
 				}
 
 				for _, tc := range testCases {

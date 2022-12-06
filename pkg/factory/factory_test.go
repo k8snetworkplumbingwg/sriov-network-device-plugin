@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
@@ -53,10 +54,10 @@ var _ = Describe("Factory", func() {
 			p := f.GetDefaultInfoProvider("fakePCIAddr", name)
 			Expect(reflect.TypeOf(p)).To(Equal(expected))
 		},
-		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(resources.NewVfioInfoProvider("fakePCIAddr"))),
-		Entry("uio", "uio", reflect.TypeOf(resources.NewUioInfoProvider("fakePCIAddr"))),
-		Entry("igb_uio", "igb_uio", reflect.TypeOf(resources.NewUioInfoProvider("fakePCIAddr"))),
-		Entry("any other value", "netdevice", reflect.TypeOf(resources.NewGenericInfoProvider("fakePCIAddr"))),
+		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(infoprovider.NewVfioInfoProvider("fakePCIAddr"))),
+		Entry("uio", "uio", reflect.TypeOf(infoprovider.NewUioInfoProvider("fakePCIAddr"))),
+		Entry("igb_uio", "igb_uio", reflect.TypeOf(infoprovider.NewUioInfoProvider("fakePCIAddr"))),
+		Entry("any other value", "netdevice", reflect.TypeOf(infoprovider.NewGenericInfoProvider("fakePCIAddr"))),
 	)
 	DescribeTable("getting selector",
 		func(selector string, shouldSucceed bool, expected reflect.Type) {
@@ -95,12 +96,12 @@ var _ = Describe("Factory", func() {
 			var (
 				rp   types.ResourcePool
 				err  error
-				devs []types.PciDevice
+				devs []types.HostDevice
 			)
 			BeforeEach(func() {
 				f := factory.NewResourceFactory("fake", "fake", true)
 
-				devs = make([]types.PciDevice, 4)
+				devs = make([]types.HostDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "1234"}
 				codes := []string{"1111", "1111", "1234", "4321"}
 				drivers := []string{"vfio-pci", "i40evf", "igb_uio", "igb_uio"}
@@ -115,7 +116,8 @@ var _ = Describe("Factory", func() {
 						On("GetDeviceCode").Return(codes[i]).
 						On("GetDriver").Return(drivers[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
-						On("GetPFName").Return(pfNames[i]).
+						On("GetDeviceID").Return(pciAddr[i]).
+						On("GetPfNetName").Return(pfNames[i]).
 						On("GetPfPciAddr").Return(rootDevices[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
@@ -167,11 +169,11 @@ var _ = Describe("Factory", func() {
 				rp   types.ResourcePool
 				rp2  types.ResourcePool
 				err  error
-				devs []types.PciDevice
+				devs []types.HostDevice
 			)
 			BeforeEach(func() {
 				f := factory.NewResourceFactory("fake", "fake", true)
-				devs = make([]types.PciDevice, 4)
+				devs = make([]types.HostDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "8086"}
 				codes := []string{"1111", "1111", "1111", "1111"}
 				drivers := []string{"iavf", "iavf", "vfio-pci", "vfio-pci"}
@@ -186,11 +188,13 @@ var _ = Describe("Factory", func() {
 						On("GetDeviceCode").Return(codes[i]).
 						On("GetDriver").Return(drivers[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
-						On("GetPFName").Return(pfNames[i]).
+						On("GetDeviceID").Return(pciAddr[i]).
+						On("GetPfNetName").Return(pfNames[i]).
 						On("GetPfPciAddr").Return(rootDevices[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
-						On("GetDDPProfiles").Return(ddpProfiles[i])
+						On("GetDDPProfiles").Return(ddpProfiles[i]).
+						On("GetVFID").Return(-1)
 					devs[i] = d
 				}
 
@@ -238,10 +242,10 @@ var _ = Describe("Factory", func() {
 				filteredDevices, err := dp.GetFilteredDevices(devs, c)
 				Expect(err).NotTo(HaveOccurred())
 
-				filteredDevicesTemp := []types.PciDevice{}
+				filteredDevicesTemp := []types.HostDevice{}
 				for _, dev := range filteredDevices {
-					if !deviceAllocated[dev.GetPciAddr()] {
-						deviceAllocated[dev.GetPciAddr()] = true
+					if !deviceAllocated[dev.GetDeviceID()] {
+						deviceAllocated[dev.GetDeviceID()] = true
 						filteredDevicesTemp = append(filteredDevicesTemp, dev)
 					}
 				}
@@ -263,10 +267,10 @@ var _ = Describe("Factory", func() {
 				filteredDevices, err = dp2.GetFilteredDevices(devs, c2)
 				Expect(err).NotTo(HaveOccurred())
 
-				filteredDevicesTemp = []types.PciDevice{}
+				filteredDevicesTemp = []types.HostDevice{}
 				for _, dev := range filteredDevices {
-					if !deviceAllocated[dev.GetPciAddr()] {
-						deviceAllocated[dev.GetPciAddr()] = true
+					if !deviceAllocated[dev.GetDeviceID()] {
+						deviceAllocated[dev.GetDeviceID()] = true
 						filteredDevicesTemp = append(filteredDevicesTemp, dev)
 					}
 				}
@@ -294,12 +298,12 @@ var _ = Describe("Factory", func() {
 			var (
 				rp   types.ResourcePool
 				err  error
-				devs []types.PciDevice
+				devs []types.HostDevice
 			)
 			BeforeEach(func() {
 				f := factory.NewResourceFactory("fake", "fake", true)
 
-				devs = make([]types.PciDevice, 1)
+				devs = make([]types.HostDevice, 1)
 				vendors := []string{"8086"}
 				codes := []string{"1024"}
 				drivers := []string{"uio_pci_generic"}
@@ -310,6 +314,7 @@ var _ = Describe("Factory", func() {
 						On("GetDeviceCode").Return(codes[i]).
 						On("GetDriver").Return(drivers[i]).
 						On("GetPciAddr").Return(pciAddr[i]).
+						On("GetDeviceID").Return(pciAddr[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{})
 					devs[i] = d
 				}

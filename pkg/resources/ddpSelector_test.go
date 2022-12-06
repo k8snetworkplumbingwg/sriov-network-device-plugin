@@ -38,7 +38,7 @@ var _ = Describe("DdpSelector", func() {
 				dev2.On("GetPciAddr").Return("0000:01:10.2")
 				dev2.On("GetDDPProfiles").Return("")
 
-				in := []types.PciDevice{&dev0, &dev1}
+				in := []types.HostDevice{&dev0, &dev1}
 				filtered := sel.Filter(in)
 
 				Expect(filtered).To(ContainElement(&dev0))

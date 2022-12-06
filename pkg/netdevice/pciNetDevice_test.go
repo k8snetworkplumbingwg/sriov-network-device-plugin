@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -38,6 +39,13 @@ func TestNetdevice(t *testing.T) {
 var _ = Describe("PciNetDevice", func() {
 	Describe("creating new PciNetDevice", func() {
 		t := GinkgoT()
+		newPciDeviceFn := func(pciAddr string) *ghw.PCIDevice {
+			return &ghw.PCIDevice{
+				Address: pciAddr,
+				Vendor:  &pcidb.Vendor{ID: ""},
+				Product: &pcidb.Product{ID: ""},
+			}
+		}
 		Context("successfully", func() {
 			It("should populate fields", func() {
 				fs := &utils.FakeFilesystem{
@@ -56,7 +64,7 @@ var _ = Describe("PciNetDevice", func() {
 				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+				in := newPciDeviceFn("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
@@ -65,84 +73,9 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.GetNetName()).To(Equal("eth0"))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
-				Expect(err).NotTo(HaveOccurred())
-			})
-			It("should not populate topology due to negative numa_node", func() {
-				fs := &utils.FakeFilesystem{
-					Dirs: []string{
-						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-						"sys/kernel/iommu_groups/0",
-						"sys/bus/pci/drivers/vfio-pci",
-					},
-					Symlinks: map[string]string{
-						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
-					},
-					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("-1")},
-				}
-				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
-
-				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
-				rc := &types.ResourceConfig{}
-
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
-
-				Expect(dev.GetAPIDevice().Topology).To(BeNil())
-				Expect(err).NotTo(HaveOccurred())
-			})
-			It("should not populate topology due to missing numa_node", func() {
-				fs := &utils.FakeFilesystem{
-					Dirs: []string{
-						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-						"sys/kernel/iommu_groups/0",
-						"sys/bus/pci/drivers/vfio-pci",
-					},
-					Symlinks: map[string]string{
-						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
-					},
-				}
-				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
-
-				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
-				rc := &types.ResourceConfig{}
-
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
-
-				Expect(dev.GetAPIDevice().Topology).To(BeNil())
-				Expect(err).NotTo(HaveOccurred())
-			})
-			It("should not populate topology due to config option being set", func() {
-				fs := &utils.FakeFilesystem{
-					Dirs: []string{
-						"sys/bus/pci/devices/0000:00:00.1/net/eth0",
-						"sys/kernel/iommu_groups/0",
-						"sys/bus/pci/drivers/vfio-pci",
-					},
-					Symlinks: map[string]string{
-						"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
-						"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
-					},
-					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
-				}
-				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
-
-				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{Address: "0000:00:00.1"}
-				rc := &types.ResourceConfig{ExcludeTopology: true}
-
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
-
-				Expect(dev.GetAPIDevice().Topology).To(BeNil())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -151,7 +84,9 @@ var _ = Describe("PciNetDevice", func() {
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
 				SelectorObj: &types.NetDeviceSelectors{
-					IsRdma: true,
+					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+						IsRdma: true,
+					},
 				},
 			}
 			fs := &utils.FakeFilesystem{
@@ -164,13 +99,7 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
 					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/mlx5_core",
 				},
-				Files: map[string][]byte{
-					"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0"),
-					"sys/bus/pci/devices/0000:00:00.2/numa_node": []byte("0"),
-				},
 			}
-			defer fs.Use()()
-			utils.SetDefaultMockNetlinkProvider()
 
 			rdma1 := &mocks.RdmaSpec{}
 			// fake1 will have 2 RDMA device specs
@@ -180,7 +109,6 @@ var _ = Describe("PciNetDevice", func() {
 			}
 			rdma1.On("IsRdma").Return(true).On("GetRdmaDeviceSpec").Return(fake1ds)
 
-			// fake2 will have 0 rdma device specs to trigger error msg
 			rdma2 := &mocks.RdmaSpec{}
 			rdma2.On("IsRdma").Return(false)
 
@@ -199,8 +127,8 @@ var _ = Describe("PciNetDevice", func() {
 				On("GetRdmaSpec", "0000:00:00.1").Return(rdma1).
 				On("GetRdmaSpec", "0000:00:00.2").Return(rdma2)
 
-			in1 := &ghw.PCIDevice{Address: "0000:00:00.1"}
-			in2 := &ghw.PCIDevice{Address: "0000:00:00.2"}
+			in1 := newPciDeviceFn("0000:00:00.1")
+			in2 := newPciDeviceFn("0000:00:00.2")
 
 			It("should populate Rdma device specs if isRdma", func() {
 				defer fs.Use()()
@@ -208,14 +136,13 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in1, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetNetName()).To(Equal(""))
-				Expect(dev.GetLinkType()).To(Equal(""))
+				Expect(dev.IsRdma()).To(BeTrue())
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
 				Expect(dev.GetMounts()).To(HaveLen(0))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo1.AssertExpectations(t)
+				rdma1.AssertExpectations(t)
 			})
 			It("but not otherwise", func() {
 				defer fs.Use()()
@@ -223,14 +150,13 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetNetName()).To(Equal("eth1"))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.2"))
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))
-				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
 				mockInfo2.AssertExpectations(t)
+				rdma2.AssertExpectations(t)
 			})
 		})
 		Context("With needsVhostNet", func() {
@@ -247,17 +173,16 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1",
 					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/vfio-pci",
-					"dev/vhost-net",
+					// "dev/vhost-net", FIXME: /dev folder is not mocked
 				},
 				Symlinks: map[string]string{
 					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
 					"sys/bus/pci/devices/0000:00:00.1/driver":      "../../../../bus/pci/drivers/vfio-pci",
 				},
-				Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
 			}
 
 			f := factory.NewResourceFactory("fake", "fake", true)
-			in := &ghw.PCIDevice{Address: "0000:00:00.1"}
+			in := newPciDeviceFn("0000:00:00.1")
 			It("should add the vhost-net deviceSpec", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
@@ -265,35 +190,10 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
-				Expect(dev.GetNetName()).To(Equal(""))
 				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
-				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/vfio0 and default /dev/vfio/vfio + vhost-net + tun
-				Expect(dev.GetRdmaSpec().IsRdma()).To(BeFalse())
-				Expect(dev.GetRdmaSpec().GetRdmaDeviceSpec()).To(HaveLen(0))
-				Expect(dev.GetLinkType()).To(Equal(""))
-				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/0 and default /dev/vfio/vfio + vhost-net + tun
+				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
-			})
-		})
-		Context("cannot get device's driver", func() {
-			It("should fail", func() {
-				fs := &utils.FakeFilesystem{
-					Dirs:  []string{"sys/bus/pci/devices/0000:00:00.1"},
-					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/driver": []byte("not a symlink")},
-				}
-				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
-
-				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-				}
-				rc := &types.ResourceConfig{}
-
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
-
-				Expect(dev).To(BeNil())
-				Expect(err).To(HaveOccurred())
 			})
 		})
 		Context("device's PF name is not available", func() {
@@ -309,9 +209,7 @@ var _ = Describe("PciNetDevice", func() {
 				utils.SetDefaultMockNetlinkProvider()
 
 				f := factory.NewResourceFactory("fake", "fake", true)
-				in := &ghw.PCIDevice{
-					Address: "0000:00:00.1",
-				}
+				in := newPciDeviceFn("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
@@ -333,9 +231,6 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
 					"sys/bus/pci/devices/0000:00:00.2/driver": "../../../../bus/pci/drivers/ifcvf",
 				},
-				Files: map[string][]byte{
-					"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0"),
-					"sys/bus/pci/devices/0000:00:00.2/numa_node": []byte("0")},
 			}
 
 			rc_vhost := &types.ResourceConfig{
@@ -376,14 +271,12 @@ var _ = Describe("PciNetDevice", func() {
 			// 0000:00:00.2 -> virtio
 			f := &mocks.ResourceFactory{}
 			f.On("GetVdpaDevice", "0000:00:00.1").Return(fakeVdpaVhost).
-				On("GetRdmaSpec", "0000:00:00.1").Return(nil).
 				On("GetVdpaDevice", "0000:00:00.2").Return(fakeVdpaVirtio).
-				On("GetRdmaSpec", "0000:00:00.2").Return(nil).
 				On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return(defaultInfo1).
 				On("GetDefaultInfoProvider", "0000:00:00.2", "ifcvf").Return(defaultInfo2)
 
-			in1 := &ghw.PCIDevice{Address: "0000:00:00.1"}
-			in2 := &ghw.PCIDevice{Address: "0000:00:00.2"}
+			in1 := newPciDeviceFn("0000:00:00.1")
+			in2 := newPciDeviceFn("0000:00:00.2")
 
 			It("should add the correct deviceSpec if the ResourceConfig type matches the vdpa driver", func() {
 				defer fs.Use()()
@@ -400,16 +293,20 @@ var _ = Describe("PciNetDevice", func() {
 						ContainerPath: "/dev/vhost-vdpa1",
 						Permissions:   "mrw",
 					}}))
-				Expect(dev1.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev1.GetMounts()).To(HaveLen(0))
 				Expect(dev1.GetVdpaDevice()).To(Equal(fakeVdpaVhost))
 				Expect(err1).NotTo(HaveOccurred())
 
 				Expect(dev2.GetDriver()).To(Equal("ifcvf"))
 				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
-				Expect(dev2.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev2.GetMounts()).To(HaveLen(0))
 				Expect(dev2.GetVdpaDevice()).To(Equal(fakeVdpaVirtio))
 				Expect(err2).NotTo(HaveOccurred())
+
+				f.AssertExpectations(t)
+				defaultInfo1.AssertExpectations(t)
+				defaultInfo2.AssertExpectations(t)
 			})
 			It("should generate empty deviceSpecs if ResourceConfig type does not match vdpa driver", func() {
 				defer fs.Use()()
@@ -420,10 +317,16 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev1.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev1.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev1.GetMounts()).To(HaveLen(0))
 				Expect(err1).NotTo(HaveOccurred())
 				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev2.GetMounts()).To(HaveLen(0))
 				Expect(err2).NotTo(HaveOccurred())
+
+				f.AssertExpectations(t)
+				defaultInfo1.AssertExpectations(t)
+				defaultInfo2.AssertExpectations(t)
 			})
 		})
 	})

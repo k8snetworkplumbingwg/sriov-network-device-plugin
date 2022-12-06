@@ -21,6 +21,8 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -62,11 +64,11 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr, name string) types.DeviceInfoProvider {
 	switch name {
 	case "vfio-pci":
-		return resources.NewVfioInfoProvider(pciAddr)
+		return infoprovider.NewVfioInfoProvider(pciAddr)
 	case "uio", "igb_uio":
-		return resources.NewUioInfoProvider(pciAddr)
+		return infoprovider.NewUioInfoProvider(pciAddr)
 	default:
-		return resources.NewGenericInfoProvider(pciAddr)
+		return infoprovider.NewGenericInfoProvider(pciAddr)
 	}
 }
 
@@ -95,13 +97,13 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 }
 
 // GetResourcePool returns an instance of resourcePool
-func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.PciDevice) (types.ResourcePool, error) {
-	devicePool := make(map[string]types.PciDevice)
+func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDevice []types.HostDevice) (types.ResourcePool, error) {
+	devicePool := make(map[string]types.HostDevice)
 	for _, dev := range filteredDevice {
-		pciAddr := dev.GetPciAddr()
-		devicePool[pciAddr] = dev
-		glog.Infof("device added: [pciAddr: %s, vendor: %s, device: %s, driver: %s]",
-			dev.GetPciAddr(),
+		id := dev.GetDeviceID()
+		devicePool[id] = dev
+		glog.Infof("device added: [identifier: %s, vendor: %s, device: %s, driver: %s]",
+			id,
 			dev.GetVendor(),
 			dev.GetDeviceCode(),
 			dev.GetDriver())
@@ -134,11 +136,11 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 }
 
 func (rf *resourceFactory) GetRdmaSpec(pciAddrs string) types.RdmaSpec {
-	return netdevice.NewRdmaSpec(pciAddrs)
+	return devices.NewRdmaSpec(pciAddrs)
 }
 
 func (rf *resourceFactory) GetVdpaDevice(pciAddr string) types.VdpaDevice {
-	return netdevice.GetVdpaDevice(pciAddr)
+	return devices.GetVdpaDevice(pciAddr)
 }
 
 // GetDeviceProvider returns an instance of DeviceProvider based on DeviceType
