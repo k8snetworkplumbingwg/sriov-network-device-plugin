@@ -5,13 +5,16 @@ RDMA supports zero-copy networking by enabling the network adapter to transfer d
 ## Supported NICs:
 * Mellanox ConnectX®-4 Lx Adapter
 * Mellanox ConnectX®-5 Adapter
+* Intel E810-C Adapter
 
 ## RDMA Capable Hardware:
 * Mellanox ConnectX®-4 Lx Adapter
 * Mellanox ConnectX®-5 Adapter
+* Intel E810-C Adapter
 
 ## RDMA modules:
 * Mellanox ConnectX®-4 Lx, ConnectX®-5 Adapters mlx5_core or mlx5_ib
+* Intel E810-C Adapter ice and iavf
 
 ## Privileges
 IPC_LOCK capability privilege is required for RMA application to function properly in Kubernetes Pod.
