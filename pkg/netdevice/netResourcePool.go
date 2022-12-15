@@ -28,8 +28,7 @@ import (
 
 type netResourcePool struct {
 	*resources.ResourcePoolImpl
-	selectors *types.NetDeviceSelectors
-	nadutils  types.NadUtils
+	nadutils types.NadUtils
 }
 
 var _ types.ResourcePool = &netResourcePool{}
@@ -38,10 +37,8 @@ var _ types.ResourcePool = &netResourcePool{}
 func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig,
 	devicePool map[string]types.HostDevice) types.ResourcePool {
 	rp := resources.NewResourcePool(rc, devicePool)
-	s, _ := rc.SelectorObj.(*types.NetDeviceSelectors)
 	return &netResourcePool{
 		ResourcePoolImpl: rp,
-		selectors:        s,
 		nadutils:         nadutils,
 	}
 }
