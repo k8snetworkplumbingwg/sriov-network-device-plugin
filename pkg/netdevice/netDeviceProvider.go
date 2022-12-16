@@ -88,71 +88,9 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 		return filteredDevice, fmt.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
 	}
 
-	rf := np.rFactory
-	// filter by vendor list
-	if nf.Vendors != nil && len(nf.Vendors) > 0 {
-		if selector, err := rf.GetSelector("vendors", nf.Vendors); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by device list
-	if nf.Devices != nil && len(nf.Devices) > 0 {
-		if selector, err := rf.GetSelector("devices", nf.Devices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by driver list
-	if nf.Drivers != nil && len(nf.Drivers) > 0 {
-		if selector, err := rf.GetSelector("drivers", nf.Drivers); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by pciAddresses list
-	if nf.PciAddresses != nil && len(nf.PciAddresses) > 0 {
-		if selector, err := rf.GetSelector("pciAddresses", nf.PciAddresses); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by PfNames list
-	if nf.PfNames != nil && len(nf.PfNames) > 0 {
-		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by NicNames list
-	if nf.NicNames != nil && len(nf.NicNames) > 0 {
-		if selector, err := rf.GetSelector("nicNames", nf.NicNames); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by RootDevices list
-	if nf.RootDevices != nil && len(nf.RootDevices) > 0 {
-		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by linkTypes list
-	if nf.LinkTypes != nil && len(nf.LinkTypes) > 0 {
-		if len(nf.LinkTypes) > 1 {
-			glog.Warningf("Link type selector should have a single value.")
-		}
-		if selector, err := rf.GetSelector("linkTypes", nf.LinkTypes); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
-
-	// filter by DDP Profiles list
-	if nf.DDPProfiles != nil && len(nf.DDPProfiles) > 0 {
-		if selector, err := rf.GetSelector("ddpProfiles", nf.DDPProfiles); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
+	selectors := np.GetSelectors(nf)
+	for _, selector := range selectors {
+		filteredDevice = selector.Filter(filteredDevice)
 	}
 
 	// filter for rdma devices
@@ -182,6 +120,79 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 	}
 
 	return filteredDevice, nil
+}
+
+//nolint:gocyclo
+func (np *netDeviceProvider) GetSelectors(nf *types.NetDeviceSelectors) []types.DeviceSelector {
+	selectors := []types.DeviceSelector{}
+	rf := np.rFactory
+	// filter by vendor list
+	if nf.Vendors != nil && len(nf.Vendors) > 0 {
+		if selector, err := rf.GetSelector("vendors", nf.Vendors); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by device list
+	if nf.Devices != nil && len(nf.Devices) > 0 {
+		if selector, err := rf.GetSelector("devices", nf.Devices); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by driver list
+	if nf.Drivers != nil && len(nf.Drivers) > 0 {
+		if selector, err := rf.GetSelector("drivers", nf.Drivers); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by pciAddresses list
+	if nf.PciAddresses != nil && len(nf.PciAddresses) > 0 {
+		if selector, err := rf.GetSelector("pciAddresses", nf.PciAddresses); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by PfNames list
+	if nf.PfNames != nil && len(nf.PfNames) > 0 {
+		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by NicNames list
+	if nf.NicNames != nil && len(nf.NicNames) > 0 {
+		if selector, err := rf.GetSelector("nicNames", nf.NicNames); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by RootDevices list
+	if nf.RootDevices != nil && len(nf.RootDevices) > 0 {
+		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by linkTypes list
+	if nf.LinkTypes != nil && len(nf.LinkTypes) > 0 {
+		if len(nf.LinkTypes) > 1 {
+			glog.Warningf("Link type selector should have a single value.")
+		}
+		if selector, err := rf.GetSelector("linkTypes", nf.LinkTypes); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	// filter by DDP Profiles list
+	if nf.DDPProfiles != nil && len(nf.DDPProfiles) > 0 {
+		if selector, err := rf.GetSelector("ddpProfiles", nf.DDPProfiles); err == nil {
+			selectors = append(selectors, selector)
+		}
+	}
+
+	return selectors
 }
 
 // ValidConfig performs validation of NetDeviceSelectors
