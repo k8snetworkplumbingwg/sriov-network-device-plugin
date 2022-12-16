@@ -124,6 +124,13 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 		}
 	}
 
+	// filter by NicNames list
+	if nf.NicNames != nil && len(nf.NicNames) > 0 {
+		if selector, err := rf.GetSelector("nicNames", nf.NicNames); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
 	// filter by RootDevices list
 	if nf.RootDevices != nil && len(nf.RootDevices) > 0 {
 		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {

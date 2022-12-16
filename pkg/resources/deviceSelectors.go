@@ -122,6 +122,27 @@ func (s *pfNameSelector) Filter(inDevices []types.HostDevice) []types.HostDevice
 	return filteredList
 }
 
+// NewNicNameSelector returns a DeviceSelector interface for nicName list
+func NewNicNameSelector(nicNames []string) types.DeviceSelector {
+	return &nicNameSelector{nicNames: nicNames}
+}
+
+type nicNameSelector struct {
+	nicNames []string
+}
+
+func (s *nicNameSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
+	for _, dev := range inDevices {
+		nicName := dev.(types.NetDevice).GetNetName()
+		if contains(s.nicNames, nicName) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+
+	return filteredList
+}
+
 // NewRootDeviceSelector returns a NetDevSelector interface for netDev list
 func NewRootDeviceSelector(rootDevices []string) types.DeviceSelector {
 	return &rootDeviceSelector{rootDevices: rootDevices}

@@ -122,6 +122,7 @@ type GenericPciDeviceSelectors struct {
 // GenericNetDeviceSelectors contains common net device selectors fields
 type GenericNetDeviceSelectors struct {
 	PfNames     []string `json:"pfNames,omitempty"`
+	NicNames    []string `json:"nicNames,omitempty"`
 	RootDevices []string `json:"rootDevices,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	IsRdma      bool     // the resource support rdma
