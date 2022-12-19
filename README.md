@@ -290,7 +290,6 @@ This selectors are applicable when "deviceType" is "accelerator".
 #### Network devices selector
 This selector is applicable when "deviceType" is "netDevice"(note: this is default)
 
-
 |     Field      | Required |                               Description                                |                    Type/Defaults                    |                                     Example/Accepted values                                      |
 |----------------|----------|--------------------------------------------------------------------------|-----------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | "vendors"      | N        | Target device's vendor Hex code as string                                | `string` list Default: `null`                       | "vendors": ["8086", "15b3"]                                                                      |
