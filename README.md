@@ -71,7 +71,7 @@ Please follow the [Quick Start](#quick-start) for multi network interface suppor
 The following  NICs were tested with this implementation. However, other SR-IOV capable NICs should work as well.
 
 - Intel® Ethernet 800 Series (E810)
-- Intel® Ethernet 700 Series (XL710, X710, XXV710, X72
+- Intel® Ethernet 700 Series (XL710, X710, XXV710)
 - Intel® Ethernet 500 Series (82599, X520, X540, X550)
 - Mellanox ConnectX-4®
 - Mellanox Connectx-4® Lx EN Adapter
@@ -123,8 +123,6 @@ $ kubectl create -f deployments/configMap.yaml
 ```sh
 $ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
 ```
-
-> For K8s version v1.15 or earlier use `deployments/k8s-v1.10-v1.15/sriovdp-daemonset.yaml` instead.
 
 ### Install one compatible CNI meta plugin
 

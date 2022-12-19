@@ -8,12 +8,26 @@ This guide gives an overview for setting up SR-IOV virtual functions on a linux 
 
 ## Intel
 
-The below works on Intel SR-IOV enabled cards including those from the Gigabit Ethernet, X710 and X722 families of Network Interface Cards. Note not all Gigabit Ethernet NICs are enabled with SR-IOV.
+The below works on Intel SR-IOV enabled adapters including those from the 500, 700 and 800 Series Network Adapters. Note not all netowrk adapters support SR-IOV.
 
 Cards from the following families can be enabled through the sysfs endpoint as described below:
 
+* **Intel ice Driver**
+  * Intel Ethernet E810 Network Adapters
+  * Intel® Ethernet Network Adapter E810-CQDA2T
+  * Intel® Ethernet Network Adapter E810-2CQDA2
+  * Intel® Ethernet Network Adapter E810-CQDA2
+  * Intel® Ethernet Network Adapter E810-CQDA1
+  * Intel® Ethernet Network Adapter E810-CQDA1 for OCP
+  * Intel® Ethernet Network Adapter E810-CQDA1 for OCP 3.0
+  * Intel® Ethernet Network Adapter E810-CQDA2 for OCP 3.0
+  * Intel® Ethernet Network Adapter E810-XXVDA4T
+  * Intel® Ethernet Network Adapter E810-XXVDA4 for OCP 3.0
+  * Intel® Ethernet Network Adapter E810-XXVDA2
+  * Intel® Ethernet Network Adapter E810-XXVDA2 for OCP 3.0
+  * Intel® Ethernet Network Adapter E810-XXVDA4
+
 * **Intel i40e Driver**
-  
   * Intel® Ethernet Network Adapter X722
   * Intel® Ethernet Network Adapter XXV710
   * Intel® Ethernet Converged Network Adapter XL710
