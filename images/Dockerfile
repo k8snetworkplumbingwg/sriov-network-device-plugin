@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as builder
+FROM golang:1.18-alpine3.16 as builder
 
 COPY . /usr/src/sriov-network-device-plugin
 ADD images/ddptool-1.0.1.12.tar.gz /tmp/ddptool/
