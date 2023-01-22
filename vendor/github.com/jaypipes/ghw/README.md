@@ -1,6 +1,11 @@
-# `ghw` - Golang HardWare discovery/inspection library [![Build Status](https://travis-ci.org/jaypipes/ghw.svg?branch=master)](https://travis-ci.org/jaypipes/ghw)
+# `ghw` - Golang HardWare discovery/inspection library
+
+[![Build Status](https://github.com/jaypipes/ghw/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/jaypipes/ghw/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jaypipes/ghw)](https://goreportcard.com/report/github.com/jaypipes/ghw)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+
 ![ghw mascot](images/ghw-gopher.png)
-<br /><br />
+
 `ghw` is a small Golang library providing hardware inspection and discovery
 for Linux and Windows. There currently exists partial support for MacOSX.
 
@@ -28,6 +33,18 @@ for Linux and Windows. There currently exists partial support for MacOSX.
   Each module in the library should be structured in a consistent fashion, and
   the structs returned by various library functions should have consistent
   attribute and method names.
+
+## Inspecting != Monitoring
+
+`ghw` is a tool for gathering information about your hardware's **capacity**
+and **capabilities**.
+
+It is important to point out that `ghw` does **NOT** report information that is
+temporary or variable. It is **NOT** a system monitor nor is it an appropriate
+tool for gathering data points for metrics that change over time.  If you are
+looking for a system that tracks usage of CPU, memory, network I/O or disk I/O,
+there are plenty of great open source tools that do this! Check out the
+[Prometheus project](https://prometheus.io/) for a great example.
 
 ## Usage
 
@@ -69,6 +86,138 @@ Alternately, you can use the `ghw.WithChroot()` function like so:
 cpu, err := ghw.CPU(ghw.WithChroot("/host"))
 ```
 
+### Overriding the per-mountpoint `ghw` uses
+
+When running inside containers, it could be a bit cumbersome to just override
+the root mountpoint. Inside containers, when granting access to the host
+file systems, is more common to bind-mount them in non standard location,
+like `/sys` on `/host-sys` or `/proc` on `/host-proc`.
+Is rarer to mount them in a common subtree (e.g. `/sys` on `/host/sys` and
+ `/proc` on /host/proc...)
+
+To better cover this use case, `ghw` allows to *programmatically* override
+the initial component of filesystems subtrees, allowing to access `sysfs`
+(or `procfs` or...) mounted on non-standard locations.
+
+
+```go
+cpu, err := ghw.CPU(ghw.WithPathOverrides(ghw.PathOverrides{
+	"/proc": "/host-proc",
+	"/sys": "/host-sys",
+}))
+```
+
+Please note
+- this feature works in addition and is composable with the
+  `WithChroot`/`GHW_CHROOT` feature.
+- `ghw` doesn't support yet environs variable to override individual
+   mountpoints, because this could lead to significant environs variables
+   proliferation.
+
+### Consuming snapshots
+
+You can make `ghw` read from snapshots (created with `ghw-snapshot`) using
+environment variables or programmatically.
+Please check `SNAPSHOT.md` to learn more about how ghw creates and consumes
+snapshots.
+
+The environment variable `GHW_SNAPSHOT_PATH` let users specify a snapshot
+that `ghw` will automatically consume. All the needed chroot changes will be
+automatically performed. By default, the snapshot is unpacked on a temporary
+directory managed by `ghw`, and cleaned up when no longer needed, avoiding
+leftovers.
+
+The rest of the environment variables are relevant iff `GHW_SNAPSHOT_PATH` is given.
+`GHW_SNAPSHOT_ROOT` let users specify the directory
+on which the snapshot should be unpacked. This moves the ownership of that
+directory from `ghw` to users. For this reason, `ghw` will *not* clean up automatically
+the content unpacked in `GHW_SNAPSHOT_ROOT`.
+
+`GHW_SNAPSHOT_EXCLUSIVE` is relevant iff `GHW_SNAPSHOT_ROOT` is given.
+Set it to any value to toggle it on. This tells `ghw` that the directory is meant
+only to contain the given snapshot, thus `ghw` will *not* attempt to unpack it
+(and will go ahead silently!) unless the directory is empty.
+You can use both `GHW_SNAPSHOT_ROOT` and `GHW_SNAPSHOT_EXCLUSIVE` to make sure
+`ghw` unpacks the snapshot only once regardless of how many `ghw` packages
+(e.g. cpu, memory) access it.
+
+Set `GHW_SNAPSHOT_PRESERVE` to any value to enable it. If set, `ghw` will *not*
+clean up the unpacked snapshot once done, leaving it into the system.
+
+```go
+cpu, err := ghw.CPU(ghw.WithSnapshot(ghw.SnapshotOptions{
+	Path: "/path/to/linux-amd64-d4771ed3300339bc75f856be09fc6430.tar.gz",
+}))
+
+
+myRoot := "/my/safe/directory"
+cpu, err := ghw.CPU(ghw.WithSnapshot(ghw.SnapshotOptions{
+	Path: "/path/to/linux-amd64-d4771ed3300339bc75f856be09fc6430.tar.gz",
+	Root: &myRoot,
+}))
+
+myOtherRoot := "/my/other/safe/directory"
+cpu, err := ghw.CPU(ghw.WithSnapshot(ghw.SnapshotOptions{
+	Path:      "/path/to/linux-amd64-d4771ed3300339bc75f856be09fc6430.tar.gz",
+	Root:      &myOtherRoot,
+	Exclusive: true,
+}))
+```
+
+### Creating snapshots
+
+You can create ghw snapshots in two ways.
+You can just consume the `ghw-snapshot` tool, or you can create them programmatically
+from your golang code. We explore now the latter case.
+
+Snapshotting takes two phases:
+1. clone the relevant pseudofiles/pseudodirectories into a temporary tree
+   This tree is usually deleted once the packing is successful.
+2. pack the cloned tree into a tar.gz
+
+```go
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+
+	"github.com/jaypipes/ghw/pkg/snapshot"
+)
+
+// ...
+
+scratchDir, err := ioutil.TempDir("", "ghw-snapshot-*")
+if err != nil {
+	fmt.Printf("Error creating clone directory: %v", err)
+}
+defer os.RemoveAll(scratchDir)
+
+// this step clones all the files and directories ghw cares about
+if err := snapshot.CloneTreeInto(scratchDir); err != nil {
+	fmt.Printf("error cloning into %q: %v", scratchDir, err)
+}
+
+// optionally, you may add extra content into your snapshot.
+// ghw will ignore the extra content.
+// Glob patterns like `filepath.Glob` are supported.
+fileSpecs := []string{
+	"/proc/cmdline",
+}
+
+// options allows the client code to optionally deference symlinks, or copy
+// them into the cloned tree as symlinks
+var opts *snapshot.CopyFileOptions
+if err := snapshot.CopyFilesInto(fileSpecs, scratchDir, opts); err != nil {
+	fmt.Printf("error cloning extra files into %q: %v", scratchDir, err)
+}
+
+// automates the creation of the gzipped tarball out of the given tree.
+if err := snapshot.PackFrom("my-snapshot.tgz", scratchDir); err != nil {
+	fmt.Printf("error packing %q into %q: %v", scratchDir, *output, err)
+}
+```
+
 ### Disabling warning messages
 
 When `ghw` isn't able to retrieve some information, it may print certain
@@ -91,12 +240,46 @@ $ GHW_DISABLE_WARNINGS=1 ghwc memory
 memory (24GB physical, 24GB usable)
 ```
 
+You can disable warning programmatically using the `WithDisableWarnings` option:
+
+```go
+
+import (
+	"github.com/jaypipes/ghw"
+)
+
+mem, err := ghw.Memory(ghw.WithDisableWarnings())
+```
+
+`WithDisableWarnings` is a alias for the `WithNullAlerter` option, which in turn
+leverages the more general `Alerter` feature of ghw.
+
+You may supply a `Alerter` to ghw to redirect all the warnings there, like
+logger objects (see for example golang's stdlib `log.Logger`).
+`Alerter` is in fact the minimal logging interface `ghw needs.
+To learn more, please check the `option.Alerter` interface and the `ghw.WithAlerter()`
+function.
+
 ### Memory
+
+The basic building block of the memory support in ghw is the `ghw.MemoryArea` struct.
+A "memory area" is a block of memory which share common properties. In the simplest
+case, the whole system memory fits in a single memory area; in more complex scenarios,
+like multi-NUMA systems, many memory areas may be present in the system (e.g. one for
+each NUMA cell).
+
+The `ghw.MemoryArea` struct contains the following fields:
+
+* `ghw.MemoryInfo.TotalPhysicalBytes` contains the amount of physical memory on
+  the host
+* `ghw.MemoryInfo.TotalUsableBytes` contains the amount of memory the
+  system can actually use. Usable memory accounts for things like the kernel's
+  resident memory size and some reserved system bits
 
 Information about the host computer's memory can be retrieved using the
 `ghw.Memory()` function which returns a pointer to a `ghw.MemoryInfo` struct.
-
-The `ghw.MemoryInfo` struct contains three fields:
+`ghw.MemoryInfo` is a superset of `ghw.MemoryArea`. Thus, it contains all the
+fields found in the `ghw.MemoryArea` (replicated for clarity) plus some:
 
 * `ghw.MemoryInfo.TotalPhysicalBytes` contains the amount of physical memory on
   the host
@@ -133,6 +316,61 @@ Example output from my personal workstation:
 
 ```
 memory (24GB physical, 24GB usable)
+```
+
+#### Physical versus Usable Memory
+
+There has been [some](https://github.com/jaypipes/ghw/pull/171)
+[confusion](https://github.com/jaypipes/ghw/issues/183) regarding the
+difference between the total physical bytes versus total usable bytes of
+memory.
+
+Some of this confusion has been due to a misunderstanding of the term "usable".
+As mentioned [above](#inspection!=monitoring), `ghw` does inspection of the
+system's capacity.
+
+A host computer has two capacities when it comes to RAM. The first capacity is
+the amount of RAM that is contained in all memory banks (DIMMs) that are
+attached to the motherboard. `ghw.MemoryInfo.TotalPhysicalBytes` refers to this
+first capacity.
+
+There is a (usually small) amount of RAM that is consumed by the bootloader
+before the operating system is started (booted). Once the bootloader has booted
+the operating system, the amount of RAM that may be used by the operating
+system and its applications is fixed. `ghw.MemoryInfo.TotalUsableBytes` refers
+to this second capacity.
+
+You can determine the amount of RAM that the bootloader used (that is not made
+available to the operating system) by subtracting
+`ghw.MemoryInfo.TotalUsableBytes` from `ghw.MemoryInfo.TotalPhysicalBytes`:
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/jaypipes/ghw"
+)
+
+func main() {
+	memory, err := ghw.Memory()
+	if err != nil {
+		fmt.Printf("Error getting memory info: %v", err)
+	}
+
+        phys := memory.TotalPhysicalBytes
+        usable := memory.TotalUsableBytes
+
+	fmt.Printf("The bootloader consumes %d bytes of RAM\n", phys - usable)
+}
+```
+
+Example output from my personal workstation booted into a Windows10 operating
+system with a Linux GRUB bootloader:
+
+```
+The bootloader consumes 3832720 bytes of RAM
 ```
 
 ### CPU
@@ -302,6 +540,8 @@ Each `ghw.Partition` struct contains these fields:
 * `ghw.Partition.Disk` is a pointer to the `ghw.Disk` object associated with
   the partition. This will be `nil` if the `ghw.Partition` struct was returned
   by the `ghw.DiskPartitions()` library function.
+* `ghw.Partition.UUID` is a string containing the volume UUID on Linux, the
+  partition UUID on MacOS and nothing on Windows.
 
 ```go
 package main
@@ -333,7 +573,7 @@ Example output from my personal workstation:
 
 ```
 block storage (1 disk, 2TB physical storage)
- /dev/sda HDD (2TB) SCSI [@pci-0000:04:00.0-scsi-0:1:0:0 (node #0)] vendor=LSI model=Logical_Volume serial=600508e000000000f8253aac9a1abd0c WWN=0x600508e000000000f8253aac9a1abd0c
+ sda HDD (2TB) SCSI [@pci-0000:04:00.0-scsi-0:1:0:0 (node #0)] vendor=LSI model=Logical_Volume serial=600508e000000000f8253aac9a1abd0c WWN=0x600508e000000000f8253aac9a1abd0c
   /dev/sda1 (100MB)
   /dev/sda2 (187GB)
   /dev/sda3 (449MB)
@@ -372,6 +612,10 @@ Each `ghw.TopologyNode` struct contains the following fields:
 * `ghw.TopologyNode.Caches` is an array of pointers to `ghw.MemoryCache` structs that
   represent the low-level caches associated with processors and cores on the
   system
+* `ghw.TopologyNode.Distance` is an array of distances between NUMA nodes as reported
+  by the system.
+* `ghw.TopologyNode.Memory` is a struct describing the memory attached to this node.
+   Please refer to the documentation of `ghw.MemoryArea`.
 
 See above in the [CPU](#cpu) section for information about the
 `ghw.ProcessorCore` struct and how to use and query it.
@@ -460,6 +704,9 @@ Each `ghw.NIC` struct contains the following fields:
 * `ghw.NIC.Capabilities` is an array of pointers to `ghw.NICCapability` structs
   that can describe the things the NIC supports. These capabilities match the
   returned values from the `ethtool -k <DEVICE>` call on Linux
+* `ghw.NIC.PCIAddress` is the PCI device address of the device backing the NIC.
+  this is not-nil only if the backing device is indeed a PCI device; more backing
+  devices (e.g. USB) will be added in future versions.
 
 The `ghw.NICCapability` struct contains the following fields:
 
@@ -573,31 +820,29 @@ are exposed on the `ghw.PCIInfo` struct.
 The `ghw.PCI()` function returns a `ghw.PCIInfo` struct. The `ghw.PCIInfo`
 struct contains a number of fields that may be queried for PCI information:
 
+* `ghw.PCIInfo.Devices` is a slice of pointers to `ghw.PCIDevice` structs that
+  describe the PCI devices on the host system
 * `ghw.PCIInfo.Classes` is a map, keyed by the PCI class ID (a hex-encoded
   string) of pointers to `pcidb.Class` structs, one for each class of PCI
   device known to `ghw`
+  (**DEPRECATED**, will be removed in `ghw` `v1.0`. Use the
+  `github.com/jaypipes/pcidb` library for exploring PCI database information)
 * `ghw.PCIInfo.Vendors` is a map, keyed by the PCI vendor ID (a hex-encoded
   string) of pointers to `pcidb.Vendor` structs, one for each PCI vendor
   known to `ghw`
-* `ghw.PCIInfo.Products` is a map, keyed by the PCI product ID* (a hex-encoded
+  (**DEPRECATED**, will be removed in `ghw` `v1.0`. Use the
+  `github.com/jaypipes/pcidb` library for exploring PCI database information)
+* `ghw.PCIInfo.Products` is a map, keyed by the PCI product ID (a hex-encoded
   string) of pointers to `pcidb.Product` structs, one for each PCI product
   known to `ghw`
+  (**DEPRECATED**, will be removed in `ghw` `v1.0`. Use the
+  `github.com/jaypipes/pcidb` library for exploring PCI database information)
 
 **NOTE**: PCI products are often referred to by their "device ID". We use
 the term "product ID" in `ghw` because it more accurately reflects what the
 identifier is for: a specific product line produced by the vendor.
 
-#### Listing and accessing host PCI device information
-
-In addition to the above information, the `ghw.PCIInfo` struct has the
-following methods:
-
-* `ghw.PCIInfo.ListDevices() []*PCIDevice`
-* `ghw.PCIInfo.GetDevice(address string) *PCIDevice`
-
-This methods return either an array of or a single pointer to a `ghw.PCIDevice`
-struct, which has the following fields:
-
+The `ghw.PCIDevice` struct has the following fields:
 
 * `ghw.PCIDevice.Vendor` is a pointer to a `pcidb.Vendor` struct that
   describes the device's primary vendor. This will always be non-nil.
@@ -612,6 +857,38 @@ struct, which has the following fields:
 * `ghw.PCIDevice.ProgrammingInterface` is a pointer to a
   `pcidb.ProgrammingInterface` struct that describes the device subclass'
   programming interface. This will always be non-nil.
+* `ghw.PCIDevice.Driver` is a string representing the device driver the
+  system is using to handle this device. Can be empty string if this
+  information is not available. If the information is not available,
+  this doesn't mean at all the device is not functioning, but only the
+  fact `ghw` was not able to retrieve this information.
+
+The `ghw.PCIAddress` (which is an alias for the `ghw.pci.address.Address`
+struct) contains the PCI address fields. It has a `ghw.PCIAddress.String()`
+method that returns the canonical Domain:Bus:Device.Function ([D]BDF)
+representation of this Address.
+
+The `ghw.PCIAddress` struct has the following fields:
+
+* `ghw.PCIAddress.Domain` is a string representing the PCI domain component of
+  the address.
+* `ghw.PCIAddress.Bus` is a string representing the PCI bus component of
+  the address.
+* `ghw.PCIAddress.Device` is a string representing the PCI device component of
+  the address.
+* `ghw.PCIAddress.Function` is a string representing the PCI function component of
+  the address.
+
+**NOTE**: Older versions (pre-`v0.9.0`) erroneously referred to the `Device`
+field as the `Slot` field. As noted by [@pearsonk](https://github.com/pearsonk)
+in [#220](https://github.com/jaypipes/ghw/issues/220), this was a misnomer.
+
+#### Finding a PCI device by PCI address
+
+In addition to the above information, the `ghw.PCIInfo` struct has the
+following method:
+
+* `ghw.PCIInfo.GetDevice(address string)`
 
 The following code snippet shows how to call the `ghw.PCIInfo.ListDevices()`
 method and output a simple list of PCI address and vendor/product information:
@@ -632,13 +909,8 @@ func main() {
 	}
 	fmt.Printf("host PCI devices:\n")
 	fmt.Println("====================================================")
-	devices := pci.ListDevices()
-	if len(devices) == 0 {
-		fmt.Printf("error: could not retrieve PCI devices\n")
-		return
-	}
 
-	for _, device := range devices {
+	for _, device := range pci.Devices {
 		vendor := device.Vendor
 		vendorName := vendor.Name
 		if len(vendor.Name) > 20 {
@@ -943,6 +1215,8 @@ The `ghw.BaseboardInfo` struct contains multiple fields:
 * `ghw.BaseboardInfo.AssetTag` is a string with the baseboard asset tag
 * `ghw.BaseboardInfo.SerialNumber` is a string with the baseboard serial number
 * `ghw.BaseboardInfo.Vendor` is a string with the baseboard vendor
+* `ghw.BaseboardInfo.Product` is a string with the baseboard name on Linux and
+  Product on Windows
 * `ghw.BaseboardInfo.Version` is a string with the baseboard version
 
 **NOTE**: These fields are often missing for non-server hardware. Don't be
@@ -1082,16 +1356,32 @@ memory:
   total_usable_bytes: 25263415296
 ```
 
+## Calling external programs
+
+By default ghw may call external programs, for example `ethtool`, to learn about hardware capabilities.
+In some rare circumstances it may be useful to opt out from this behaviour and rely only on the data
+provided by pseudo-filesystems, like sysfs.
+The most common use case is when we want to consume a snapshot from ghw. In these cases the information
+provided by tools will be most likely inconsistent with the data from the snapshot - they will run on
+a different host!
+To prevent ghw from calling external tools, set the environs variable `GHW_DISABLE_TOOLS` to any value,
+or, programmatically, check the `WithDisableTools` function.
+The default behaviour of ghw is to call external tools when available.
+
+**WARNING**:
+- on all platforms, disabling external tools make ghw return less data.
+  Unless noted otherwise, there is _no fallback flow_ if external tools are disabled.
+- on darwin, disabling external tools disable block support entirely
+
 ## Developers
 
-Contributions to `ghw` are welcomed! Fork the repo on GitHub and submit a pull
-request with your proposed changes. Or, feel free to log an issue for a feature
-request or bug report.
+[Contributions](CONTRIBUTING.md) to `ghw` are welcomed! Fork the repo on GitHub
+and submit a pull request with your proposed changes. Or, feel free to log an
+issue for a feature request or bug report.
 
 ### Running tests
 
 You can run unit tests easily using the `make test` command, like so:
-
 
 ```
 [jaypipes@uberbox ghw]$ make test

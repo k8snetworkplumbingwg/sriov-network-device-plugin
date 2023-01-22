@@ -12,20 +12,22 @@ import (
 // Concrete merged set of configuration switches that get passed to pcidb
 // internal functions
 type context struct {
-	chroot              string
-	cacheOnly           bool
-	cachePath           string
-	disableNetworkFetch bool
-	searchPaths         []string
+	chroot             string
+	cacheOnly          bool
+	cachePath          string
+	path               string
+	enableNetworkFetch bool
+	searchPaths        []string
 }
 
 func contextFromOptions(merged *WithOption) *context {
 	ctx := &context{
-		chroot:              *merged.Chroot,
-		cacheOnly:           *merged.CacheOnly,
-		cachePath:           getCachePath(),
-		disableNetworkFetch: *merged.DisableNetworkFetch,
-		searchPaths:         make([]string, 0),
+		chroot:             *merged.Chroot,
+		cacheOnly:          *merged.CacheOnly,
+		cachePath:          getCachePath(),
+		enableNetworkFetch: *merged.EnableNetworkFetch,
+		path:               *merged.Path,
+		searchPaths:        make([]string, 0),
 	}
 	ctx.setSearchPaths()
 	return ctx
@@ -48,6 +50,11 @@ func getCachePath() string {
 // Depending on the operating system, sets the context's searchPaths to a set
 // of local filepaths to search for a pci.ids database file
 func (ctx *context) setSearchPaths() {
+	// Look in direct path first, if set
+	if ctx.path != "" {
+		ctx.searchPaths = append(ctx.searchPaths, ctx.path)
+		return
+	}
 	// A set of filepaths we will first try to search for the pci-ids DB file
 	// on the local machine. If we fail to find one, we'll try pulling the
 	// latest pci-ids file from the network
@@ -66,6 +73,14 @@ func (ctx *context) setSearchPaths() {
 		ctx.searchPaths = append(
 			ctx.searchPaths,
 			filepath.Join(rootPath, "usr", "share", "misc", "pci.ids"),
+		)
+		ctx.searchPaths = append(
+			ctx.searchPaths,
+			filepath.Join(rootPath, "usr", "share", "hwdata", "pci.ids.gz"),
+		)
+		ctx.searchPaths = append(
+			ctx.searchPaths,
+			filepath.Join(rootPath, "usr", "share", "misc", "pci.ids.gz"),
 		)
 	}
 }

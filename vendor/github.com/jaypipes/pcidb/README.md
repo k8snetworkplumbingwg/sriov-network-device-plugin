@@ -1,9 +1,13 @@
-# `pcidb` - the Golang PCI DB library [![Build Status](https://travis-ci.org/jaypipes/pcidb.svg?branch=master)](https://travis-ci.org/jaypipes/pcidb)
+# `pcidb` - the Golang PCI DB library
+
+[![Build Status](https://github.com/jaypipes/pcidb/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/jaypipes/pcidb/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jaypipes/pcidb)](https://goreportcard.com/report/github.com/jaypipes/pcidb)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 `pcidb` is a small Golang library for programmatic querying of PCI vendor,
 product and class information.
 
-We currently [test](https://travis-ci.org/jaypipes/pcidb/) `pcidb` on Linux, Windows and MacOSX.
+We currently test `pcidb` on Linux, Windows and MacOSX.
 
 ## Usage
 
@@ -16,10 +20,10 @@ PCI database could not be loaded.
 
 > `pcidb`'s default behaviour is to first search for pci-ids DB files on the
 > local host system in well-known filesystem paths. If `pcidb` cannot find a
-> pci-ids DB file on the local host system, it will then fetch a current
-> pci-ids DB file from the network. You can disable this network-fetching
-> behaviour with the `pcidb.WithDisableNetworkFetch()` function or set the
-> `PCIDB_DISABLE_NETWORK_FETCH` to a non-0 value.
+> pci-ids DB file on the local host system, you can configure `pcidb` to fetch
+> a current pci-ids DB file from the network. You can enable this
+> network-fetching behaviour with the `pcidb.WithEnableNetworkFetch()` function
+> or set the `PCIDB_ENABLE_NETWORK_FETCH` to a non-0 value.
 
 The `pcidb.PCIDB` struct contains a number of fields that may be queried for
 PCI information:

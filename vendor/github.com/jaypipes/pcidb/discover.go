@@ -13,10 +13,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
 	PCIIDS_URI = "https://pci-ids.ucw.cz/v2.2/pci.ids.gz"
+	USER_AGENT = "golang-jaypipes-pcidb"
 )
 
 func (db *PCIDB) load(ctx *context) error {
@@ -28,7 +30,7 @@ func (db *PCIDB) load(ctx *context) error {
 		}
 	}
 	if foundPath == "" {
-		if ctx.disableNetworkFetch {
+		if !ctx.enableNetworkFetch {
 			return ERR_NO_DB
 		}
 		// OK, so we didn't find any host-local copy of the pci-ids DB file. Let's
@@ -43,7 +45,19 @@ func (db *PCIDB) load(ctx *context) error {
 		return err
 	}
 	defer f.Close()
-	scanner := bufio.NewScanner(f)
+
+	var scanner *bufio.Scanner
+	if strings.HasSuffix(foundPath, ".gz") {
+		var zipReader *gzip.Reader
+		if zipReader, err = gzip.NewReader(f); err != nil {
+			return err
+		}
+		defer zipReader.Close()
+		scanner = bufio.NewScanner(zipReader)
+	} else {
+		scanner = bufio.NewScanner(f)
+	}
+
 	return parseDBFile(db, scanner)
 }
 
@@ -63,7 +77,13 @@ func ensureDir(fp string) error {
 func cacheDBFile(cacheFilePath string) error {
 	ensureDir(cacheFilePath)
 
-	response, err := http.Get(PCIIDS_URI)
+	client := new(http.Client)
+	request, err := http.NewRequest("GET", PCIIDS_URI, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("User-Agent", USER_AGENT)
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -72,6 +92,11 @@ func cacheDBFile(cacheFilePath string) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			os.Remove(cacheFilePath)
+		}
+	}()
 	defer f.Close()
 	// write the gunzipped contents to our local cache file
 	zr, err := gzip.NewReader(response.Body)
