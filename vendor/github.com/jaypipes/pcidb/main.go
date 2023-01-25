@@ -88,11 +88,12 @@ type WithOption struct {
 	// looking for any non ~/.cache/pci.ids filepaths (which is useful when we
 	// want to test the fetch-from-network code paths
 	CacheOnly *bool
-	// Disables the default behaviour of fetching a pci-ids from a known
-	// location on the network if no local pci-ids DB files can be found.
-	// Useful for secure environments or environments with no network
-	// connectivity.
-	DisableNetworkFetch *bool
+	// Enables fetching a pci-ids from a known location on the network if no
+	// local pci-ids DB files can be found.
+	EnableNetworkFetch *bool
+	// Path points to the absolute path of a pci.ids file in a non-standard
+	// location.
+	Path *string
 }
 
 func WithChroot(dir string) *WithOption {
@@ -103,8 +104,12 @@ func WithCacheOnly() *WithOption {
 	return &WithOption{CacheOnly: &trueVar}
 }
 
-func WithDisableNetworkFetch() *WithOption {
-	return &WithOption{DisableNetworkFetch: &trueVar}
+func WithDirectPath(path string) *WithOption {
+	return &WithOption{Path: &path}
+}
+
+func WithEnableNetworkFetch() *WithOption {
+	return &WithOption{EnableNetworkFetch: &trueVar}
 }
 
 func mergeOptions(opts ...*WithOption) *WithOption {
@@ -112,6 +117,10 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 	defaultChroot := "/"
 	if val, exists := os.LookupEnv("PCIDB_CHROOT"); exists {
 		defaultChroot = val
+	}
+	path := ""
+	if val, exists := os.LookupEnv("PCIDB_PATH"); exists {
+		path = val
 	}
 	defaultCacheOnly := false
 	if val, exists := os.LookupEnv("PCIDB_CACHE_ONLY"); exists {
@@ -126,17 +135,17 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 			defaultCacheOnly = parsed
 		}
 	}
-	defaultDisableNetworkFetch := false
-	if val, exists := os.LookupEnv("PCIDB_DISABLE_NETWORK_FETCH"); exists {
+	defaultEnableNetworkFetch := false
+	if val, exists := os.LookupEnv("PCIDB_ENABLE_NETWORK_FETCH"); exists {
 		if parsed, err := strconv.ParseBool(val); err != nil {
 			fmt.Fprintf(
 				os.Stderr,
-				"Failed parsing a bool from PCIDB_DISABLE_NETWORK_FETCH "+
+				"Failed parsing a bool from PCIDB_ENABLE_NETWORK_FETCH "+
 					"environ value of %s",
 				val,
 			)
 		} else if parsed {
-			defaultDisableNetworkFetch = parsed
+			defaultEnableNetworkFetch = parsed
 		}
 	}
 
@@ -148,8 +157,11 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 		if opt.CacheOnly != nil {
 			merged.CacheOnly = opt.CacheOnly
 		}
-		if opt.DisableNetworkFetch != nil {
-			merged.DisableNetworkFetch = opt.DisableNetworkFetch
+		if opt.EnableNetworkFetch != nil {
+			merged.EnableNetworkFetch = opt.EnableNetworkFetch
+		}
+		if opt.Path != nil {
+			merged.Path = opt.Path
 		}
 	}
 	// Set the default value if missing from merged
@@ -159,8 +171,11 @@ func mergeOptions(opts ...*WithOption) *WithOption {
 	if merged.CacheOnly == nil {
 		merged.CacheOnly = &defaultCacheOnly
 	}
-	if merged.DisableNetworkFetch == nil {
-		merged.DisableNetworkFetch = &defaultDisableNetworkFetch
+	if merged.EnableNetworkFetch == nil {
+		merged.EnableNetworkFetch = &defaultEnableNetworkFetch
+	}
+	if merged.Path == nil {
+		merged.Path = &path
 	}
 	return merged
 }
