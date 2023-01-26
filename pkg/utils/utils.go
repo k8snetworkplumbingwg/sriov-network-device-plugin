@@ -28,6 +28,9 @@ import (
 
 var (
 	sysBusPci = "/sys/bus/pci/devices"
+	// golangci-lint doesn't see it is used in the testing.go
+	//nolint: unused
+	sysBusAux = "/sys/bus/auxiliary/devices"
 	devDir    = "/dev"
 )
 
@@ -35,6 +38,10 @@ const (
 	totalVfFile          = "sriov_totalvfs"
 	configuredVfFile     = "sriov_numvfs"
 	eswitchModeSwitchdev = "switchdev"
+	classIDBaseInt       = 16
+	classIDBitSize       = 64
+	maxVendorName        = 20
+	maxProductName       = 40
 )
 
 // DetectPluginWatchMode returns true if plugins registry directory exist
@@ -422,4 +429,68 @@ func GetPfEswitchMode(pciAddr string) (string, error) {
 		return "", err
 	}
 	return devLinkDeviceAttrs.Mode, nil
+}
+
+// HasDefaultRoute returns true if PCI network device is default route interface
+func HasDefaultRoute(pciAddr string) (bool, error) {
+	// Get net interface name
+	ifNames, err := GetNetNames(pciAddr)
+	if err != nil {
+		return false, fmt.Errorf("error trying get net device name for device %s", pciAddr)
+	}
+
+	if len(ifNames) > 0 { // there's at least one interface name found
+		for _, ifName := range ifNames {
+			routes, err := GetNetlinkProvider().GetIPv4RouteList(ifName) // IPv6 routes: all interface has at least one link local route entry
+			if err != nil {
+				glog.Errorf("failed to get routes for interface: %s, %q", ifName, err)
+				continue
+			}
+			for _, r := range routes {
+				if r.Dst == nil {
+					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+// NormalizeVendorName returns vendor name cropped to fit into the length of maxVendorName if it is bigger
+func NormalizeVendorName(vendor string) string {
+	vendorName := vendor
+	if len(vendor) > maxVendorName {
+		vendorName = string([]byte(vendorName)[0:17]) + "..."
+	}
+	return vendorName
+}
+
+// NormalizeProductName returns product name cropped to fit into the length of maxProductName if it is bigger
+func NormalizeProductName(product string) string {
+	productName := product
+	if len(product) > maxProductName {
+		productName = string([]byte(productName)[0:37]) + "..."
+	}
+	return productName
+}
+
+// ParseDeviceID returns device ID parsed from the string as 64bit integer
+func ParseDeviceID(deviceID string) (int64, error) {
+	return strconv.ParseInt(deviceID, classIDBaseInt, classIDBitSize)
+}
+
+// ParseAuxDeviceType returns auxiliary device type parsed from device ID
+func ParseAuxDeviceType(deviceID string) string {
+	chunks := strings.Split(deviceID, ".")
+	// auxiliary device name is of form <driver_name>.<kind_of_a_type>.<id> where id is an unsigned integer
+	//nolint: gomnd
+	if len(chunks) == 3 {
+		if id, err := strconv.Atoi(chunks[2]); err == nil && id >= 0 {
+			return chunks[1]
+		}
+	}
+	// not an auxiliary device
+	return ""
 }

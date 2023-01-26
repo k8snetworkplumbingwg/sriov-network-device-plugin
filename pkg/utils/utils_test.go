@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -517,5 +518,82 @@ var _ = Describe("In the utils package", func() {
 				},
 			},
 			"0000:01:10.0", 2, false),
+	)
+	DescribeTable("checking if device has default route",
+		func(fs *FakeFilesystem, device string, nlRet []nl.Route, nlErr error, expected, shouldFail bool) {
+			defer fs.Use()()
+			fakeNetlinkProvider := mocks.NetlinkProvider{}
+			fakeNetlinkProvider.
+				On("GetIPv4RouteList", mock.AnythingOfType("string")).
+				Return(nlRet, nlErr)
+			SetNetlinkProviderInst(&fakeNetlinkProvider)
+			actual, err := HasDefaultRoute(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device doesn't exist", &FakeFilesystem{}, "0000:00:00.0", []nl.Route{}, nil, false, true),
+		Entry("no network interface",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net"}},
+			"0000:01:10.0", []nl.Route{}, nil, false, false,
+		),
+		Entry("single network interface with no routes",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"}},
+			"0000:01:10.0", []nl.Route{}, nil, false, false,
+		),
+		Entry("multiple network interfaces for single device with no routes",
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:01:10.0/net/fake0",
+					"sys/bus/pci/devices/0000:01:10.0/net/fake1",
+				},
+			},
+			"0000:01:10.0", []nl.Route{}, nil, false, false,
+		),
+		Entry("single network interface with non-default routes",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"}},
+			"0000:01:10.0", []nl.Route{{Dst: &net.IPNet{}}, {Dst: &net.IPNet{}}}, nil, false, false,
+		),
+		Entry("single network interface with default route",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"}},
+			"0000:01:10.0", []nl.Route{{Dst: nil}}, nil, true, false,
+		),
+	)
+	DescribeTable("checking vendor name normalization",
+		func(vendorName, expected string) {
+			actual := NormalizeVendorName(vendorName)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("short vendor name", "short_vendor_name", "short_vendor_name"),
+		Entry("very long vendor name", "veeery_looong_veendor_name",
+			"veeery_looong_vee..."),
+	)
+	DescribeTable("checking product name normalization",
+		func(productName, expected string) {
+			actual := NormalizeProductName(productName)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("short product name", "short_product_name", "short_product_name"),
+		Entry("very long product name", "veeeeeeery_loooooooong_prooooooooduct_naaaaaaaaaame",
+			"veeeeeeery_loooooooong_prooooooooduct..."),
+	)
+	DescribeTable("checking parsing device ID",
+		func(deviceID string, expected int, shouldFail bool) {
+			actual, err := ParseDeviceID(deviceID)
+			Expect(actual).To(Equal(int64(expected)))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("parsing correct ID string", "c0fe", 0xc0fe, false),
+		Entry("parsing empty ID string", "", 0, true),
+		Entry("parsing incorrect ID string", "not_a_number", 0, true),
+	)
+	DescribeTable("checking parsing auxiliary device type",
+		func(deviceID string, expected string) {
+			actual := ParseAuxDeviceType(deviceID)
+			Expect(actual).To(Equal(expected))
+		},
+		Entry("wrong deviceID string layout (PCI device string)", "0000:12:34.0", ""),
+		Entry("wrong deviceID string layout (id not a number)", "driver_name.type.id", ""),
+		Entry("wrong deviceID string layout (negative id number)", "driver_name.type.-4", ""),
+		Entry("valid deviceID string", "driver_name.type.123", "type"),
 	)
 })

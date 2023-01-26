@@ -8,3 +8,4 @@ This page contains supplimentary documention that users may find useful for vari
 * [SR-IOV Network Device Plugin with DDP](ddp/)
 * [Using node specific config file for running device plugin DaemonSet](config-file)
 * [Using vDPA devices in Kubernetes](vdpa/)
+* [SR-IOV Network Device Plugin with Scalable Functions](scalable-functions)

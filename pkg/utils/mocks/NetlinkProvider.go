@@ -35,6 +35,29 @@ func (_m *NetlinkProvider) GetDevLinkDeviceEswitchAttrs(ifName string) (*netlink
 	return r0, r1
 }
 
+// GetIPv4RouteList provides a mock function with given fields: ifName
+func (_m *NetlinkProvider) GetIPv4RouteList(ifName string) ([]netlink.Route, error) {
+	ret := _m.Called(ifName)
+
+	var r0 []netlink.Route
+	if rf, ok := ret.Get(0).(func(string) []netlink.Route); ok {
+		r0 = rf(ifName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]netlink.Route)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(ifName)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetLinkAttrs provides a mock function with given fields: ifName
 func (_m *NetlinkProvider) GetLinkAttrs(ifName string) (*netlink.LinkAttrs, error) {
 	ret := _m.Called(ifName)

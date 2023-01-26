@@ -21,13 +21,13 @@ import (
 )
 
 type genericInfoProvider struct {
-	pciAddr string
+	deviceID string
 }
 
 // NewGenericInfoProvider instantiate a generic DeviceInfoProvider
-func NewGenericInfoProvider(pciAddr string) types.DeviceInfoProvider {
+func NewGenericInfoProvider(deviceID string) types.DeviceInfoProvider {
 	return &genericInfoProvider{
-		pciAddr: pciAddr,
+		deviceID: deviceID,
 	}
 }
 
@@ -38,7 +38,7 @@ func (rp *genericInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 }
 
 func (rp *genericInfoProvider) GetEnvVal() string {
-	return rp.pciAddr
+	return rp.deviceID
 }
 
 func (rp *genericInfoProvider) GetMounts() []*pluginapi.Mount {

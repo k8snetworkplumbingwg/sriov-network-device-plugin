@@ -46,6 +46,8 @@ const (
 	NetDeviceType DeviceType = "netDevice"
 	// AcceleratorType is DeviceType for accelerator class devices
 	AcceleratorType DeviceType = "accelerator"
+	// AuxNetDeviceType is DeviceType for auxiliary network devices
+	AuxNetDeviceType DeviceType = "auxNetDevice"
 
 	// VdpaVirtioType is VdpaType for virtio-net devices
 	VdpaVirtioType VdpaType = "virtio"
@@ -78,8 +80,9 @@ Processing accelerators subclasses. ref: https://pci-ids.ucw.cz/read/PD/12
 01	AI Inference Accelerator
 */
 var SupportedDevices = map[DeviceType]int{
-	NetDeviceType:   0x02,
-	AcceleratorType: 0x12,
+	NetDeviceType:    0x02,
+	AcceleratorType:  0x12,
+	AuxNetDeviceType: 0x02,
 }
 
 // SupportedVdpaTypes is a map of 'vdpa device type as string' to 'vdpa device driver as string'
@@ -135,6 +138,13 @@ type AccelDeviceSelectors struct {
 	GenericPciDeviceSelectors
 }
 
+// AuxNetDeviceSelectors contains auxiliary device related selector fields
+type AuxNetDeviceSelectors struct {
+	DeviceSelectors
+	GenericNetDeviceSelectors
+	AuxTypes []string `json:"auxTypes,omitempty"`
+}
+
 // ResourceConfList is list of ResourceConfig
 type ResourceConfList struct {
 	ResourceList []ResourceConfig `json:"resourceList"` // config file: "resourceList" :[{<ResourceConfig configs>},{},{},...]
@@ -159,7 +169,7 @@ type ResourceFactory interface {
 	GetDefaultInfoProvider(string, string) DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []HostDevice) (ResourcePool, error)
-	GetRdmaSpec(string) RdmaSpec
+	GetRdmaSpec(DeviceType, string) RdmaSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) (interface{}, error)
@@ -244,8 +254,8 @@ type NetDevice interface {
 	GetLinkType() string
 	// GetLinkType returns link type of the devuce
 	GetLinkSpeed() string
-	// GetVFID returns ID > -1 if device is a PCI Virtual Function
-	GetVFID() int
+	// GetFuncID returns ID > -1 if device is a PCI Virtual Function or Scalable Function
+	GetFuncID() int
 	// IsRdma returns true if device is RDMA capable
 	IsRdma() bool
 }
@@ -265,6 +275,13 @@ type PciNetDevice interface {
 // represents generic PCI accelerator device
 type AccelDevice interface {
 	PciDevice
+}
+
+// AuxNetDevice extends NetDevice interface
+type AuxNetDevice interface {
+	NetDevice
+	// GetAuxType returns type of auxiliary device
+	GetAuxType() string
 }
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information

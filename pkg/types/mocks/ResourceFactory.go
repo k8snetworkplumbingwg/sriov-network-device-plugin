@@ -83,13 +83,13 @@ func (_m *ResourceFactory) GetNadUtils() types.NadUtils {
 	return r0
 }
 
-// GetRdmaSpec provides a mock function with given fields: _a0
-func (_m *ResourceFactory) GetRdmaSpec(_a0 string) types.RdmaSpec {
-	ret := _m.Called(_a0)
+// GetRdmaSpec provides a mock function with given fields: _a0, _a1
+func (_m *ResourceFactory) GetRdmaSpec(_a0 types.DeviceType, _a1 string) types.RdmaSpec {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 types.RdmaSpec
-	if rf, ok := ret.Get(0).(func(string) types.RdmaSpec); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(types.DeviceType, string) types.RdmaSpec); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(types.RdmaSpec)

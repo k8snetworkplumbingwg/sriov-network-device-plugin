@@ -157,7 +157,7 @@ var _ = Describe("NetDeviceProvider", func() {
 						On("GetPfPciAddr").Return(ro[i]).
 						On("GetLinkType").Return(lt[i]).
 						On("GetDDPProfiles").Return(dd[i]).
-						On("GetVFID").Return(-1).
+						On("GetFuncID").Return(-1).
 						On("IsRdma").Return(rd[i])
 
 					switch vd[i] {

@@ -70,6 +70,7 @@ func (fs *FakeFilesystem) Use() func() {
 	}
 
 	sysBusPci = path.Join(fs.RootDir, "/sys/bus/pci/devices")
+	sysBusAux = path.Join(fs.RootDir, "/sys/bus/auxiliary/devices")
 
 	return func() {
 		// remove temporary fake fs
@@ -90,6 +91,9 @@ func SetDefaultMockNetlinkProvider() {
 	mockProvider.
 		On("GetDevLinkDeviceEswitchAttrs", mock.AnythingOfType("string")).
 		Return(&nl.DevlinkDevEswitchAttr{Mode: "fakeMode"}, nil)
+	mockProvider.
+		On("GetIPv4RouteList", mock.AnythingOfType("string")).
+		Return([]nl.Route{{Dst: nil}}, nil)
 
 	SetNetlinkProviderInst(&mockProvider)
 }

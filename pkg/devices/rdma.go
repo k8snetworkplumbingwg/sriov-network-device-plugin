@@ -29,11 +29,9 @@ type rdmaSpec struct {
 	deviceSpec    []*pluginapi.DeviceSpec
 }
 
-// NewRdmaSpec returns the RdmaSpec
-func NewRdmaSpec(pciAddrs string) types.RdmaSpec {
+func newRdmaSpec(rdmaResources []string) types.RdmaSpec {
 	deviceSpec := make([]*pluginapi.DeviceSpec, 0)
 	isSupportRdma := false
-	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForPcidev(pciAddrs)
 	if len(rdmaResources) > 0 {
 		isSupportRdma = true
 		for _, res := range rdmaResources {
@@ -49,6 +47,18 @@ func NewRdmaSpec(pciAddrs string) types.RdmaSpec {
 	}
 
 	return &rdmaSpec{isSupportRdma: isSupportRdma, deviceSpec: deviceSpec}
+}
+
+// NewRdmaSpec returns the RdmaSpec for PCI address
+func NewRdmaSpec(pciAddr string) types.RdmaSpec {
+	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForPcidev(pciAddr)
+	return newRdmaSpec(rdmaResources)
+}
+
+// NewAuxRdmaSpec returns the RdmaSpec for auxiliary device ID
+func NewAuxRdmaSpec(deviceID string) types.RdmaSpec {
+	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForAuxdev(deviceID)
+	return newRdmaSpec(rdmaResources)
 }
 
 func (r *rdmaSpec) IsRdma() bool {

@@ -1,5 +1,5 @@
 # Package related
-PACKAGE=sriovnet
+PACKAGE=rdmamap
 ORG_PATH=github.com/Mellanox
 REPO_PATH=$(ORG_PATH)/$(PACKAGE)
 GOPATH=$(CURDIR)/.gopath
@@ -17,7 +17,7 @@ GOLANGCI_LINT = $(GOBIN)/golangci-lint
 # golangci-lint version should be updated periodically
 # we keep it fixed to avoid it from unexpectedly failing on the project
 # in case of a version bump
-GOLANGCI_LINT_VER = v1.39.0
+GOLANGCI_LINT_VER = v1.23.8
 TIMEOUT = 15
 Q = $(if $(filter 1,$V),,@)
 
@@ -65,7 +65,7 @@ COVERAGE_MODE = count
 test-coverage-tools: $(GOVERALLS)
 test-coverage: COVERAGE_DIR := $(CURDIR)/test
 test-coverage: test-coverage-tools $(BASE) ; $(info  running coverage tests...) @ ## Run coverage tests
-	$Q cd $(BASE); $(GO) test -covermode=$(COVERAGE_MODE) -coverprofile=sriovnet.cover ./...
+	$Q cd $(BASE); $(GO) test -covermode=$(COVERAGE_MODE) -coverprofile=rdmamap.cover ./...
 
 # Misc
 

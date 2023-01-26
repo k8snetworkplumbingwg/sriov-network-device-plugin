@@ -24,6 +24,7 @@ import (
 // RdmaProvider is a wrapper type over rdmamap library
 type RdmaProvider interface {
 	GetRdmaDevicesForPcidev(pciAddr string) []string
+	GetRdmaDevicesForAuxdev(deviceID string) []string
 	GetRdmaCharDevices(rdmaDeviceName string) []string
 }
 
@@ -44,6 +45,10 @@ func GetRdmaProvider() RdmaProvider {
 
 func (defaultRdmaProvider) GetRdmaDevicesForPcidev(pciAddr string) []string {
 	return rdmamap.GetRdmaDevicesForPcidev(pciAddr)
+}
+
+func (defaultRdmaProvider) GetRdmaDevicesForAuxdev(deviceID string) []string {
+	return rdmamap.GetRdmaDevicesForAuxdev(deviceID)
 }
 
 func (defaultRdmaProvider) GetRdmaCharDevices(rdmaDeviceName string) []string {

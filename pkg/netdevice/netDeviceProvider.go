@@ -16,21 +16,12 @@ package netdevice
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
-	"github.com/vishvananda/netlink"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-)
-
-const (
-	maxVendorNameLen  = 20
-	maxProductNameLen = 40
-	classIDBaseInt    = 16
-	classIDBitSize    = 64
 )
 
 type netDeviceProvider struct {
@@ -64,27 +55,19 @@ func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDe
 
 func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCode int) error {
 	for _, device := range devices {
-		devClass, err := strconv.ParseInt(device.Class.ID, classIDBaseInt, classIDBitSize)
+		devClass, err := utils.ParseDeviceID(device.Class.ID)
 		if err != nil {
 			glog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
 		if devClass == int64(deviceCode) {
-			vendor := device.Vendor
-			vendorName := vendor.Name
-			if len(vendor.Name) > maxVendorNameLen {
-				vendorName = string([]byte(vendorName)[0:17]) + "..."
-			}
-			product := device.Product
-			productName := product.Name
-			if len(product.Name) > maxProductNameLen {
-				productName = string([]byte(productName)[0:37]) + "..."
-			}
+			vendorName := utils.NormalizeVendorName(device.Vendor.Name)
+			productName := utils.NormalizeProductName(device.Product.Name)
 			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
 				device.Class.ID, vendorName, productName)
 			// exclude netdevice in-use in host
-			if isDefaultRoute, _ := hasDefaultRoute(device.Address); !isDefaultRoute {
+			if isDefaultRoute, _ := utils.HasDefaultRoute(device.Address); !isDefaultRoute {
 				aPF := utils.IsSriovPF(device.Address)
 				if aPF && utils.SriovConfigured(device.Address) {
 					// do not add this device in net device list
@@ -95,39 +78,6 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 		}
 	}
 	return nil
-}
-
-// hasDefaultRoute returns true if PCI network device is default route interface
-func hasDefaultRoute(pciAddr string) (bool, error) {
-	// Get net interface name
-	ifNames, err := utils.GetNetNames(pciAddr)
-	if err != nil {
-		return false, fmt.Errorf("error trying get net device name for device %s", pciAddr)
-	}
-
-	if len(ifNames) > 0 { // there's at least one interface name found
-		for _, ifName := range ifNames {
-			link, err := netlink.LinkByName(ifName)
-			if err != nil {
-				glog.Errorf("expected to get valid host interface with name %s: %q", ifName, err)
-				continue
-			}
-
-			routes, err := netlink.RouteList(link, netlink.FAMILY_V4) // IPv6 routes: all interface has at least one link local route entry
-			if err != nil {
-				glog.Errorf("failed to get routes for interface: %s, %q", ifName, err)
-				continue
-			}
-			for _, r := range routes {
-				if r.Dst == nil {
-					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
-					return true, nil
-				}
-			}
-		}
-	}
-
-	return false, nil
 }
 
 //nolint:gocyclo
@@ -224,11 +174,7 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 		filteredDevice = vdpaDevices
 	}
 
-	// convert to []PciNetDevice to []HostDevice
-	newDeviceList := make([]types.HostDevice, len(filteredDevice))
-	copy(newDeviceList, filteredDevice)
-
-	return newDeviceList, nil
+	return filteredDevice, nil
 }
 
 // ValidConfig performs validation of NetDeviceSelectors

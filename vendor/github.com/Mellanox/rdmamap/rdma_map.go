@@ -3,12 +3,14 @@ package rdmamap
 import (
 	"bytes"
 	"fmt"
-	"github.com/vishvananda/netlink"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/vishvananda/netlink"
 )
 
 const (
@@ -24,11 +26,11 @@ const (
 	RdmaUverbsDir        = "/sys/class/infiniband_verbs"
 	RdmaUverbsFilxPrefix = "uverbs"
 
-	RdmaGidAttrDir     = "gid_attrs"
-	RdmaGidAttrNdevDir = "ndevs"
+	RdmaGidAttrDir     = "gid_attrs" //nolint:stylecheck,golint
+	RdmaGidAttrNdevDir = "ndevs"     //nolint:stylecheck,golint
 	RdmaPortsdir       = "ports"
 
-	RdmaNodeGuidFile = "node_guid"
+	RdmaNodeGuidFile = "node_guid" //nolint:stylecheck,golint
 	RdmaUcmDevice    = "/dev/infiniband/rdma_cm"
 	RdmaDeviceDir    = "/dev/infiniband"
 
@@ -36,17 +38,28 @@ const (
 	RdmaHwCountersDir = "hw_counters"
 
 	PciDevDir = "/sys/bus/pci/devices"
+	AuxDevDir = "/sys/bus/auxiliary/devices"
+
+	// For local usage
+	prevDir        = ".."
+	nibbleBitSize  = 4
+	loopBackIfName = "lo"
 )
 
 // Returns a list of rdma device names
+//nolint:prealloc
 func GetRdmaDeviceList() []string {
 	var rdmaDevices []string
 	fd, err := os.Open(RdmaClassDir)
 	if err != nil {
 		return nil
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
+
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return nil
+	}
 
 	for i := range fileInfos {
 		if fileInfos[i].IsDir() {
@@ -57,7 +70,7 @@ func GetRdmaDeviceList() []string {
 	return rdmaDevices
 }
 
-func isDirForRdmaDevice(rdmaDeviceName string, dirName string) bool {
+func isDirForRdmaDevice(rdmaDeviceName, dirName string) bool {
 	fileName := filepath.Join(dirName, "ibdev")
 
 	fd, err := os.OpenFile(fileName, os.O_RDONLY, 0444)
@@ -66,7 +79,10 @@ func isDirForRdmaDevice(rdmaDeviceName string, dirName string) bool {
 	}
 	defer fd.Close()
 
-	fd.Seek(0, os.SEEK_SET)
+	if _, err = fd.Seek(0, io.SeekStart); err != nil {
+		return false
+	}
+
 	data, err := ioutil.ReadAll(fd)
 	if err != nil {
 		return false
@@ -74,31 +90,32 @@ func isDirForRdmaDevice(rdmaDeviceName string, dirName string) bool {
 	return (strings.Compare(strings.Trim(string(data), "\n"), rdmaDeviceName) == 0)
 }
 
-func getCharDevice(rdmaDeviceName string, classDir string,
-	charDevPrefix string) (string, error) {
+func getCharDevice(rdmaDeviceName, classDir, charDevPrefix string) (string, error) {
 	fd, err := os.Open(classDir)
 	if err != nil {
 		return "", err
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return "", nil
+	}
 
 	for i := range fileInfos {
-		if fileInfos[i].Name() == "." || fileInfos[i].Name() == ".." {
+		if fileInfos[i].Name() == "." || fileInfos[i].Name() == prevDir {
 			continue
 		}
-		if strings.Contains(fileInfos[i].Name(), charDevPrefix) == false {
+		if !strings.Contains(fileInfos[i].Name(), charDevPrefix) {
 			continue
 		}
 		dirName := filepath.Join(classDir, fileInfos[i].Name())
-		if isDirForRdmaDevice(rdmaDeviceName, dirName) == false {
+		if !isDirForRdmaDevice(rdmaDeviceName, dirName) {
 			continue
 		}
 		deviceFile := filepath.Join("/dev/infiniband", fileInfos[i].Name())
 		return deviceFile, nil
 	}
-	return "", fmt.Errorf("No ucm device found")
-
+	return "", fmt.Errorf("no ucm device found")
 }
 
 func getUcmDevice(rdmaDeviceName string) (string, error) {
@@ -108,21 +125,18 @@ func getUcmDevice(rdmaDeviceName string) (string, error) {
 }
 
 func getIssmDevice(rdmaDeviceName string) (string, error) {
-
 	return getCharDevice(rdmaDeviceName,
 		RdmaUmadDir,
 		RdmaIssmFilePrefix)
 }
 
 func getUmadDevice(rdmaDeviceName string) (string, error) {
-
 	return getCharDevice(rdmaDeviceName,
 		RdmaUmadDir,
 		RdmaUmadFilxPrefix)
 }
 
 func getUverbDevice(rdmaDeviceName string) (string, error) {
-
 	return getCharDevice(rdmaDeviceName,
 		RdmaUverbsDir,
 		RdmaUverbsFilxPrefix)
@@ -135,16 +149,15 @@ func getRdmaUcmDevice() (string, error) {
 	}
 	if info.Name() == "rdma_cm" {
 		return RdmaUcmDevice, nil
-	} else {
-		return "", fmt.Errorf("Invalid file name rdma_cm")
 	}
+
+	return "", fmt.Errorf("invalid file name rdma_cm")
 }
 
 // Returns a list of character device absolute path for a requested
 // rdmaDeviceName.
 // Returns nil if no character devices are found.
 func GetRdmaCharDevices(rdmaDeviceName string) []string {
-
 	var rdmaCharDevices []string
 
 	ucm, err := getUcmDevice(rdmaDeviceName)
@@ -163,15 +176,16 @@ func GetRdmaCharDevices(rdmaDeviceName string) []string {
 	if err == nil {
 		rdmaCharDevices = append(rdmaCharDevices, uverb)
 	}
-	rdma_cm, err := getRdmaUcmDevice()
+	rdmaCm, err := getRdmaUcmDevice()
 	if err == nil {
-		rdmaCharDevices = append(rdmaCharDevices, rdma_cm)
+		rdmaCharDevices = append(rdmaCharDevices, rdmaCm)
 	}
 
 	return rdmaCharDevices
 }
 
 // Gets a list of ports for a specified device
+//nolint:prealloc
 func GetPorts(rdmaDeviceName string) []string {
 	var ports []string
 
@@ -180,11 +194,15 @@ func GetPorts(rdmaDeviceName string) []string {
 	if err != nil {
 		return nil
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
 
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return nil
+	}
+
 	for i := range fileInfos {
-		if fileInfos[i].Name() == "." || fileInfos[i].Name() == ".." {
+		if fileInfos[i].Name() == "." || fileInfos[i].Name() == prevDir {
 			continue
 		}
 		ports = append(ports, fileInfos[i].Name())
@@ -192,7 +210,8 @@ func GetPorts(rdmaDeviceName string) []string {
 	return ports
 }
 
-func getNetdeviceIds(rdmaDeviceName string, port string) []string {
+//nolint:prealloc
+func getNetdeviceIds(rdmaDeviceName, port string) []string {
 	var indices []string
 
 	dir := filepath.Join(RdmaClassDir, rdmaDeviceName, RdmaPortsdir, port,
@@ -202,11 +221,15 @@ func getNetdeviceIds(rdmaDeviceName string, port string) []string {
 	if err != nil {
 		return nil
 	}
-	fileInfos, err := fd.Readdir(-1)
 	defer fd.Close()
 
+	fileInfos, err := fd.Readdir(-1)
+	if err != nil {
+		return nil
+	}
+
 	for i := range fileInfos {
-		if fileInfos[i].Name() == "." || fileInfos[i].Name() == ".." {
+		if fileInfos[i].Name() == "." || fileInfos[i].Name() == prevDir {
 			continue
 		}
 		indices = append(indices, fileInfos[i].Name())
@@ -214,9 +237,7 @@ func getNetdeviceIds(rdmaDeviceName string, port string) []string {
 	return indices
 }
 
-func isNetdevForRdma(rdmaDeviceName string, port string,
-	index string, netdevName string) bool {
-
+func isNetdevForRdma(rdmaDeviceName, port, index, netdevName string) bool {
 	fileName := filepath.Join(RdmaClassDir, rdmaDeviceName, RdmaPortsdir, port,
 		RdmaGidAttrDir, RdmaGidAttrNdevDir, index)
 
@@ -226,16 +247,15 @@ func isNetdevForRdma(rdmaDeviceName string, port string,
 	}
 	defer fd.Close()
 
-	fd.Seek(0, os.SEEK_SET)
+	if _, err = fd.Seek(0, io.SeekStart); err != nil {
+		return false
+	}
+
 	data, err := ioutil.ReadAll(fd)
 	if err != nil {
 		return false
 	}
-	if strings.TrimSuffix(string(data), "\n") == netdevName {
-		return true
-	} else {
-		return false
-	}
+	return (strings.TrimSuffix(string(data), "\n") == netdevName)
 }
 
 func getRdmaDeviceForEth(netdevName string) (string, error) {
@@ -250,7 +270,7 @@ func getRdmaDeviceForEth(netdevName string) (string, error) {
 			indices := getNetdeviceIds(dev, port)
 			for _, index := range indices {
 				found := isNetdevForRdma(dev, port, index, netdevName)
-				if found == true {
+				if found {
 					return dev, nil
 				}
 			}
@@ -259,8 +279,8 @@ func getRdmaDeviceForEth(netdevName string) (string, error) {
 	return "", fmt.Errorf("rdma device not found for netdev %v", netdevName)
 }
 
-func getNodeGuid(rdmaDeviceName string) ([]byte, error) {
-	var nodeGuid []byte
+func getNodeGUID(rdmaDeviceName string) ([]byte, error) {
+	var nodeGUID []byte
 
 	fileName := filepath.Join(RdmaClassDir, rdmaDeviceName, RdmaNodeGuidFile)
 
@@ -270,7 +290,9 @@ func getNodeGuid(rdmaDeviceName string) ([]byte, error) {
 	}
 	defer fd.Close()
 
-	fd.Seek(0, os.SEEK_SET)
+	if _, err = fd.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
 	data, err := ioutil.ReadAll(fd)
 	if err != nil {
 		return nil, err
@@ -286,36 +308,34 @@ func getNodeGuid(rdmaDeviceName string) ([]byte, error) {
 			return nil, err
 		}
 		if (j % 2) == 0 {
-			nodeGuid = append(nodeGuid, byte(c)<<4)
+			nodeGUID = append(nodeGUID, byte(c)<<nibbleBitSize)
 		} else {
-			nodeGuid[j/2] |= byte(c)
+			nodeGUID[j/2] |= byte(c)
 		}
 		j++
 	}
-	return nodeGuid, nil
+	return nodeGUID, nil
 }
 
-func getRdmaDeviceForIb(netdevName string, linkAttr *netlink.LinkAttrs) (string, error) {
+func getRdmaDeviceForIb(linkAttr *netlink.LinkAttrs) (string, error) {
 	// Match the node_guid EUI bytes with the IpoIB netdevice hw address EUI
-
 	lleui64 := linkAttr.HardwareAddr[12:]
 
 	devices := GetRdmaDeviceList()
 	for _, dev := range devices {
-		nodeGuid, err := getNodeGuid(dev)
+		nodeGUID, err := getNodeGUID(dev)
 		if err != nil {
 			return "", err
 		}
-		if bytes.Compare(lleui64, nodeGuid) == 0 {
+		if bytes.Equal(lleui64, nodeGUID) {
 			return dev, nil
 		}
 	}
 	return "", nil
 }
 
-//Get RDMA device for the netdevice
+// Get RDMA device for the netdevice
 func GetRdmaDeviceForNetdevice(netdevName string) (string, error) {
-
 	handle, err := netlink.LinkByName(netdevName)
 	if err != nil {
 		return "", err
@@ -324,32 +344,22 @@ func GetRdmaDeviceForNetdevice(netdevName string) (string, error) {
 	if netAttr.EncapType == "ether" {
 		return getRdmaDeviceForEth(netdevName)
 	} else if netAttr.EncapType == "infiniband" {
-		return getRdmaDeviceForIb(netdevName, netAttr)
+		return getRdmaDeviceForIb(netAttr)
 	} else {
-		return "", fmt.Errorf("Unknown device type")
+		return "", fmt.Errorf("unknown device type")
 	}
 }
 
-//Returns true if rdma device exist for netdevice, else false
+// Returns true if rdma device exist for netdevice, else false
 func IsRDmaDeviceForNetdevice(netdevName string) bool {
 	rdma, _ := GetRdmaDeviceForNetdevice(netdevName)
-	if rdma == "" {
-		return false
-	} else {
-		return true
-	}
+
+	return (rdma != "")
 }
 
-//Get list of RDMA devices for a pci device.
-//When switchdev mode is used, there may be more than one rdma device.
-//Example pcidevName: 0000:05:00:00,
-//when found, returns list of devices one or more devices names such as
-//mlx5_0, mlx5_10
-func GetRdmaDevicesForPcidev(pcidevName string) []string {
-
+//nolint:prealloc
+func getRdmaDevicesFromDir(dirName string) []string {
 	var rdmadevs []string
-
-	dirName := filepath.Join(PciDevDir, pcidevName, RdmaClassName)
 
 	entries, err := ioutil.ReadDir(dirName)
 	if err != nil {
@@ -357,10 +367,30 @@ func GetRdmaDevicesForPcidev(pcidevName string) []string {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() == false {
+		if !entry.IsDir() {
 			continue
 		}
 		rdmadevs = append(rdmadevs, entry.Name())
 	}
 	return rdmadevs
+}
+
+// Get list of RDMA devices for a pci device.
+// When switchdev mode is used, there may be more than one rdma device.
+// Example pcidevName: 0000:05:00.0,
+// when found, returns list of devices one or more devices names such as
+// mlx5_0, mlx5_10
+func GetRdmaDevicesForPcidev(pcidevName string) []string {
+	dirName := filepath.Join(PciDevDir, pcidevName, RdmaClassName)
+	return getRdmaDevicesFromDir(dirName)
+}
+
+// Get list of RDMA devices for an auxiliary device.
+// When switchdev mode is used, there may be more than one rdma device.
+// Example deviceID: mlx5_core.sf.4,
+// when found, returns list of devices one or more devices names such as
+// mlx5_0, mlx5_10
+func GetRdmaDevicesForAuxdev(deviceID string) []string {
+	dirName := filepath.Join(AuxDevDir, deviceID, RdmaClassName)
+	return getRdmaDevicesFromDir(dirName)
 }
