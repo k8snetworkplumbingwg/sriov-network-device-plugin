@@ -56,10 +56,30 @@ var _ = Describe("rdmaInfoProvider", func() {
 		})
 	})
 	Describe("GetEnvVal", func() {
-		It("should always return an empty string", func() {
+		It("should the rdma mounts from deviceSpecs", func() {
 			rdma := &mocks.RdmaSpec{}
+			rdma.On("IsRdma").Return(true).
+				On("GetRdmaDeviceSpec").Return([]*pluginapi.DeviceSpec{
+				{ContainerPath: "/dev/infiniband/issm4"},
+				{ContainerPath: "/dev/infiniband/umad4"},
+				{ContainerPath: "/dev/infiniband/uverbs4"},
+				{ContainerPath: "/dev/infiniband/rdma_cm"}})
 			dip := infoprovider.NewRdmaInfoProvider(rdma)
-			Expect(dip.GetEnvVal()).To(BeEmpty())
+			dip.GetDeviceSpecs()
+			envs := dip.GetEnvVal()
+			Expect(len(envs)).To(Equal(4))
+			mount, exist := envs["rdma_cm"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/infiniband/rdma_cm"))
+			mount, exist = envs["uverbs"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/infiniband/uverbs4"))
+			mount, exist = envs["umad"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/infiniband/umad4"))
+			mount, exist = envs["issm"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/infiniband/issm4"))
 		})
 	})
 	Describe("GetMounts", func() {

@@ -63,10 +63,21 @@ var _ = Describe("uioInfoProvider", func() {
 		})
 	})
 	Describe("getting env val", func() {
-		It("should always return passed PCI address", func() {
-			in := "00:02.0"
-			dip := infoprovider.NewUioInfoProvider(in)
-			Expect(dip.GetEnvVal()).To(Equal(in))
+		It("should return passed PCI address and mounts for device", func() {
+			pciAddr := "0000:02:00.0"
+			fs := utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:02:00.0/uio/uio0",
+				},
+			}
+			defer fs.Use()()
+			dip := infoprovider.NewUioInfoProvider(pciAddr)
+			dip.GetDeviceSpecs()
+			envs := dip.GetEnvVal()
+			Expect(len(envs)).To(Equal(1))
+			mount, exist := envs["mount"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/uio0"))
 		})
 	})
 })

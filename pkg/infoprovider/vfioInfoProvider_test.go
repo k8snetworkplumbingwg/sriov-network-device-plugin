@@ -73,10 +73,28 @@ var _ = Describe("vfioInfoProvider", func() {
 		})
 	})
 	Describe("getting env val", func() {
-		It("should always return passed PCI address", func() {
-			in := "00:02.0"
-			dip := infoprovider.NewVfioInfoProvider(in)
-			Expect(dip.GetEnvVal()).To(Equal(in))
+		It("should return passed PCI address and vfio device mount", func() {
+			pciAddr := "0000:02:00.0"
+			fs := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:02:00.0", "sys/kernel/iommu_groups/0",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:02:00.0/iommu_group": "../../../../kernel/iommu_groups/0",
+				},
+			}
+			defer fs.Use()()
+
+			dip := infoprovider.NewVfioInfoProvider(pciAddr)
+			dip.GetDeviceSpecs()
+			envs := dip.GetEnvVal()
+			Expect(len(envs)).To(Equal(2))
+			devMount, exist := envs["dev-mount"]
+			Expect(exist).To(BeTrue())
+			Expect(devMount).To(Equal("/dev/vfio/0"))
+			vfioMount, exist := envs["mount"]
+			Expect(exist).To(BeTrue())
+			Expect(vfioMount).To(Equal("/dev/vfio/vfio"))
 		})
 	})
 })

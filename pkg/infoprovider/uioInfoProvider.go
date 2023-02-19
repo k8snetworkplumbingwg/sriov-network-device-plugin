@@ -24,6 +24,7 @@ import (
 
 type uioInfoProvider struct {
 	pciAddr string
+	uioDev  string
 }
 
 // NewUioInfoProvider return instance of uio DeviceInfoProvider
@@ -35,6 +36,11 @@ func NewUioInfoProvider(pciAddr string) types.DeviceInfoProvider {
 
 // *****************************************************************
 /* DeviceInfoProvider Interface */
+
+func (rp *uioInfoProvider) GetName() string {
+	return "uio"
+}
+
 func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
@@ -47,13 +53,19 @@ func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 			ContainerPath: uioDev,
 			Permissions:   "mrw",
 		})
+		rp.uioDev = uioDev
 	}
 
 	return devSpecs
 }
 
-func (rp *uioInfoProvider) GetEnvVal() string {
-	return rp.pciAddr
+func (rp *uioInfoProvider) GetEnvVal() types.AdditionalInfo {
+	envs := make(map[string]string, 0)
+	if rp.uioDev != "" {
+		envs["mount"] = rp.uioDev
+	}
+
+	return envs
 }
 
 func (rp *uioInfoProvider) GetMounts() []*pluginapi.Mount {

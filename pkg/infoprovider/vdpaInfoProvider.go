@@ -30,6 +30,7 @@ import (
 type vdpaInfoProvider struct {
 	dev      types.VdpaDevice
 	vdpaType types.VdpaType
+	vdpaPath string
 }
 
 // NewVdpaInfoProvider returns a new InfoProvider associated with the given VDPAInfo
@@ -39,6 +40,13 @@ func NewVdpaInfoProvider(vdpaType types.VdpaType, vdpaDev types.VdpaDevice) type
 		vdpaType: vdpaType,
 	}
 	return vdpaInfoProvider
+}
+
+// *****************************************************************
+/* DeviceInfoProvider Interface */
+
+func (vip *vdpaInfoProvider) GetName() string {
+	return "vdpa"
 }
 
 // GetDeviceSpecs returns the DeviceSpec slice
@@ -52,18 +60,25 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 
 	// DeviceSpecs only required for vhost vdpa type as the
 	if vip.vdpaType == types.VdpaVhostType {
+		vdpaPath := vip.dev.GetPath()
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      vip.dev.GetPath(),
-			ContainerPath: vip.dev.GetPath(),
+			HostPath:      vdpaPath,
+			ContainerPath: vdpaPath,
 			Permissions:   "mrw",
 		})
+		vip.vdpaPath = vdpaPath
 	}
 	return devSpecs
 }
 
 // GetEnvVal returns the environment variable value
-func (vip *vdpaInfoProvider) GetEnvVal() string {
-	return ""
+func (vip *vdpaInfoProvider) GetEnvVal() types.AdditionalInfo {
+	envs := make(map[string]string, 0)
+	if vip.vdpaPath != "" {
+		envs["mount"] = vip.vdpaPath
+	}
+
+	return envs
 }
 
 // GetMounts returns the mount points (none for this InfoProvider)
@@ -91,3 +106,5 @@ func (vip *vdpaInfoProvider) isHealthy() (bool, error) {
 	}
 	return true, nil
 }
+
+// *****************************************************************
