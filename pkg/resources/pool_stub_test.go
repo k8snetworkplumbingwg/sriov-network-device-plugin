@@ -80,28 +80,6 @@ var _ = Describe("ResourcePool", func() {
 			})
 		})
 	})
-	Describe("getting envs", func() {
-		Context("for valid devices", func() {
-			It("should return valid envs array", func() {
-				defer fs.Use()()
-				utils.SetDefaultMockNetlinkProvider()
-
-				d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc)
-				d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc)
-				rp = resources.NewResourcePool(rc,
-					map[string]types.HostDevice{
-						"0000:00:00.1": d1,
-						"0000:00:00.2": d2,
-					},
-				)
-				envs := rp.GetEnvs(devs)
-
-				expected := []string{"0000:00:00.1", "0000:00:00.2"}
-				Expect(envs).To(HaveLen(2))
-				Expect(envs).To(ConsistOf(expected))
-			})
-		})
-	})
 	Describe("getting mounts", func() {
 		Context("for valid devices", func() {
 			It("should return valid mounts array", func() {

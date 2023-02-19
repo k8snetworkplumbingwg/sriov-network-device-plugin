@@ -15,10 +15,14 @@
 package resources
 
 import (
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
 // ResourcePoolImpl implements stub ResourcePool interface
@@ -92,20 +96,40 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 	return devSpecs
 }
 
-// GetEnvs returns a list of device specific Env values for device IDs
-func (rp *ResourcePoolImpl) GetEnvs(deviceIDs []string) []string {
+// GetEnvs returns a map with two keys.
+// environment variable key base on PCIDEVICE_<prefix>_<resource-name> with a list of allocated pci addresses
+// environment variable key base on PCIDEVICE_<prefix>_<resource-name>_INFO that contains info from all the
+// requested info providers for every pci address allocated
+func (rp *ResourcePoolImpl) GetEnvs(prefix string, deviceIDs []string) (map[string]string, error) {
 	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
-	devEnvs := make([]string, 0)
-
-	// Consolidates all Envs
+	devInfos := make(map[string]map[string]types.AdditionalInfo, 0)
+	IDList := []string{}
+	// Consolidates all ExtraEnvVariables
 	for _, id := range deviceIDs {
 		if dev, ok := rp.devicePool[id]; ok {
-			env := dev.GetEnvVal()
-			devEnvs = append(devEnvs, env)
+			envs := dev.GetEnvVal()
+			devInfos[id] = envs
+			IDList = append(IDList, id)
 		}
 	}
 
-	return devEnvs
+	envs := make(map[string]string)
+
+	// construct PCIDEVICE_<prefix>_<resource-name> environment variable
+	key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", prefix, rp.GetResourceName())
+	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+	envs[key] = strings.Join(IDList, ",")
+
+	// construct PCIDEVICE_<prefix>_<resource-name>_INFO environment variable
+	key = fmt.Sprintf("%s_%s_%s_INFO", "PCIDEVICE", prefix, rp.GetResourceName())
+	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+	envData, err := json.Marshal(devInfos)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal environment variable object: %v", err)
+	}
+	envs[key] = string(envData)
+
+	return envs, nil
 }
 
 // GetMounts returns a list of Mount for device IDs

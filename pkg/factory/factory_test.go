@@ -52,13 +52,22 @@ var _ = Describe("Factory", func() {
 		func(name string, expected reflect.Type) {
 			f := factory.NewResourceFactory("fake", "fake", true)
 			p := f.GetDefaultInfoProvider("fakePCIAddr", name)
-			Expect(reflect.TypeOf(p)).To(Equal(expected))
+			Expect(len(p)).To(Equal(2)) // for all the providers expect netdevice we expect 2 info providers
+			Expect(reflect.TypeOf(p[1])).To(Equal(expected))
+
 		},
 		Entry("vfio-pci", "vfio-pci", reflect.TypeOf(infoprovider.NewVfioInfoProvider("fakePCIAddr"))),
 		Entry("uio", "uio", reflect.TypeOf(infoprovider.NewUioInfoProvider("fakePCIAddr"))),
 		Entry("igb_uio", "igb_uio", reflect.TypeOf(infoprovider.NewUioInfoProvider("fakePCIAddr"))),
-		Entry("any other value", "netdevice", reflect.TypeOf(infoprovider.NewGenericInfoProvider("fakePCIAddr"))),
 	)
+
+	Describe("getting info provider for generic netdevice", func() {
+		f := factory.NewResourceFactory("fake", "fake", true)
+		p := f.GetDefaultInfoProvider("fakePCIAddr", "netdevice")
+		Expect(len(p)).To(Equal(1)) // for all the providers expect netdevice we expect 2 info providers
+		Expect(reflect.TypeOf(p[0])).To(Equal(reflect.TypeOf(infoprovider.NewGenericInfoProvider("fakePCIAddr"))))
+	})
+
 	DescribeTable("getting selector",
 		func(selector string, shouldSucceed bool, expected reflect.Type) {
 			f := factory.NewResourceFactory("fake", "fake", true)

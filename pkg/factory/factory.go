@@ -62,15 +62,16 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 }
 
 // GetDefaultInfoProvider returns an instance of DeviceInfoProvider using name as string
-func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr, name string) types.DeviceInfoProvider {
+func (rf *resourceFactory) GetDefaultInfoProvider(pciAddr, name string) []types.DeviceInfoProvider {
+	deviceInfoProvidersList := []types.DeviceInfoProvider{infoprovider.NewGenericInfoProvider(pciAddr)}
+
 	switch name {
 	case "vfio-pci":
-		return infoprovider.NewVfioInfoProvider(pciAddr)
+		deviceInfoProvidersList = append(deviceInfoProvidersList, infoprovider.NewVfioInfoProvider(pciAddr))
 	case "uio", "igb_uio":
-		return infoprovider.NewUioInfoProvider(pciAddr)
-	default:
-		return infoprovider.NewGenericInfoProvider(pciAddr)
+		deviceInfoProvidersList = append(deviceInfoProvidersList, infoprovider.NewUioInfoProvider(pciAddr))
 	}
+	return deviceInfoProvidersList
 }
 
 // GetSelector returns an instance of DeviceSelector using selector attribute string and its associated values
