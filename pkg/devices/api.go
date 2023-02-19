@@ -59,11 +59,13 @@ func (ad *APIDeviceImpl) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	return dSpecs
 }
 
-// GetEnvVal returns device environment variable
-func (ad *APIDeviceImpl) GetEnvVal() string {
-	// Currently Device Plugin does not support returning multiple Env Vars
-	// so we use the value provided by the first InfoProvider.
-	return ad.infoProviders[0].GetEnvVal()
+// GetEnvVal returns device environment variables
+func (ad *APIDeviceImpl) GetEnvVal() map[string]types.AdditionalInfo {
+	envValMap := make(map[string]types.AdditionalInfo, 0)
+	for _, provider := range ad.infoProviders {
+		envValMap[provider.GetName()] = provider.GetEnvVal()
+	}
+	return envValMap
 }
 
 // GetMounts returns list of device host mounts

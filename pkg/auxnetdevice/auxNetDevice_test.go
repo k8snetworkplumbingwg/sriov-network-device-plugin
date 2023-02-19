@@ -82,7 +82,11 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(dev).NotTo(BeNil())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				Expect(dev.GetNetName()).To(Equal("eth0"))
-				Expect(dev.GetEnvVal()).To(Equal(auxDevID))
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(1))
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("mlx5_core.sf.0"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
@@ -131,15 +135,19 @@ var _ = Describe("AuxNetDevice", func() {
 			auxDevName1 := "mlx5_core.eth.1"
 			auxDevName2 := "mlx5_core.eth-rep.2"
 			mockInfo1 := &tmocks.DeviceInfoProvider{}
-			mockInfo1.On("GetEnvVal").Return(auxDevName1)
+			mockEnv1 := types.AdditionalInfo{"deviceID": auxDevName1}
+			mockInfo1.On("GetName").Return("generic")
+			mockInfo1.On("GetEnvVal").Return(mockEnv1)
 			mockInfo1.On("GetDeviceSpecs").Return(nil)
 			mockInfo1.On("GetMounts").Return(nil)
 			mockInfo2 := &tmocks.DeviceInfoProvider{}
-			mockInfo2.On("GetEnvVal").Return(auxDevName2)
+			mockEnv2 := types.AdditionalInfo{"deviceID": auxDevName2}
+			mockInfo2.On("GetName").Return("generic")
+			mockInfo2.On("GetEnvVal").Return(mockEnv2)
 			mockInfo2.On("GetDeviceSpecs").Return(nil)
 			mockInfo2.On("GetMounts").Return(nil)
-			f.On("GetDefaultInfoProvider", auxDevName1, "mlx5_core").Return(mockInfo1).
-				On("GetDefaultInfoProvider", auxDevName2, "mlx5_core").Return(mockInfo2).
+			f.On("GetDefaultInfoProvider", auxDevName1, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo1}).
+				On("GetDefaultInfoProvider", auxDevName2, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo2}).
 				On("GetRdmaSpec", types.AuxNetDeviceType, auxDevName1).Return(rdma1).
 				On("GetRdmaSpec", types.AuxNetDeviceType, auxDevName2).Return(rdma2)
 
@@ -164,8 +172,15 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				Expect(dev.IsRdma()).To(BeTrue())
-				Expect(dev.GetEnvVal()).To(Equal(auxDevName1))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(auxDevName1))
+				Expect(exist).To(BeTrue())
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetAuxType()).To(Equal("eth"))
 				mockInfo1.AssertExpectations(t)
@@ -178,7 +193,14 @@ var _ = Describe("AuxNetDevice", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetEnvVal()).To(Equal(auxDevName2))
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(1))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(auxDevName2))
+				Expect(exist).To(BeTrue())
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))

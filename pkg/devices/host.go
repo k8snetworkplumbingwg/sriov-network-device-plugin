@@ -20,6 +20,7 @@ package devices
 import (
 	"github.com/jaypipes/ghw"
 
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
@@ -45,7 +46,10 @@ func NewHostDeviceImpl(dev *ghw.PCIDevice, deviceID string, rFactory types.Resou
 
 	// Use the default Information Provided if not
 	if len(infoProviders) == 0 {
-		infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(deviceID, driverName))
+		infoProviders = rFactory.GetDefaultInfoProvider(deviceID, driverName)
+		if rc.AdditionalInfo != nil {
+			infoProviders = append(infoProviders, infoprovider.NewExtraInfoProvider(dev.Address, rc.AdditionalInfo))
+		}
 	}
 
 	nodeNum := -1

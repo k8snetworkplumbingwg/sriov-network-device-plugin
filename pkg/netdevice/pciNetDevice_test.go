@@ -71,8 +71,25 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
 				Expect(dev.GetNetName()).To(Equal("eth0"))
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				vfioMap, exist := envs["vfio"]
+				Expect(exist).To(BeTrue())
+				Expect(len(vfioMap)).To(Equal(2))
+				vfio, exist := envs["vfio"]["mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/vfio"))
+				vfio, exist = envs["vfio"]["dev-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/0"))
+				genericMap, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				Expect(len(genericMap)).To(Equal(1))
+				generic, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(generic).To(Equal("0000:00:00.1"))
+
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
@@ -116,16 +133,20 @@ var _ = Describe("PciNetDevice", func() {
 
 			pciAddr1 := "0000:00:00.1"
 			mockInfo1 := &mocks.DeviceInfoProvider{}
-			mockInfo1.On("GetEnvVal").Return(pciAddr1)
+			mockEnv1 := types.AdditionalInfo{"deviceID": pciAddr1}
+			mockInfo1.On("GetName").Return("generic")
+			mockInfo1.On("GetEnvVal").Return(mockEnv1)
 			mockInfo1.On("GetDeviceSpecs").Return(nil)
 			mockInfo1.On("GetMounts").Return(nil)
 			pciAddr2 := "0000:00:00.2"
 			mockInfo2 := &mocks.DeviceInfoProvider{}
-			mockInfo2.On("GetEnvVal").Return(pciAddr2)
+			mockEnv2 := types.AdditionalInfo{"deviceID": pciAddr2}
+			mockInfo2.On("GetName").Return("generic")
+			mockInfo2.On("GetEnvVal").Return(mockEnv2)
 			mockInfo2.On("GetDeviceSpecs").Return(nil)
 			mockInfo2.On("GetMounts").Return(nil)
-			f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return(mockInfo1).
-				On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return(mockInfo2).
+			f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo1}).
+				On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo2}).
 				On("GetRdmaSpec", types.NetDeviceType, pciAddr1).Return(rdma1).
 				On("GetRdmaSpec", types.NetDeviceType, pciAddr2).Return(rdma2)
 
@@ -139,7 +160,15 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				Expect(dev.IsRdma()).To(BeTrue())
-				Expect(dev.GetEnvVal()).To(Equal(pciAddr1))
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["rdma"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(pciAddr1))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // 2x Rdma devs
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(err).NotTo(HaveOccurred())
@@ -152,7 +181,15 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev.GetEnvVal()).To(Equal(pciAddr2))
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(1))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["rdma"]
+				Expect(exist).To(BeFalse())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(pciAddr2))
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))
@@ -192,8 +229,32 @@ var _ = Describe("PciNetDevice", func() {
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/0 and default /dev/vfio/vfio + vhost-net + tun
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(3))
+				_, exist := envs["vfio"]
+				Expect(exist).To(BeTrue())
+				vfio, exist := envs["vfio"]["mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/vfio"))
+				vfio, exist = envs["vfio"]["dev-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/0"))
+				_, exist = envs["vhost"]
+				Expect(exist).To(BeTrue())
+				vhost, exist := envs["vhost"]["net-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vhost).To(Equal("/dev/vhost-net"))
+				vhost, exist = envs["vhost"]["tun-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vhost).To(Equal("/dev/net/tun"))
+				genericMap, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				Expect(len(genericMap)).To(Equal(1))
+				generic, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(generic).To(Equal("0000:00:00.1"))
+
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -215,10 +276,11 @@ var _ = Describe("PciNetDevice", func() {
 				rc := &types.ResourceConfig{}
 
 				dev, err := netdevice.NewPciNetDevice(in, f, rc)
-
-				Expect(dev).NotTo(BeNil())
-				Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
 				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
 			})
 		})
 		Context("With Vdpa-capable devices", func() {
@@ -251,11 +313,15 @@ var _ = Describe("PciNetDevice", func() {
 			}
 
 			defaultInfo1 := &mocks.DeviceInfoProvider{}
-			defaultInfo1.On("GetEnvVal").Return("0000:00:00.1")
+			mockEnv1 := types.AdditionalInfo{"deviceID": "0000:00:00.1"}
+			defaultInfo1.On("GetName").Return("generic")
+			defaultInfo1.On("GetEnvVal").Return(mockEnv1)
 			defaultInfo1.On("GetDeviceSpecs").Return(nil)
 			defaultInfo1.On("GetMounts").Return(nil)
 			defaultInfo2 := &mocks.DeviceInfoProvider{}
-			defaultInfo2.On("GetEnvVal").Return("0000:00:00.2")
+			mockEnv2 := types.AdditionalInfo{"deviceID": "0000:00:00.2"}
+			defaultInfo2.On("GetName").Return("generic")
+			defaultInfo2.On("GetEnvVal").Return(mockEnv2)
 			defaultInfo2.On("GetDeviceSpecs").Return(nil)
 			defaultInfo2.On("GetMounts").Return(nil)
 
@@ -274,8 +340,8 @@ var _ = Describe("PciNetDevice", func() {
 			f := &mocks.ResourceFactory{}
 			f.On("GetVdpaDevice", "0000:00:00.1").Return(fakeVdpaVhost).
 				On("GetVdpaDevice", "0000:00:00.2").Return(fakeVdpaVirtio).
-				On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return(defaultInfo1).
-				On("GetDefaultInfoProvider", "0000:00:00.2", "ifcvf").Return(defaultInfo2)
+				On("GetDefaultInfoProvider", "0000:00:00.1", "mlx5_core").Return([]types.DeviceInfoProvider{defaultInfo1}).
+				On("GetDefaultInfoProvider", "0000:00:00.2", "ifcvf").Return([]types.DeviceInfoProvider{defaultInfo2})
 
 			in1 := newPciDeviceFn("0000:00:00.1")
 			in2 := newPciDeviceFn("0000:00:00.2")
@@ -288,7 +354,15 @@ var _ = Describe("PciNetDevice", func() {
 				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc_virtio)
 
 				Expect(dev1.GetDriver()).To(Equal("mlx5_core"))
-				Expect(dev1.GetEnvVal()).To(Equal("0000:00:00.1"))
+				envs := dev1.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["vdpa"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("0000:00:00.1"))
 				Expect(dev1.GetDeviceSpecs()).To(Equal([]*pluginapi.DeviceSpec{
 					{
 						HostPath:      "/dev/vhost-vdpa1",
@@ -300,7 +374,15 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(err1).NotTo(HaveOccurred())
 
 				Expect(dev2.GetDriver()).To(Equal("ifcvf"))
-				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
+				envs = dev2.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist = envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["vdpa"]
+				Expect(exist).To(BeTrue())
+				pci, exist = envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev2.GetMounts()).To(HaveLen(0))
 				Expect(dev2.GetVdpaDevice()).To(Equal(fakeVdpaVirtio))
@@ -317,11 +399,27 @@ var _ = Describe("PciNetDevice", func() {
 				dev1, err1 := netdevice.NewPciNetDevice(in1, f, rc_virtio)
 				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc_vhost)
 
-				Expect(dev1.GetEnvVal()).To(Equal("0000:00:00.1"))
+				envs := dev1.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["vdpa"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("0000:00:00.1"))
 				Expect(dev1.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev1.GetMounts()).To(HaveLen(0))
 				Expect(err1).NotTo(HaveOccurred())
-				Expect(dev2.GetEnvVal()).To(Equal("0000:00:00.2"))
+				envs = dev2.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				_, exist = envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["vdpa"]
+				Expect(exist).To(BeTrue())
+				pci, exist = envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("0000:00:00.2"))
 				Expect(dev2.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev2.GetMounts()).To(HaveLen(0))
 				Expect(err2).NotTo(HaveOccurred())

@@ -34,7 +34,6 @@ type pciNetDevice struct {
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
-	infoProviders := make([]types.DeviceInfoProvider, 0)
 	var vdpaDev types.VdpaDevice
 
 	driverName, err := utils.GetDriverName(dev.Address)
@@ -42,7 +41,11 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		return nil, err
 	}
 
-	infoProviders = append(infoProviders, rFactory.GetDefaultInfoProvider(dev.Address, driverName))
+	infoProviders := rFactory.GetDefaultInfoProvider(dev.Address, driverName)
+	if rc.AdditionalInfo != nil {
+		infoProviders = append(infoProviders, infoprovider.NewExtraInfoProvider(dev.Address, rc.AdditionalInfo))
+	}
+
 	isRdma := false
 	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
 	if ok {

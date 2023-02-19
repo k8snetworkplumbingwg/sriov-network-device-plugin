@@ -61,8 +61,26 @@ var _ = Describe("Accelerator", func() {
 
 				// TODO: assert other fields once implemented
 				Expect(out.GetDriver()).To(Equal("vfio-pci"))
-				Expect(out.GetEnvVal()).To(Equal(pciAddr))
 				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
+				envs := out.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+
+				vfioMap, exist := envs["vfio"]
+				Expect(exist).To(BeTrue())
+				Expect(len(vfioMap)).To(Equal(2))
+				vfio, exist := envs["vfio"]["mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/vfio"))
+				vfio, exist = envs["vfio"]["dev-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/0"))
+				genericMap, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				Expect(len(genericMap)).To(Equal(1))
+				generic, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(generic).To(Equal("0000:00:00.1"))
+
 				Expect(out.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -174,7 +192,15 @@ var _ = Describe("Accelerator", func() {
 				dev, err := accelerator.NewAccelDevice(in, f, config)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
-				Expect(dev.GetEnvVal()).To(Equal(pciAddr))
+
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				genericMap, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				Expect(len(genericMap)).To(Equal(1))
+				generic, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(generic).To(Equal("0000:00:00.1"))
 			})
 		})
 	})
