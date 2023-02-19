@@ -94,11 +94,13 @@ var SupportedVdpaTypes = map[VdpaType]string{
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
 	// optional resource prefix that will overwrite	global prefix specified in cli params
-	ResourcePrefix  string           `json:"resourcePrefix,omitempty"`
-	ResourceName    string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	DeviceType      DeviceType       `json:"deviceType,omitempty"`
-	ExcludeTopology bool             `json:"excludeTopology,omitempty"`
-	Selectors       *json.RawMessage `json:"selectors,omitempty"`
+	ResourcePrefix string `json:"resourcePrefix,omitempty"`
+	//nolint:lll
+	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	DeviceType      DeviceType                `json:"deviceType,omitempty"`
+	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
+	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
+	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
 	SelectorObj     interface{}
 }
 
@@ -108,6 +110,9 @@ type DeviceSelectors struct {
 	Devices []string `json:"devices,omitempty"`
 	Drivers []string `json:"drivers,omitempty"`
 }
+
+// AdditionalInfo contains all the per device or global extra information as key value pairs
+type AdditionalInfo map[string]string
 
 // GenericPciDeviceSelectors contains common PCI device selectors fields
 type GenericPciDeviceSelectors struct {
