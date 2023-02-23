@@ -131,7 +131,7 @@ $ kubectl create -f deployments/configMap.yaml
 #### Deploy daemonset
 
 ```sh
-$ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
+$ kubectl create -f deployments/sriovdp-daemonset.yaml
 ```
 
 ### Install one compatible CNI meta plugin
