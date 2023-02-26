@@ -105,13 +105,13 @@ See the [SR-IOV CNI](https://github.com/k8snetworkplumbingwg/sriov-cni) reposito
 #### GitHub
 
 ```sh
-$ docker pull ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
+ docker pull ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
 ```
 
 #### Build image locally
 
 ```sh
-$ make image
+ make image
 ```
 
 > On a successful build, a docker image with tag `ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest` will be created. You will need to build this image on each node. Alternatively, you could use a local docker registry to host this image.
@@ -125,13 +125,13 @@ Create a ConfigMap that defines SR-IOV resource pool configuration
 > Make sure to update the 'config.json' entry in the configMap data to reflect your resource configuration for the device plugin. See [Configurations](#configurations) section for supported configuration parameters.
 
 ```sh
-$ kubectl create -f deployments/configMap.yaml
+ kubectl create -f deployments/configMap.yaml
 ```
 
 #### Deploy daemonset
 
 ```sh
-$ kubectl create -f deployments/k8s-v1.16/sriovdp-daemonset.yaml
+ kubectl create -f deployments/sriovdp-daemonset.yaml
 ```
 
 ### Install one compatible CNI meta plugin
@@ -151,7 +151,7 @@ Multus uses Custom Resource Definitions(CRDs) for defining additional network at
 1. Create the SR-IOV Network CRD
 
 ```sh
-$ kubectl create -f deployments/sriov-crd.yaml
+ kubectl create -f deployments/sriov-crd.yaml
 ```
 
 #### Option 2 - DANM
