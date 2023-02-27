@@ -17,17 +17,22 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 
+	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/golang/glog"
+	"github.com/vishvananda/netlink"
 )
 
 var (
-	sysBusPci = "/sys/bus/pci/devices"
+	sysBusPci   = "/sys/bus/pci/devices"
+	varRunNetns = "/var/run/netns"
 	// golangci-lint doesn't see it is used in the testing.go
 	//nolint: unused
 	sysBusAux = "/sys/bus/auxiliary/devices"
@@ -370,6 +375,86 @@ func GetNetNames(pciAddr string) ([]string, error) {
 	}
 
 	return names, nil
+}
+
+// GetNetNamesFromNetns returns host net interface names as string for a PCI device from its pci address,
+// given that the host net interface has been moved into a child network namespace
+func GetNetNamesFromNetns(pciAddr string) ([]string, error) {
+	networkNamespaces, err := GetNetworkNamespaces()
+	if err != nil {
+		return nil, fmt.Errorf("GetNetNamesFromNetns(): failed to get network namespaces: %q", err)
+	}
+
+	// this temporary directory will be used as a mount point for each child namespace
+	tmpDir, err := os.MkdirTemp("/tmp", "")
+	if err != nil {
+		return nil, fmt.Errorf("GetNetNamesFromNetns(): could not create temp dir for mounting namespaces")
+	}
+
+	names := make([]string, 0)
+	for _, networkNamespace := range networkNamespaces {
+		netNsDir := filepath.Join(varRunNetns, networkNamespace)
+		_ = ns.WithNetNSPath(netNsDir, func(childNs ns.NetNS) error {
+			// mount the network namespace to the previously defined temp directory
+			if err := syscall.Mount(netNsDir, tmpDir, "sysfs", 0, ""); err != nil {
+				return fmt.Errorf("GetNetNamesFromNetns(): failed to mount /sys: %v", err)
+			}
+
+			defer func() {
+				_ = syscall.Unmount(tmpDir, 0)
+			}()
+
+			// search for the interface
+			interfaceDir := fmt.Sprintf("%v/bus/pci/devices/%v/net", tmpDir, pciAddr)
+			fInfos, err := os.ReadDir(interfaceDir)
+			if err != nil {
+				return fmt.Errorf("GetNetNamesFromNetns(): unable to read %v: %w", interfaceDir, err)
+			}
+
+			for _, fInfo := range fInfos {
+				ifaceName := fInfo.Name()
+				alias, _ := GetInterfaceAlias(ifaceName)
+				if alias != "" {
+					names = append(names, alias)
+				}
+			}
+			return nil
+		})
+	}
+
+	return names, nil
+}
+
+// GetNetworkNamespaces resturns the list of child network namespaces
+func GetNetworkNamespaces() ([]string, error) {
+	fInfos, err := os.ReadDir(varRunNetns)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read netns directory %s: %q", varRunNetns, err)
+	}
+
+	names := make([]string, 0)
+	for _, fInfo := range fInfos {
+		names = append(names, fInfo.Name())
+	}
+	return names, nil
+}
+
+// GetInterfaceAlias returns the alias for the interface named by ifaceName
+func GetInterfaceAlias(ifaceName string) (string, error) {
+	iface, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get interface %v: %w", ifaceName, err)
+	}
+	link, err := netlink.LinkByIndex(iface.Index)
+	if err != nil {
+		return "", fmt.Errorf("failed to find link for interface %v: %w", ifaceName, err)
+	}
+
+	attrs := link.Attrs()
+	if attrs != nil && attrs.Alias != "" {
+		return attrs.Alias, nil
+	}
+	return "", nil
 }
 
 // GetDriverName returns current driver attached to a pci device from its pci address

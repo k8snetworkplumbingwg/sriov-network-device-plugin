@@ -40,6 +40,7 @@ type GenNetDevice struct {
 // NewGenNetDevice returns GenNetDevice instance
 func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNetDevice, error) {
 	var netNames []string
+	var netNamesFromNs []string
 	var pfName string
 	var pfAddr string
 	var funcID int
@@ -58,6 +59,7 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 			return nil, err
 		}
 		netNames, _ = utils.GetNetNames(deviceID)
+		netNamesFromNs, _ = utils.GetNetNamesFromNetns(deviceID)
 	case types.AuxNetDeviceType:
 		if pfName, err = utils.GetSriovnetProvider().GetUplinkRepresentorFromAux(deviceID); err != nil {
 			// AuxNetDeviceType by design should have PF, return error if failed to get PF name
@@ -77,17 +79,18 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 	}
 
 	ifName := ""
+	linkType := ""
 	if len(netNames) > 0 {
 		ifName = netNames[0]
-	}
-
-	linkType := ""
-	if len(ifName) > 0 {
-		la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
-		if err != nil {
-			return nil, err
+		if len(ifName) > 0 {
+			la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
+			if err != nil {
+				return nil, err
+			}
+			linkType = la.EncapType
 		}
-		linkType = la.EncapType
+	} else if len(netNamesFromNs) > 0 {
+		ifName = netNamesFromNs[0]
 	}
 
 	return &GenNetDevice{
