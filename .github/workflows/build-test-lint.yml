@@ -16,7 +16,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Build
         env:
@@ -35,7 +35,7 @@ jobs:
           go-version: 1.18.x
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install hwdata
         run: sudo apt-get install hwdata -y
@@ -53,7 +53,7 @@ jobs:
         with:
           go-version: 1.18.x
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install hwdata
         run: sudo apt-get install hwdata -y
@@ -75,7 +75,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.18.x
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -88,7 +88,7 @@ jobs:
     env:
       SHELLCHECK_OPTS: -e SC3037 # disabled because of false issue in entrypoint.sh ln 14-21. Not using any complicated flags. Works with alpines almquist shell.
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
       with:
@@ -98,8 +98,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Hadolint
     steps:
-    - uses: actions/checkout@v2
-    - uses: brpaz/hadolint-action@v1.5.0
+    - uses: actions/checkout@v3
+    - uses: hadolint/hadolint-action@v3.1.0
       name: Run Hadolint
       with:
        dockerfile: ./images/Dockerfile
@@ -108,7 +108,7 @@ jobs:
   go-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v3
