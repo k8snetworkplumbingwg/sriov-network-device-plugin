@@ -270,8 +270,8 @@ var _ = Describe("Server", func() {
 				Return(map[string]string{"00:00.01": "/dev/fake"}).
 				On("GetDeviceSpecs", []string{"00:00.01"}).
 				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}).
-				On("GetEnvs", []string{"00:00.01"}).
-				Return([]string{"00:00.01"}).
+				On("GetEnvs", "fake.com", []string{"00:00.01"}).
+				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
 
@@ -319,32 +319,6 @@ var _ = Describe("Server", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
-	DescribeTable("getting env variables",
-		func(in []string, expected map[string]string) {
-			fs := &utils.FakeFilesystem{}
-			defer fs.Use()()
-			deviceIDs := []string{"fakeid"}
-			rp := mocks.ResourcePool{}
-			rp.
-				On("GetResourceName").Return("fake").
-				On("GetEnvs", deviceIDs).Return(in)
-
-			obj := NewResourceServer("fake.com", "fake", true, &rp)
-			rs := *obj.(*resourceServer)
-			rs.sockPath = fs.RootDir
-			actual := rs.getEnvs(deviceIDs)
-			for k, v := range expected {
-				Expect(actual).To(HaveKeyWithValue(k, v))
-			}
-		},
-		Entry("some values",
-			[]string{"fakeId0", "fakeId1"},
-			map[string]string{
-				"PCIDEVICE_FAKE_COM_FAKE": "fakeId0,fakeId1",
-			},
-		),
-	)
-
 	Describe("ListAndWatch", func() {
 		Context("when first Send call in DevicePlugin_ListAndWatch failed", func() {
 			It("should fail", func() {

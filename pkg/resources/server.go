@@ -121,7 +121,14 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
 		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
-		containerResp.Envs = rs.getEnvs(container.DevicesIDs)
+
+		envs, err := rs.getEnvs(container.DevicesIDs)
+		if err != nil {
+			glog.Errorf("failed to get environment variables for device IDs %v: %v", container.DevicesIDs, err)
+			return nil, err
+		}
+		containerResp.Envs = envs
+
 		containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
@@ -336,20 +343,6 @@ func (rs *resourceServer) triggerUpdate() {
 	}
 }
 
-func (rs *resourceServer) getEnvs(deviceIDs []string) map[string]string {
-	envs := make(map[string]string)
-	key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", rs.resourceNamePrefix, rs.resourcePool.GetResourceName())
-	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
-	envVals := rs.resourcePool.GetEnvs(deviceIDs)
-	values := ""
-	lastIndex := len(envVals) - 1
-	for i, s := range envVals {
-		values += s
-		if i == lastIndex {
-			break
-		}
-		values += ","
-	}
-	envs[key] = values
-	return envs
+func (rs *resourceServer) getEnvs(deviceIDs []string) (map[string]string, error) {
+	return rs.resourcePool.GetEnvs(rs.resourceNamePrefix, deviceIDs)
 }

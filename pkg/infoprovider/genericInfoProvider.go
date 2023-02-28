@@ -31,17 +31,28 @@ func NewGenericInfoProvider(deviceID string) types.DeviceInfoProvider {
 	}
 }
 
+// *****************************************************************
+/* DeviceInfoProvider Interface */
+
+func (rp *genericInfoProvider) GetName() string {
+	return "generic"
+}
+
 func (rp *genericInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	// NO device file, send empty DeviceSpec map
 	return devSpecs
 }
 
-func (rp *genericInfoProvider) GetEnvVal() string {
-	return rp.deviceID
+func (rp *genericInfoProvider) GetEnvVal() types.AdditionalInfo {
+	envs := make(map[string]string, 0)
+	envs["deviceID"] = rp.deviceID
+	return envs
 }
 
 func (rp *genericInfoProvider) GetMounts() []*pluginapi.Mount {
 	mounts := make([]*pluginapi.Mount, 0)
 	return mounts
 }
+
+// *****************************************************************

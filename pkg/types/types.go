@@ -94,11 +94,13 @@ var SupportedVdpaTypes = map[VdpaType]string{
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
 	// optional resource prefix that will overwrite	global prefix specified in cli params
-	ResourcePrefix  string           `json:"resourcePrefix,omitempty"`
-	ResourceName    string           `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	DeviceType      DeviceType       `json:"deviceType,omitempty"`
-	ExcludeTopology bool             `json:"excludeTopology,omitempty"`
-	Selectors       *json.RawMessage `json:"selectors,omitempty"`
+	ResourcePrefix string `json:"resourcePrefix,omitempty"`
+	//nolint:lll
+	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	DeviceType      DeviceType                `json:"deviceType,omitempty"`
+	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
+	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
+	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
 	SelectorObj     interface{}
 }
 
@@ -108,6 +110,9 @@ type DeviceSelectors struct {
 	Devices []string `json:"devices,omitempty"`
 	Drivers []string `json:"drivers,omitempty"`
 }
+
+// AdditionalInfo contains all the per device or global extra information as key value pairs
+type AdditionalInfo map[string]string
 
 // GenericPciDeviceSelectors contains common PCI device selectors fields
 type GenericPciDeviceSelectors struct {
@@ -166,7 +171,7 @@ type ResourceServer interface {
 // ResourceFactory is an interface to get instances of ResourcePool and ResourceServer
 type ResourceFactory interface {
 	GetResourceServer(ResourcePool) (ResourceServer, error)
-	GetDefaultInfoProvider(string, string) DeviceInfoProvider
+	GetDefaultInfoProvider(string, string) []DeviceInfoProvider
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []HostDevice) (ResourcePool, error)
 	GetRdmaSpec(DeviceType, string) RdmaSpec
@@ -184,7 +189,7 @@ type ResourcePool interface {
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
-	GetEnvs(deviceIDs []string) []string
+	GetEnvs(prefix string, deviceIDs []string) (map[string]string, error)
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
@@ -210,7 +215,7 @@ type APIDevice interface {
 	// GetDeviceSpecs returns a list of specs which describes host devices
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	// GetEnvVal returns environment variable associated with device
-	GetEnvVal() string
+	GetEnvVal() map[string]AdditionalInfo
 	// GetMounts returns a list of host volumes associated with device
 	GetMounts() []*pluginapi.Mount
 	// GetAPIDevice returns k8s API device
@@ -286,8 +291,9 @@ type AuxNetDevice interface {
 
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
 type DeviceInfoProvider interface {
+	GetName() string
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
-	GetEnvVal() string
+	GetEnvVal() AdditionalInfo
 	GetMounts() []*pluginapi.Mount
 }
 

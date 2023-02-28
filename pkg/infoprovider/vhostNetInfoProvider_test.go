@@ -51,9 +51,16 @@ var _ = Describe("vdpaInfoProvider", func() {
 		})
 	})
 	Describe("GetEnvVal", func() {
-		It("should always return an empty string", func() {
+		It("should always return the device mounts info", func() {
 			dip := infoprovider.NewVhostNetInfoProvider()
-			Expect(dip.GetEnvVal()).To(BeEmpty())
+			envs := dip.GetEnvVal()
+			Expect(len(envs)).To(Equal(2))
+			mount, exist := envs["net-mount"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/vhost-net"))
+			mount, exist = envs["tun-mount"]
+			Expect(exist).To(BeTrue())
+			Expect(mount).To(Equal("/dev/net/tun"))
 		})
 	})
 	Describe("GetMounts", func() {

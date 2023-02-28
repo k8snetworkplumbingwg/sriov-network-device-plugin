@@ -27,7 +27,7 @@ import (
 )
 
 /*
-   VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
+VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
 */
 type vhostNetInfoProvider struct {
 }
@@ -76,6 +76,10 @@ func getTunDeviceSpec() []*pluginapi.DeviceSpec {
 // *****************************************************************
 /* DeviceInfoProvider Interface */
 
+func (ip *vhostNetInfoProvider) GetName() string {
+	return "vhost"
+}
+
 func (ip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if !VhostNetDeviceExist() {
 		glog.Errorf("GetDeviceSpecs(): /dev/vhost-net doesn't exist")
@@ -92,10 +96,16 @@ func (ip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	return deviceSpec
 }
 
-func (ip *vhostNetInfoProvider) GetEnvVal() string {
-	return ""
+func (ip *vhostNetInfoProvider) GetEnvVal() types.AdditionalInfo {
+	envs := make(map[string]string, 0)
+	envs["net-mount"] = "/dev/vhost-net"
+	envs["tun-mount"] = "/dev/net/tun"
+
+	return envs
 }
 
 func (ip *vhostNetInfoProvider) GetMounts() []*pluginapi.Mount {
 	return nil
 }
+
+// *****************************************************************

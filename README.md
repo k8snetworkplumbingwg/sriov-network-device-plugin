@@ -241,8 +241,20 @@ This plugin creates device plugin endpoints based on the configurations given in
                 "pfNames": ["p0#1-5"],
                 "auxTypes": ["sf"]
             }
+        },
+        {
+          "resourceName": "intel_sriov_netdevice_additional_env",
+          "selectors": {
+            "vendors": ["8086"],
+            "devices": ["154c", "10ed", "1889"],
+            "drivers": ["i40evf", "ixgbevf", "iavf"]
+          },
+          "additionalInfo": {
+             "*": {
+               "token": "3e49019f-412f-4f02-824e-4cd195944205"
+             }
+          }
         }
-
     ]
 }
 ```
@@ -256,7 +268,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "deviceType"      | N        | Device Type for a resource pool.                                                                                                       | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice", "auxNetDevice" |
 | "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
 | "selectors"       | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                                                  | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]}        |
-
+| "additionalInfo" | N | A map of map to add additional information to the pod via environment variables to devices                                             | json object as string Default: null  | Example: "additionalInfo": {"*": {"token": "3e49019f-412f-4f02-824e-4cd195944205"}} |
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
@@ -309,6 +321,59 @@ This selector is applicable when "deviceType" is "auxNetDevice".
 | "auxTypes"    | N        | List of vendor specific auxiliary network device types. Device type can be determined by its name: <driver_name>.<kind_of_a_type>.<id> | `string` list Default: `null`                    | "auxTypes": ["sf", "eth"]                                                                        |
 
 [//]: # (The tables above generated using: https://ozh.github.io/ascii-tables/)
+
+#### AdditionalInfo field
+
+This field defines a method to add information as part of the environment variable the sriov-network-device-plugin injects to the container.
+
+Examples:
+```
+"additionalInfo": {
+   "*": {
+     "token": "3e49019f-412f-4f02-824e-4cd195944205"
+   }
+}     
+```
+The '*' is a special key telling the device plugin to inject this info to all the devices matching the selector.
+you can also specify a specific pci address if you want to override or add more information to a specific device
+
+```
+"additionalInfo": {
+   "*": {
+     "token": "3e49019f-412f-4f02-824e-4cd195944205"
+   },
+    "0000:86:00.0": {
+    "additional-token": "6e7dc135-7a1c-456f-a008-c2cfb37997be"
+    }
+
+}   
+
+output for pod allocating a different deviceID:
+{"0000:3b:02.6":{"extraInfo":{"token":"3e49019f-412f-4f02-824e-4cd195944205"}
+
+output for pod allocating the specific deviceID:
+{"0000:86:00.0":{"extraInfo":{"token":"3e49019f-412f-4f02-824e-4cd195944205","additional-token": "6e7dc135-7a1c-456f-a008-c2cfb37997be"}
+```
+
+When having the same key for both the "*" and spefic deviceID variable the specific one will be taken
+
+```
+"additionalInfo": {
+   "*": {
+     "token": "original"
+   },
+    "0000:86:00.0": {
+    "token": "specific"
+    }
+
+}   
+
+output for pod allocating a different deviceID:
+{"0000:3b:02.6":{"extraInfo":{"token":"original"}
+
+output for pod allocating the specific deviceID:
+{"0000:86:00.0":{"extraInfo":{"token":"specific"}
+```
 
 ### Command line arguments
 
@@ -576,6 +641,17 @@ The allocated device information is exported in Container's environment variable
 
 For example, if 2 devices are allocated from `intel.com/sriov` extended resource then the allocated device information will be found in following env variable:
 `PCIDEVICE_INTEL_COM_SRIOV=0000:03:02.1,0000:03:04.3`
+
+There is also another environment variable that expose in json format more information about the device that was allocated like mount and addition variables if requested.
+The variable name is `PCIDEVICE_<RESOUCE_NAME>_INFO` appended with full extended resource name (e.g. intel.com/sriov etc.) which is capitailzed and any special characters (".", "/") are replaced with underscore ("_")
+
+vfio device example:
+```
+PCIDEVICE_INTEL_COM_DPDK_NIC_1_INFO={"0000:3b:02.6":{"vfio":{"vfio-dev-mount":"/dev/vfio/169","vfio-mount":"/dev/vfio/vfio"},"vhost":{"net-mount":"/dev/vhost-net","tun-mount":"/dev/net/tun"}}}
+
+# Adding additionalInfo field to the resource definition will add additional information for every device allocated. e.g:
+PCIDEVICE_INTEL_COM_DPDK_NIC_1_INFO={"0000:3b:02.6":{"extraInfo":{"token":"3e49019f-412f-4f02-824e-4cd195944205"},"vfio":{"vfio-dev-mount":"/dev/vfio/169","vfio-mount":"/dev/vfio/vfio"},"vhost":{"net-mount":"/dev/vhost-net","tun-mount":"/dev/net/tun"}}}
+```
 
 ## Virtual Deployments Support
 

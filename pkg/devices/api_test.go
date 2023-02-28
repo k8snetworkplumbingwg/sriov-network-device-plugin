@@ -35,20 +35,31 @@ var _ = Describe("ApiDevice", func() {
 			mockSpec1 := []*v1beta1.DeviceSpec{
 				{HostPath: "/mock/spec/1"},
 			}
-			mockInfo1.On("GetEnvVal").Return("0000:00:00.1")
+			mockEnv := types.AdditionalInfo{"deviceID": "0000:00:00.1"}
+			mockInfo1.On("GetName").Return("generic")
+			mockInfo1.On("GetEnvVal").Return(mockEnv)
 			mockInfo1.On("GetDeviceSpecs").Return(mockSpec1)
 			mockInfo1.On("GetMounts").Return(nil)
 			mockInfo2 := &mocks.DeviceInfoProvider{}
 			mockSpec2 := []*v1beta1.DeviceSpec{
 				{HostPath: "/mock/spec/2"},
 			}
+			mockInfo2.On("GetName").Return("generic")
+			mockInfo2.On("GetEnvVal").Return(mockEnv)
 			mockInfo2.On("GetDeviceSpecs").Return(mockSpec2)
 			mockInfo2.On("GetMounts").Return(nil)
 
 			infoProviders := []types.DeviceInfoProvider{mockInfo1, mockInfo2}
 			dev := devices.NewAPIDeviceImpl("0000:00:00.1", infoProviders, -1)
 
-			Expect(dev.GetEnvVal()).To(Equal("0000:00:00.1"))
+			envs := dev.GetEnvVal()
+			Expect(len(envs)).To(Equal(1))
+			_, exist := envs["generic"]
+			Expect(exist).To(BeTrue())
+			pci, exist := envs["generic"]["deviceID"]
+			Expect(exist).To(BeTrue())
+			Expect(pci).To(Equal("0000:00:00.1"))
+
 			Expect(dev.GetDeviceSpecs()).To(HaveLen(2))
 			Expect(dev.GetMounts()).To(HaveLen(0))
 			Expect(dev.GetAPIDevice()).NotTo(BeNil())

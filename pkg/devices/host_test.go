@@ -188,18 +188,22 @@ var _ = Describe("HostDevice", func() {
 		mockSpec1 := []*v1beta1.DeviceSpec{
 			{HostPath: "/mock/spec/1"},
 		}
-		mockInfo1.On("GetEnvVal").Return(pciAddr1)
+		mockEnv1 := types.AdditionalInfo{"deviceID": pciAddr1}
+		mockInfo1.On("GetName").Return("generic")
+		mockInfo1.On("GetEnvVal").Return(mockEnv1)
 		mockInfo1.On("GetDeviceSpecs").Return(mockSpec1)
 		mockInfo1.On("GetMounts").Return(nil)
 		mockInfo2 := &mocks.DeviceInfoProvider{}
 		mockSpec2 := []*v1beta1.DeviceSpec{
 			{HostPath: "/mock/spec/2"},
 		}
-		mockInfo2.On("GetEnvVal").Return(pciAddr2)
+		mockEnv2 := types.AdditionalInfo{"deviceID": pciAddr2}
+		mockInfo2.On("GetName").Return("generic")
+		mockInfo2.On("GetEnvVal").Return(mockEnv2)
 		mockInfo2.On("GetDeviceSpecs").Return(mockSpec2)
 		mockInfo2.On("GetMounts").Return(nil)
-		f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return(mockInfo1).
-			On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return(mockInfo2)
+		f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo1}).
+			On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo2})
 
 		in1 := newPciDeviceFn(pciAddr1)
 		in2 := newPciDeviceFn(pciAddr2)
@@ -211,7 +215,13 @@ var _ = Describe("HostDevice", func() {
 			dev, err := devices.NewHostDeviceImpl(in1, pciAddr1, f, rc, infoProviders)
 
 			Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-			Expect(dev.GetEnvVal()).To(Equal(pciAddr1))
+			envs := dev.GetEnvVal()
+			Expect(len(envs)).To(Equal(1))
+			_, exist := envs["generic"]
+			Expect(exist).To(BeTrue())
+			pci, exist := envs["generic"]["deviceID"]
+			Expect(exist).To(BeTrue())
+			Expect(pci).To(Equal(pciAddr1))
 			Expect(dev.GetDeviceSpecs()).To(Equal(mockSpec1))
 			Expect(dev.GetMounts()).To(HaveLen(0))
 			Expect(err).NotTo(HaveOccurred())
@@ -224,7 +234,13 @@ var _ = Describe("HostDevice", func() {
 			dev, err := devices.NewHostDeviceImpl(in2, pciAddr2, f, rc, infoProviders)
 
 			Expect(dev.GetDriver()).To(Equal("mlx5_core"))
-			Expect(dev.GetEnvVal()).To(Equal(pciAddr2))
+			envs := dev.GetEnvVal()
+			Expect(len(envs)).To(Equal(1))
+			_, exist := envs["generic"]
+			Expect(exist).To(BeTrue())
+			pci, exist := envs["generic"]["deviceID"]
+			Expect(exist).To(BeTrue())
+			Expect(pci).To(Equal(pciAddr2))
 			Expect(dev.GetDeviceSpecs()).To(Equal(mockSpec2))
 			Expect(dev.GetMounts()).To(HaveLen(0))
 			Expect(err).NotTo(HaveOccurred())
