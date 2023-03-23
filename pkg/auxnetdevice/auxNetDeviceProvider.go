@@ -83,9 +83,7 @@ func (ap *auxNetDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, devic
 			productName := utils.NormalizeProductName(device.Product.Name)
 			glog.Infof("auxnetdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
 				device.Class.ID, vendorName, productName)
-			if isDefaultRoute, _ := utils.HasDefaultRoute(device.Address); !isDefaultRoute {
-				ap.deviceList = append(ap.deviceList, device)
-			}
+			ap.deviceList = append(ap.deviceList, device)
 		}
 	}
 	return nil
