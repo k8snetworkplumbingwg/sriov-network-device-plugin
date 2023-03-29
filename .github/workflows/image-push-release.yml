@@ -5,7 +5,6 @@ on:
       - v*
 jobs:
   build-and-push-amd64-device-plugin:
-    if: github.repository_owner == 'k8snetworkplumbingwg'
     name: Image push AMD64
     runs-on: ubuntu-20.04
     env:
@@ -29,7 +28,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.IMAGE_NAME }}
-          tag-latest: false
+          tags: |
+            type=ref,event=tag
 
       - name: Build and push sriov-network-device-plugin
         uses: docker/build-push-action@v4
@@ -42,7 +42,6 @@ jobs:
           file: images/Dockerfile
 
   build-and-push-arm64-device-plugin:
-    if: github.repository_owner == 'k8snetworkplumbingwg'
     name: Image push ARM64
     runs-on: ubuntu-20.04
     env:
@@ -69,7 +68,9 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.IMAGE_NAME }}
-          tag-latest: false
+          tags: |
+            type=ref,event=tag
+
 
       - name: Build and push sriov-network-device-plugin
         uses: docker/build-push-action@v4
@@ -82,7 +83,6 @@ jobs:
           file: images/Dockerfile.arm64
 
   build-and-push-ppc64le-device-plugin:
-    if: github.repository_owner == 'k8snetworkplumbingwg'
     name: Image push ppc64le
     runs-on: ubuntu-20.04
     env:
@@ -109,7 +109,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.IMAGE_NAME }}
-          tag-latest: false
+          tags: |
+            type=ref,event=tag
 
       - name: Build and push sriov-network-device-plugin
         uses: docker/build-push-action@v4
@@ -133,7 +134,8 @@ jobs:
       uses: docker/metadata-action@v4
       with:
         images: ${{ env.IMAGE_NAME }}
-        tag-latest: false
+        tags: |
+          type=ref,event=tag
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@v2
@@ -144,15 +146,7 @@ jobs:
 
     - name: Create manifest for multi-arch images
       run: |
-        # pull
-        docker pull ${{ steps.docker_meta.outputs.tags }}-amd64
-        docker pull ${{ steps.docker_meta.outputs.tags }}-arm64
-        docker pull ${{ steps.docker_meta.outputs.tags }}-ppc64le
-        # create
-        docker manifest create ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-amd64 ${{ steps.docker_meta.outputs.tags }}-arm64 ${{ steps.docker_meta.outputs.tags }}-ppc64le
-        # annotate
-        docker manifest annotate ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-amd64 --arch amd64
-        docker manifest annotate ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-arm64 --arch arm64
-        docker manifest annotate ${{ steps.docker_meta.outputs.tags }} ${{ steps.docker_meta.outputs.tags }}-ppc64le --arch ppc64le
-        # push
-        docker manifest push ${{ steps.docker_meta.outputs.tags }}
+        docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ steps.docker_meta.outputs.tags }} \
+        ${{ env.IMAGE_NAME }}:${{ steps.docker_meta.outputs.tags }}-amd64 \
+        ${{ env.IMAGE_NAME }}:${{ steps.docker_meta.outputs.tags }}-arm64 \
+        ${{ env.IMAGE_NAME }}:${{ steps.docker_meta.outputs.tags }}-ppc64le
