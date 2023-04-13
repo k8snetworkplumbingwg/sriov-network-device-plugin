@@ -23,6 +23,8 @@ import (
 	"github.com/jaypipes/ghw"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	nl "github.com/vishvananda/netlink"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -104,6 +106,44 @@ var _ = Describe("Devices", func() {
 				Expect(dev).NotTo(BeNil())
 				Expect(dev.GetPfNetName()).To(Equal(""))
 			})
+			It("should use PF linkType if own ifName is not available", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.0/net/ens1f0",
+						"sys/bus/pci/devices/0000:00:00.1/net/",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/physfn":  "../0000:00:00.0",
+						"sys/bus/pci/devices/0000:00:00.0/virtfn0": "../0000:00:00.1",
+					},
+				}
+				defer fs.Use()()
+				testMockProvider := mocks.NetlinkProvider{}
+
+				testMockProvider.
+					On("GetLinkAttrs", "fakeIfName").
+					Return(&nl.LinkAttrs{EncapType: ""}, nil)
+				testMockProvider.
+					On("GetLinkAttrs", "ens1f0").
+					Return(&nl.LinkAttrs{EncapType: "pfLinkType"}, nil)
+				testMockProvider.
+					On("GetDevLinkDeviceEswitchAttrs", mock.AnythingOfType("string")).
+					Return(&nl.DevlinkDevEswitchAttr{Mode: "fakeMode"}, nil)
+				testMockProvider.
+					On("GetIPv4RouteList", mock.AnythingOfType("string")).
+					Return([]nl.Route{{Dst: nil}}, nil)
+				utils.SetNetlinkProviderInst(&testMockProvider)
+
+				pciAddr := "0000:00:00.1"
+				dev, err := devices.NewGenNetDevice(pciAddr, types.NetDeviceType, true)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetPfNetName()).To(Equal("ens1f0"))
+				Expect(dev.GetPfPciAddr()).To(Equal("0000:00:00.0"))
+				Expect(dev.GetNetName()).To(Equal(""))
+				Expect(dev.GetLinkType()).To(Equal("pfLinkType"))
+			})
 		})
 		Context("Create new GenNetDevice for AuxNetDeviceType", func() {
 			It("should populate fields", func() {
@@ -114,6 +154,7 @@ var _ = Describe("Devices", func() {
 					On("GetSfIndexByAuxDev", "foo.bar.0").Return(1, nil).
 					On("GetNetDevicesFromAux", "foo.bar.0").Return([]string{"fakeIfName"}, nil)
 				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+				utils.SetDefaultMockNetlinkProvider()
 
 				dev, err := devices.NewGenNetDevice("foo.bar.0", types.AuxNetDeviceType, true)
 
