@@ -214,7 +214,7 @@ type DeviceProvider interface {
 type APIDevice interface {
 	// GetDeviceSpecs returns a list of specs which describes host devices
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
-	// GetEnvVal returns environment variable associated with device
+	// GetEnvVal returns device information to be exposed via environment variable
 	GetEnvVal() map[string]AdditionalInfo
 	// GetMounts returns a list of host volumes associated with device
 	GetMounts() []*pluginapi.Mount
