@@ -273,7 +273,7 @@ func SriovConfigured(addr string) bool {
 // ValidResourceName returns true if it contains permitted characters otherwise false
 func ValidResourceName(name string) bool {
 	// name regex
-	var validString = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+	var validString = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 	return validString.MatchString(name)
 }
 
