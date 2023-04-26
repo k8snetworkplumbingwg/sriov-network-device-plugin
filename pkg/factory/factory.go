@@ -177,37 +177,64 @@ func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DevicePr
 	}
 }
 
-// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns an instance of DeviceSelector based on
+// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns a slice of *DeviceSelectors based on
 // DeviceType in the ResourceConfig
-func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (interface{}, error) {
+func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) ([]interface{}, error) {
 	switch rc.DeviceType {
 	case types.NetDeviceType:
-		netDeviceSelector := &types.NetDeviceSelectors{}
+		netDeviceArray := make([]types.NetDeviceSelectors, 1)
 
-		if err := json.Unmarshal(*rc.Selectors, netDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling NetDevice selector bytes %v", err)
+		if err := json.Unmarshal(*rc.Selectors, &netDeviceArray[0]); err != nil {
+			if err = json.Unmarshal(*rc.Selectors, &netDeviceArray); err != nil {
+				return nil, fmt.Errorf("error unmarshalling NetDevice selector bytes %v", err)
+			}
+			if len(netDeviceArray) == 0 {
+				return nil, fmt.Errorf("error, need at least one NetDevice selector, got 0")
+			}
 		}
 
-		glog.Infof("net device selector for resource %s is %+v", rc.ResourceName, netDeviceSelector)
-		return netDeviceSelector, nil
+		glog.Infof("Net device selector for resource %s is %+v", rc.ResourceName, netDeviceArray)
+		interfaceArray := make([]interface{}, len(netDeviceArray))
+		for i := range netDeviceArray {
+			interfaceArray[i] = &netDeviceArray[i]
+		}
+		return interfaceArray, nil
 	case types.AcceleratorType:
-		accelDeviceSelector := &types.AccelDeviceSelectors{}
+		accelDeviceArray := make([]types.AccelDeviceSelectors, 1)
 
-		if err := json.Unmarshal(*rc.Selectors, accelDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling Accelerator selector bytes %v", err)
+		if err := json.Unmarshal(*rc.Selectors, &accelDeviceArray[0]); err != nil {
+			if err = json.Unmarshal(*rc.Selectors, &accelDeviceArray); err != nil {
+				return nil, fmt.Errorf("error unmarshalling Accelerator selector bytes %v", err)
+			}
+			if len(accelDeviceArray) == 0 {
+				return nil, fmt.Errorf("error, need at least one Accelerator selector, get 0")
+			}
 		}
 
-		glog.Infof("accelerator device selector for resource %s is %+v", rc.ResourceName, accelDeviceSelector)
-		return accelDeviceSelector, nil
+		glog.Infof("Accelerator device selector for resource %s is %+v", rc.ResourceName, accelDeviceArray)
+		interfaceArray := make([]interface{}, len(accelDeviceArray))
+		for i := range accelDeviceArray {
+			interfaceArray[i] = &accelDeviceArray[i]
+		}
+		return interfaceArray, nil
 	case types.AuxNetDeviceType:
-		auxNetDeviceSelector := &types.AuxNetDeviceSelectors{}
+		auxNetDeviceArray := make([]types.AuxNetDeviceSelectors, 1)
 
-		if err := json.Unmarshal(*rc.Selectors, auxNetDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling AuxNetDevice selector bytes %v", err)
+		if err := json.Unmarshal(*rc.Selectors, &auxNetDeviceArray[0]); err != nil {
+			if err = json.Unmarshal(*rc.Selectors, &auxNetDeviceArray); err != nil {
+				return nil, fmt.Errorf("error unmarshalling aux net device selector bytes %v", err)
+			}
+			if len(auxNetDeviceArray) == 0 {
+				return nil, fmt.Errorf("error, need at least one aux net device selector, get 0")
+			}
 		}
 
-		glog.Infof("auxiliary network device selector for resource %s is %+v", rc.ResourceName, auxNetDeviceSelector)
-		return auxNetDeviceSelector, nil
+		glog.Infof("aux net device selector for resource %s is %+v", rc.ResourceName, auxNetDeviceArray)
+		interfaceArray := make([]interface{}, len(auxNetDeviceArray))
+		for i := range auxNetDeviceArray {
+			interfaceArray[i] = &auxNetDeviceArray[i]
+		}
+		return interfaceArray, nil
 	default:
 		return nil, fmt.Errorf("unable to get deviceFilter, invalid deviceType %s", rc.DeviceType)
 	}

@@ -89,7 +89,7 @@ func (rm *resourceManager) readConfig() error {
 		} else if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
 			return fmt.Errorf("unsupported deviceType:  \"%s\"", conf.DeviceType)
 		}
-		if conf.SelectorObj, err = rm.rFactory.GetDeviceFilter(conf); err == nil {
+		if conf.SelectorObjs, err = rm.rFactory.GetDeviceFilter(conf); err == nil {
 			rm.configList = append(rm.configList, &resources.ResourceList[i])
 		} else {
 			glog.Warningf("unable to get SelectorObj from selectors list:'%s' for deviceType: %s error: %s",
@@ -115,12 +115,18 @@ func (rm *resourceManager) initServers() error {
 			return fmt.Errorf("error getting device provider")
 		}
 
-		devices := dp.GetDevices(rc)
-		filteredDevices, err := dp.GetFilteredDevices(devices, rc)
-		if err != nil {
-			glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
+		filteredDevices := make([]types.HostDevice, 0)
+
+		for index := range rc.SelectorObjs {
+			devices := dp.GetDevices(rc, index)
+			partialFilteredDevices, err := dp.GetFilteredDevices(devices, rc, index)
+			if err != nil {
+				glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
+			}
+			partialFilteredDevices = rm.excludeAllocatedDevices(partialFilteredDevices, deviceAllocated)
+			glog.Infof("initServers(): selector index %d will register %d devices", index, len(partialFilteredDevices))
+			filteredDevices = append(filteredDevices, partialFilteredDevices...)
 		}
-		filteredDevices = rm.excludeAllocatedDevices(filteredDevices, deviceAllocated)
 		if len(filteredDevices) < 1 {
 			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
 			continue
