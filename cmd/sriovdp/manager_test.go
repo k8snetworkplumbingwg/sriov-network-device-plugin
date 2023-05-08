@@ -160,7 +160,7 @@ var _ = Describe("Resource manager", func() {
 				}
 				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
 					"resourceList":	[{
-						"resourceName": "invalid-name",
+						"resourceName": "invalid.name",
 						"selectors": {
 							"isRdma": false,
 							"vendors": ["8086"],
