@@ -296,8 +296,8 @@ var _ = Describe("In the utils package", func() {
 		func(name string, expected bool) {
 			Expect(ValidResourceName(name)).To(Equal(expected))
 		},
-		Entry("resource name is valid", "sriov_net_0", true),
-		Entry("resource name is invalid", "junk-net-0", false),
+		Entry("resource name is valid", "sriov-net_0", true),
+		Entry("resource name is invalid", "junk.net.0", false),
 	)
 
 	DescribeTable("getting VFIO device file",
