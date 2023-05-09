@@ -45,7 +45,7 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 	var funcID int
 	var err error
 
-	//nolint: exhaustive
+	// nolint: exhaustive
 	switch dt {
 	case types.NetDeviceType:
 		if pfName, err = utils.GetPfName(deviceID); err != nil {
@@ -82,8 +82,13 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 	}
 
 	linkType := ""
-	if len(ifName) > 0 {
-		la, err := utils.GetNetlinkProvider().GetLinkAttrs(ifName)
+	linkTypeProviderDevice := ifName
+	// If interface name is not available, derive link type from PF
+	if linkTypeProviderDevice == "" {
+		linkTypeProviderDevice = pfName
+	}
+	if linkTypeProviderDevice != "" {
+		la, err := utils.GetNetlinkProvider().GetLinkAttrs(linkTypeProviderDevice)
 		if err != nil {
 			return nil, err
 		}
