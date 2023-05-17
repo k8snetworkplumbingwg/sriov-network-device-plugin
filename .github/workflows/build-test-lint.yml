@@ -41,7 +41,7 @@ jobs:
         run: sudo apt-get install hwdata -y
 
       - name: Go test
-        run: make test
+        run: make test-race
 
   test-coverage:
     runs-on: ubuntu-latest
