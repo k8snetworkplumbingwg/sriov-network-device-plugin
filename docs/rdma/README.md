@@ -25,4 +25,4 @@ Using Rdma requires mounting special files from `/dev/infiniband` in the contain
 # ls /dev/infiniband
 issm2  rdma_cm  ucm2  umad1  uverbs2
 ```
-The digit after the file name is the index of the VF
+__Note__: rdma character devices mounted under `/dev/infiniband` may vary depending on the vendor and loaded kernel modules.
