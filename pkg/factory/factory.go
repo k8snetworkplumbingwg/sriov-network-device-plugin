@@ -182,21 +182,21 @@ func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DevicePr
 func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) ([]interface{}, error) {
 	switch rc.DeviceType {
 	case types.NetDeviceType:
-		netDeviceArray := make([]types.NetDeviceSelectors, 1)
+		netDeviceSelectors := make([]types.NetDeviceSelectors, 1)
 
-		if err := json.Unmarshal(*rc.Selectors, &netDeviceArray[0]); err != nil {
-			if err = json.Unmarshal(*rc.Selectors, &netDeviceArray); err != nil {
+		if err := json.Unmarshal(*rc.Selectors, &netDeviceSelectors[0]); err != nil {
+			if err = json.Unmarshal(*rc.Selectors, &netDeviceSelectors); err != nil {
 				return nil, fmt.Errorf("error unmarshalling NetDevice selector bytes %v", err)
 			}
-			if len(netDeviceArray) == 0 {
+			if len(netDeviceSelectors) == 0 {
 				return nil, fmt.Errorf("error, need at least one NetDevice selector, got 0")
 			}
 		}
 
-		glog.Infof("Net device selector for resource %s is %+v", rc.ResourceName, netDeviceArray)
-		interfaceArray := make([]interface{}, len(netDeviceArray))
-		for i := range netDeviceArray {
-			interfaceArray[i] = &netDeviceArray[i]
+		glog.Infof("Net device selector for resource %s is %+v", rc.ResourceName, netDeviceSelectors)
+		interfaceArray := make([]interface{}, len(netDeviceSelectors))
+		for i := range netDeviceSelectors {
+			interfaceArray[i] = &netDeviceSelectors[i]
 		}
 		return interfaceArray, nil
 	case types.AcceleratorType:

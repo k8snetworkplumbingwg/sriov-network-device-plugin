@@ -226,7 +226,7 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev.GetEnvVal()
-				Expect(len(envs)).To(Equal(1))
+				Expect(envs).To(HaveLen(1))
 				_, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
 				pci, exist := envs["generic"]["deviceID"]

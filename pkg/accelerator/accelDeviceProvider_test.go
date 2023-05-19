@@ -234,6 +234,8 @@ var _ = Describe("AcceleratorProvider", func() {
 					},
 				}
 				_, err = p.GetFilteredDevices(devs, rc, 1)
+
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

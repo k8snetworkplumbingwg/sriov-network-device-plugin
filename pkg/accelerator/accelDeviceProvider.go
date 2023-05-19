@@ -76,7 +76,8 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig, selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
 	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
-		return filteredDevice, fmt.Errorf("Invalid selectorIndex %d, resource config only has %d selector objects", selectorIndex, len(rc.SelectorObjs))
+		return filteredDevice, fmt.Errorf("Invalid selectorIndex %d, resource config only has %d selector objects",
+			selectorIndex, len(rc.SelectorObjs))
 	}
 	af, ok := rc.SelectorObjs[selectorIndex].(*types.AccelDeviceSelectors)
 	if !ok {

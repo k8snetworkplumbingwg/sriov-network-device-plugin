@@ -219,7 +219,7 @@ var _ = Describe("PciNetDevice", func() {
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev.GetEnvVal()
-				Expect(len(envs)).To(Equal(1))
+				Expect(envs).To(HaveLen(1))
 				_, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
 				_, exist = envs["rdma"]
@@ -320,7 +320,7 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(exist).To(BeFalse())
 				genericMap, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
-				Expect(len(genericMap)).To(Equal(1))
+				Expect(genericMap).To(HaveLen(1))
 				generic, exist := envs["generic"]["deviceID"]
 				Expect(exist).To(BeTrue())
 				Expect(generic).To(Equal("0000:00:00.1"))

@@ -52,7 +52,7 @@ var _ = Describe("Factory", func() {
 		func(name string, expected reflect.Type) {
 			f := factory.NewResourceFactory("fake", "fake", true)
 			p := f.GetDefaultInfoProvider("fakePCIAddr", name)
-			Expect(len(p)).To(Equal(2)) // for all the providers except netdevice we expect 2 info providers
+			Expect(p).To(HaveLen(2)) // for all the providers except netdevice we expect 2 info providers
 			Expect(reflect.TypeOf(p[1])).To(Equal(expected))
 
 		},
@@ -64,7 +64,7 @@ var _ = Describe("Factory", func() {
 	Describe("getting info provider for generic netdevice", func() {
 		f := factory.NewResourceFactory("fake", "fake", true)
 		p := f.GetDefaultInfoProvider("fakePCIAddr", "netdevice")
-		Expect(len(p)).To(Equal(1)) // for all the providers except netdevice we expect 2 info providers
+		Expect(p).To(HaveLen(1)) // for all the providers except netdevice we expect 2 info providers
 		Expect(reflect.TypeOf(p[0])).To(Equal(reflect.TypeOf(infoprovider.NewGenericInfoProvider("fakePCIAddr"))))
 	})
 

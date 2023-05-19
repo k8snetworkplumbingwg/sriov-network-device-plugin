@@ -177,11 +177,11 @@ var _ = Describe("Resource manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should load resources list", func() {
-				Expect(len(rm.configList)).To(Equal(2))
+				Expect(rm.configList).To(HaveLen(2))
 			})
 			It("should load all selector objects", func() {
-				Expect(len(rm.configList[0].SelectorObjs)).To(Equal(1))
-				Expect(len(rm.configList[1].SelectorObjs)).To(Equal(2))
+				Expect(rm.configList[0].SelectorObjs).To(HaveLen(1))
+				Expect(rm.configList[1].SelectorObjs).To(HaveLen(2))
 			})
 		})
 	})
