@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rdma-app
+  annotations:
+    k8s.v1.cni.cncf.io/networks: sriov-rdma-intel
+spec:
+  containers:
+  - name: test-rdma
+    image: <RDMA image>
+    imagePullPolicy: Never
+    securityContext:
+     capabilities:
+        add: ["IPC_LOCK"]
+    resources:
+      requests:
+        intel.com/intel_rdma: 1
+      limits:
+        intel.com/intel_rdma: 1
+    command: ["sleep", "infinity"]
+    

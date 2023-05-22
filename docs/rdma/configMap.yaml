@@ -16,6 +16,15 @@ data:
                     "drivers": ["mlx5_core"],
                     "isRdma": true
                 }
+            },
+            {
+              "resourceName": "intel_rdma",
+                "selectors": {
+                    "vendors": ["8086"],
+                    "devices": ["1889"],
+                    "drivers": ["iavf"],
+                    "isRdma": true
+                }
             }
         ]
     }
