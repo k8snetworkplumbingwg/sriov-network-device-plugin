@@ -52,6 +52,11 @@ func (rp *ResourcePoolImpl) InitDevice() error {
 	return nil
 }
 
+// GetAllocationPolicy returns the allocation policy as string
+func (rp *ResourcePoolImpl) GetAllocationPolicy() string {
+	return rp.config.AllocationPolicy
+}
+
 // GetResourceName returns the resource name as string
 func (rp *ResourcePoolImpl) GetResourceName() string {
 	return rp.config.ResourceName
