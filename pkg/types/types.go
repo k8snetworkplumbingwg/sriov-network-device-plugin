@@ -193,6 +193,7 @@ type ResourcePool interface {
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
+	GetDevicePool() map[string]HostDevice // for Allocate
 }
 
 // DeviceProvider provides interface for device discovery
@@ -297,6 +298,11 @@ type DeviceInfoProvider interface {
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	GetEnvVal() AdditionalInfo
 	GetMounts() []*pluginapi.Mount
+}
+
+// Allocator is an interface to get preferred device allocation
+type Allocator interface {
+	Allocate(*pluginapi.ContainerPreferredAllocationRequest, ResourcePool) []string
 }
 
 // DeviceSelector provides an interface for filtering a list of devices
