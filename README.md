@@ -180,11 +180,11 @@ This plugin creates device plugin endpoints based on the configurations given in
 {
     "resourceList": [{
             "resourceName": "intel_sriov_netdevice",
-            "selectors": [{
+            "selectors": {
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed", "1889"],
                 "drivers": ["i40evf", "ixgbevf", "iavf"]
-            }]
+            }
         },
         {
             "resourceName": "intel_sriov_dpdk",

@@ -73,6 +73,7 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 	return nil
 }
 
+//nolint:gocyclo
 func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig, selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
 	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
