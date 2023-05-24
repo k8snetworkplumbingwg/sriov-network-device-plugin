@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+
+	"github.com/pkg/errors"
 )
 
 /*
@@ -47,7 +49,25 @@ type DDPpackage struct {
 	Name    string `json:"name"`
 }
 
+// 8 is an exit code of ddptool when profile was not found
+const ddpNoDDPProfile = 8
+
 var ddpExecCommand = exec.Command
+
+// IsDDPToolSupportedByDevice checks if DDPTool can be used with device
+func IsDDPToolSupportedByDevice(dev string) bool {
+	if _, err := GetDDPProfiles(dev); err != nil && err != ErrProfileNameNotFound {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.ExitCode() == ddpNoDDPProfile {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return true
+}
 
 // GetDDPProfiles returns running DDP profile name if available
 func GetDDPProfiles(dev string) (string, error) {
@@ -60,6 +80,9 @@ func GetDDPProfiles(dev string) (string, error) {
 
 	return getDDPNameFromStdout(stdout.Bytes())
 }
+
+// ErrProfileNameNotFound error when DDPTool is supported, but package name is empty
+var ErrProfileNameNotFound = errors.New("DDP profile name not found")
 
 func getDDPNameFromStdout(in []byte) (string, error) {
 	ddpInfo := &DDPInfo{}

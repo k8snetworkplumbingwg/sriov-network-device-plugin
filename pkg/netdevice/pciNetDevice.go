@@ -29,8 +29,11 @@ type pciNetDevice struct {
 	types.HostDevice
 	devices.GenPciDevice
 	devices.GenNetDevice
-	vdpaDev types.VdpaDevice
+	vdpaDev       types.VdpaDevice
+	getDDPProfile ddpProfileGetFunc
 }
+
+type ddpProfileGetFunc func(string) (string, error)
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
@@ -90,11 +93,22 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 		return nil, err
 	}
 
+	var ddpFunc ddpProfileGetFunc
+
+	if utils.IsDevlinkDDPSupportedByPCIDevice(netDev.GetPfPciAddr()) {
+		ddpFunc = utils.DevlinkGetDDPProfiles
+	} else if utils.IsDDPToolSupportedByDevice(netDev.GetPfPciAddr()) {
+		ddpFunc = utils.GetDDPProfiles
+	} else {
+		ddpFunc = unsupportedDDP
+	}
+
 	return &pciNetDevice{
-		HostDevice:   hostDev,
-		GenPciDevice: *pciDev,
-		GenNetDevice: *netDev,
-		vdpaDev:      vdpaDev,
+		HostDevice:    hostDev,
+		GenPciDevice:  *pciDev,
+		GenNetDevice:  *netDev,
+		vdpaDev:       vdpaDev,
+		getDDPProfile: ddpFunc,
 	}, nil
 }
 
@@ -110,4 +124,8 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 
 func (nd *pciNetDevice) GetVdpaDevice() types.VdpaDevice {
 	return nd.vdpaDev
+}
+
+func unsupportedDDP(device string) (string, error) {
+	return "", utils.DDPNotSupportedError(device)
 }
