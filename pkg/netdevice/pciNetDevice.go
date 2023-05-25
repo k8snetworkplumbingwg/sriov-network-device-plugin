@@ -33,7 +33,8 @@ type pciNetDevice struct {
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
-func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig, selectorIndex int) (types.PciNetDevice, error) {
+func NewPciNetDevice(dev *ghw.PCIDevice,
+	rFactory types.ResourceFactory, rc *types.ResourceConfig, selectorIndex int) (types.PciNetDevice, error) {
 	var vdpaDev types.VdpaDevice
 	var nf *types.NetDeviceSelectors
 

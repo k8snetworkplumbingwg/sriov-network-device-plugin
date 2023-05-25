@@ -94,7 +94,7 @@ func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, r
 	selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
 	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
-		return filteredDevice, fmt.Errorf("Invalid selectorIndex %d, resource config only has %d selector objects",
+		return filteredDevice, fmt.Errorf("invalid selectorIndex %d, resource config only has %d selector objects",
 			selectorIndex, len(rc.SelectorObjs))
 	}
 	nf, ok := rc.SelectorObjs[selectorIndex].(*types.AuxNetDeviceSelectors)
