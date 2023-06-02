@@ -117,6 +117,13 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 		}
 	}
 
+	// filter by acpiIndexes list
+	if nf.AcpiIndexes != nil && len(nf.AcpiIndexes) > 0 {
+		if selector, err := rf.GetSelector("acpiIndexes", nf.AcpiIndexes); err == nil {
+			filteredDevice = selector.Filter(filteredDevice)
+		}
+	}
+
 	// filter by PfNames list
 	if nf.PfNames != nil && len(nf.PfNames) > 0 {
 		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
