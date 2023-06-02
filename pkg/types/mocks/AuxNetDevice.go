@@ -29,6 +29,20 @@ func (_m *AuxNetDevice) GetAPIDevice() *v1beta1.Device {
 	return r0
 }
 
+// GetAcpiIndex provides a mock function with given fields:
+func (_m *AuxNetDevice) GetAcpiIndex() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetAuxType provides a mock function with given fields:
 func (_m *AuxNetDevice) GetAuxType() string {
 	ret := _m.Called()
