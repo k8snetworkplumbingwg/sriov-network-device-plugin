@@ -297,6 +297,7 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "devices"      | N        | Target Devices' device Hex code as string                                | `string` list Default: `null`                       | "devices": ["154c", "1889", "1018"]                                                              |
 | "drivers"      | N        | Target device driver names as string                                     | `string` list Default: `null`                       | "drivers": ["vfio-pci"]                                                                          |
 | "pciAddresses" | N        | Target device's pci address as string                                    | `string` list Default: `null`                       | "pciAddresses": ["0000:03:02.0"]                                                                 |
+| "acpiIndexes"  | N        | Target device's acpi index as string                                     | `string` list Default: `null`                       | "acpiIndexes": ["101"]                                                                           |
 | "pfNames"      | N        | functions from PF matches list of PF names                               | `string` list Default: `null`                       | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
 | "rootDevices"  | N        | functions from PF matches list of PF PCI addresses                       | `string` list Default: `null`                       | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
 | "linkTypes"    | N        | The link type of the net device associated with the PCI device           | `string` list Default: `null`                       | "linkTypes": ["ether"]                                                                           |
@@ -417,10 +418,11 @@ The device plugin will initially discover all PCI network resources in the host 
 2. "devices"      - The device hex code of device
 3. "drivers"      - The driver name the device is registered with
 4. "pciAddresses" - The pci address of the device in BDF notation (if device type is accelerator or netDevice)
-5. "auxTypes"     - The type of auxiliary network device (if device type is auxNetDevice).
-6. "pfNames"      - The Physical function name
-7. "rootDevices"  - The Physical function PCI address
-8. "linkTypes"    - The link type of the net device associated with the PCI device
+5. "acpiIndexes"  - The acpi index of the device
+6. "auxTypes"     - The type of auxiliary network device (if device type is auxNetDevice).
+7. "pfNames"      - The Physical function name
+8. "rootDevices"  - The Physical function PCI address
+9. "linkTypes"    - The link type of the net device associated with the PCI device
 
 The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs/SFs for a pool in the below format
 ````
