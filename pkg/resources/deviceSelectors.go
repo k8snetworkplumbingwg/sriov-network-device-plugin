@@ -93,6 +93,26 @@ func (s *pciAddressSelector) Filter(inDevices []types.HostDevice) []types.HostDe
 	return filteredList
 }
 
+// NewAcpiIndexSelector returns a NetDevSelector interface for netDev list
+func NewAcpiIndexSelector(acpiIndexes []string) types.DeviceSelector {
+	return &acpiIndexSelector{acpiIndexes: acpiIndexes}
+}
+
+type acpiIndexSelector struct {
+	acpiIndexes []string
+}
+
+func (s *acpiIndexSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
+	for _, dev := range inDevices {
+		acpiIndex := dev.GetAcpiIndex()
+		if contains(s.acpiIndexes, acpiIndex) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+	return filteredList
+}
+
 // NewPfNameSelector returns a NetDevSelector interface for netDev list
 func NewPfNameSelector(pfNames []string) types.DeviceSelector {
 	return &pfNameSelector{pfNames: pfNames}

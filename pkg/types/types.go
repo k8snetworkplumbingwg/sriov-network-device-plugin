@@ -93,7 +93,7 @@ var SupportedVdpaTypes = map[VdpaType]string{
 
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
-	// optional resource prefix that will overwrite	global prefix specified in cli params
+	// optional resource prefix that will overwrite global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
 	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
@@ -106,9 +106,10 @@ type ResourceConfig struct {
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
-	Vendors []string `json:"vendors,omitempty"`
-	Devices []string `json:"devices,omitempty"`
-	Drivers []string `json:"drivers,omitempty"`
+	Vendors     []string `json:"vendors,omitempty"`
+	Devices     []string `json:"devices,omitempty"`
+	Drivers     []string `json:"drivers,omitempty"`
+	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
 }
 
 // AdditionalInfo contains all the per device or global extra information as key value pairs
@@ -236,6 +237,8 @@ type HostDevice interface {
 	GetDeviceID() string
 	// GetDeviceCode returns identifier number of the device
 	GetDeviceCode() string
+	// GetAcpiIndex returns ACPI index of the device
+	GetAcpiIndex() string
 }
 
 // PciDevice provides an interface to get generic PCI device information

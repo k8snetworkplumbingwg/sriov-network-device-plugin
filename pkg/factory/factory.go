@@ -91,6 +91,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewRootDeviceSelector(values), nil
 	case "linkTypes":
 		return resources.NewLinkTypeSelector(values), nil
+	case "acpiIndexes":
+		return resources.NewAcpiIndexSelector(values), nil
 	case "ddpProfiles":
 		return resources.NewDdpSelector(values), nil
 	case "auxTypes":

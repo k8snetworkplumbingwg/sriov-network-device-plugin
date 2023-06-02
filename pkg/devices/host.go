@@ -31,6 +31,7 @@ type HostDeviceImpl struct {
 	vendorID   string
 	deviceCode string
 	driver     string
+	acpiIndex  string
 }
 
 // NewHostDeviceImpl returns an instance implementation of HostDevice interface
@@ -40,6 +41,11 @@ func NewHostDeviceImpl(dev *ghw.PCIDevice, deviceID string, rFactory types.Resou
 	rc *types.ResourceConfig, infoProviders []types.DeviceInfoProvider) (*HostDeviceImpl, error) {
 	// Get driver info
 	driverName, err := utils.GetDriverName(dev.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	acpiIndex, err := utils.GetAcpiIndex(dev.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +70,7 @@ func NewHostDeviceImpl(dev *ghw.PCIDevice, deviceID string, rFactory types.Resou
 		vendorID:   dev.Vendor.ID,
 		deviceCode: dev.Product.ID,
 		driver:     driverName,
+		acpiIndex:  acpiIndex,
 	}, nil
 }
 
@@ -85,4 +92,9 @@ func (hd *HostDeviceImpl) GetDeviceID() string {
 // GetDriver returns driver name of the device
 func (hd *HostDeviceImpl) GetDriver() string {
 	return hd.driver
+}
+
+// GetAcpiIndex returns ACPI index of the device
+func (hd *HostDeviceImpl) GetAcpiIndex() string {
+	return hd.acpiIndex
 }
