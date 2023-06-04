@@ -180,6 +180,7 @@ type ResourceFactory interface {
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) ([]interface{}, error)
 	GetNadUtils() NadUtils
+	GetAllocator(string) (Allocator, error)
 }
 
 // ResourcePool represents a generic resource entity

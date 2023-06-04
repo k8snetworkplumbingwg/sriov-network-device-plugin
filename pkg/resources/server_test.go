@@ -23,6 +23,7 @@ var _ = Describe("Server", func() {
 		Context("valid arguments are passed", func() {
 			var rs *resourceServer
 			rp := mocks.ResourcePool{}
+			allocator := mocks.Allocator{}
 			BeforeEach(func() {
 				fs := &utils.FakeFilesystem{}
 				defer fs.Use()()
@@ -30,17 +31,18 @@ var _ = Describe("Server", func() {
 			})
 			It("should have the properties correctly assigned when plugin watcher enabled", func() {
 				// Create ResourceServer with plugin watch mode enabled
-				obj := NewResourceServer("fakeprefix", "fakesuffix", true, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", true, &rp, &allocator)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
 				Expect(rs.endPoint).To(Equal("fakeprefix_fakename.fakesuffix"))
 				Expect(rs.pluginWatch).To(Equal(true))
 				Expect(rs.sockPath).To(Equal(filepath.Join(types.SockDir, "fakeprefix_fakename.fakesuffix")))
+				Expect(rs.allocator).To(Equal(&allocator))
 			})
 			It("should have the properties correctly assigned when plugin watcher disabled", func() {
 				// Create ResourceServer with plugin watch mode disabled
-				obj := NewResourceServer("fakeprefix", "fakesuffix", false, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", false, &rp, &allocator)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
@@ -48,6 +50,7 @@ var _ = Describe("Server", func() {
 				Expect(rs.pluginWatch).To(Equal(false))
 				Expect(rs.sockPath).To(Equal(filepath.Join(types.DeprecatedSockDir,
 					"fakeprefix_fakename.fakesuffix")))
+				Expect(rs.allocator).To(Equal(&allocator))
 			})
 		})
 	})
@@ -62,12 +65,13 @@ var _ = Describe("Server", func() {
 			rp.On("GetResourceName").Return("fakename")
 			rp.On("StoreDeviceInfoFile", "fakeprefix").Return(nil)
 			rp.On("CleanDeviceInfoFile", "fakeprefix").Return(nil)
+			allocator := mocks.Allocator{}
 
 			// Use faked dir as socket dir
 			types.SockDir = fs.RootDir
 			types.DeprecatedSockDir = fs.RootDir
 
-			obj := NewResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp)
+			obj := NewResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp, &allocator)
 			rs := obj.(*resourceServer)
 
 			registrationServer := createFakeRegistrationServer(fs.RootDir,
@@ -115,7 +119,8 @@ var _ = Describe("Server", func() {
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fake.com")
-				rs := NewResourceServer("fakeprefix", "fakesuffix", true, &rp).(*resourceServer)
+				allocator := mocks.Allocator{}
+				rs := NewResourceServer("fakeprefix", "fakesuffix", true, &rp, &allocator).(*resourceServer)
 				err = rs.Init()
 			})
 			It("should never fail", func() {
@@ -154,9 +159,10 @@ var _ = Describe("Server", func() {
 					On("Probe").Return(true).
 					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
+				allocator := mocks.Allocator{}
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := NewResourceServer("fake", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", false, &rp, &allocator).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -196,8 +202,10 @@ var _ = Describe("Server", func() {
 					On("Probe").Return(true).
 					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
+				allocator := mocks.Allocator{}
+
 				// Create ResourceServer with plugin watch mode enabled
-				rs := NewResourceServer("fake", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", true, &rp, &allocator).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, true)
@@ -231,9 +239,10 @@ var _ = Describe("Server", func() {
 					On("Probe").Return(true).
 					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
+				allocator := mocks.Allocator{}
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := NewResourceServer("fake", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", false, &rp, &allocator).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -274,8 +283,9 @@ var _ = Describe("Server", func() {
 				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
+			allocator := mocks.Allocator{}
 
-			rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+			rs := NewResourceServer("fake.com", "fake", true, &rp, &allocator).(*resourceServer)
 
 			resp, err := rs.Allocate(context.TODO(), req)
 
@@ -327,8 +337,9 @@ var _ = Describe("Server", func() {
 				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once()
+				allocator := mocks.Allocator{}
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp, &allocator).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -348,8 +359,9 @@ var _ = Describe("Server", func() {
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
+				allocator := mocks.Allocator{}
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp, &allocator).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -383,8 +395,9 @@ var _ = Describe("Server", func() {
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
+				allocator := mocks.Allocator{}
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, &rp, &allocator).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -414,4 +427,62 @@ var _ = Describe("Server", func() {
 			}, 30.0)
 		})
 	})
+
+	DescribeTable("GetPreferredAllocation",
+		func(req *pluginapi.ContainerPreferredAllocationRequest, expectedRespLength int, shouldFail bool) {
+			rp := mocks.ResourcePool{}
+			rp.On("GetDevicePool").
+				Return(map[string]types.PciDevice{
+					"0000:1b:00.1": nil,
+					"0000:bc:00.0": nil,
+					"0000:1c:00.0": nil,
+					"0000:df:01.0": nil,
+					"0000:af:00.1": nil,
+					"0000:af:01.1": nil,
+					"0000:af:01.2": nil,
+				}).
+				On("GetResourceName").Return("fake.com")
+
+			allocator := mocks.Allocator{}
+			allocator.On("Allocate", req, &rp).Return([]string{"0000:1b:00.1", "0000:1c:00.0", "0000:af:01.1", "0000:af:01.2"})
+
+			rs := NewResourceServer("fake.com", "fake", true, &rp, &allocator).(*resourceServer)
+
+			resp, err := rs.GetPreferredAllocation(context.TODO(), &pluginapi.PreferredAllocationRequest{
+				ContainerRequests: []*pluginapi.ContainerPreferredAllocationRequest{req}})
+
+			Expect(len(resp.GetContainerResponses())).To(Equal(expectedRespLength))
+
+			if shouldFail {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		},
+		Entry("prefer to allocate 4 deviceID in order",
+			&pluginapi.ContainerPreferredAllocationRequest{
+				AvailableDeviceIDs: []string{
+					"0000:1b:00.1",
+					"0000:bc:00.0",
+					"0000:1c:00.0",
+					"0000:df:01.0",
+					"0000:af:01.1",
+					"0000:af:01.2"},
+				MustIncludeDeviceIDs: []string{},
+				AllocationSize:       int32(4),
+			},
+			1,
+			false,
+		),
+		Entry("allocating deviceID that does not exist",
+			&pluginapi.ContainerPreferredAllocationRequest{
+				AvailableDeviceIDs:   []string{"00:00.02"},
+				MustIncludeDeviceIDs: []string{},
+				AllocationSize:       int32(1),
+			},
+			1,
+			false,
+		),
+		Entry("empty PreferredAllocationRequest", &pluginapi.ContainerPreferredAllocationRequest{}, 1, false),
+	)
 })

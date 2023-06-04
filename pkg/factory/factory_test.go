@@ -624,7 +624,8 @@ var _ = Describe("Factory", func() {
 			f := factory.NewResourceFactory("fake", "fake", true)
 			rp := mocks.ResourcePool{}
 			rp.On("GetResourcePrefix").Return("overridden").
-				On("GetResourceName").Return("fake")
+				On("GetResourceName").Return("fake").
+				On("GetAllocationPolicy").Return("")
 			rs, e := f.GetResourceServer(&rp)
 			It("should not fail", func() {
 				Expect(e).NotTo(HaveOccurred())
@@ -632,4 +633,26 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+	DescribeTable("getting allocator",
+		func(policy string, shouldSucceed bool, expected reflect.Type) {
+			f := factory.NewResourceFactory("fake", "fake", true)
+			allocator, error := f.GetAllocator(policy)
+
+			if shouldSucceed {
+				Expect(error).NotTo(HaveOccurred())
+			} else {
+				Expect(allocator).To(BeNil())
+			}
+
+			// if statement below because gomega refuses to do "nil == nil" assertions
+			if expected != nil {
+				Expect(reflect.TypeOf(allocator)).To(Equal(expected))
+			} else {
+				Expect(reflect.TypeOf(allocator)).To(BeNil())
+			}
+		},
+		Entry("packed", "packed", true, reflect.TypeOf(resources.NewPackedAllocator())),
+		Entry("empty", "", true, reflect.TypeOf(nil)),
+		Entry("invalid value", "invalid policy", false, reflect.TypeOf(nil)),
+	)
 })
