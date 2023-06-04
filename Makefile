@@ -160,6 +160,7 @@ mockery: | $(BASE) $(GOMOCKERY) ; $(info  Running mockery...) @ ## Run golint on
 #	$Q cd $(BASE)/pkg/types && rm -rf mocks && $(GOMOCKERY) --all 2>/dev/null
 	$Q $(GOMOCKERY) --name=".*" --dir=pkg/types --output=pkg/types/mocks --recursive=false --log-level=debug
 	$Q $(GOMOCKERY) --name=".*" --dir=pkg/utils --output=pkg/utils/mocks --recursive=false --log-level=debug
+	$Q $(GOMOCKERY) --name=".*" --dir=pkg/cdi --output=pkg/cdi/mocks --recursive=false --log-level=debug
 
 .PHONY: help
 help: ; @ ## Display this help message

@@ -23,6 +23,10 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
+const (
+	accelPoolType = "net-accel"
+)
+
 type accelResourcePool struct {
 	*resources.ResourcePoolImpl
 }
@@ -56,4 +60,9 @@ func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Dev
 		}
 	}
 	return devSpecs
+}
+
+// GetCDIKind returns device kind for CDI spec
+func (rp *accelResourcePool) GetCDIName() string {
+	return accelPoolType
 }

@@ -32,7 +32,7 @@ import (
 
 var _ = Describe("NetResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
-		rf := factory.NewResourceFactory("fake", "fake", true)
+		rf := factory.NewResourceFactory("fake", "fake", true, false)
 		nadutils := rf.GetNadUtils()
 		rc := &types.ResourceConfig{
 			ResourceName:   "fake",
@@ -49,7 +49,7 @@ var _ = Describe("NetResourcePool", func() {
 	})
 	Describe("getting DeviceSpecs", func() {
 		Context("for multiple devices", func() {
-			rf := factory.NewResourceFactory("fake", "fake", true)
+			rf := factory.NewResourceFactory("fake", "fake", true, false)
 			nadutils := rf.GetNadUtils()
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",

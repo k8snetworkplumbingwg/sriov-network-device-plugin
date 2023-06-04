@@ -33,17 +33,19 @@ type resourceFactory struct {
 	endPointPrefix string
 	endPointSuffix string
 	pluginWatch    bool
+	useCdi         bool
 }
 
 var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
-func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceFactory {
+func NewResourceFactory(prefix, suffix string, pluginWatch, useCdi bool) types.ResourceFactory {
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
 			endPointSuffix: suffix,
 			pluginWatch:    pluginWatch,
+			useCdi:         useCdi,
 		}
 	}
 	return instance
@@ -56,7 +58,7 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rf.useCdi, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }

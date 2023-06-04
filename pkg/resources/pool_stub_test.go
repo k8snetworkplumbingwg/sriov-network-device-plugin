@@ -50,7 +50,7 @@ var _ = Describe("ResourcePool", func() {
 				"sys/bus/pci/devices/0000:00:00.1/physfn":      "../0000:01:00.0",
 			},
 		}
-		f = factory.NewResourceFactory("fake", "fake", true)
+		f = factory.NewResourceFactory("fake", "fake", true, false)
 		rc = &types.ResourceConfig{SelectorObjs: []interface{}{types.NetDeviceSelectors{}}}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})

@@ -193,6 +193,7 @@ type ResourcePool interface {
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
+	GetCDIName() string
 }
 
 // DeviceProvider provides interface for device discovery

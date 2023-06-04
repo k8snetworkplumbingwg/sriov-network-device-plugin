@@ -27,12 +27,14 @@ const (
 	defaultConfig = "/etc/pcidp/config.json"
 )
 
-// Parse Command line flags
+// flagInit parse command line flags
 func flagInit(cp *cliParams) {
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
 		"resource name prefix used for K8s extended resource")
+	flag.BoolVar(&cp.useCdi, "use-cdi", false,
+		"Use Container Device Interface to expose devices in containers")
 }
 
 func main() {
@@ -85,5 +87,8 @@ func main() {
 	glog.Infof("Received signal \"%v\", shutting down.", sig)
 	if err := rm.stopAllServers(); err != nil {
 		glog.Errorf("stopping servers produced error: %s", err.Error())
+	}
+	if err := rm.cleanupCDISpecs(); err != nil {
+		glog.Errorf("cleaning up CDI Specs produced error: %s", err.Error())
 	}
 }

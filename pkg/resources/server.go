@@ -23,13 +23,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
-
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	registerapi "k8s.io/kubelet/pkg/apis/pluginregistration/v1"
+
+	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
 type resourceServer struct {
@@ -43,6 +44,8 @@ type resourceServer struct {
 	updateSignal       chan bool
 	stopWatcher        chan bool
 	checkIntervals     int // health check intervals in seconds
+	useCdi             bool
+	cdi                cdiPkg.CDI
 }
 
 const (
@@ -51,7 +54,7 @@ const (
 )
 
 // NewResourceServer returns an instance of ResourceServer
-func NewResourceServer(prefix, suffix string, pluginWatch bool, rp types.ResourcePool) types.ResourceServer {
+func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
 	sockPath := filepath.Join(types.SockDir, sockName)
 	if !pluginWatch {
@@ -63,11 +66,13 @@ func NewResourceServer(prefix, suffix string, pluginWatch bool, rp types.Resourc
 		endPoint:           sockName,
 		sockPath:           sockPath,
 		resourceNamePrefix: prefix,
+		useCdi:             useCdi,
 		grpcServer:         grpc.NewServer(),
 		termSignal:         make(chan bool, 1),
 		updateSignal:       make(chan bool),
 		stopWatcher:        make(chan bool),
 		checkIntervals:     20, // updates every 20 seconds
+		cdi:                cdiPkg.New(),
 	}
 }
 
@@ -119,18 +124,28 @@ func (rs *resourceServer) NotifyRegistrationStatus(ctx context.Context,
 func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	glog.Infof("Allocate() called with %+v", rqt)
 	resp := new(pluginapi.AllocateResponse)
+
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
-		containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
 
 		envs, err := rs.getEnvs(container.DevicesIDs)
 		if err != nil {
 			glog.Errorf("failed to get environment variables for device IDs %v: %v", container.DevicesIDs, err)
 			return nil, err
 		}
-		containerResp.Envs = envs
 
-		containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
+		if rs.useCdi {
+			containerResp.Annotations, err = rs.cdi.CreateContainerAnnotations(
+				container.DevicesIDs, rs.resourceNamePrefix, rs.resourcePool.GetCDIName())
+			if err != nil {
+				return nil, fmt.Errorf("can't create container annotation: %s", err)
+			}
+		} else {
+			containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
+			containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
+		}
+
+		containerResp.Envs = envs
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
 	glog.Infof("AllocateResponse send: %+v", resp)
@@ -147,8 +162,12 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 		devs = append(devs, dev)
 	}
 	resp.Devices = devs
+	err := rs.updateCDISpec()
+	if err != nil {
+		glog.Errorf("can't update CDI specs: %v", err)
+		return err
+	}
 	glog.Infof("%s: send devices %v\n", methodID, resp)
-
 	if err := stream.Send(resp); err != nil {
 		glog.Errorf("%s: error: cannot update device states: %v\n", methodID, err)
 		rs.grpcServer.Stop()
@@ -170,6 +189,10 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 				newDevs = append(newDevs, dev)
 			}
 			resp.Devices = newDevs
+			if err := rs.updateCDISpec(); err != nil {
+				glog.Errorf("cannot update CDI specs: %v", err)
+				return err
+			}
 			glog.Infof("%s: send updated devices %v", methodID, resp)
 
 			if err := stream.Send(resp); err != nil {
@@ -178,6 +201,23 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 			}
 		}
 	}
+}
+
+func (rs *resourceServer) updateCDISpec() error {
+	// check if CDI mode is enabled
+	if !rs.useCdi {
+		return nil
+	}
+	prefix := rs.resourceNamePrefix
+	if prefixOverride := rs.resourcePool.GetResourcePrefix(); prefixOverride != "" {
+		prefix = prefixOverride
+	}
+	err := rs.cdi.CreateCDISpecForPool(prefix, rs.resourcePool)
+	if err != nil {
+		glog.Errorf("updateCDISpec(): error creating CDI spec: %v", err)
+		return err
+	}
+	return nil
 }
 
 // TODO: (SchSeba) check if we want to use this function
