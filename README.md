@@ -267,14 +267,29 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "resourcePrefix"  | N        | Endpoint resource prefix name override. Should not contain special characters                                                          | string Default : "intel.com"                          | "yourcompany.com"                                                      |
 | "deviceType"      | N        | Device Type for a resource pool.                                                                                                       | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice", "auxNetDevice" |
 | "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
-| "selectors"       | N        | An array of device selector maps. The "deviceType" value determines the device selector options.                                                  | json object as string Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
+| "selectors"       | N        | Either a single device selector map or a list of maps. The "deviceType" value determines the device selector options.                                                  | json object as string Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
 | "additionalInfo" | N | A map of map to add additional information to the pod via environment variables to devices                                             | json object as string Default: null  | Example: "additionalInfo": {"*": {"token": "3e49019f-412f-4f02-824e-4cd195944205"}} |
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
 #### Device selectors
 
-The "selectors" field accepts both a single object and an array of selector objects. When using the array syntax, each selector object is evaluated in the order listed in the array. A given selector object comprises of "selectors".  The "deviceType" value determines which selectors are supported for that device. Each selector evaluated in order as listed in selector tables below.
+The "selectors" field accepts both a single object and a list of selector objects. When using the array syntax, each selector object is evaluated in the order listed in the array. For example, a single object would look like:
+```json
+"selectors": {"vendors": ["8086"],"devices": ["154c"]}
+```
+and the list syntax would look like:
+```json
+"selectors": [{"vendors": ["8086"],"devices": ["154c"]}, {"vendors": ["8086"], "needVhostNet": true}]
+```
+
+The list syntax example specifies two selector objects in the list. In this example, all devices specified by the first selector object have vendor ID 8086 and device ID 154c. The second selector object specifies all devices with vendor ID 8086. Since the selector objects are processed in the specified order, devices with vendor ID 8086 and device ID 154c would not have the `needVhostNet: true` applied to them. Contrast this with another similar looking example:
+```json
+"selectors": [{"vendors": ["8086"], "needVhostNet": true}, {"vendors": ["8086"],"devices": ["154c"]}]
+```
+In this latter example, the order of the selector objects has been switched. Since all devices that are specified by the second object are also specified by the first object, this makes the second selector object ineffective.
+
+A given selector object comprises of "selectors".  The "deviceType" value determines which selectors are supported for that device. Each selector is evaluated in order as listed in selector tables below.
 
 #### Accelerator devices selectors
 These selectors are applicable when "deviceType" is "accelerator".
@@ -409,9 +424,9 @@ This plugin does not bind or unbind any driver to any device whether it's PFs or
 
 For example, if the driver type is uio (i.e. igb_uio.ko) then there are specific device files to add in Device Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
-The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name and a list of resource "selectors".
+The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name and a "selector object" or list of "selector objects". Each "selector object" contains "selector(s)".
 
-The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". If device type is Auxiliary network device (auxNetDevice), then for each discovered PCI device of type Netdevice plugin discovers auxiliary devices. Each "resource pool" then applies its selector objects in the list of selectors to the list of discovered devices. The plugin will add devices that satisfy the selector object's constraints to the resource pool. Each selector specified in the selector object narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
+The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". If device type is Auxiliary network device (auxNetDevice), then for each discovered PCI device of type Netdevice the plugin discovers auxiliary devices. Each "resource pool" then applies its selector object(s) in order to the list of discovered devices. The plugin will add devices that satisfy the selector object's constraints to the resource pool. Each "selector" specified in the selector object narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
 
 1. "vendors"      - The vendor hex code of device
 2. "devices"      - The device hex code of device
