@@ -180,11 +180,11 @@ This plugin creates device plugin endpoints based on the configurations given in
 {
     "resourceList": [{
             "resourceName": "intel_sriov_netdevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed", "1889"],
                 "drivers": ["i40evf", "ixgbevf", "iavf"]
-            }
+            }]
         },
         {
             "resourceName": "intel_sriov_dpdk",
@@ -254,7 +254,15 @@ This plugin creates device plugin endpoints based on the configurations given in
                "token": "3e49019f-412f-4f02-824e-4cd195944205"
              }
           }
-        }
+        },
+        {
+          "resourceName": "old_selectors_syntax_example",
+          "selectors": {
+            "vendors": ["8086"],
+            "devices": ["154c", "10ed", "1889"],
+            "drivers": ["i40evf", "ixgbevf", "iavf"]
+          }
+	}
     ]
 }
 ```
@@ -267,14 +275,14 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "resourcePrefix"  | N        | Endpoint resource prefix name override. Should not contain special characters                                                          | string Default : "intel.com"                          | "yourcompany.com"                                                      |
 | "deviceType"      | N        | Device Type for a resource pool.                                                                                                       | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice", "auxNetDevice" |
 | "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
-| "selectors"       | N        | Either a single device selector map or a list of maps. The "deviceType" value determines the device selector options.                                                  | json object as string Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
+| "selectors"       | N        | Either a single device selector map or a list of maps. The list syntax is preferred. The "deviceType" value determines the device selector options.                                                  | json list of objects or json object. Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
 | "additionalInfo" | N | A map of map to add additional information to the pod via environment variables to devices                                             | json object as string Default: null  | Example: "additionalInfo": {"*": {"token": "3e49019f-412f-4f02-824e-4cd195944205"}} |
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
 #### Device selectors
 
-The "selectors" field accepts both a single object and a list of selector objects. When using the array syntax, each selector object is evaluated in the order listed in the array. For example, a single object would look like:
+The "selectors" field accepts both a single object and a list of selector objects. While both formats are supported, the list syntax is preferred. When using the list syntax, each selector object is evaluated in the order present in the list. For example, a single object would look like:
 ```json
 "selectors": {"vendors": ["8086"],"devices": ["154c"]}
 ```
