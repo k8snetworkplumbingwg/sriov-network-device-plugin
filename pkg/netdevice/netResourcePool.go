@@ -77,15 +77,33 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error 
 
 		vdpaDev := netDev.GetVdpaDevice()
 		if vdpaDev != nil {
+			var vdpaDevice *nettypes.VdpaDevice = nil
+			if vdpaDev.GetType() == types.VdpaVhostType {
+				vdpaPath, err := vdpaDev.GetPath()
+				if err == nil {
+					vdpaDevice = &nettypes.VdpaDevice{
+						ParentDevice: vdpaDev.GetParent(),
+						Driver:       string(vdpaDev.GetType()),
+						Path:         vdpaPath,
+						PciAddress:   netDev.GetPciAddr(),
+					}
+				} else {
+					glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
+				}
+			}
+			// either virtio/vDPA case or not able to get a mount path for vhost/vDPA
+			if vdpaDevice == nil {
+				vdpaDevice = &nettypes.VdpaDevice{
+					ParentDevice: vdpaDev.GetParent(),
+					Driver:       string(vdpaDev.GetType()),
+					PciAddress:   netDev.GetPciAddr(),
+				}
+			}
+
 			devInfo = nettypes.DeviceInfo{
 				Type:    nettypes.DeviceInfoTypeVDPA,
 				Version: nettypes.DeviceInfoVersion,
-				Vdpa: &nettypes.VdpaDevice{
-					ParentDevice: vdpaDev.GetParent(),
-					Driver:       string(vdpaDev.GetType()),
-					Path:         vdpaDev.GetPath(),
-					PciAddress:   netDev.GetPciAddr(),
-				},
+				Vdpa:    vdpaDevice,
 			}
 		} else {
 			devInfo = nettypes.DeviceInfo{

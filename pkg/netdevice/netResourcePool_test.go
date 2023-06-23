@@ -161,12 +161,12 @@ var _ = Describe("NetResourcePool", func() {
 
 			fakeVdpa1 := &mocks.VdpaDevice{}
 			fakeVdpa1.On("GetParent").Return("vdpa1").
-				On("GetPath").Return("/dev/vhost-vdpa5").
+				On("GetPath").Return("/dev/vhost-vdpa5", nil).
 				On("GetType").Return(types.VdpaVhostType)
 
 			fakeVdpa2 := &mocks.VdpaDevice{}
 			fakeVdpa2.On("GetParent").Return("vdpa2").
-				On("GetPath").Return("/dev/vhost-vdpa6").
+				On("GetPath").Return("/dev/vhost-vdpa6", nil).
 				On("GetType").Return(types.VdpaVhostType)
 
 			fake1 := &mocks.PciNetDevice{}

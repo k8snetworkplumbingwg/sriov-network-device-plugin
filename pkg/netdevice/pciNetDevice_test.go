@@ -394,12 +394,12 @@ var _ = Describe("PciNetDevice", func() {
 
 			fakeVdpaVhost := &mocks.VdpaDevice{}
 			fakeVdpaVhost.On("GetDriver").Return("vhost_vdpa").
-				On("GetPath").Return("/dev/vhost-vdpa1").
+				On("GetPath").Return("/dev/vhost-vdpa1", nil).
 				On("GetType").Return(types.VdpaVhostType)
 
 			fakeVdpaVirtio := &mocks.VdpaDevice{}
 			fakeVdpaVirtio.On("GetDriver").Return("virtio_vdpa").
-				On("GetPath").Return("/sys/bus/virtio/devices/virtio2").
+				On("GetPath").Return("/sys/bus/virtio/devices/virtio2", nil).
 				On("GetType").Return(types.VdpaVirtioType)
 
 			// 0000:00:00.1 -> vhost
