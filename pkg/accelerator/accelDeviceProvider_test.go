@@ -44,8 +44,28 @@ var _ = Describe("AcceleratorProvider", func() {
 			p := accelerator.NewAccelDeviceProvider(rf)
 			config := &types.ResourceConfig{}
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("should return empty slice", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+		})
+		Context("when the selector index is invalid", func() {
+			rf := &mocks.ResourceFactory{}
+			p := accelerator.NewAccelDeviceProvider(rf)
+			config := &types.ResourceConfig{}
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config, 0)
+			It("should return empty slice when SelectorObjs is nil", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+
+			It("should return empty slice when selector index is out of range", func() {
+				accelDeviceSelector := types.AccelDeviceSelectors{}
+				config = &types.ResourceConfig{SelectorObjs: []interface{}{&accelDeviceSelector}}
+				devs = p.GetDevices(config, 1)
+
 				Expect(dDevs).To(BeEmpty())
 				Expect(devs).To(BeEmpty())
 			})
@@ -76,9 +96,9 @@ var _ = Describe("AcceleratorProvider", func() {
 			p := accelerator.NewAccelDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.AcceleratorType,
-				SelectorObj: types.AccelDeviceSelectors{
+				SelectorObjs: []interface{}{types.AccelDeviceSelectors{
 					DeviceSelectors: types.DeviceSelectors{},
-				},
+				}},
 			}
 
 			dev1 := &ghw.PCIDevice{
@@ -113,7 +133,7 @@ var _ = Describe("AcceleratorProvider", func() {
 
 			err := p.AddTargetDevices(devsToAdd, 0x1024)
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -162,12 +182,60 @@ var _ = Describe("AcceleratorProvider", func() {
 
 				for _, tc := range testCases {
 					By(tc.name)
-					config := &types.ResourceConfig{SelectorObj: tc.sel}
-					actual, err := p.GetFilteredDevices(all, config)
+					config := &types.ResourceConfig{SelectorObjs: []interface{}{tc.sel}}
+					actual, err := p.GetFilteredDevices(all, config, 0)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(actual).To(HaveLen(len(tc.expected)))
 					Expect(actual).To(ConsistOf(tc.expected))
 				}
+				By("GetFilteredDevices uses the specified selector index")
+				selectors := []*types.AccelDeviceSelectors{
+					{
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"None"},
+						},
+					}, {
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"8086"},
+						},
+					},
+				}
+				matchingDevices := []types.HostDevice{all[0], all[1]}
+
+				selectorObjs := make([]interface{}, len(selectors))
+				for index := range selectors {
+					selectorObjs[index] = selectors[index]
+				}
+				config := &types.ResourceConfig{SelectorObjs: selectorObjs}
+
+				actual, err := p.GetFilteredDevices(all, config, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(BeEmpty())
+
+				actual, err = p.GetFilteredDevices(all, config, 1)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(HaveLen(len(matchingDevices)))
+				Expect(actual).To(ConsistOf(matchingDevices))
+			})
+			It("should error if the selector index is out of bounds", func() {
+				rf := factory.NewResourceFactory("fake", "fake", false)
+				p := accelerator.NewAccelDeviceProvider(rf)
+				devs := make([]types.HostDevice, 0)
+
+				rc := &types.ResourceConfig{}
+
+				_, err := p.GetFilteredDevices(devs, rc, 0)
+
+				Expect(err).To(HaveOccurred())
+
+				rc = &types.ResourceConfig{
+					SelectorObjs: []interface{}{
+						&types.AccelDeviceSelectors{},
+					},
+				}
+				_, err = p.GetFilteredDevices(devs, rc, 1)
+
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

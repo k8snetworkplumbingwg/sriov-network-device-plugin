@@ -33,8 +33,10 @@ type pciNetDevice struct {
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
-func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
+func NewPciNetDevice(dev *ghw.PCIDevice,
+	rFactory types.ResourceFactory, rc *types.ResourceConfig, selectorIndex int) (types.PciNetDevice, error) {
 	var vdpaDev types.VdpaDevice
+	var nf *types.NetDeviceSelectors
 
 	driverName, err := utils.GetDriverName(dev.Address)
 	if err != nil {
@@ -47,7 +49,10 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 	}
 
 	isRdma := false
-	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	ok := false
+	if selectorIndex >= 0 && selectorIndex < len(rc.SelectorObjs) {
+		nf, ok = rc.SelectorObjs[selectorIndex].(*types.NetDeviceSelectors)
+	}
 	if ok {
 		// Add InfoProviders based on Selector data
 		if nf.VdpaType != "" {

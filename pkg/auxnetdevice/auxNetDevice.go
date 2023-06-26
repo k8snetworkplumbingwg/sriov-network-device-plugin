@@ -38,7 +38,8 @@ type auxNetDevice struct {
 
 // NewAuxNetDevice returns an instance of AciNetDevice interface
 func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.ResourceFactory,
-	rc *types.ResourceConfig) (types.AuxNetDevice, error) {
+	rc *types.ResourceConfig, selectorIndex int) (types.AuxNetDevice, error) {
+	var nf *types.AuxNetDeviceSelectors
 	driverName, err := utils.GetDriverName(dev.Address)
 	if err != nil {
 		return nil, err
@@ -46,7 +47,10 @@ func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.Resourc
 
 	infoProviders := rFactory.GetDefaultInfoProvider(deviceID, driverName)
 	isRdma := false
-	nf, ok := rc.SelectorObj.(*types.AuxNetDeviceSelectors)
+	ok := false
+	if selectorIndex >= 0 && selectorIndex < len(rc.SelectorObjs) {
+		nf, ok = rc.SelectorObjs[selectorIndex].(*types.AuxNetDeviceSelectors)
+	}
 	if ok {
 		if nf.IsRdma {
 			rdmaSpec := rFactory.GetRdmaSpec(types.AuxNetDeviceType, deviceID)

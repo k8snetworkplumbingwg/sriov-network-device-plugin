@@ -9,20 +9,20 @@ data:
         "resourceList": [{
                 "resourceName": "e800_default",
                 "resourcePrefix": "intel.com",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["1889"],
                     "ddpProfiles": ["ICE OS Default Package"]
-                }
+                }]
             },
             {
                 "resourceName": "e800_comms",
                 "resourcePrefix": "intel.com",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["1889"],
                     "ddpProfiles": ["ICE COMMS Package"]
-                }
+                }]
             }
        ]
     }

@@ -41,10 +41,10 @@ func (np *netDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 	return np.deviceList
 }
 
-func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDevice {
+func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorIndex int) []types.HostDevice {
 	newHostDevices := make([]types.HostDevice, 0)
 	for _, device := range np.deviceList {
-		if newDevice, err := NewPciNetDevice(device, np.rFactory, rc); err == nil {
+		if newDevice, err := NewPciNetDevice(device, np.rFactory, rc, selectorIndex); err == nil {
 			newHostDevices = append(newHostDevices, newDevice)
 		} else {
 			glog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
@@ -81,9 +81,14 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 }
 
 //nolint:gocyclo
-func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig) ([]types.HostDevice, error) {
+func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
+	rc *types.ResourceConfig, selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
-	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
+	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
+		return filteredDevice, fmt.Errorf("invalid selectorIndex %d, resource config only has %d selector objects",
+			selectorIndex, len(rc.SelectorObjs))
+	}
+	nf, ok := rc.SelectorObjs[selectorIndex].(*types.NetDeviceSelectors)
 	if !ok {
 		return filteredDevice, fmt.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
 	}
@@ -179,14 +184,16 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *
 
 // ValidConfig performs validation of NetDeviceSelectors
 func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
-	nf, ok := rc.SelectorObj.(*types.NetDeviceSelectors)
-	if !ok {
-		glog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
-		return false
-	}
-	if nf.IsRdma && nf.VdpaType != "" {
-		glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
-		return false
+	for _, selector := range rc.SelectorObjs {
+		nf, ok := selector.(*types.NetDeviceSelectors)
+		if !ok {
+			glog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
+			return false
+		}
+		if nf.IsRdma && nf.VdpaType != "" {
+			glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
+			return false
+		}
 	}
 	return true
 }

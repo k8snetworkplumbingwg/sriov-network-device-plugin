@@ -43,16 +43,22 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 			Expect(actual).To(Equal(expected))
 		},
 		Entry("invalid selector in config passed",
-			&types.ResourceConfig{SelectorObj: &types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{}}},
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{}}}},
 			false),
 		Entry("auxTypes list is empty",
-			&types.ResourceConfig{SelectorObj: &types.AuxNetDeviceSelectors{AuxTypes: []string{}}},
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{AuxTypes: []string{}}}},
+			false),
+		Entry("auxTypes list is empty in second selector",
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{AuxTypes: []string{"sf"}}, &types.AuxNetDeviceSelectors{AuxTypes: []string{}}}},
 			false),
 		Entry("unsupported auxiliary device types specified",
-			&types.ResourceConfig{SelectorObj: &types.AuxNetDeviceSelectors{AuxTypes: []string{"sf", "eth", "rdma"}}},
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{AuxTypes: []string{"sf", "eth", "rdma"}}}},
+			false),
+		Entry("unsupported auxiliary device types specified in second selector",
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{AuxTypes: []string{"sf"}}, &types.AuxNetDeviceSelectors{AuxTypes: []string{"sf", "eth", "rdma"}}}},
 			false),
 		Entry("supported auxiliary device types",
-			&types.ResourceConfig{SelectorObj: &types.AuxNetDeviceSelectors{AuxTypes: []string{"sf", "sf"}}},
+			&types.ResourceConfig{SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{AuxTypes: []string{"sf", "sf"}}}},
 			true),
 	)
 	Describe("getting new instance of auxNetDeviceProvider", func() {
@@ -70,8 +76,28 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 			p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 			config := &types.ResourceConfig{}
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("should return empty slice", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+		})
+		Context("with an invalid selector index", func() {
+			rf := &tmocks.ResourceFactory{}
+			p := auxnetdevice.NewAuxNetDeviceProvider(rf)
+			config := &types.ResourceConfig{}
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config, 0)
+			It("should return empty slice when SelectorObjs is nil", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+
+			It("should return empty slice when selector index is out of range", func() {
+				auxNetDeviceSelector := types.AuxNetDeviceSelectors{}
+				config = &types.ResourceConfig{SelectorObjs: []interface{}{&auxNetDeviceSelector}}
+				devs = p.GetDevices(config, 1)
+
 				Expect(dDevs).To(BeEmpty())
 				Expect(devs).To(BeEmpty())
 			})
@@ -111,10 +137,10 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 			p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.AuxNetDeviceType,
-				SelectorObj: &types.AuxNetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
 					DeviceSelectors: types.DeviceSelectors{},
 				},
-			}
+				}}
 
 			vendor := &pcidb.Vendor{Name: "Mellanox Technologies"}
 			devsToAdd := []*ghw.PCIDevice{
@@ -140,7 +166,7 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 
 			err := p.AddTargetDevices(devsToAdd, 0x2)
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -202,12 +228,61 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 
 				for _, tc := range testCases {
 					By(tc.name)
-					config := &types.ResourceConfig{SelectorObj: tc.sel}
-					actual, err := p.GetFilteredDevices(all, config)
+					config := &types.ResourceConfig{SelectorObjs: []interface{}{tc.sel}}
+					actual, err := p.GetFilteredDevices(all, config, 0)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(actual).To(HaveLen(len(tc.expected)))
 					Expect(actual).To(ConsistOf(tc.expected))
 				}
+				By("GetFilteredDevices uses the specified selector index")
+				selectors := []*types.AuxNetDeviceSelectors{
+					{
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"None"},
+						},
+					}, {
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"8086"},
+						},
+					},
+				}
+				matchingDevices := []types.HostDevice{all[0], all[4]}
+
+				selectorObjs := make([]interface{}, len(selectors))
+				for index := range selectors {
+					selectorObjs[index] = selectors[index]
+				}
+
+				config := &types.ResourceConfig{SelectorObjs: selectorObjs}
+
+				actual, err := p.GetFilteredDevices(all, config, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(BeEmpty())
+
+				actual, err = p.GetFilteredDevices(all, config, 1)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(HaveLen(len(matchingDevices)))
+				Expect(actual).To(ConsistOf(matchingDevices))
+			})
+			It("should error if the selector index is out of bounds", func() {
+				rf := factory.NewResourceFactory("fake", "fake", false)
+				p := auxnetdevice.NewAuxNetDeviceProvider(rf)
+				devs := make([]types.HostDevice, 0)
+
+				rc := &types.ResourceConfig{}
+
+				_, err := p.GetFilteredDevices(devs, rc, 0)
+
+				Expect(err).To(HaveOccurred())
+
+				rc = &types.ResourceConfig{
+					SelectorObjs: []interface{}{
+						&types.AuxNetDeviceSelectors{},
+					},
+				}
+				_, err = p.GetFilteredDevices(devs, rc, 1)
+
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

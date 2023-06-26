@@ -67,7 +67,7 @@ var _ = Describe("PciNetDevice", func() {
 				in := newPciDeviceFn("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc, 0)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
 				Expect(dev.GetNetName()).To(Equal("eth0"))
@@ -100,11 +100,11 @@ var _ = Describe("PciNetDevice", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				SelectorObj: &types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{
 					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
 						IsRdma: true,
 					},
-				},
+				}},
 			}
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
@@ -156,7 +156,7 @@ var _ = Describe("PciNetDevice", func() {
 			It("should populate Rdma device specs if isRdma", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
-				dev, err := netdevice.NewPciNetDevice(in1, f, rc)
+				dev, err := netdevice.NewPciNetDevice(in1, f, rc, 0)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				Expect(dev.IsRdma()).To(BeTrue())
@@ -178,7 +178,7 @@ var _ = Describe("PciNetDevice", func() {
 			It("but not otherwise", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
-				dev, err := netdevice.NewPciNetDevice(in2, f, rc)
+				dev, err := netdevice.NewPciNetDevice(in2, f, rc, 0)
 
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev.GetEnvVal()
@@ -197,15 +197,55 @@ var _ = Describe("PciNetDevice", func() {
 				mockInfo2.AssertExpectations(t)
 				rdma2.AssertExpectations(t)
 			})
+			It("should use isRdma from the selector chosen by selector index", func() {
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+				rc := &types.ResourceConfig{
+					ResourceName:   "fake",
+					ResourcePrefix: "fake",
+					SelectorObjs: []interface{}{&types.NetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+							IsRdma: true,
+						},
+					}, &types.NetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+							IsRdma: false,
+						},
+					},
+					}}
+
+				// passing an RDMA capable device, but selector index chooses the IsRdma: false selector
+				dev, err := netdevice.NewPciNetDevice(in1, f, rc, 1)
+
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				envs := dev.GetEnvVal()
+				Expect(envs).To(HaveLen(1))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				_, exist = envs["rdma"]
+				Expect(exist).To(BeFalse())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(pciAddr1))
+				Expect(dev.IsRdma()).To(BeFalse())
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev.GetMounts()).To(HaveLen(0))
+				Expect(err).NotTo(HaveOccurred())
+				mockInfo1.AssertExpectations(t)
+				rdma1.AssertExpectations(t)
+			})
 		})
 		Context("With needsVhostNet", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				SelectorObj: &types.NetDeviceSelectors{
-					NeedVhostNet: true,
-				},
-			}
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{},
+					&types.NetDeviceSelectors{
+						NeedVhostNet: true,
+					},
+				}}
+			no_vhost_net_selector_index := 0
+			vhost_net_selector_index := 1
 
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
@@ -226,7 +266,7 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc, vhost_net_selector_index)
 
 				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(4)) // /dev/vfio/0 and default /dev/vfio/vfio + vhost-net + tun
@@ -258,6 +298,36 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(err).NotTo(HaveOccurred())
 			})
+			It("but only if the selector index has the selector set", func() {
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+
+				dev, err := netdevice.NewPciNetDevice(in, f, rc, no_vhost_net_selector_index)
+
+				Expect(dev.GetDriver()).To(Equal("vfio-pci"))
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/0 and default /dev/vfio/vfio + vhost-net + tun
+				envs := dev.GetEnvVal()
+				Expect(envs).To(HaveLen(2))
+				_, exist := envs["vfio"]
+				Expect(exist).To(BeTrue())
+				vfio, exist := envs["vfio"]["mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/vfio"))
+				vfio, exist = envs["vfio"]["dev-mount"]
+				Expect(exist).To(BeTrue())
+				Expect(vfio).To(Equal("/dev/vfio/0"))
+				_, exist = envs["vhost"]
+				Expect(exist).To(BeFalse())
+				genericMap, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				Expect(genericMap).To(HaveLen(1))
+				generic, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(generic).To(Equal("0000:00:00.1"))
+
+				Expect(dev.IsRdma()).To(BeFalse())
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 		Context("device's PF name is not available", func() {
 			It("device should be added", func() {
@@ -275,7 +345,7 @@ var _ = Describe("PciNetDevice", func() {
 				in := newPciDeviceFn("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 
-				dev, err := netdevice.NewPciNetDevice(in, f, rc)
+				dev, err := netdevice.NewPciNetDevice(in, f, rc, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
 
@@ -297,20 +367,17 @@ var _ = Describe("PciNetDevice", func() {
 				},
 			}
 
-			rc_vhost := &types.ResourceConfig{
+			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				SelectorObj: &types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{
 					VdpaType: "vhost",
-				},
-			}
-			rc_virtio := &types.ResourceConfig{
-				ResourceName:   "fake",
-				ResourcePrefix: "fake",
-				SelectorObj: &types.NetDeviceSelectors{
+				}, &types.NetDeviceSelectors{
 					VdpaType: "virtio",
 				},
-			}
+				}}
+			vhost_selector_index := 0
+			virtio_selector_index := 1
 
 			defaultInfo1 := &mocks.DeviceInfoProvider{}
 			mockEnv1 := types.AdditionalInfo{"deviceID": "0000:00:00.1"}
@@ -350,8 +417,8 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				dev1, err1 := netdevice.NewPciNetDevice(in1, f, rc_vhost)
-				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc_virtio)
+				dev1, err1 := netdevice.NewPciNetDevice(in1, f, rc, vhost_selector_index)
+				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc, virtio_selector_index)
 
 				Expect(dev1.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev1.GetEnvVal()
@@ -396,8 +463,8 @@ var _ = Describe("PciNetDevice", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				dev1, err1 := netdevice.NewPciNetDevice(in1, f, rc_virtio)
-				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc_vhost)
+				dev1, err1 := netdevice.NewPciNetDevice(in1, f, rc, virtio_selector_index)
+				dev2, err2 := netdevice.NewPciNetDevice(in2, f, rc, vhost_selector_index)
 
 				envs := dev1.GetEnvVal()
 				Expect(len(envs)).To(Equal(2))

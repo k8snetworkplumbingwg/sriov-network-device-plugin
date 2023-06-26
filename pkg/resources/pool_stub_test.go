@@ -51,7 +51,7 @@ var _ = Describe("ResourcePool", func() {
 			},
 		}
 		f = factory.NewResourceFactory("fake", "fake", true)
-		rc = &types.ResourceConfig{SelectorObj: types.NetDeviceSelectors{}}
+		rc = &types.ResourceConfig{SelectorObjs: []interface{}{types.NetDeviceSelectors{}}}
 		devs = []string{"0000:00:00.1", "0000:00:00.2"}
 	})
 	Describe("getting device specs", func() {
@@ -60,8 +60,8 @@ var _ = Describe("ResourcePool", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc)
-				d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc)
+				d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc, 0)
+				d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc, 0)
 				rp = resources.NewResourcePool(rc,
 					map[string]types.HostDevice{
 						"0000:00:00.1": d1,
@@ -86,8 +86,8 @@ var _ = Describe("ResourcePool", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
 
-				d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc)
-				d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc)
+				d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc, 0)
+				d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc, 0)
 				rp = resources.NewResourcePool(rc,
 					map[string]types.HostDevice{
 						"0000:00:00.1": d1,
@@ -109,8 +109,8 @@ var _ = Describe("ResourcePool", func() {
 			defer fs.Use()()
 			utils.SetDefaultMockNetlinkProvider()
 
-			d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc)
-			d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc)
+			d1, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc, 0)
+			d2, _ = netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.2"), f, rc, 0)
 			rp = resources.NewResourcePool(rc,
 				map[string]types.HostDevice{
 					"0000:00:00.1": d1,

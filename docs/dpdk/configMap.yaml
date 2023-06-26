@@ -9,11 +9,11 @@ data:
         "resourceList": [
             {
                 "resourceName": "intel_x710vfio",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["154c"],
                     "drivers": ["vfio-pci"]
-                }
+                }]
             }
         ]
     }

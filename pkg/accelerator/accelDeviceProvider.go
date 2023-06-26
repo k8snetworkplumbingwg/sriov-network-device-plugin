@@ -41,7 +41,7 @@ func (ap *accelDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 	return ap.deviceList
 }
 
-func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDevice {
+func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorIndex int) []types.HostDevice {
 	newHostDevices := make([]types.HostDevice, 0)
 	for _, device := range ap.deviceList {
 		if newDevice, err := NewAccelDevice(device, ap.rFactory, rc); err == nil {
@@ -73,9 +73,15 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 	return nil
 }
 
-func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig) ([]types.HostDevice, error) {
+//nolint:gocyclo
+func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
+	rc *types.ResourceConfig, selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
-	af, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
+	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
+		return filteredDevice, fmt.Errorf("invalid selectorIndex %d, resource config only has %d selector objects",
+			selectorIndex, len(rc.SelectorObjs))
+	}
+	af, ok := rc.SelectorObjs[selectorIndex].(*types.AccelDeviceSelectors)
 	if !ok {
 		return filteredDevice, fmt.Errorf("unable to convert SelectorObj to AccelDeviceSelectors")
 	}
@@ -113,10 +119,12 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc
 }
 
 func (ap *accelDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
-	_, ok := rc.SelectorObj.(*types.AccelDeviceSelectors)
-	if !ok {
-		glog.Errorf("unable to convert SelectorObj to AccelDeviceSelectors")
-		return false
+	for _, selector := range rc.SelectorObjs {
+		_, ok := selector.(*types.AccelDeviceSelectors)
+		if !ok {
+			glog.Errorf("unable to convert SelectorObjs to AccelDeviceSelectors")
+			return false
+		}
 	}
 	return true
 }

@@ -88,35 +88,35 @@ data:
         "resourceList": [
              {
                 "resourceName": "e800_default",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["1889"],
                     "ddpProfiles": ["ICE OS Default Package"]
-                }
+                }]
             },
             {
                 "resourceName": "e800_comms",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["1889"],
                     "ddpProfiles": ["ICE COMMS Package"]
-                }
+                }]
             },
             {
                 "resourceName": "x700_gtp",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["154c"],
                     "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]
-                }
+                }]
             },
             {
                 "resourceName": "x700_pppoe",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["154c"],
                     "ddpProfiles": ["E710 PPPoE and PPPoL2TPv2"]
-                }
+                }]
             }
         ]
     }

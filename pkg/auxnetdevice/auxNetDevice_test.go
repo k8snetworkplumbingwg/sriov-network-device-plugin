@@ -77,7 +77,7 @@ var _ = Describe("AuxNetDevice", func() {
 				in := newPciDevice("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 
-				dev, err := auxnetdevice.NewAuxNetDevice(in, auxDevID, f, rc)
+				dev, err := auxnetdevice.NewAuxNetDevice(in, auxDevID, f, rc, 0)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev).NotTo(BeNil())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
@@ -101,10 +101,10 @@ var _ = Describe("AuxNetDevice", func() {
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
 				DeviceType:     types.AuxNetDeviceType,
-				SelectorObj: &types.AuxNetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
 					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true},
 				},
-			}
+				}}
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
 					"sys/bus/pci/devices/0000:00:00.1",
@@ -167,7 +167,7 @@ var _ = Describe("AuxNetDevice", func() {
 			It("should populate Rdma device specs if isRdma", func() {
 				defer fs.Use()()
 				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
-				dev, err := auxnetdevice.NewAuxNetDevice(in1, auxDevName1, f, rc)
+				dev, err := auxnetdevice.NewAuxNetDevice(in1, auxDevName1, f, rc, 0)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
@@ -189,7 +189,7 @@ var _ = Describe("AuxNetDevice", func() {
 			It("but not otherwise", func() {
 				defer fs.Use()()
 				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
-				dev, err := auxnetdevice.NewAuxNetDevice(in2, auxDevName2, f, rc)
+				dev, err := auxnetdevice.NewAuxNetDevice(in2, auxDevName2, f, rc, 0)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
@@ -207,6 +207,38 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(dev.GetAuxType()).To(Equal("eth-rep"))
 				mockInfo2.AssertExpectations(t)
 				rdma2.AssertExpectations(t)
+			})
+			It("should not populate Rdma device specs if the selector index does not specify isRdma", func() {
+				defer fs.Use()()
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+				rc = &types.ResourceConfig{
+					ResourceName:   "fake",
+					ResourcePrefix: "fake",
+					DeviceType:     types.AuxNetDeviceType,
+					SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true},
+					}, &types.AuxNetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: false},
+					}}}
+				// passing an RDMA capable device, but selector index chooses the IsRdma: false selector
+				dev, err := auxnetdevice.NewAuxNetDevice(in1, auxDevName1, f, rc, 1)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				envs := dev.GetEnvVal()
+				Expect(envs).To(HaveLen(1))
+				_, exist := envs["generic"]
+				Expect(exist).To(BeTrue())
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal(auxDevName1))
+				Expect(exist).To(BeTrue())
+				Expect(dev.IsRdma()).To(BeFalse())
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev.GetMounts()).To(HaveLen(0))
+				Expect(dev.GetAuxType()).To(Equal("eth"))
+				mockInfo1.AssertExpectations(t)
+				rdma1.AssertExpectations(t)
 			})
 		})
 	})

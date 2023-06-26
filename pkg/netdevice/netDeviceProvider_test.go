@@ -44,8 +44,28 @@ var _ = Describe("NetDeviceProvider", func() {
 			p := netdevice.NewNetDeviceProvider(rf)
 			config := &types.ResourceConfig{}
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("should return empty slice", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+		})
+		Context("with an invalid selector index", func() {
+			rf := &mocks.ResourceFactory{}
+			p := netdevice.NewNetDeviceProvider(rf)
+			config := &types.ResourceConfig{}
+			dDevs := p.GetDiscoveredDevices()
+			devs := p.GetDevices(config, 0)
+			It("should return empty slice when SelectorObjs is nil", func() {
+				Expect(dDevs).To(BeEmpty())
+				Expect(devs).To(BeEmpty())
+			})
+
+			It("should return empty slice when selector index is out of range", func() {
+				netDeviceSelector := types.NetDeviceSelectors{}
+				config = &types.ResourceConfig{SelectorObjs: []interface{}{&netDeviceSelector}}
+				devs = p.GetDevices(config, 1)
+
 				Expect(dDevs).To(BeEmpty())
 				Expect(devs).To(BeEmpty())
 			})
@@ -76,10 +96,10 @@ var _ = Describe("NetDeviceProvider", func() {
 			p := netdevice.NewNetDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.NetDeviceType,
-				SelectorObj: types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{types.NetDeviceSelectors{
 					DeviceSelectors: types.DeviceSelectors{},
 				},
-			}
+				}}
 			dev1 := &ghw.PCIDevice{
 				Address: "0000:00:00.1",
 				Class:   &pcidb.Class{ID: "1024"},
@@ -104,7 +124,7 @@ var _ = Describe("NetDeviceProvider", func() {
 
 			err := p.AddTargetDevices(devsToAdd, 0x1024)
 			dDevs := p.GetDiscoveredDevices()
-			devs := p.GetDevices(config)
+			devs := p.GetDevices(config, 0)
 			It("shouldn't return an error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -193,12 +213,61 @@ var _ = Describe("NetDeviceProvider", func() {
 
 				for _, tc := range testCases {
 					By(tc.name)
-					config := &types.ResourceConfig{SelectorObj: tc.sel}
-					actual, err := p.GetFilteredDevices(all, config)
+					config := &types.ResourceConfig{SelectorObjs: []interface{}{tc.sel}}
+					actual, err := p.GetFilteredDevices(all, config, 0)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(actual).To(HaveLen(len(tc.expected)))
 					Expect(actual).To(ConsistOf(tc.expected))
 				}
+
+				By("GetFilteredDevices uses the specified selector index")
+				selectors := []*types.NetDeviceSelectors{
+					{
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"None"},
+						},
+					}, {
+						DeviceSelectors: types.DeviceSelectors{
+							Vendors: []string{"8086"},
+						},
+					},
+				}
+				matchingDevices := []types.HostDevice{all[0], all[1]}
+
+				selectorObjs := make([]interface{}, len(selectors))
+				for index := range selectors {
+					selectorObjs[index] = selectors[index]
+				}
+				config := &types.ResourceConfig{SelectorObjs: selectorObjs}
+
+				actual, err := p.GetFilteredDevices(all, config, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(BeEmpty())
+
+				actual, err = p.GetFilteredDevices(all, config, 1)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(actual).To(HaveLen(len(matchingDevices)))
+				Expect(actual).To(ConsistOf(matchingDevices))
+			})
+			It("should error if the selector index is out of bounds", func() {
+				rf := factory.NewResourceFactory("fake", "fake", false)
+				p := netdevice.NewNetDeviceProvider(rf)
+				devs := make([]types.HostDevice, 0)
+
+				rc := &types.ResourceConfig{}
+
+				_, err := p.GetFilteredDevices(devs, rc, 0)
+
+				Expect(err).To(HaveOccurred())
+
+				rc = &types.ResourceConfig{
+					SelectorObjs: []interface{}{
+						&types.NetDeviceSelectors{},
+					},
+				}
+				_, err = p.GetFilteredDevices(devs, rc, 1)
+
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})

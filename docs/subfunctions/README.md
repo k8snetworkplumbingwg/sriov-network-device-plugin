@@ -38,12 +38,12 @@ For BlueField-2® NIC:
             "resourceName": "bf2_sf",
             "resourcePrefix": "nvidia.com",
             "deviceType": "auxNetDevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["a2d6"],
                 "pfNames": ["p0#1-5"],
                 "auxTypes": ["sf"]
-            }
+            }]
         }
     ]
 }
@@ -57,20 +57,20 @@ For ConnectX-6® Dx NIC for SFs and VFs:
         {
             "resourceName": "cx6dx_vf",
             "resourcePrefix": "nvidia.com",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["101e"],
-            }
+            }]
         },
         {
             "resourceName": "cx6dx_sf",
             "resourcePrefix": "nvidia.com",
             "deviceType": "auxNetDevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["101e"],
                 "auxTypes": ["sf"]
-            }
+            }]
         }
     ]
 }

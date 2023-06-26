@@ -49,7 +49,7 @@ which are available on a Kubernetes host
 - Handles SR-IOV capable/not-capable devices (NICs and Accelerators alike)
 - Handles PCI backed Auxiliary network devices (**at the moment SFs only**)
 - Supports devices with both Kernel and userspace (UIO and VFIO) drivers
-- Allows resource grouping using "Selector"
+- Allows resource grouping using "selector(s)"
 - User configurable resourceName
 - Detects Kubelet restarts and auto-re-register
 - Detects Link status (for Linux network devices) and updates associated VFs health accordingly
@@ -180,81 +180,89 @@ This plugin creates device plugin endpoints based on the configurations given in
 {
     "resourceList": [{
             "resourceName": "intel_sriov_netdevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed", "1889"],
                 "drivers": ["i40evf", "ixgbevf", "iavf"]
-            }
+            }]
         },
         {
             "resourceName": "intel_sriov_dpdk",
             "resourcePrefix": "intel.com",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["8086"],
                 "devices": ["154c", "10ed", "1889"],
                 "drivers": ["vfio-pci"],
                 "pfNames": ["enp0s0f0","enp2s2f1"],
                 "needVhostNet": true
-            }
+            }]
         },
         {
             "resourceName": "mlnx_sriov_rdma",
             "resourcePrefix": "mellanox.com",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["1018"],
                 "drivers": ["mlx5_ib"],
                 "isRdma": true
-            }
+            }]
         },
         {
             "resourceName": "infiniband_rdma_netdevs",
-            "selectors": {
+            "selectors": [{
                 "linkTypes": ["infiniband"],
                 "isRdma": true
-            }
+            }]
         },
         {
             "resourceName": "ct6dx_vdpa_vhost",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["101e"],
                 "drivers": ["mlx5_core"],
                 "vdpaType": "vhost"
-            }
+            }]
         },
         {
             "resourceName": "intel_fpga",
             "deviceType": "accelerator",
-            "selectors": {
+            "selectors": [{
                     "vendors": ["8086"],
                     "devices": ["0d90"]
-            }
+            }]
         },
         {
             "resourceName": "bf2_sf",
             "resourcePrefix": "nvidia.com",
             "deviceType": "auxNetDevice",
-            "selectors": {
+            "selectors": [{
                 "vendors": ["15b3"],
                 "devices": ["a2d6"],
                 "pfNames": ["p0#1-5"],
                 "auxTypes": ["sf"]
-            }
+            }]
         },
         {
           "resourceName": "intel_sriov_netdevice_additional_env",
-          "selectors": {
+          "selectors": [{
             "vendors": ["8086"],
             "devices": ["154c", "10ed", "1889"],
             "drivers": ["i40evf", "ixgbevf", "iavf"]
-          },
+          }],
           "additionalInfo": {
              "*": {
                "token": "3e49019f-412f-4f02-824e-4cd195944205"
              }
           }
-        }
+        },
+        {
+          "resourceName": "old_selectors_syntax_example",
+          "selectors": {
+            "vendors": ["8086"],
+            "devices": ["154c", "10ed", "1889"],
+            "drivers": ["i40evf", "ixgbevf", "iavf"]
+          }
+	}
     ]
 }
 ```
@@ -267,17 +275,32 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "resourcePrefix"  | N        | Endpoint resource prefix name override. Should not contain special characters                                                          | string Default : "intel.com"                          | "yourcompany.com"                                                      |
 | "deviceType"      | N        | Device Type for a resource pool.                                                                                                       | string value of supported types. Default: "netDevice" | Currently supported values: "accelerator", "netDevice", "auxNetDevice" |
 | "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
-| "selectors"       | N        | A map of device selectors. The "deviceType" value determines the "selectors" options.                                                  | json object as string Default: null                   | Example: "selectors": {"vendors": ["8086"],"devices": ["154c"]}        |
+| "selectors"       | N        | Either a single device selector map or a list of maps. The list syntax is preferred. The "deviceType" value determines the device selector options.                                                  | json list of objects or json object. Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
 | "additionalInfo" | N | A map of map to add additional information to the pod via environment variables to devices                                             | json object as string Default: null  | Example: "additionalInfo": {"*": {"token": "3e49019f-412f-4f02-824e-4cd195944205"}} |
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
 #### Device selectors
 
-The "deviceType" value determines which selectors are supported for that device. Each selector evaluated in order as listed in selector tables below.
+The "selectors" field accepts both a single object and a list of selector objects. While both formats are supported, the list syntax is preferred. When using the list syntax, each selector object is evaluated in the order present in the list. For example, a single object would look like:
+```json
+"selectors": {"vendors": ["8086"],"devices": ["154c"]}
+```
+and the list syntax would look like:
+```json
+"selectors": [{"vendors": ["8086"],"devices": ["154c"]}, {"vendors": ["8086"], "needVhostNet": true}]
+```
+
+The list syntax example specifies two selector objects in the list. In this example, all devices specified by the first selector object have vendor ID 8086 and device ID 154c. The second selector object specifies all devices with vendor ID 8086. Since the selector objects are processed in the specified order, devices with vendor ID 8086 and device ID 154c would not have the `needVhostNet: true` applied to them. Contrast this with another similar looking example:
+```json
+"selectors": [{"vendors": ["8086"], "needVhostNet": true}, {"vendors": ["8086"],"devices": ["154c"]}]
+```
+In this latter example, the order of the selector objects has been switched. Since all devices that are specified by the second object are also specified by the first object, this makes the second selector object ineffective.
+
+A given selector object comprises of "selectors".  The "deviceType" value determines which selectors are supported for that device. Each selector is evaluated in order as listed in selector tables below.
 
 #### Accelerator devices selectors
-This selectors are applicable when "deviceType" is "accelerator".
+These selectors are applicable when "deviceType" is "accelerator".
 
 |     Field      | Required |                Description                |         Type/Defaults         |       Example/Accepted values       |
 |----------------|----------|-------------------------------------------|-------------------------------|-------------------------------------|
@@ -287,8 +310,8 @@ This selectors are applicable when "deviceType" is "accelerator".
 | "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null` | "pciAddresses": ["0000:03:02.0"]    |
 
 
-#### Network devices selector
-This selector is applicable when "deviceType" is "netDevice"(note: this is default)
+#### Network devices selectors
+These selectors are applicable when "deviceType" is "netDevice" (note: this is default)
 
 
 |     Field      | Required |                               Description                                |                    Type/Defaults                    |                                     Example/Accepted values                                      |
@@ -300,14 +323,14 @@ This selector is applicable when "deviceType" is "netDevice"(note: this is defau
 | "pfNames"      | N        | functions from PF matches list of PF names                               | `string` list Default: `null`                       | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
 | "rootDevices"  | N        | functions from PF matches list of PF PCI addresses                       | `string` list Default: `null`                       | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
 | "linkTypes"    | N        | The link type of the net device associated with the PCI device           | `string` list Default: `null`                       | "linkTypes": ["ether"]                                                                           |
-| "isRdma"       | N        | Mount RDMA resources. Incompatible with vdpaType                         | `bool` values `true` or `false` Default: `false`    | "isRdma": `true`                                                                                 |
 | "ddpProfiles"  | N        | A map of device selectors                                                | `string` list Default: `null`                       | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
+| "isRdma"       | N        | Mount RDMA resources. Incompatible with vdpaType                         | `bool` values `true` or `false` Default: `false`    | "isRdma": `true`                                                                                 |
 | "needVhostNet" | N        | Share /dev/vhost-net and /dev/net/tun                                    | `bool` values `true` or `false` Default: `false`    | "needVhostNet": `true`                                                                           |
 | "vdpaType"     | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                              |
 
 
 #### Auxiliary network devices selectors
-This selector is applicable when "deviceType" is "auxNetDevice".
+These selectors are applicable when "deviceType" is "auxNetDevice".
 
 |     Field     | Required |                                                              Description                                                               |                  Type/Defaults                   |                                     Example/Accepted values                                      |
 |---------------|----------|----------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------|
@@ -405,13 +428,13 @@ Usage of ./sriovdp:
 
 ### Assumptions
 
-This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create Virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Same with a SFs. Required device drivers could be loaded on system boot-up time by allow-listing/deny-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
+This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Same with SFs. Required device drivers could be loaded on system boot-up time by allow-listing/deny-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
 
 For example, if the driver type is uio (i.e. igb_uio.ko) then there are specific device files to add in Device Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 
-The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name, a list resource "selectors".
+The idea here is, user creates a resource config for each resource pool as shown in [Config parameters](#config-parameters) by specifying the resource name and a "selector object" or list of "selector objects". Each "selector object" contains "selector(s)".
 
-The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". If device type is Auxiliary network device (auxNetDevice), then for each discovered PCI device of type Netdevice plugin discovers auxiliry devices. Each "resource pool" then applies its selectors on this list and add devices that satisfies the selector's constraints. Each selector narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
+The device plugin will initially discover all PCI network resources in the host and populate an initial "device list". If device type is Auxiliary network device (auxNetDevice), then for each discovered PCI device of type Netdevice the plugin discovers auxiliary devices. Each "resource pool" then applies its selector object(s) in order to the list of discovered devices. The plugin will add devices that satisfy the selector object's constraints to the resource pool. Each "selector" specified in the selector object narrows down the list of devices for the resource pool. Currently, the selectors are applied in following order:
 
 1. "vendors"      - The vendor hex code of device
 2. "devices"      - The device hex code of device
@@ -421,6 +444,8 @@ The device plugin will initially discover all PCI network resources in the host 
 6. "pfNames"      - The Physical function name
 7. "rootDevices"  - The Physical function PCI address
 8. "linkTypes"    - The link type of the net device associated with the PCI device
+
+If a single device matches multiple selector objects, it will only be allocated to the first one.
 
 The "pfNames" and "rootDevices" selectors can be used to specify a list and/or range of VFs/SFs for a pool in the below format
 ````

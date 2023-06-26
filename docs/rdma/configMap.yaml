@@ -10,12 +10,12 @@ data:
             {
                 "resourceName": "mlnx_rdma",
                 "resourcePrefix": "mellanox.com",
-                "selectors": {
+                "selectors": [{
                     "vendors": ["15b3"],
                     "devices": ["1016", "1018"],
                     "drivers": ["mlx5_core"],
                     "isRdma": true
-                }
+                }]
             },
             {
               "resourceName": "intel_rdma",

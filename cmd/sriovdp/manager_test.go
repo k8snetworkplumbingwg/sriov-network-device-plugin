@@ -127,6 +127,63 @@ var _ = Describe("Resource manager", func() {
 				Expect(len(rm.configList)).To(Equal(2))
 			})
 		})
+		Context("when the multi-selector config reading is successful", func() {
+			var err error
+			BeforeEach(func() {
+				// add err handling
+				testErr := os.MkdirAll("/tmp/sriovdp", 0755)
+				if testErr != nil {
+					panic(testErr)
+				}
+				testErr = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+						"resourceList": [{
+								"resourceName": "intel_sriov_netdevice",
+								"selectors": {
+									"isRdma": false,
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"],
+									"drivers": ["i40evf", "ixgbevf"]
+								}
+							},
+							{
+								"resourceName": "dpdk",
+								"selectors": [{
+									"vendors": ["8086"],
+									"devices": ["154c", "10ed"],
+									"drivers": ["vfio-pci"]
+								}, {
+									"vendors": ["15b3"],
+									"devices": ["1018"],
+									"drivers": ["mlx5_core"],
+									"isRdma": true
+								}]
+							}
+						]
+					}`), 0644)
+				if testErr != nil {
+					panic(testErr)
+				}
+				err = rm.readConfig()
+			})
+			AfterEach(func() {
+				testErr := os.RemoveAll("/tmp/sriovdp")
+				if testErr != nil {
+					panic(testErr)
+				}
+				rm = nil
+				cp = nil
+			})
+			It("shouldn't fail", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should load resources list", func() {
+				Expect(rm.configList).To(HaveLen(2))
+			})
+			It("should load all selector objects", func() {
+				Expect(rm.configList[0].SelectorObjs).To(HaveLen(1))
+				Expect(rm.configList[1].SelectorObjs).To(HaveLen(2))
+			})
+		})
 	})
 	Describe("validating configuration", func() {
 		var fs *utils.FakeFilesystem
@@ -242,6 +299,73 @@ var _ = Describe("Resource manager", func() {
 				Expect(rm.validConfigs()).To(Equal(false))
 			})
 		})
+		Context("when isRdma and vdpaType are configured in separate selectors", func() {
+			BeforeEach(func() {
+				err := os.MkdirAll("/tmp/sriovdp", 0755)
+				if err != nil {
+					panic(err)
+				}
+				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+					"resourceList":	[{
+						"resourceName": "correct_config",
+						"selectors": [{
+						        "vdpaType": "virtio",
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}, {
+						        "isRdma": true,
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}]
+					}]
+				}`), 0644)
+				if err != nil {
+					panic(err)
+				}
+				_ = rm.readConfig()
+
+			})
+			It("should return true", func() {
+				defer fs.Use()()
+				Expect(rm.validConfigs()).To(Equal(true))
+			})
+		})
+		Context("when isRdma and vdpaType are configured in a second selector", func() {
+			BeforeEach(func() {
+				err := os.MkdirAll("/tmp/sriovdp", 0755)
+				if err != nil {
+					panic(err)
+				}
+				err = os.WriteFile("/tmp/sriovdp/test_config", []byte(`{
+					"resourceList":	[{
+						"resourceName": "mixed_config",
+						"selectors": [{
+						        "vdpaType": "virtio",
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}, {
+						        "isRdma": true,
+						        "vdpaType": "virtio",
+							"vendors": ["8086"],
+							"devices": ["154c", "10ed"],
+							"drivers": ["i40evf", "ixgbevf"]
+						}]
+					}]
+				}`), 0644)
+				if err != nil {
+					panic(err)
+				}
+				_ = rm.readConfig()
+
+			})
+			It("should return false", func() {
+				defer fs.Use()()
+				Expect(rm.validConfigs()).To(Equal(false))
+			})
+		})
 		Describe("managing resources servers", func() {
 			Describe("initializing servers", func() {
 				Context("when initializing server fails", func() {
@@ -273,10 +397,10 @@ var _ = Describe("Resource manager", func() {
 					rc := &types.ResourceConfig{
 						ResourceName: "fake",
 						DeviceType:   types.NetDeviceType,
-						SelectorObj:  types.NetDeviceSelectors{},
+						SelectorObjs: []interface{}{types.NetDeviceSelectors{}},
 					}
 					dp := &mocks.DeviceProvider{}
-					dp.On("GetFilteredDevices", devs, rc).Return(devs, nil)
+					dp.On("GetFilteredDevices", devs, rc, 0).Return(devs, nil)
 
 					rp := &mocks.ResourcePool{}
 
@@ -284,7 +408,7 @@ var _ = Describe("Resource manager", func() {
 					mockedRf.On("GetResourcePool", rc, devs).Return(rp, nil).
 						On("GetResourceServer", rp).Return(mockedServer, nil)
 					dev.On("GetDeviceID").Return("0000:01:10.0")
-					dp.On("GetDevices", rc).Return(devs)
+					dp.On("GetDevices", rc, 0).Return(devs)
 					rm := &resourceManager{
 						rFactory:   mockedRf,
 						configList: []*types.ResourceConfig{rc},
