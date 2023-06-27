@@ -94,71 +94,36 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 	}
 
 	rf := np.rFactory
+
 	// filter by vendor list
-	if len(nf.Vendors) > 0 {
-		if selector, err := rf.GetSelector("vendors", nf.Vendors); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("vendors", nf.Vendors, filteredDevice)
 
 	// filter by device list
-	if len(nf.Devices) > 0 {
-		if selector, err := rf.GetSelector("devices", nf.Devices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("devices", nf.Devices, filteredDevice)
 
 	// filter by driver list
-	if len(nf.Drivers) > 0 {
-		if selector, err := rf.GetSelector("drivers", nf.Drivers); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("drivers", nf.Drivers, filteredDevice)
 
 	// filter by pciAddresses list
-	if len(nf.PciAddresses) > 0 {
-		if selector, err := rf.GetSelector("pciAddresses", nf.PciAddresses); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("pciAddresses", nf.PciAddresses, filteredDevice)
 
 	// filter by acpiIndexes list
-	if len(nf.AcpiIndexes) > 0 {
-		if selector, err := rf.GetSelector("acpiIndexes", nf.AcpiIndexes); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("acpiIndexes", nf.AcpiIndexes, filteredDevice)
 
 	// filter by PfNames list
-	if len(nf.PfNames) > 0 {
-		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("pfNames", nf.PfNames, filteredDevice)
 
 	// filter by RootDevices list
-	if len(nf.RootDevices) > 0 {
-		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("rootDevices", nf.RootDevices, filteredDevice)
 
 	// filter by linkTypes list
-	if len(nf.LinkTypes) > 0 {
-		if len(nf.LinkTypes) > 1 {
-			glog.Warningf("Link type selector should have a single value.")
-		}
-		if selector, err := rf.GetSelector("linkTypes", nf.LinkTypes); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
+	if len(nf.LinkTypes) > 1 {
+		glog.Warningf("Link type selector should have a single value.")
 	}
+	filteredDevice = rf.FilterBySelector("linkTypes", nf.LinkTypes, filteredDevice)
 
 	// filter by DDP Profiles list
-	if len(nf.DDPProfiles) > 0 {
-		if selector, err := rf.GetSelector("ddpProfiles", nf.DDPProfiles); err == nil {
-			filteredDevice = selector.Filter(filteredDevice)
-		}
-	}
+	filteredDevice = rf.FilterBySelector("ddpProfiles", nf.DDPProfiles, filteredDevice)
 
 	// filter for rdma devices
 	if nf.IsRdma {
