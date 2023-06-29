@@ -57,27 +57,27 @@ var _ = Describe("RdmaSpec", func() {
 					{
 						ContainerPath: "/dev/infiniband/issm0",
 						HostPath:      "/dev/infiniband/issm0",
-						Permissions:   "rwm",
+						Permissions:   "rw",
 					},
 					{
 						ContainerPath: "/dev/infiniband/umad0",
 						HostPath:      "/dev/infiniband/umad0",
-						Permissions:   "rwm",
+						Permissions:   "rw",
 					},
 					{
 						ContainerPath: "/dev/infiniband/uverbs0",
 						HostPath:      "/dev/infiniband/uverbs0",
-						Permissions:   "rwm",
+						Permissions:   "rw",
 					},
 					{
 						ContainerPath: "/dev/infiniband/rdma_cm",
 						HostPath:      "/dev/infiniband/rdma_cm",
-						Permissions:   "rwm",
+						Permissions:   "rw",
 					},
 					{
 						ContainerPath: "/dev/infiniband/rdma_cm",
 						HostPath:      "/dev/infiniband/rdma_cm",
-						Permissions:   "rwm",
+						Permissions:   "rw",
 					},
 				}))
 				fakeRdmaProvider.AssertExpectations(t)

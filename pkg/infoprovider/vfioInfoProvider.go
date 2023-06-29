@@ -51,7 +51,7 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 		HostPath:      rp.vfioMount,
 		ContainerPath: rp.vfioMount,
-		Permissions:   "mrw",
+		Permissions:   "rw",
 	})
 
 	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(rp.pciAddr)
@@ -61,7 +61,7 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      vfioDevHost,
 			ContainerPath: vfioDevContainer,
-			Permissions:   "mrw",
+			Permissions:   "rw",
 		})
 		rp.vfioDevContainer = vfioDevContainer
 	}

@@ -434,7 +434,7 @@ var _ = Describe("PciNetDevice", func() {
 					{
 						HostPath:      "/dev/vhost-vdpa1",
 						ContainerPath: "/dev/vhost-vdpa1",
-						Permissions:   "mrw",
+						Permissions:   "rw",
 					}}))
 				Expect(dev1.GetMounts()).To(HaveLen(0))
 				Expect(dev1.GetVdpaDevice()).To(Equal(fakeVdpaVhost))

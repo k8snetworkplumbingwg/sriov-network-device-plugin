@@ -52,7 +52,7 @@ var _ = Describe("uioInfoProvider", func() {
 			},
 			"0000:02:00.0",
 			[]*pluginapi.DeviceSpec{
-				{HostPath: "/dev/uio0", ContainerPath: "/dev/uio0", Permissions: "mrw"},
+				{HostPath: "/dev/uio0", ContainerPath: "/dev/uio0", Permissions: "rw"},
 			},
 		),
 	)
