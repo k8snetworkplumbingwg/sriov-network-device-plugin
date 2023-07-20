@@ -66,7 +66,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 		It("should return correct spec for vdpa vhost type device", func() {
 			vdpa := &mocks.VdpaDevice{}
 			vdpa.On("GetType").Return(types.VdpaVhostType).
-				On("GetPath").Return("/dev/vhost-vdpa1")
+				On("GetPath").Return("/dev/vhost-vdpa1", nil)
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVhostType, vdpa)
 			Expect(dip.GetDeviceSpecs()).To(Equal([]*pluginapi.DeviceSpec{{
 				HostPath:      "/dev/vhost-vdpa1",
@@ -84,7 +84,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 		It("should return object with the mounts", func() {
 			vdpa := &mocks.VdpaDevice{}
 			vdpa.On("GetType").Return(types.VdpaVhostType).
-				On("GetPath").Return("/dev/vhost-vdpa1")
+				On("GetPath").Return("/dev/vhost-vdpa1", nil)
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVhostType, vdpa)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()

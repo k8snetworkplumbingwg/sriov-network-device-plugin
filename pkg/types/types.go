@@ -323,7 +323,7 @@ type NadUtils interface {
 
 // VdpaDevice is an interface to access vDPA device information
 type VdpaDevice interface {
-	GetPath() string
+	GetPath() (string, error)
 	GetParent() string
 	GetType() VdpaType
 }

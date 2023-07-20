@@ -60,7 +60,11 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 
 	// DeviceSpecs only required for vhost vdpa type as the
 	if vip.vdpaType == types.VdpaVhostType {
-		vdpaPath := vip.dev.GetPath()
+		vdpaPath, err := vip.dev.GetPath()
+		if err != nil {
+			glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
+			return nil
+		}
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      vdpaPath,
 			ContainerPath: vdpaPath,

@@ -17,6 +17,8 @@ limitations under the License.
 package devices
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
 
@@ -43,13 +45,11 @@ func (v *vdpaDevice) GetParent() string {
 	return v.VdpaDevice.Name()
 }
 
-func (v *vdpaDevice) GetPath() string {
-	path, err := v.ParentDevicePath()
-	if err != nil {
-		glog.Infof("%s - No path for vDPA device found: %v", v.Name(), err)
-		return ""
+func (v *vdpaDevice) GetPath() (string, error) {
+	if v.VhostVdpa() != nil {
+		return v.VhostVdpa().Path(), nil
 	}
-	return path
+	return "", fmt.Errorf("device %s: path is not applicable for non vhost-vdpa", v.Name())
 }
 
 // GetVdpaDevice returns a VdpaDevice from a given VF PCI address
