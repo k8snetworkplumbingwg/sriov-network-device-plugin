@@ -27,6 +27,7 @@ import (
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	registerapi "k8s.io/kubelet/pkg/apis/pluginregistration/v1"
 )
@@ -72,7 +73,7 @@ func NewResourceServer(prefix, suffix string, pluginWatch bool, rp types.Resourc
 
 func (rs *resourceServer) register() error {
 	kubeletEndpoint := "unix:" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
-	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithInsecure())
+	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
 		return err
@@ -231,7 +232,8 @@ func (rs *resourceServer) Start() error {
 	}()
 	// Wait for server to start by launching a blocking connection
 	ctx, _ := context.WithTimeout(context.TODO(), serverStartTimeout)
-	conn, err := grpc.DialContext(ctx, "unix:"+rs.sockPath, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(
+		ctx, "unix:"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 	if err != nil {
 		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)
