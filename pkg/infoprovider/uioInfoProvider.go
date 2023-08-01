@@ -51,7 +51,7 @@ func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      uioDev,
 			ContainerPath: uioDev,
-			Permissions:   "mrw",
+			Permissions:   "rw",
 		})
 		rp.uioDev = uioDev
 	}

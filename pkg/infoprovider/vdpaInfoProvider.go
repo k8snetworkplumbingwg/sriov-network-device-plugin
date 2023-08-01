@@ -68,7 +68,7 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      vdpaPath,
 			ContainerPath: vdpaPath,
-			Permissions:   "mrw",
+			Permissions:   "rw",
 		})
 		vip.vdpaPath = vdpaPath
 	}

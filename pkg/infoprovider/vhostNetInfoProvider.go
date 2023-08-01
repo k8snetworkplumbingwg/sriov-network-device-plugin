@@ -49,7 +49,7 @@ func getVhostNetDeviceSpec() []*pluginapi.DeviceSpec {
 	deviceSpec = append(deviceSpec, &pluginapi.DeviceSpec{
 		HostPath:      "/dev/vhost-net",
 		ContainerPath: "/dev/vhost-net",
-		Permissions:   "mrw",
+		Permissions:   "rw",
 	})
 
 	return deviceSpec
@@ -67,7 +67,7 @@ func getTunDeviceSpec() []*pluginapi.DeviceSpec {
 	deviceSpec = append(deviceSpec, &pluginapi.DeviceSpec{
 		HostPath:      "/dev/net/tun",
 		ContainerPath: "/dev/net/tun",
-		Permissions:   "mrw",
+		Permissions:   "rw",
 	})
 
 	return deviceSpec

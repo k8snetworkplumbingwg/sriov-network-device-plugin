@@ -71,9 +71,9 @@ var _ = Describe("ResourcePool", func() {
 				specs := rp.GetDeviceSpecs(devs)
 
 				expected := []*pluginapi.DeviceSpec{
-					{ContainerPath: "/dev/vfio/vfio", HostPath: "/dev/vfio/vfio", Permissions: "mrw"},
-					{ContainerPath: "/dev/vfio/0", HostPath: "/dev/vfio/0", Permissions: "mrw"},
-					{ContainerPath: "/dev/vfio/1", HostPath: "/dev/vfio/1", Permissions: "mrw"},
+					{ContainerPath: "/dev/vfio/vfio", HostPath: "/dev/vfio/vfio", Permissions: "rw"},
+					{ContainerPath: "/dev/vfio/0", HostPath: "/dev/vfio/0", Permissions: "rw"},
+					{ContainerPath: "/dev/vfio/1", HostPath: "/dev/vfio/1", Permissions: "rw"},
 				}
 				Expect(specs).To(HaveLen(3))
 				Expect(specs).To(ConsistOf(expected))

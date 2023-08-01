@@ -40,7 +40,7 @@ func newRdmaSpec(rdmaResources []string) types.RdmaSpec {
 				deviceSpec = append(deviceSpec, &pluginapi.DeviceSpec{
 					HostPath:      rdmaDevice,
 					ContainerPath: rdmaDevice,
-					Permissions:   "rwm",
+					Permissions:   "rw",
 				})
 			}
 		}

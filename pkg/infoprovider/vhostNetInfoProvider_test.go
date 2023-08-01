@@ -40,12 +40,12 @@ var _ = Describe("vdpaInfoProvider", func() {
 				{
 					HostPath:      "/dev/vhost-net",
 					ContainerPath: "/dev/vhost-net",
-					Permissions:   "mrw",
+					Permissions:   "rw",
 				},
 				{
 					HostPath:      "/dev/net/tun",
 					ContainerPath: "/dev/net/tun",
-					Permissions:   "mrw",
+					Permissions:   "rw",
 				},
 			}))
 		})

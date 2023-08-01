@@ -71,7 +71,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 			Expect(dip.GetDeviceSpecs()).To(Equal([]*pluginapi.DeviceSpec{{
 				HostPath:      "/dev/vhost-vdpa1",
 				ContainerPath: "/dev/vhost-vdpa1",
-				Permissions:   "mrw",
+				Permissions:   "rw",
 			}}))
 		})
 	})
