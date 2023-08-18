@@ -105,7 +105,7 @@ type acpiIndexSelector struct {
 func (s *acpiIndexSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
 	filteredList := make([]types.HostDevice, 0)
 	for _, dev := range inDevices {
-		acpiIndex := dev.GetAcpiIndex()
+		acpiIndex := dev.(types.PciDevice).GetAcpiIndex()
 		if contains(s.acpiIndexes, acpiIndex) {
 			filteredList = append(filteredList, dev)
 		}

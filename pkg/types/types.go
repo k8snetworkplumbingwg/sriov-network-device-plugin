@@ -106,10 +106,9 @@ type ResourceConfig struct {
 
 // DeviceSelectors contains common device selectors fields
 type DeviceSelectors struct {
-	Vendors     []string `json:"vendors,omitempty"`
-	Devices     []string `json:"devices,omitempty"`
-	Drivers     []string `json:"drivers,omitempty"`
-	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
+	Vendors []string `json:"vendors,omitempty"`
+	Devices []string `json:"devices,omitempty"`
+	Drivers []string `json:"drivers,omitempty"`
 }
 
 // AdditionalInfo contains all the per device or global extra information as key value pairs
@@ -126,6 +125,7 @@ type GenericNetDeviceSelectors struct {
 	RootDevices []string `json:"rootDevices,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	IsRdma      bool     // the resource support rdma
+	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields
@@ -238,8 +238,6 @@ type HostDevice interface {
 	GetDeviceID() string
 	// GetDeviceCode returns identifier number of the device
 	GetDeviceCode() string
-	// GetAcpiIndex returns ACPI index of the device
-	GetAcpiIndex() string
 }
 
 // PciDevice provides an interface to get generic PCI device information
@@ -249,6 +247,8 @@ type PciDevice interface {
 	HostDevice
 	// GetPciAddr returns PCI address of the device
 	GetPciAddr() string
+	// GetAcpiIndex returns ACPI index of the device
+	GetAcpiIndex() string
 }
 
 // NetDevice provides an interface to get generic network device information
