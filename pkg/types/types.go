@@ -93,7 +93,7 @@ var SupportedVdpaTypes = map[VdpaType]string{
 
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
-	// optional resource prefix that will overwrite global prefix specified in cli params
+	// optional resource prefix that will overwrite	global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
 	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
