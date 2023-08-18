@@ -308,6 +308,7 @@ These selectors are applicable when "deviceType" is "accelerator".
 | "devices"      | N        | Target Devices' device Hex code as string | `string` list Default: `null` | "devices": ["154c", "1889", "1018"] |
 | "drivers"      | N        | Target device driver names as string      | `string` list Default: `null` | "drivers": ["vfio-pci"]             |
 | "pciAddresses" | N        | Target device's pci address as string     | `string` list Default: `null` | "pciAddresses": ["0000:03:02.0"]    |
+| "acpiIndexes"  | N        | Target device's acpi index as string      | `string` list Default: `null` | "acpiIndexes": ["101"]              |
 
 
 #### Network devices selectors
