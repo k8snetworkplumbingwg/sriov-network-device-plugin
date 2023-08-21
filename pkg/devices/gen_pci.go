@@ -19,6 +19,7 @@ package devices
 
 import (
 	"github.com/jaypipes/ghw"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 

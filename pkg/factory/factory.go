@@ -102,13 +102,13 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 	}
 }
 
-func (rf *resourceFactory) FilterBySelector(selectorName string, values []string, devices []types.HostDevice) []types.HostDevice {
+func (rf *resourceFactory) FilterBySelector(selectorName string, values []string, devicesToFilter []types.HostDevice) []types.HostDevice {
 	if len(values) > 0 {
 		if selector, err := rf.GetSelector(selectorName, values); err == nil {
-			return selector.Filter(devices)
+			return selector.Filter(devicesToFilter)
 		}
 	}
-	return devices
+	return devicesToFilter
 }
 
 // GetResourcePool returns an instance of resourcePool
