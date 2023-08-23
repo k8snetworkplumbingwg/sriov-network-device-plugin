@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Kubernetes Network Plumbing Working Group
+// Copyright (c) 2021 Kubernetes Network Plumbing Working Group
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 
 	cnitypes "github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
+	cni100 "github.com/containernetworking/cni/pkg/types/100"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -65,40 +66,40 @@ func SetNetworkStatus(client kubernetes.Interface, pod *corev1.Pod, statuses []v
 		}
 	}
 
-	_, err := setPodNetworkStatus(client, pod, fmt.Sprintf("[%s]", strings.Join(networkStatus, ",")))
+	err := setPodNetworkStatus(client, pod, fmt.Sprintf("[%s]", strings.Join(networkStatus, ",")))
 	if err != nil {
 		return fmt.Errorf("SetNetworkStatus: failed to update the pod %s in out of cluster comm: %v", pod.Name, err)
 	}
 	return nil
 }
 
-func setPodNetworkStatus(client kubernetes.Interface, pod *corev1.Pod, networkstatus string) (*corev1.Pod, error) {
+func setPodNetworkStatus(client kubernetes.Interface, pod *corev1.Pod, networkstatus string) error {
 	if len(pod.Annotations) == 0 {
 		pod.Annotations = make(map[string]string)
 	}
 
 	coreClient := client.CoreV1()
-
-	pod.Annotations[v1.NetworkStatusAnnot] = networkstatus
-	pod.Annotations[v1.OldNetworkStatusAnnot] = networkstatus
-	pod = pod.DeepCopy()
 	var err error
+	name := pod.Name
+	namespace := pod.Namespace
 
-	if resultErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+	resultErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		pod, err = coreClient.Pods(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
-			// Re-get the pod unless it's the first attempt to update
-			pod, err = coreClient.Pods(pod.Namespace).Get(context.TODO(), pod.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+			return err
 		}
 
-		pod, err = coreClient.Pods(pod.Namespace).UpdateStatus(context.TODO(), pod, metav1.UpdateOptions{})
+		if len(pod.Annotations) == 0 {
+			pod.Annotations = make(map[string]string)
+		}
+		pod.Annotations[v1.NetworkStatusAnnot] = networkstatus
+		_, err = coreClient.Pods(namespace).UpdateStatus(context.TODO(), pod, metav1.UpdateOptions{})
 		return err
-	}); resultErr != nil {
-		return nil, fmt.Errorf("status update failed for pod %s/%s: %v", pod.Namespace, pod.Name, resultErr)
+	})
+	if resultErr != nil {
+		return fmt.Errorf("status update failed for pod %s/%s: %v", pod.Namespace, pod.Name, resultErr)
 	}
-	return pod, nil
+	return nil
 }
 
 // GetNetworkStatus returns pod's network status
@@ -128,9 +129,9 @@ func CreateNetworkStatus(r cnitypes.Result, networkName string, defaultNetwork b
 	netStatus.Default = defaultNetwork
 
 	// Convert whatever the IPAM result was into the current Result type
-	result, err := current.NewResultFromResult(r)
+	result, err := cni100.NewResultFromResult(r)
 	if err != nil {
-		return netStatus, fmt.Errorf("error convert the type.Result to current.Result: %v", err)
+		return netStatus, fmt.Errorf("error convert the type.Result to cni100.Result: %v", err)
 	}
 
 	for _, ifs := range result.Interfaces {
@@ -142,12 +143,12 @@ func CreateNetworkStatus(r cnitypes.Result, networkName string, defaultNetwork b
 	}
 
 	for _, ipconfig := range result.IPs {
-		if ipconfig.Version == "4" && ipconfig.Address.IP.To4() != nil {
-			netStatus.IPs = append(netStatus.IPs, ipconfig.Address.IP.String())
-		}
+		netStatus.IPs = append(netStatus.IPs, ipconfig.Address.IP.String())
+	}
 
-		if ipconfig.Version == "6" && ipconfig.Address.IP.To16() != nil {
-			netStatus.IPs = append(netStatus.IPs, ipconfig.Address.IP.String())
+	for _, route := range result.Routes {
+		if isDefaultRoute(route) {
+			netStatus.Gateway = append(netStatus.Gateway, route.GW.String())
 		}
 	}
 
@@ -159,6 +160,12 @@ func CreateNetworkStatus(r cnitypes.Result, networkName string, defaultNetwork b
 	}
 
 	return netStatus, nil
+}
+
+func isDefaultRoute(route *cnitypes.Route) bool {
+	return route.Dst.IP == nil && route.Dst.Mask == nil ||
+		route.Dst.IP.Equal(net.IPv4zero) ||
+		route.Dst.IP.Equal(net.IPv6zero)
 }
 
 // ParsePodNetworkAnnotation parses Pod annotation for net-attach-def and get NetworkSelectionElement
