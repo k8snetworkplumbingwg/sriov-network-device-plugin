@@ -37,7 +37,7 @@ import (
 var _ = Describe("AuxNetDeviceProvider", func() {
 	DescribeTable("validating configuration",
 		func(rc *types.ResourceConfig, expected bool) {
-			rf := factory.NewResourceFactory("fake", "fake", true)
+			rf := factory.NewResourceFactory("fake", "fake", true, false)
 			p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 			actual := p.ValidConfig(rc)
 			Expect(actual).To(Equal(expected))
@@ -133,7 +133,7 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 				On("GetAuxNetDevicesFromPci", "0000:02:00.0").Return([]string{}, nil)
 			utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
 
-			rf := factory.NewResourceFactory("fake", "fake", true)
+			rf := factory.NewResourceFactory("fake", "fake", true, false)
 			p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 			config := &types.ResourceConfig{
 				DeviceType: types.AuxNetDeviceType,
@@ -181,7 +181,7 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 	Describe("getting Filtered devices", func() {
 		Context("using selectors", func() {
 			It("should correctly filter devices", func() {
-				rf := factory.NewResourceFactory("fake", "fake", false)
+				rf := factory.NewResourceFactory("fake", "fake", false, false)
 				p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 				all := make([]types.HostDevice, 5)
 				mocked := make([]tmocks.AuxNetDevice, 5)
@@ -265,7 +265,7 @@ var _ = Describe("AuxNetDeviceProvider", func() {
 				Expect(actual).To(ConsistOf(matchingDevices))
 			})
 			It("should error if the selector index is out of bounds", func() {
-				rf := factory.NewResourceFactory("fake", "fake", false)
+				rf := factory.NewResourceFactory("fake", "fake", false, false)
 				p := auxnetdevice.NewAuxNetDeviceProvider(rf)
 				devs := make([]types.HostDevice, 0)
 

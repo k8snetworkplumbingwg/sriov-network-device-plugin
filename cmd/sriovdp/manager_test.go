@@ -19,6 +19,8 @@ import (
 	"os"
 	"testing"
 
+	CDImocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi/mocks"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -441,7 +443,7 @@ var _ = Describe("Resource manager", func() {
 				_ = os.Unsetenv("GHW_CHROOT")
 			}()
 
-			rf := factory.NewResourceFactory("fake", "fake", true)
+			rf := factory.NewResourceFactory("fake", "fake", true, false)
 
 			rm := &resourceManager{
 				rFactory: rf,
@@ -613,6 +615,25 @@ var _ = Describe("Resource manager", func() {
 			err := rm.stopAllServers()
 			It("should fail", func() {
 				Expect(err).To(HaveOccurred())
+			})
+		})
+		Context("when resource servers cleans CDI specs ", func() {
+			rs := &mocks.ResourceServer{}
+			rs.On("Stop").Return(nil)
+
+			cp = &cliParams{
+				configFile:     "/tmp/sriovdp/test_config",
+				resourcePrefix: "test_",
+				useCdi:         true,
+			}
+			rm = newResourceManager(cp)
+			cdi := &CDImocks.CDI{}
+			cdi.On("CleanupSpecs").Return(nil)
+			rm.cdi = &CDImocks.CDI{}
+
+			err := rm.stopAllServers()
+			It("shouldn't fail", func() {
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})

@@ -32,6 +32,7 @@
   - [CNI plugins in virtual environments](#cni-plugins-in-virtual-environments)
     - [Virtual environments with no iommu](#virtual-environments-with-no-iommu)
   - [Multi Architecture Support](#multi-architecture-support)
+  - [Container Device Interface](#container-device-interface)
   - [Issues and Contributing](#issues-and-contributing)
 
 ## SR-IOV Network Device Plugin
@@ -712,11 +713,14 @@ Buiding image for AMD64:
 $ DOCKERFILE=Dockerfile make image
 ```
 
-Buiding image for PPC64LE:
+Building image for PPC64LE:
 
 ```sh
 $ DOCKERFILE=images/Dockerfile.ppc64le TAG=ghcr.io/k8snetworkplumbingwg/sriov-device-plugin:latest-ppc64le make image
 ```
+
+## Container Device Interface
+To enable Container Device Interface (CDI) deployment please the see [CDI](deployments/cdi/README.md).
 
 ## Issues and Contributing
 

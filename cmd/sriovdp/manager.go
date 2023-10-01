@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
+	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -31,11 +32,14 @@ const (
 	socketSuffix = "sock"
 )
 
+// cliParams presents CLI parameters for SR-IOV Network Device Plugin
 type cliParams struct {
 	configFile     string
 	resourcePrefix string
+	useCdi         bool
 }
 
+// resourceManager manages resources for SR-IOV Network Device Plugin binaries
 type resourceManager struct {
 	cliParams
 	pluginWatchMode bool
@@ -43,8 +47,10 @@ type resourceManager struct {
 	configList      []*types.ResourceConfig
 	resourceServers []types.ResourceServer
 	deviceProviders map[types.DeviceType]types.DeviceProvider
+	cdi             cdiPkg.CDI
 }
 
+// newResourceManager initiates a new instance of resourceManager
 func newResourceManager(cp *cliParams) *resourceManager {
 	pluginWatchMode := utils.DetectPluginWatchMode(types.SockDir)
 	if pluginWatchMode {
@@ -53,7 +59,7 @@ func newResourceManager(cp *cliParams) *resourceManager {
 		glog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
 
-	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode)
+	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode, cp.useCdi)
 	dp := make(map[types.DeviceType]types.DeviceProvider)
 	for k := range types.SupportedDevices {
 		dp[k] = rf.GetDeviceProvider(k)
@@ -64,6 +70,7 @@ func newResourceManager(cp *cliParams) *resourceManager {
 		pluginWatchMode: pluginWatchMode,
 		rFactory:        rf,
 		deviceProviders: dp,
+		cdi:             cdiPkg.New(),
 	}
 }
 
@@ -101,12 +108,16 @@ func (rm *resourceManager) readConfig() error {
 }
 
 func (rm *resourceManager) initServers() error {
+	err := rm.cleanupCDISpecs()
+	if err != nil {
+		glog.Errorf("Unable to delete CDI specs: %v", err)
+		return err
+	}
 	rf := rm.rFactory
 	glog.Infof("number of config: %d\n", len(rm.configList))
 	deviceAllocated := make(map[string]bool)
 	for _, rc := range rm.configList {
 		// Create new ResourcePool
-		glog.Infof("")
 		glog.Infof("Creating new ResourcePool: %s", rc.ResourceName)
 		glog.Infof("DeviceType: %+v", rc.DeviceType)
 		dp, ok := rm.deviceProviders[rc.DeviceType]
@@ -245,6 +256,15 @@ func (rm *resourceManager) discoverHostDevices() error {
 			if err := dp.AddTargetDevices(devices, v); err != nil {
 				glog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
 			}
+		}
+	}
+	return nil
+}
+
+func (rm *resourceManager) cleanupCDISpecs() error {
+	if rm.cliParams.useCdi {
+		if err := rm.cdi.CleanupSpecs(); err != nil {
+			return fmt.Errorf("unable to delete CDI specs: %v", err)
 		}
 	}
 	return nil

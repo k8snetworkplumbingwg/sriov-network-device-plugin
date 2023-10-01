@@ -73,7 +73,7 @@ var _ = Describe("AuxNetDevice", func() {
 					On("GetNetDevicesFromAux", auxDevID).Return([]string{"eth0"}, nil)
 				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDevice("0000:00:00.1")
 				rc := &types.ResourceConfig{}
 

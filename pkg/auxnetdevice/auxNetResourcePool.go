@@ -25,6 +25,10 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
+const (
+	auxPoolType = "net-sf"
+)
+
 type auxNetResourcePool struct {
 	*resources.ResourcePoolImpl
 }
@@ -59,4 +63,9 @@ func (ap *auxNetResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.De
 		}
 	}
 	return devSpecs
+}
+
+// GetCDIKind returns device kind for CDI spec
+func (ap *auxNetResourcePool) GetCDIName() string {
+	return auxPoolType
 }

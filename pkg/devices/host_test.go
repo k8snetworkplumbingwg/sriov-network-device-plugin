@@ -48,7 +48,7 @@ var _ = Describe("HostDevice", func() {
 			}
 			defer fs.Use()()
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			pciAddr := "0000:00:00.1"
 			in := newPciDeviceFn(pciAddr)
 			rc := &types.ResourceConfig{}
@@ -72,7 +72,7 @@ var _ = Describe("HostDevice", func() {
 			}
 			defer fs.Use()()
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			pciAddr := "0000:00:00.1"
 			in := newPciDeviceFn(pciAddr)
 			rc := &types.ResourceConfig{}
@@ -100,7 +100,7 @@ var _ = Describe("HostDevice", func() {
 			}
 			defer fs.Use()()
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			pciAddr := "0000:00:00.1"
 			in := newPciDeviceFn(pciAddr)
 			rc := &types.ResourceConfig{}
@@ -123,7 +123,7 @@ var _ = Describe("HostDevice", func() {
 			}
 			defer fs.Use()()
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			pciAddr := "0000:00:00.1"
 			in := newPciDeviceFn(pciAddr)
 			rc := &types.ResourceConfig{}
@@ -147,7 +147,7 @@ var _ = Describe("HostDevice", func() {
 			}
 			defer fs.Use()()
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			pciAddr := "0000:00:00.1"
 			in := newPciDeviceFn(pciAddr)
 			rc := &types.ResourceConfig{ExcludeTopology: true}

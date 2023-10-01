@@ -53,7 +53,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
@@ -99,7 +99,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
@@ -122,7 +122,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
@@ -146,7 +146,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{ExcludeTopology: true}
 
@@ -164,7 +164,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
@@ -185,7 +185,7 @@ var _ = Describe("Accelerator", func() {
 				}
 				defer fs.Use()()
 
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				in := newPciDeviceFn()
 				config := &types.ResourceConfig{}
 
