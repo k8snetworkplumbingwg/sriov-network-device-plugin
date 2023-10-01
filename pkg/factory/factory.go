@@ -56,7 +56,12 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		policy := rp.GetAllocationPolicy()
+		allocator, err := rf.GetAllocator(policy)
+		if err != nil {
+			return nil, err
+		}
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp, allocator), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }
@@ -220,4 +225,16 @@ func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) ([]interfac
 // GetNadUtils returns an instance of NadUtils
 func (rf *resourceFactory) GetNadUtils() types.NadUtils {
 	return netdevice.NewNadUtils()
+}
+
+// GetAllocator returns an instance of Allocator using preferredAllocationPolicy
+func (rf *resourceFactory) GetAllocator(policy string) (types.Allocator, error) {
+	switch policy {
+	case "":
+		return nil, nil
+	case "packed":
+		return resources.NewPackedAllocator(), nil
+	default:
+		return nil, fmt.Errorf("GetAllocator(): invalid policy %s", policy)
+	}
 }

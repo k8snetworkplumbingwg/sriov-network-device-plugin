@@ -96,12 +96,13 @@ type ResourceConfig struct {
 	// optional resource prefix that will overwrite	global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
-	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	DeviceType      DeviceType                `json:"deviceType,omitempty"`
-	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
-	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
-	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
-	SelectorObjs    []interface{}
+	ResourceName     string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	DeviceType       DeviceType                `json:"deviceType,omitempty"`
+	ExcludeTopology  bool                      `json:"excludeTopology,omitempty"`
+	Selectors        *json.RawMessage          `json:"selectors,omitempty"`
+	AdditionalInfo   map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
+	AllocationPolicy string                    `json:"allocationPolicy,omitempty"`
+	SelectorObjs     []interface{}
 }
 
 // DeviceSelectors contains common device selectors fields
@@ -179,6 +180,7 @@ type ResourceFactory interface {
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) ([]interface{}, error)
 	GetNadUtils() NadUtils
+	GetAllocator(string) (Allocator, error)
 }
 
 // ResourcePool represents a generic resource entity
@@ -193,6 +195,8 @@ type ResourcePool interface {
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
+	GetDevicePool() map[string]HostDevice // for Allocate
+	GetAllocationPolicy() string
 }
 
 // DeviceProvider provides interface for device discovery
@@ -297,6 +301,11 @@ type DeviceInfoProvider interface {
 	GetDeviceSpecs() []*pluginapi.DeviceSpec
 	GetEnvVal() AdditionalInfo
 	GetMounts() []*pluginapi.Mount
+}
+
+// Allocator is an interface to get preferred device allocation
+type Allocator interface {
+	Allocate(*pluginapi.ContainerPreferredAllocationRequest, ResourcePool) []string
 }
 
 // DeviceSelector provides an interface for filtering a list of devices
