@@ -169,17 +169,21 @@ var _ = Describe("Server", func() {
 				err := rs.Start()
 				Expect(err).NotTo(HaveOccurred())
 
+				// demo the listAndWatch
+				rs.listAndWatchFinishedSignal <- true
 				err = rs.restart()
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+				Eventually(rs.listAndWatchStopSignal, time.Second*10).Should(Receive())
 
 				go func() {
 					rp.On("CleanDeviceInfoFile", "fake").Return(nil)
+					// demo the listAndWatch
+					rs.listAndWatchFinishedSignal <- true
 					err := rs.Stop()
 					Expect(err).NotTo(HaveOccurred())
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+				Eventually(rs.listAndWatchStopSignal, time.Second*10).Should(Receive())
 				Eventually(rs.stopWatcher, time.Second*10).Should(Receive())
 
 				close(done)
@@ -210,11 +214,12 @@ var _ = Describe("Server", func() {
 
 				go func() {
 					rp.On("CleanDeviceInfoFile", "fake").Return(nil)
+					rs.listAndWatchFinishedSignal <- true
 					err := rs.Stop()
 					Expect(err).NotTo(HaveOccurred())
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+				Eventually(rs.listAndWatchStopSignal, time.Second*10).Should(Receive())
 
 				close(done)
 			}, 12.0)
@@ -252,10 +257,11 @@ var _ = Describe("Server", func() {
 
 				// sleep 1 second to let watcher perform at least a single socket-file check
 				time.Sleep(time.Second)
+				rs.listAndWatchFinishedSignal <- true
 				err = rs.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+				Eventually(rs.listAndWatchStopSignal, time.Second*10).Should(Receive())
 
 				close(done)
 			}, 12.0)
@@ -459,7 +465,7 @@ var _ = Describe("Server", func() {
 				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
 
 				// finally send term signal
-				rs.termSignal <- true
+				rs.listAndWatchStopSignal <- true
 
 				close(done)
 			}, 30.0)
@@ -501,7 +507,7 @@ var _ = Describe("Server", func() {
 				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
 
 				// finally send term signal
-				rs.termSignal <- true
+				rs.listAndWatchStopSignal <- true
 
 				close(done)
 			}, 30)
