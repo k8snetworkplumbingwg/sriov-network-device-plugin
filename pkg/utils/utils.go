@@ -382,6 +382,24 @@ func GetDriverName(pciAddr string) (string, error) {
 	return filepath.Base(driverInfo), nil
 }
 
+// GetAcpiIndex returns the ACPI index attached to a pci device from its pci address
+func GetAcpiIndex(pciAddr string) (string, error) {
+	acpiIndexLink := filepath.Join(sysBusPci, pciAddr, "acpi_index")
+	_, err := os.Stat(acpiIndexLink)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", fmt.Errorf("error getting ACPI index for device %s %v", pciAddr, err)
+	}
+
+	acpiIndex, err := os.ReadFile(acpiIndexLink)
+	if err != nil {
+		return "", fmt.Errorf("error getting ACPI index for device %s %v", pciAddr, err)
+	}
+	return string(bytes.TrimSpace(acpiIndex)), nil
+}
+
 // GetVFID returns VF ID index (within specific PF) based on PCI address
 func GetVFID(pciAddr string) (vfID int, err error) {
 	pfDir := filepath.Join(sysBusPci, pciAddr, "physfn")

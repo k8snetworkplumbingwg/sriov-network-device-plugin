@@ -93,6 +93,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewRootDeviceSelector(values), nil
 	case "linkTypes":
 		return resources.NewLinkTypeSelector(values), nil
+	case "acpiIndexes":
+		return resources.NewAcpiIndexSelector(values), nil
 	case "ddpProfiles":
 		return resources.NewDdpSelector(values), nil
 	case "auxTypes":
@@ -100,6 +102,15 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
+}
+
+func (rf *resourceFactory) FilterBySelector(selectorName string, values []string, devicesToFilter []types.HostDevice) []types.HostDevice {
+	if len(values) > 0 {
+		if selector, err := rf.GetSelector(selectorName, values); err == nil {
+			return selector.Filter(devicesToFilter)
+		}
+	}
+	return devicesToFilter
 }
 
 // GetResourcePool returns an instance of resourcePool

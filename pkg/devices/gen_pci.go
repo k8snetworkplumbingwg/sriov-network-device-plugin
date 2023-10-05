@@ -19,23 +19,37 @@ package devices
 
 import (
 	"github.com/jaypipes/ghw"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 // GenPciDevice implementation
 type GenPciDevice struct {
-	pciAddr string
+	pciAddr   string
+	acpiIndex string
 }
 
 // NewGenPciDevice returns GenPciDevice instance
 func NewGenPciDevice(dev *ghw.PCIDevice) (*GenPciDevice, error) {
 	pciAddr := dev.Address
 
+	acpiIndex, err := utils.GetAcpiIndex(dev.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	return &GenPciDevice{
-		pciAddr: pciAddr,
+		pciAddr:   pciAddr,
+		acpiIndex: acpiIndex,
 	}, nil
 }
 
 // GetPciAddr returns pci address of the device
 func (pd *GenPciDevice) GetPciAddr() string {
 	return pd.pciAddr
+}
+
+// GetAcpiIndex returns ACPI index of the device
+func (pd *GenPciDevice) GetAcpiIndex() string {
+	return pd.acpiIndex
 }

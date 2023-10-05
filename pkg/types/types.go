@@ -125,6 +125,7 @@ type GenericNetDeviceSelectors struct {
 	RootDevices []string `json:"rootDevices,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	IsRdma      bool     // the resource support rdma
+	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields
@@ -179,6 +180,7 @@ type ResourceFactory interface {
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) ([]interface{}, error)
 	GetNadUtils() NadUtils
+	FilterBySelector(string, []string, []HostDevice) []HostDevice
 }
 
 // ResourcePool represents a generic resource entity
@@ -246,6 +248,8 @@ type PciDevice interface {
 	HostDevice
 	// GetPciAddr returns PCI address of the device
 	GetPciAddr() string
+	// GetAcpiIndex returns ACPI index of the device
+	GetAcpiIndex() string
 }
 
 // NetDevice provides an interface to get generic network device information

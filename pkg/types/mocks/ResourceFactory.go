@@ -13,6 +13,22 @@ type ResourceFactory struct {
 	mock.Mock
 }
 
+// FilterBySelector provides a mock function with given fields: _a0, _a1, _a2
+func (_m *ResourceFactory) FilterBySelector(_a0 string, _a1 []string, _a2 []types.HostDevice) []types.HostDevice {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 []types.HostDevice
+	if rf, ok := ret.Get(0).(func(string, []string, []types.HostDevice) []types.HostDevice); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.HostDevice)
+		}
+	}
+
+	return r0
+}
+
 // GetDefaultInfoProvider provides a mock function with given fields: _a0, _a1
 func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string, _a1 string) []types.DeviceInfoProvider {
 	ret := _m.Called(_a0, _a1)
