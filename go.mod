@@ -16,7 +16,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.2
 	github.com/vishvananda/netlink v1.2.1-beta.2
-	google.golang.org/grpc v1.56.2
+	google.golang.org/grpc v1.56.3
 	k8s.io/kubelet v0.28.3
 )
 
