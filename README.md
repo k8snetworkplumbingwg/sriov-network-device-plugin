@@ -87,6 +87,7 @@ The following  NICs were tested with this implementation. However, other SR-IOV 
 - Mellanox ConnectX-6®
 - Mellanox ConnectX-6® Dx
 - Mellanox BlueField-2®
+- Broadcom NetXtreme-E Series Adapters
 
 ## Quick Start
 
@@ -255,6 +256,15 @@ This plugin creates device plugin endpoints based on the configurations given in
                "token": "3e49019f-412f-4f02-824e-4cd195944205"
              }
           }
+        },
+        {
+            "resourceName": "brcm_sriov_bnxt",
+            "resourcePrefix": "broadcom.com",
+            "selectors": [{
+                "vendors": ["14e4"],
+                "devices": ["1750"],
+                "drivers": ["bnxt_en"]
+            }],
         },
         {
           "resourceName": "old_selectors_syntax_example",
