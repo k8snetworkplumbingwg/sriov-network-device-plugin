@@ -432,12 +432,24 @@ var _ = Describe("In the utils package", func() {
 			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/physfn/net/"}},
 			"0000:01:10.0", "", true,
 		),
-		Entry("pf net is not a directory at all",
+		Entry("PF net is not a directory at all",
 			&FakeFilesystem{
 				Dirs:  []string{"sys/bus/pci/devices/0000:01:10.0/physfn"},
 				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/physfn/net/": []byte("junk")},
 			},
 			"0000:01:10.0", "", true,
+		),
+		Entry("PF net is in virtio path",
+			&FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:01:00.0/",
+					"sys/bus/pci/devices/0000:01:10.0/",
+					"sys/bus/pci/devices/0000:01:00.0/virtio1/net/fakePF"},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:01:10.0/physfn": "../0000:01:00.0",
+				},
+			},
+			"0000:01:10.0", "fakePF", false,
 		),
 	)
 

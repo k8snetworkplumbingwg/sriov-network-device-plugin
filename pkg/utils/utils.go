@@ -92,6 +92,17 @@ func GetPfName(pciAddr string) (string, error) {
 	}
 
 	path := filepath.Join(sysBusPci, pciAddr, "physfn", "net")
+	virtIOpath := filepath.Join(sysBusPci, pciAddr, "physfn")
+	dir, err := os.ReadDir(virtIOpath)
+	if err != nil {
+		return "", fmt.Errorf("can't open path %s: %w", virtIOpath, err)
+	}
+	for _, file := range dir {
+		if strings.Contains(file.Name(), "virtio") {
+			path = filepath.Join(virtIOpath, file.Name(), "net")
+			break
+		}
+	}
 	files, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
