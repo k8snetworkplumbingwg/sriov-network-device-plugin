@@ -125,6 +125,9 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 	// filter by DDP Profiles list
 	filteredDevice = rf.FilterBySelector("ddpProfiles", nf.DDPProfiles, filteredDevice)
 
+	// filter by PKeys list
+	filteredDevice = rf.FilterBySelector("pKeys", nf.PKeys, filteredDevice)
+
 	// filter for rdma devices
 	if nf.IsRdma {
 		rdmaDevices := make([]types.HostDevice, 0)

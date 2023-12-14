@@ -99,6 +99,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewDdpSelector(values), nil
 	case "auxTypes":
 		return resources.NewAuxTypeSelector(values), nil
+	case "pKeys":
+		return resources.NewPKeySelector(values), nil
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
