@@ -326,7 +326,7 @@ These selectors are applicable when "deviceType" is "accelerator".
 These selectors are applicable when "deviceType" is "netDevice" (note: this is default)
 
 
-|     Field      | Required |                               Description                                |                    Type/Defaults                    |                                     Example/Accepted values                                      |
+| Field          | Required | Description                                                              | Type/Defaults                                       | Example/Accepted values                                                                          |
 |----------------|----------|--------------------------------------------------------------------------|-----------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | "vendors"      | N        | Target device's vendor Hex code as string                                | `string` list Default: `null`                       | "vendors": ["8086", "15b3"]                                                                      |
 | "devices"      | N        | Target Devices' device Hex code as string                                | `string` list Default: `null`                       | "devices": ["154c", "1889", "1018"]                                                              |
@@ -337,6 +337,7 @@ These selectors are applicable when "deviceType" is "netDevice" (note: this is d
 | "rootDevices"  | N        | functions from PF matches list of PF PCI addresses                       | `string` list Default: `null`                       | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
 | "linkTypes"    | N        | The link type of the net device associated with the PCI device           | `string` list Default: `null`                       | "linkTypes": ["ether"]                                                                           |
 | "ddpProfiles"  | N        | A map of device selectors                                                | `string` list Default: `null`                       | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
+| "pKeys"        | N        | Infiniband Partition Keys. Will match only to the devices' default (index0) PKeys. Compatible only with linkTypes = infiniband | `string` list Default: `null`                       | "pKeys": ["0x1", "0xABCD", "0x50"]         |
 | "isRdma"       | N        | Mount RDMA resources. Incompatible with vdpaType                         | `bool` values `true` or `false` Default: `false`    | "isRdma": `true`                                                                                 |
 | "needVhostNet" | N        | Share /dev/vhost-net and /dev/net/tun                                    | `bool` values `true` or `false` Default: `false`    | "needVhostNet": `true`                                                                           |
 | "vdpaType"     | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                              |
