@@ -290,6 +290,20 @@ func (_m *PciNetDevice) IsRdma() bool {
 	return r0
 }
 
+// GetPKey provides a mock function with given fields:
+func (_m *PciNetDevice) GetPKey() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // NewPciNetDevice creates a new instance of PciNetDevice. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewPciNetDevice(t interface {

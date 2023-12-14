@@ -281,6 +281,8 @@ type PciNetDevice interface {
 	GetDDPProfiles() string
 	// GetVdpaDevice returns VDPA device
 	GetVdpaDevice() VdpaDevice
+	// GetPKey return IB Partition key
+	GetPKey() string
 }
 
 // AccelDevice extends PciDevice interface
