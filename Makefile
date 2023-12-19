@@ -42,11 +42,19 @@ ifdef HTTPS_PROXY
 	DOCKERARGS += --build-arg https_proxy=$(HTTPS_PROXY)
 endif
 
-LDFLAGS=
 ifdef STATIC
-	export CGO_ENABLED=0
-	LDFLAGS=-a -ldflags '-extldflags \"-static\"'
+    ifndef FIPS_COMPLIANT
+        export CGO_ENABLED=0
+        EXTLDFLAGS=-extldflags "-static"
+    else
+        $(error STATIC and FIPS_COMPLIANT cannot be set simultaneously)
+    endif
+else
+    export CGO_ENABLED=1
+    EXTLDFLAGS=-extldflags ""
 endif
+
+LDFLAGS=-a -ldflags '$(EXTLDFLAGS)'
 
 export GOPATH
 export GOBIN
