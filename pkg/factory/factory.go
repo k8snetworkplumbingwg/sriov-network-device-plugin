@@ -33,17 +33,19 @@ type resourceFactory struct {
 	endPointPrefix string
 	endPointSuffix string
 	pluginWatch    bool
+	useCdi         bool
 }
 
 var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
-func NewResourceFactory(prefix, suffix string, pluginWatch bool) types.ResourceFactory {
+func NewResourceFactory(prefix, suffix string, pluginWatch, useCdi bool) types.ResourceFactory {
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
 			endPointSuffix: suffix,
 			pluginWatch:    pluginWatch,
+			useCdi:         useCdi,
 		}
 	}
 	return instance
@@ -56,7 +58,7 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rp), nil
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rf.useCdi, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }
@@ -91,6 +93,8 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 		return resources.NewRootDeviceSelector(values), nil
 	case "linkTypes":
 		return resources.NewLinkTypeSelector(values), nil
+	case "acpiIndexes":
+		return resources.NewAcpiIndexSelector(values), nil
 	case "ddpProfiles":
 		return resources.NewDdpSelector(values), nil
 	case "auxTypes":
@@ -98,6 +102,15 @@ func (rf *resourceFactory) GetSelector(attr string, values []string) (types.Devi
 	default:
 		return nil, fmt.Errorf("GetSelector(): invalid attribute %s", attr)
 	}
+}
+
+func (rf *resourceFactory) FilterBySelector(selectorName string, values []string, devicesToFilter []types.HostDevice) []types.HostDevice {
+	if len(values) > 0 {
+		if selector, err := rf.GetSelector(selectorName, values); err == nil {
+			return selector.Filter(devicesToFilter)
+		}
+	}
+	return devicesToFilter
 }
 
 // GetResourcePool returns an instance of resourcePool
@@ -177,37 +190,41 @@ func (rf *resourceFactory) GetDeviceProvider(dt types.DeviceType) types.DevicePr
 	}
 }
 
-// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns an instance of DeviceSelector based on
+// parseObjectOrSlice unmarshal's the "Selector" values from the ResourceConfig into a slice of *DeviceSelectors.
+// Each *DeviceSelector has been converted to any before being returned. parseObjectOrSlice will parse both
+// kinds of valid "selector" values - a slice or a single object.
+func parseObjectOrSlice[O types.NetDeviceSelectors | types.AccelDeviceSelectors | types.AuxNetDeviceSelectors](
+	rc *types.ResourceConfig) ([]any, error) {
+	slice := make([]*O, 1)
+
+	if err := json.Unmarshal(*rc.Selectors, &slice[0]); err != nil {
+		if err = json.Unmarshal(*rc.Selectors, &slice); err != nil {
+			return nil, fmt.Errorf("error unmarshalling %T bytes %v", slice[0], err)
+		}
+		if len(slice) == 0 {
+			return nil, fmt.Errorf("error, need at least one selector, got 0")
+		}
+	}
+
+	glog.Infof("%T for resource %s is %+v", slice[0], rc.ResourceName, slice)
+	interfaceArray := make([]any, len(slice))
+	for i := range slice {
+		interfaceArray[i] = slice[i]
+	}
+
+	return interfaceArray, nil
+}
+
+// GetDeviceFilter unmarshal the "selector" values from ResourceConfig and returns a slice of *DeviceSelectors based on
 // DeviceType in the ResourceConfig
-func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) (interface{}, error) {
+func (rf *resourceFactory) GetDeviceFilter(rc *types.ResourceConfig) ([]interface{}, error) {
 	switch rc.DeviceType {
 	case types.NetDeviceType:
-		netDeviceSelector := &types.NetDeviceSelectors{}
-
-		if err := json.Unmarshal(*rc.Selectors, netDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling NetDevice selector bytes %v", err)
-		}
-
-		glog.Infof("net device selector for resource %s is %+v", rc.ResourceName, netDeviceSelector)
-		return netDeviceSelector, nil
+		return parseObjectOrSlice[types.NetDeviceSelectors](rc)
 	case types.AcceleratorType:
-		accelDeviceSelector := &types.AccelDeviceSelectors{}
-
-		if err := json.Unmarshal(*rc.Selectors, accelDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling Accelerator selector bytes %v", err)
-		}
-
-		glog.Infof("accelerator device selector for resource %s is %+v", rc.ResourceName, accelDeviceSelector)
-		return accelDeviceSelector, nil
+		return parseObjectOrSlice[types.AccelDeviceSelectors](rc)
 	case types.AuxNetDeviceType:
-		auxNetDeviceSelector := &types.AuxNetDeviceSelectors{}
-
-		if err := json.Unmarshal(*rc.Selectors, auxNetDeviceSelector); err != nil {
-			return nil, fmt.Errorf("error unmarshalling AuxNetDevice selector bytes %v", err)
-		}
-
-		glog.Infof("auxiliary network device selector for resource %s is %+v", rc.ResourceName, auxNetDeviceSelector)
-		return auxNetDeviceSelector, nil
+		return parseObjectOrSlice[types.AuxNetDeviceSelectors](rc)
 	default:
 		return nil, fmt.Errorf("unable to get deviceFilter, invalid deviceType %s", rc.DeviceType)
 	}

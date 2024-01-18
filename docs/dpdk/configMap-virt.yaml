@@ -9,7 +9,7 @@ data:
       "resourceList": [
         {
           "resourceName": "intelnics_radio_downlink",
-          "selectors": {
+          "selectors": [{
             "drivers": [
               "vfio-pci"
             ],
@@ -17,11 +17,11 @@ data:
               "0000:00:09.0",
               "0000:00:0a.0"
             ],
-          },
+          }],
         },
         {
           "resourceName": "intelnics_radio_uplink",
-          "selectors": {
+          "selectors": [{
             "drivers": [
               "vfio-pci"
             ],
@@ -29,7 +29,7 @@ data:
               "0000:00:07.0",
               "0000:00:08.0"
             ],
-          },
+          }],
         }
       ]
     }

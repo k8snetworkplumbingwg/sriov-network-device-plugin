@@ -33,7 +33,7 @@ var _ = Describe("AuxNetResourcePool", func() {
 		rc := &types.ResourceConfig{
 			ResourceName:   "fake",
 			ResourcePrefix: "fake",
-			SelectorObj:    &types.AuxNetDeviceSelectors{},
+			SelectorObjs:   []interface{}{&types.AuxNetDeviceSelectors{}},
 		}
 		devs := map[string]types.HostDevice{}
 
@@ -48,10 +48,10 @@ var _ = Describe("AuxNetResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				SelectorObj: &types.AuxNetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
 					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: false},
 				},
-			}
+				}}
 
 			// fake1 will have 2 device specs
 			fake1 := &mocks.AuxNetDevice{}

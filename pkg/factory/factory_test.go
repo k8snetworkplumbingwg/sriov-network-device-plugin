@@ -41,18 +41,18 @@ var _ = Describe("Factory", func() {
 	Describe("getting factory instance", func() {
 		Context("always", func() {
 			It("should return the same instance", func() {
-				f0 := factory.NewResourceFactory("fake", "fake", true)
+				f0 := factory.NewResourceFactory("fake", "fake", true, false)
 				Expect(f0).NotTo(BeNil())
-				f1 := factory.NewResourceFactory("fake", "fake", true)
+				f1 := factory.NewResourceFactory("fake", "fake", true, false)
 				Expect(f1).To(Equal(f0))
 			})
 		})
 	})
 	DescribeTable("getting info provider",
 		func(name string, expected reflect.Type) {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			p := f.GetDefaultInfoProvider("fakePCIAddr", name)
-			Expect(len(p)).To(Equal(2)) // for all the providers expect netdevice we expect 2 info providers
+			Expect(p).To(HaveLen(2)) // for all the providers except netdevice we expect 2 info providers
 			Expect(reflect.TypeOf(p[1])).To(Equal(expected))
 
 		},
@@ -62,15 +62,15 @@ var _ = Describe("Factory", func() {
 	)
 
 	Describe("getting info provider for generic netdevice", func() {
-		f := factory.NewResourceFactory("fake", "fake", true)
+		f := factory.NewResourceFactory("fake", "fake", true, false)
 		p := f.GetDefaultInfoProvider("fakePCIAddr", "netdevice")
-		Expect(len(p)).To(Equal(1)) // for all the providers expect netdevice we expect 2 info providers
+		Expect(p).To(HaveLen(1)) // for all the providers except netdevice we expect 2 info providers
 		Expect(reflect.TypeOf(p[0])).To(Equal(reflect.TypeOf(infoprovider.NewGenericInfoProvider("fakePCIAddr"))))
 	})
 
 	DescribeTable("getting selector",
 		func(selector string, shouldSucceed bool, expected reflect.Type) {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			v := []string{"val1", "val2", "val3"}
 			s, e := f.GetSelector(selector, v)
 
@@ -108,7 +108,7 @@ var _ = Describe("Factory", func() {
 				devs []types.HostDevice
 			)
 			BeforeEach(func() {
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 
 				devs = make([]types.HostDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "1234"}
@@ -171,6 +171,123 @@ var _ = Describe("Factory", func() {
 			})
 		})
 	})
+	DescribeTable("getting resource pool",
+		func(selectorBytes []byte, hasDevices []string) {
+			// create factory
+			f := factory.NewResourceFactory("fake", "fake", true, false)
+
+			// parse selector configuration & create resource config
+			var selectors json.RawMessage
+			err := selectors.UnmarshalJSON(selectorBytes)
+			Expect(err).NotTo(HaveOccurred())
+
+			c := &types.ResourceConfig{
+				ResourceName: "fake",
+				Selectors:    &selectors,
+				DeviceType:   types.NetDeviceType,
+			}
+
+			// create mock devices
+			devs := make([]types.HostDevice, 4)
+			vendors := []string{"8086", "8086", "8086", "8086"}
+			codes := []string{"1111", "1111", "1111", "1111"}
+			drivers := []string{"iavf", "iavf", "vfio-pci", "vfio-pci"}
+			pciAddr := []string{"0000:03:02.0", "0000:03:02.1", "0000:03:02.2", "0000:03:02.3"}
+			pfNames := []string{"enp2s0f2", "ens0", "eth0", "net2"}
+			rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
+			linkTypes := []string{"ether", "infiniband", "other", "other2"}
+			ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+			for i := range devs {
+				d := &mocks.PciNetDevice{}
+				d.On("GetVendor").Return(vendors[i]).
+					On("GetDeviceCode").Return(codes[i]).
+					On("GetDriver").Return(drivers[i]).
+					On("GetPciAddr").Return(pciAddr[i]).
+					On("GetDeviceID").Return(pciAddr[i]).
+					On("GetPfNetName").Return(pfNames[i]).
+					On("GetPfPciAddr").Return(rootDevices[i]).
+					On("GetAPIDevice").Return(&pluginapi.Device{}).
+					On("GetLinkType").Return(linkTypes[i]).
+					On("GetDDPProfiles").Return(ddpProfiles[i]).
+					On("GetFuncID").Return(-1)
+				devs[i] = d
+			}
+
+			deviceAllocated := make(map[string]bool)
+			dp := f.GetDeviceProvider(c.DeviceType)
+			c.SelectorObjs, err = f.GetDeviceFilter(c)
+			Expect(err).NotTo(HaveOccurred())
+			filteredDevices := make([]types.HostDevice, 0)
+			for index := range c.SelectorObjs {
+				currentSelectorFilteredDevices, err := dp.GetFilteredDevices(devs, c, index)
+				Expect(err).NotTo(HaveOccurred())
+
+				unallocatedDevices := []types.HostDevice{}
+				for _, dev := range currentSelectorFilteredDevices {
+					if !deviceAllocated[dev.GetDeviceID()] {
+						deviceAllocated[dev.GetDeviceID()] = true
+						unallocatedDevices = append(unallocatedDevices, dev)
+					}
+				}
+				filteredDevices = append(filteredDevices, unallocatedDevices...)
+			}
+
+			rp, err := f.GetResourcePool(c, filteredDevices)
+			Expect(err).NotTo(HaveOccurred())
+
+			if hasDevices == nil {
+				Expect(rp).Should(BeNil())
+			} else {
+				Expect(rp).NotTo(BeNil())
+				Expect(rp.GetDevices()).To(HaveLen(len(hasDevices)))
+				for _, devAddr := range hasDevices {
+					Expect(rp.GetDevices()).To(HaveKey(devAddr))
+				}
+			}
+		},
+		Entry("with a single selector object should match devices", []byte(`
+						{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["iavf","vfio-pci"],
+							"pciAddresses": ["0000:03:02.0"],
+							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}`), []string{"0000:03:02.0"}),
+		Entry("with a slice of one selector object it should match devices", []byte(`
+						[{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["iavf","vfio-pci"],
+							"pciAddresses": ["0000:03:02.0"],
+							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}]`), []string{"0000:03:02.0"}),
+		Entry("with more than one selector object, it should match devices from all selector objects", []byte(`
+						[{
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["iavf"],
+							"pciAddresses": ["0000:03:02.0"],
+							"pfNames": ["enp2s0f2"],
+							"rootDevices": ["0000:86:00.0"],
+							"linkTypes": ["ether"],
+							"ddpProfiles": ["GTP"]
+						}, {
+							"vendors": ["8086"],
+							"devices": ["1111"],
+							"drivers": ["vfio-pci"],
+							"pciAddresses": ["0000:03:02.3"],
+							"pfNames": ["net2"],
+							"rootDevices": ["0000:86:00.3"],
+							"linkTypes": ["other2"],
+							"ddpProfiles": ["PPPoE"]
+						}]`), []string{"0000:03:02.0", "0000:03:02.3"}),
+	)
 	Describe("getting exclusive resource pool for netdevice", func() {
 		Context("with all types of selectors used and matching devices found", func() {
 			utils.SetDefaultMockNetlinkProvider()
@@ -181,7 +298,7 @@ var _ = Describe("Factory", func() {
 				devs []types.HostDevice
 			)
 			BeforeEach(func() {
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 				devs = make([]types.HostDevice, 4)
 				vendors := []string{"8086", "8086", "8086", "8086"}
 				codes := []string{"1111", "1111", "1111", "1111"}
@@ -225,7 +342,7 @@ var _ = Describe("Factory", func() {
 
 				var selectors2 json.RawMessage
 				err = selectors2.UnmarshalJSON([]byte(`
-						{
+						[{
 							"vendors": ["8086"],
 							"devices": ["1111"],
 							"drivers": ["iavf","vfio-pci"],
@@ -234,7 +351,7 @@ var _ = Describe("Factory", func() {
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
 							"ddpProfiles": ["GTP"]
-						}
+						}]
 					`),
 				)
 				Expect(err).NotTo(HaveOccurred())
@@ -246,9 +363,9 @@ var _ = Describe("Factory", func() {
 				}
 				deviceAllocated := make(map[string]bool)
 				dp := f.GetDeviceProvider(c.DeviceType)
-				c.SelectorObj, err = f.GetDeviceFilter(c)
+				c.SelectorObjs, err = f.GetDeviceFilter(c)
 				Expect(err).NotTo(HaveOccurred())
-				filteredDevices, err := dp.GetFilteredDevices(devs, c)
+				filteredDevices, err := dp.GetFilteredDevices(devs, c, 0)
 				Expect(err).NotTo(HaveOccurred())
 
 				filteredDevicesTemp := []types.HostDevice{}
@@ -271,9 +388,9 @@ var _ = Describe("Factory", func() {
 				}
 
 				dp2 := f.GetDeviceProvider(c2.DeviceType)
-				c2.SelectorObj, err = f.GetDeviceFilter(c2)
+				c2.SelectorObjs, err = f.GetDeviceFilter(c2)
 				Expect(err).NotTo(HaveOccurred())
-				filteredDevices, err = dp2.GetFilteredDevices(devs, c2)
+				filteredDevices, err = dp2.GetFilteredDevices(devs, c2, 0)
 				Expect(err).NotTo(HaveOccurred())
 
 				filteredDevicesTemp = []types.HostDevice{}
@@ -310,7 +427,7 @@ var _ = Describe("Factory", func() {
 				devs []types.HostDevice
 			)
 			BeforeEach(func() {
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 
 				devs = make([]types.HostDevice, 1)
 				vendors := []string{"8086"}
@@ -368,7 +485,7 @@ var _ = Describe("Factory", func() {
 				devs []types.HostDevice
 			)
 			BeforeEach(func() {
-				f := factory.NewResourceFactory("fake", "fake", true)
+				f := factory.NewResourceFactory("fake", "fake", true, false)
 
 				devs = make([]types.HostDevice, 4)
 				vendors := []string{"8086", "8086", "15b3", "15b3"}
@@ -431,7 +548,7 @@ var _ = Describe("Factory", func() {
 	})
 	DescribeTable("getting device provider",
 		func(dt types.DeviceType, shouldSucceed bool) {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			p := f.GetDeviceProvider(dt)
 			if shouldSucceed {
 				Expect(p).NotTo(BeNil())
@@ -456,7 +573,7 @@ var _ = Describe("Factory", func() {
 				Selectors:  &s,
 			}
 
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 
 			_, e := f.GetDeviceFilter(rc)
 			if shouldSucceed {
@@ -475,7 +592,7 @@ var _ = Describe("Factory", func() {
 	)
 	Describe("getting rdma spec", func() {
 		Context("check c rdma spec", func() {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rs1 := f.GetRdmaSpec(types.NetDeviceType, "0000:00:00.1")
 			rs2 := f.GetRdmaSpec(types.AcceleratorType, "0000:00:00.2")
 			rs3 := f.GetRdmaSpec(types.AuxNetDeviceType, "foo.bar.3")
@@ -496,7 +613,7 @@ var _ = Describe("Factory", func() {
 	})
 	Describe("getting resource server", func() {
 		Context("when resource pool is nil", func() {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rs, e := f.GetResourceServer(nil)
 			It("should fail", func() {
 				Expect(e).To(HaveOccurred())
@@ -504,7 +621,7 @@ var _ = Describe("Factory", func() {
 			})
 		})
 		Context("when resource pool uses overridden prefix", func() {
-			f := factory.NewResourceFactory("fake", "fake", true)
+			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rp := mocks.ResourcePool{}
 			rp.On("GetResourcePrefix").Return("overridden").
 				On("GetResourceName").Return("fake")

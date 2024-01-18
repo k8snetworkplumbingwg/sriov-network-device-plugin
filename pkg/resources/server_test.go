@@ -9,6 +9,7 @@ import (
 
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
+	CDImocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -30,7 +31,7 @@ var _ = Describe("Server", func() {
 			})
 			It("should have the properties correctly assigned when plugin watcher enabled", func() {
 				// Create ResourceServer with plugin watch mode enabled
-				obj := NewResourceServer("fakeprefix", "fakesuffix", true, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", true, false, &rp)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
@@ -40,7 +41,7 @@ var _ = Describe("Server", func() {
 			})
 			It("should have the properties correctly assigned when plugin watcher disabled", func() {
 				// Create ResourceServer with plugin watch mode disabled
-				obj := NewResourceServer("fakeprefix", "fakesuffix", false, &rp)
+				obj := NewResourceServer("fakeprefix", "fakesuffix", false, false, &rp)
 				rs = obj.(*resourceServer)
 				Expect(rs.resourcePool.GetResourceName()).To(Equal("fakename"))
 				Expect(rs.resourceNamePrefix).To(Equal("fakeprefix"))
@@ -67,7 +68,7 @@ var _ = Describe("Server", func() {
 			types.SockDir = fs.RootDir
 			types.DeprecatedSockDir = fs.RootDir
 
-			obj := NewResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, &rp)
+			obj := NewResourceServer("fakeprefix", "fakesuffix", shouldEnablePluginWatch, false, &rp)
 			rs := obj.(*resourceServer)
 
 			registrationServer := createFakeRegistrationServer(fs.RootDir,
@@ -115,7 +116,7 @@ var _ = Describe("Server", func() {
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
 				rp.On("GetResourceName").Return("fake.com")
-				rs := NewResourceServer("fakeprefix", "fakesuffix", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fakeprefix", "fakesuffix", true, false, &rp).(*resourceServer)
 				err = rs.Init()
 			})
 			It("should never fail", func() {
@@ -156,7 +157,7 @@ var _ = Describe("Server", func() {
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := NewResourceServer("fake", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", false, false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -197,7 +198,7 @@ var _ = Describe("Server", func() {
 					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 				// Create ResourceServer with plugin watch mode enabled
-				rs := NewResourceServer("fake", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", true, false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, true)
@@ -233,7 +234,7 @@ var _ = Describe("Server", func() {
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled
-				rs := NewResourceServer("fake", "fake", false, &rp).(*resourceServer)
+				rs := NewResourceServer("fake", "fake", false, false, &rp).(*resourceServer)
 
 				registrationServer := createFakeRegistrationServer(fs.RootDir,
 					"fake_fake.com.fake", false, false)
@@ -275,7 +276,57 @@ var _ = Describe("Server", func() {
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
 
-			rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+			rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
+
+			resp, err := rs.Allocate(context.TODO(), req)
+
+			Expect(len(resp.GetContainerResponses())).To(Equal(expectedRespLength))
+
+			if shouldFail {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		},
+		Entry("allocating successfully 1 deviceID",
+			&pluginapi.AllocateRequest{
+				ContainerRequests: []*pluginapi.ContainerAllocateRequest{{DevicesIDs: []string{"00:00.01"}}},
+			},
+			1,
+			false,
+		),
+		PEntry("allocating deviceID that does not exist",
+			&pluginapi.AllocateRequest{
+				ContainerRequests: []*pluginapi.ContainerAllocateRequest{{DevicesIDs: []string{"00:00.02"}}},
+			},
+			0,
+			true,
+		),
+		Entry("empty AllocateRequest", &pluginapi.AllocateRequest{}, 0, false),
+	)
+	DescribeTable("allocating with CDI",
+		func(req *pluginapi.AllocateRequest, expectedRespLength int, shouldFail bool) {
+			rp := mocks.ResourcePool{}
+			rp.On("GetResourceName").
+				Return("fake.com").
+				On("GetDeviceFiles").
+				Return(map[string]string{"00:00.01": "/dev/fake"}).
+				On("GetDeviceSpecs", []string{"00:00.01"}).
+				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}).
+				On("GetEnvs", "fake.com", []string{"00:00.01"}).
+				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
+				On("GetMounts", []string{"00:00.01"}).
+				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}}).
+				On("GetCDIName").
+				Return("fake.com")
+
+			rs := NewResourceServer("fake.com", "fake", true, true, &rp).(*resourceServer)
+
+			cdi := &CDImocks.CDI{}
+			cdi.On("CreateCDISpecForPool", "fake.com", &rp).Return(nil).Twice().
+				On("CreateContainerAnnotations", []string{"00:00.01"}, "fake.com", "fake.com").
+				Return(map[string]string{"00:00.01": "fake.com/net=00:00.01"}, nil)
+			rs.cdi = cdi
 
 			resp, err := rs.Allocate(context.TODO(), req)
 
@@ -328,7 +379,7 @@ var _ = Describe("Server", func() {
 				rp.On("GetResourceName").Return("fake.com").
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once()
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -349,7 +400,7 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -384,7 +435,7 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Once().
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.02": {ID: "00:00.02", Health: "Healthy"}}).Once()
 
-				rs := NewResourceServer("fake.com", "fake", true, &rp).(*resourceServer)
+				rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 
 				lwSrv := &fakeListAndWatchServer{
@@ -412,6 +463,48 @@ var _ = Describe("Server", func() {
 
 				close(done)
 			}, 30.0)
+		})
+		Context("when CDI is enabled", func() {
+			It("should not fail", func(done Done) {
+				fs := &utils.FakeFilesystem{}
+				defer fs.Use()()
+				rp := mocks.ResourcePool{}
+				rp.On("GetResourceName").Return("fake.com").
+					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Twice().
+					On("GetResourcePrefix").Return("fake.com").Twice()
+
+				rs := NewResourceServer("fake.com", "fake", true, true, &rp).(*resourceServer)
+				rs.sockPath = fs.RootDir
+
+				cdi := &CDImocks.CDI{}
+				cdi.On("CreateCDISpecForPool", "fake.com", &rp).Return(nil).Twice()
+				rs.cdi = cdi
+
+				lwSrv := &fakeListAndWatchServer{
+					resourceServer: rs,
+					sendCallToFail: 0, // no failures on purpose
+					updates:        make(chan bool),
+				}
+
+				// run ListAndWatch which will send initial update
+				var err error
+				go func() {
+					err = rs.ListAndWatch(&pluginapi.Empty{}, lwSrv)
+					Expect(err).NotTo(HaveOccurred())
+				}()
+
+				// wait for the initial update to reach ListAndWatchServer
+				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+
+				// send another set of updates and wait for the ListAndWatchServer
+				rs.updateSignal <- true
+				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+
+				// finally send term signal
+				rs.termSignal <- true
+
+				close(done)
+			}, 30)
 		})
 	})
 })

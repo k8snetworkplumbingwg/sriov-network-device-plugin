@@ -32,12 +32,12 @@ import (
 
 var _ = Describe("NetResourcePool", func() {
 	Context("getting a new instance of the pool", func() {
-		rf := factory.NewResourceFactory("fake", "fake", true)
+		rf := factory.NewResourceFactory("fake", "fake", true, false)
 		nadutils := rf.GetNadUtils()
 		rc := &types.ResourceConfig{
 			ResourceName:   "fake",
 			ResourcePrefix: "fake",
-			SelectorObj:    &types.NetDeviceSelectors{},
+			SelectorObjs:   []interface{}{&types.NetDeviceSelectors{}},
 		}
 		pcis := map[string]types.HostDevice{}
 
@@ -49,17 +49,17 @@ var _ = Describe("NetResourcePool", func() {
 	})
 	Describe("getting DeviceSpecs", func() {
 		Context("for multiple devices", func() {
-			rf := factory.NewResourceFactory("fake", "fake", true)
+			rf := factory.NewResourceFactory("fake", "fake", true, false)
 			nadutils := rf.GetNadUtils()
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",
 				ResourcePrefix: "fake",
-				SelectorObj: &types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{
 					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
 						IsRdma: false,
 					},
 				},
-			}
+				}}
 
 			// fake1 will have 2 device specs
 			fake1 := &mocks.PciNetDevice{}
@@ -104,12 +104,12 @@ var _ = Describe("NetResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fakeResource",
 				ResourcePrefix: "fakeOrg.io",
-				SelectorObj: &types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{
 					GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
 						IsRdma: true,
 					},
 				},
-			}
+				}}
 
 			fake1 := &mocks.PciNetDevice{}
 			fake1.On("GetPciAddr").Return("0000:01:00.1").
@@ -154,19 +154,19 @@ var _ = Describe("NetResourcePool", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fakeResource",
 				ResourcePrefix: "fakeOrg.io",
-				SelectorObj: &types.NetDeviceSelectors{
+				SelectorObjs: []interface{}{&types.NetDeviceSelectors{
 					VdpaType: "vhost",
 				},
-			}
+				}}
 
 			fakeVdpa1 := &mocks.VdpaDevice{}
 			fakeVdpa1.On("GetParent").Return("vdpa1").
-				On("GetPath").Return("/dev/vhost-vdpa5").
+				On("GetPath").Return("/dev/vhost-vdpa5", nil).
 				On("GetType").Return(types.VdpaVhostType)
 
 			fakeVdpa2 := &mocks.VdpaDevice{}
 			fakeVdpa2.On("GetParent").Return("vdpa2").
-				On("GetPath").Return("/dev/vhost-vdpa6").
+				On("GetPath").Return("/dev/vhost-vdpa6", nil).
 				On("GetType").Return(types.VdpaVhostType)
 
 			fake1 := &mocks.PciNetDevice{}

@@ -44,7 +44,7 @@ func (ap *auxNetDeviceProvider) GetDiscoveredDevices() []*ghw.PCIDevice {
 	return ap.deviceList
 }
 
-func (ap *auxNetDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.HostDevice {
+func (ap *auxNetDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorIndex int) []types.HostDevice {
 	newAuxDevices := make([]types.HostDevice, 0)
 	for _, device := range ap.deviceList {
 		// discover auxiliary device names
@@ -55,7 +55,7 @@ func (ap *auxNetDeviceProvider) GetDevices(rc *types.ResourceConfig) []types.Hos
 				continue
 			}
 			for _, auxDev := range auxDevs {
-				if newDevice, err := NewAuxNetDevice(device, auxDev, ap.rFactory, rc); err == nil {
+				if newDevice, err := NewAuxNetDevice(device, auxDev, ap.rFactory, rc, selectorIndex); err == nil {
 					newAuxDevices = append(newAuxDevices, newDevice)
 				} else {
 					glog.Warningf("auxnetdevice GetDevices(): error creating new device %s PCI %s: %q",
@@ -90,9 +90,14 @@ func (ap *auxNetDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, devic
 }
 
 //nolint:gocyclo
-func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig) ([]types.HostDevice, error) {
+func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, rc *types.ResourceConfig,
+	selectorIndex int) ([]types.HostDevice, error) {
 	filteredDevice := devices
-	nf, ok := rc.SelectorObj.(*types.AuxNetDeviceSelectors)
+	if selectorIndex < 0 || selectorIndex >= len(rc.SelectorObjs) {
+		return filteredDevice, fmt.Errorf("invalid selectorIndex %d, resource config only has %d selector objects",
+			selectorIndex, len(rc.SelectorObjs))
+	}
+	nf, ok := rc.SelectorObjs[selectorIndex].(*types.AuxNetDeviceSelectors)
 	if !ok {
 		return filteredDevice, fmt.Errorf("unable to convert SelectorObj to AuxNetDeviceSelectors")
 	}
@@ -166,21 +171,23 @@ func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, r
 
 // ValidConfig performs validation of AuxNetDeviceSelectors
 func (ap *auxNetDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
-	nf, ok := rc.SelectorObj.(*types.AuxNetDeviceSelectors)
-	if !ok {
-		glog.Errorf("unable to convert SelectorObj to AuxNetDeviceSelectors")
-		return false
-	}
-	if len(nf.AuxTypes) == 0 {
-		glog.Errorf("AuxTypes are not specified")
-		return false
-	}
-	// Check that only supported auxiliary device types are specified
-	// TODO ATM only SFs are supported; review this in the future if new types are added
-	for _, auxType := range nf.AuxTypes {
-		if auxType != "sf" {
-			glog.Errorf("Only \"sf\" auxiliary device type currently supported")
+	for _, selector := range rc.SelectorObjs {
+		nf, ok := selector.(*types.AuxNetDeviceSelectors)
+		if !ok {
+			glog.Errorf("unable to convert SelectorObj to AuxNetDeviceSelectors")
 			return false
+		}
+		if len(nf.AuxTypes) == 0 {
+			glog.Errorf("AuxTypes are not specified")
+			return false
+		}
+		// Check that only supported auxiliary device types are specified
+		// TODO ATM only SFs are supported; review this in the future if new types are added
+		for _, auxType := range nf.AuxTypes {
+			if auxType != "sf" {
+				glog.Errorf("Only \"sf\" auxiliary device type currently supported")
+				return false
+			}
 		}
 	}
 	return true

@@ -47,6 +47,11 @@ func (fs *FakeFilesystem) Use() func() {
 	if err != nil {
 		panic(fmt.Errorf("error creating fake directory: %s", err.Error()))
 	}
+	//nolint: gomnd
+	err = os.MkdirAll(path.Join(fs.RootDir, "var/run/cdi"), 0755)
+	if err != nil {
+		panic(fmt.Errorf("error creating fake cdi directory: %s", err.Error()))
+	}
 
 	// TODO: Remove writing pci.ids file once ghw is mocked
 	// This is to fix the CI failure where ghw lib fails to

@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -33,7 +34,8 @@ type fakeRegistrationServer struct {
 	pluginWatchMode bool
 }
 
-func createFakeRegistrationServer(sockDir, endpoint string, failOnRegister, pluginWatchMode bool) *fakeRegistrationServer {
+func createFakeRegistrationServer(
+	sockDir, endpoint string, failOnRegister, pluginWatchMode bool) *fakeRegistrationServer {
 	return &fakeRegistrationServer{
 		sockDir:         sockDir,
 		pluginEndpoint:  endpoint,
@@ -47,7 +49,8 @@ func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.C
 	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
-	c, err := grpc.DialContext(ctx, "unix:"+sockPath, grpc.WithInsecure(), grpc.WithBlock())
+	c, err := grpc.DialContext(
+		ctx, "unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial socket %s, err: %v", sockPath, err)
@@ -56,7 +59,8 @@ func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.C
 	return registerapi.NewRegistrationClient(c), c, nil
 }
 
-func (s *fakeRegistrationServer) getInfo(ctx context.Context, client registerapi.RegistrationClient) (*registerapi.PluginInfo, error) {
+func (s *fakeRegistrationServer) getInfo(
+	ctx context.Context, client registerapi.RegistrationClient) (*registerapi.PluginInfo, error) {
 	infoResp, err := client.GetInfo(ctx, &registerapi.InfoRequest{})
 	if err != nil {
 		return infoResp, fmt.Errorf("failed to get plugin info using RPC GetInfo, err: %v", err)
@@ -65,7 +69,8 @@ func (s *fakeRegistrationServer) getInfo(ctx context.Context, client registerapi
 	return infoResp, nil
 }
 
-func (s *fakeRegistrationServer) notifyPlugin(client registerapi.RegistrationClient, registered bool, errStr string) error {
+func (s *fakeRegistrationServer) notifyPlugin(
+	client registerapi.RegistrationClient, registered bool, errStr string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
 	defer cancel()
 
@@ -111,7 +116,8 @@ func (s *fakeRegistrationServer) registerPlugin() error {
 	return nil
 }
 
-func (s *fakeRegistrationServer) Register(ctx context.Context, r *pluginapi.RegisterRequest) (api *pluginapi.Empty, err error) {
+func (s *fakeRegistrationServer) Register(
+	ctx context.Context, r *pluginapi.RegisterRequest) (api *pluginapi.Empty, err error) {
 	s.pluginEndpoint = r.Endpoint
 	api = &pluginapi.Empty{}
 	if s.failOnRegister {

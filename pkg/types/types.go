@@ -101,7 +101,7 @@ type ResourceConfig struct {
 	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
 	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
 	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
-	SelectorObj     interface{}
+	SelectorObjs    []interface{}
 }
 
 // DeviceSelectors contains common device selectors fields
@@ -125,6 +125,7 @@ type GenericNetDeviceSelectors struct {
 	RootDevices []string `json:"rootDevices,omitempty"`
 	LinkTypes   []string `json:"linkTypes,omitempty"`
 	IsRdma      bool     // the resource support rdma
+	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
 }
 
 // NetDeviceSelectors contains network device related selectors fields
@@ -177,8 +178,9 @@ type ResourceFactory interface {
 	GetRdmaSpec(DeviceType, string) RdmaSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
-	GetDeviceFilter(*ResourceConfig) (interface{}, error)
+	GetDeviceFilter(*ResourceConfig) ([]interface{}, error)
 	GetNadUtils() NadUtils
+	FilterBySelector(string, []string, []HostDevice) []HostDevice
 }
 
 // ResourcePool represents a generic resource entity
@@ -193,6 +195,7 @@ type ResourcePool interface {
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
+	GetCDIName() string
 }
 
 // DeviceProvider provides interface for device discovery
@@ -202,9 +205,11 @@ type DeviceProvider interface {
 	GetDiscoveredDevices() []*ghw.PCIDevice
 
 	// GetDevices runs through the Discovered Devices and returns a list of fully populated HostDevices according to the given ResourceConfig
-	GetDevices(*ResourceConfig) []HostDevice
+	GetDevices(*ResourceConfig, int) []HostDevice
 
-	GetFilteredDevices([]HostDevice, *ResourceConfig) ([]HostDevice, error)
+	// GetFilteredDevices runs through the provided []HostDevice and filters eligible devices based on the selectors in ResourceConfig. Since
+	// the ResourceConfig contains a slice of selectors, the third argument is the index into that array to get the correct selectors to apply.
+	GetFilteredDevices([]HostDevice, *ResourceConfig, int) ([]HostDevice, error)
 
 	// ValidConfig performs validation of DeviceType-specific configuration
 	ValidConfig(*ResourceConfig) bool
@@ -243,6 +248,8 @@ type PciDevice interface {
 	HostDevice
 	// GetPciAddr returns PCI address of the device
 	GetPciAddr() string
+	// GetAcpiIndex returns ACPI index of the device
+	GetAcpiIndex() string
 }
 
 // NetDevice provides an interface to get generic network device information
@@ -321,7 +328,7 @@ type NadUtils interface {
 
 // VdpaDevice is an interface to access vDPA device information
 type VdpaDevice interface {
-	GetPath() string
+	GetPath() (string, error)
 	GetParent() string
 	GetType() VdpaType
 }

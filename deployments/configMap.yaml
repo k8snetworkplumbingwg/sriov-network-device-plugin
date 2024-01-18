@@ -31,6 +31,14 @@ data:
                     "drivers": ["mlx5_ib"],
                     "isRdma": true
                 }
+            },
+            {
+                "resourceName": "brcm_sriov_bnxt",
+                "selectors": {
+                    "vendors": ["14e4"],
+                    "devices": ["1750"],
+                    "drivers": ["bnxt_en"]
+                }
             }
         ]
     }

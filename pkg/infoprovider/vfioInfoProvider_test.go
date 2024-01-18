@@ -47,7 +47,7 @@ var _ = Describe("vfioInfoProvider", func() {
 			&utils.FakeFilesystem{},
 			"",
 			[]*pluginapi.DeviceSpec{
-				{HostPath: "/dev/vfio/vfio", ContainerPath: "/dev/vfio/vfio", Permissions: "mrw"},
+				{HostPath: "/dev/vfio/vfio", ContainerPath: "/dev/vfio/vfio", Permissions: "rw"},
 			},
 		),
 		Entry("PCI address passed, returns DeviceSpec with paths to its VFIO devices and additional default VFIO path",
@@ -61,8 +61,8 @@ var _ = Describe("vfioInfoProvider", func() {
 			},
 			"0000:02:00.0",
 			[]*pluginapi.DeviceSpec{
-				{HostPath: "/dev/vfio/0", ContainerPath: "/dev/vfio/0", Permissions: "mrw"},
-				{HostPath: "/dev/vfio/vfio", ContainerPath: "/dev/vfio/vfio", Permissions: "mrw"},
+				{HostPath: "/dev/vfio/0", ContainerPath: "/dev/vfio/0", Permissions: "rw"},
+				{HostPath: "/dev/vfio/vfio", ContainerPath: "/dev/vfio/vfio", Permissions: "rw"},
 			},
 		),
 	)
