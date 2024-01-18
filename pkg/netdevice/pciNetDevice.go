@@ -40,7 +40,6 @@ type ddpProfileGetFunc func(string) (string, error)
 //nolint:gocyclo
 func NewPciNetDevice(dev *ghw.PCIDevice,
 	rFactory types.ResourceFactory, rc *types.ResourceConfig, selectorIndex int) (types.PciNetDevice, error) {
-
 	var vdpaDev types.VdpaDevice
 	var nf *types.NetDeviceSelectors
 
@@ -130,7 +129,6 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 			glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
 			return ""
 		}
-
 	}
 	return ddpProfile
 }
