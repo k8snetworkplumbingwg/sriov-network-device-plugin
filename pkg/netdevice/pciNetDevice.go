@@ -36,7 +36,8 @@ type pciNetDevice struct {
 type ddpProfileGetFunc func(string) (string, error)
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
-// nolint
+//
+//nolint:gocyclo
 func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *types.ResourceConfig) (types.PciNetDevice, error) {
 	var vdpaDev types.VdpaDevice
 
