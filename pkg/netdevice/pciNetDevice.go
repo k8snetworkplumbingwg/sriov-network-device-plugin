@@ -114,10 +114,15 @@ func NewPciNetDevice(dev *ghw.PCIDevice, rFactory types.ResourceFactory, rc *typ
 
 func (nd *pciNetDevice) GetDDPProfiles() string {
 	pciAddr := nd.GetPciAddr()
-	ddpProfile, err := utils.GetDDPProfiles(pciAddr)
+	ddpProfile, err := nd.getDDPProfile(pciAddr)
 	if err != nil {
-		glog.Infof("GetDDPProfiles(): unable to get ddp profiles for device %s : %q", pciAddr, err)
-		return ""
+		pfPCI := nd.GetPfPciAddr()
+		ddpProfile, err = nd.getDDPProfile(pfPCI)
+		if err != nil {
+			glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
+			return ""
+		}
+
 	}
 	return ddpProfile
 }
