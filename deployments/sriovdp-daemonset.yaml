@@ -35,8 +35,8 @@ spec:
       serviceAccountName: sriov-device-plugin
       containers:
       - name: kube-sriovdp
-        image: localhost:5000/sriov-network-device-plugin:latest
-        imagePullPolicy: Always
+        image: ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest-amd64
+        imagePullPolicy: IfNotPresent
         args:
         - --log-dir=sriovdp
         - --log-level=10
