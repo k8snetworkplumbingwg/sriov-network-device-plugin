@@ -126,7 +126,7 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 		pfPCI := nd.GetPfPciAddr()
 		ddpProfile, err = nd.getDDPProfile(pfPCI)
 		if err != nil {
-			//default to ddptool if devlink failed
+			// default to ddptool if devlink failed
 			ddpProfile, err = utils.GetDDPProfiles(pciAddr)
 			if err != nil {
 				glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
