@@ -104,6 +104,30 @@ func GetPfName(pciAddr string) (string, error) {
 	return "", fmt.Errorf("the PF name is not found for device %s", pciAddr)
 }
 
+// GetPfNameFromAuxDev returns netdevice name of the PF associated with the
+// provided auxiliary device name.
+func GetPfNameFromAuxDev(auxDevName string) (string, error) {
+	pfName, err := GetSriovnetProvider().GetUplinkRepresentorFromAux(auxDevName)
+	if err != nil {
+		// fallback, try to get PF netdev name from PF PCI Address
+		pfAddr, err := GetSriovnetProvider().GetPfPciFromAux(auxDevName)
+		if err != nil {
+			return "", err
+		}
+		netdevs, err := GetNetNames(pfAddr)
+		if err != nil {
+			return "", err
+		}
+
+		if len(netdevs) == 0 {
+			return "", fmt.Errorf("no netdevs for PF address %s", pfAddr)
+		}
+
+		return netdevs[0], nil
+	}
+	return pfName, err
+}
+
 // IsSriovPF check if a pci device SRIOV capable given its pci address
 func IsSriovPF(pciAddr string) bool {
 	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, totalVfFile)
