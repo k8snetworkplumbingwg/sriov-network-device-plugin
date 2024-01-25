@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -596,4 +597,58 @@ var _ = Describe("In the utils package", func() {
 		Entry("wrong deviceID string layout (negative id number)", "driver_name.type.-4", ""),
 		Entry("valid deviceID string", "driver_name.type.123", "type"),
 	)
+
+	Context("GetPfNameFromAuxDev", func() {
+		var (
+			mockSriovnet *mocks.SriovnetProvider
+		)
+		BeforeEach(func() {
+			mockSriovnet = mocks.NewSriovnetProvider(GinkgoT())
+			SetSriovnetProviderInst(mockSriovnet)
+		})
+
+		It("Returns uplink representor netdev name if found", func() {
+			mockSriovnet.On("GetUplinkRepresentorFromAux", mock.AnythingOfType("string")).Return("enp3s0f0np0", nil)
+
+			pfName, err := GetPfNameFromAuxDev("mlx5_core.sf.4")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pfName).To(Equal("enp3s0f0np0"))
+		})
+
+		It("Returns PF netdev name from sysfs if uplink representor not found", func() {
+			mockSriovnet.On("GetUplinkRepresentorFromAux", mock.AnythingOfType("string")).Return("", errors.New("uplink not found"))
+			mockSriovnet.On("GetPfPciFromAux", mock.AnythingOfType("string")).Return("0000:03:00.0", nil)
+
+			fakeFs := &FakeFilesystem{
+				Dirs:  []string{"/sys/bus/pci/devices/0000:03:00.0/net"},
+				Files: map[string][]byte{"/sys/bus/pci/devices/0000:03:00.0/net/enp3s0f0np0": nil},
+			}
+			defer fakeFs.Use()()
+
+			pfName, err := GetPfNameFromAuxDev("mlx5_core.sf.4")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(pfName).To(Equal("enp3s0f0np0"))
+		})
+
+		It("Fails if no uplink representor or PF netdev found", func() {
+			mockSriovnet.On("GetUplinkRepresentorFromAux", mock.AnythingOfType("string")).Return("", errors.New("uplink not found"))
+			mockSriovnet.On("GetPfPciFromAux", mock.AnythingOfType("string")).Return("0000:03:00.0", nil)
+
+			fakeFs := &FakeFilesystem{
+				Dirs: []string{"/sys/bus/pci/devices/0000:03:00.0"},
+			}
+			defer fakeFs.Use()()
+
+			_, err := GetPfNameFromAuxDev("mlx5_core.sf.4")
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("Fails if PF PCI not found", func() {
+			mockSriovnet.On("GetUplinkRepresentorFromAux", mock.AnythingOfType("string")).Return("", errors.New("uplink not found"))
+			mockSriovnet.On("GetPfPciFromAux", mock.AnythingOfType("string")).Return("", errors.New("PF PCI address not found"))
+
+			_, err := GetPfNameFromAuxDev("mlx5_core.sf.4")
+			Expect(err).To(HaveOccurred())
+		})
+	})
 })
