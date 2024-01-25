@@ -34,23 +34,25 @@ import (
 )
 
 type resourceServer struct {
-	resourcePool       types.ResourcePool
-	pluginWatch        bool
-	endPoint           string // Socket file
-	sockPath           string // Socket file path
-	resourceNamePrefix string
-	grpcServer         *grpc.Server
-	termSignal         chan bool
-	updateSignal       chan bool
-	stopWatcher        chan bool
-	checkIntervals     int // health check intervals in seconds
-	useCdi             bool
-	cdi                cdiPkg.CDI
+	resourcePool               types.ResourcePool
+	pluginWatch                bool
+	endPoint                   string // Socket file
+	sockPath                   string // Socket file path
+	resourceNamePrefix         string
+	grpcServer                 *grpc.Server
+	listAndWatchStopSignal     chan bool
+	listAndWatchFinishedSignal chan bool
+	updateSignal               chan bool
+	stopWatcher                chan bool
+	checkIntervals             int // health check intervals in seconds
+	useCdi                     bool
+	cdi                        cdiPkg.CDI
 }
 
 const (
-	rsWatchInterval    = 5 * time.Second
-	serverStartTimeout = 5 * time.Second
+	rsWatchInterval         = 5 * time.Second
+	serverStartTimeout      = 5 * time.Second
+	terminatedSignalTimeOut = 5 * time.Second
 )
 
 // NewResourceServer returns an instance of ResourceServer
@@ -61,18 +63,19 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
 	}
 	return &resourceServer{
-		resourcePool:       rp,
-		pluginWatch:        pluginWatch,
-		endPoint:           sockName,
-		sockPath:           sockPath,
-		resourceNamePrefix: prefix,
-		useCdi:             useCdi,
-		grpcServer:         grpc.NewServer(),
-		termSignal:         make(chan bool, 1),
-		updateSignal:       make(chan bool),
-		stopWatcher:        make(chan bool),
-		checkIntervals:     20, // updates every 20 seconds
-		cdi:                cdiPkg.New(),
+		resourcePool:               rp,
+		pluginWatch:                pluginWatch,
+		endPoint:                   sockName,
+		sockPath:                   sockPath,
+		resourceNamePrefix:         prefix,
+		useCdi:                     useCdi,
+		grpcServer:                 grpc.NewServer(),
+		listAndWatchStopSignal:     make(chan bool, 1),
+		listAndWatchFinishedSignal: make(chan bool, 1),
+		updateSignal:               make(chan bool),
+		stopWatcher:                make(chan bool),
+		checkIntervals:             20, // updates every 20 seconds
+		cdi:                        cdiPkg.New(),
 	}
 }
 
@@ -177,9 +180,19 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 	// listen for events: if updateSignal send new list of devices
 	for {
 		select {
-		case <-rs.termSignal:
-			// Terminate signal received; return from mehtod call
+		case <-rs.listAndWatchStopSignal:
+			// Terminate signal received; send an empty list of devices and return from method call
 			glog.Infof("%s: terminate signal received", methodID)
+			resp = new(pluginapi.ListAndWatchResponse)
+			resp.Devices = make([]*pluginapi.Device, 0)
+
+			if err := stream.Send(resp); err != nil {
+				glog.Errorf("%s: error: cannot update device states: %v\n", methodID, err)
+				return err
+			}
+			// Releasing the terminate process to close the grpc server
+			rs.listAndWatchFinishedSignal <- true
+
 			return nil
 		case <-rs.updateSignal:
 			// Device health changed; so send new device list
@@ -304,11 +317,19 @@ func (rs *resourceServer) restart() error {
 	if rs.grpcServer == nil {
 		return fmt.Errorf("grpc server instance not found for %s", resourceName)
 	}
+	// Send terminate signal to ListAndWatch()
+	rs.listAndWatchStopSignal <- true
+
+	// wait for the terminated signal or 5 second
+	select {
+	case <-rs.listAndWatchFinishedSignal:
+		break
+	case <-time.After(terminatedSignalTimeOut):
+		glog.Warningf("Timed out waiting for ListAndWatch terminated signal")
+	}
+
 	rs.grpcServer.Stop()
 	rs.grpcServer = nil
-	// Send terminate signal to ListAndWatch()
-	rs.termSignal <- true
-
 	rs.grpcServer = grpc.NewServer() // new instance of a grpc server
 	return rs.Start()
 }
@@ -320,9 +341,17 @@ func (rs *resourceServer) Stop() error {
 		return nil
 	}
 	// Send terminate signal to ListAndWatch()
-	rs.termSignal <- true
+	rs.listAndWatchStopSignal <- true
 	if !rs.pluginWatch {
 		rs.stopWatcher <- true
+	}
+
+	// wait for the terminated signal or 5 second
+	select {
+	case <-rs.listAndWatchFinishedSignal:
+		break
+	case <-time.After(terminatedSignalTimeOut):
+		glog.Warningf("Timed out waiting for ListAndWatch terminated signal")
 	}
 
 	rs.grpcServer.Stop()
