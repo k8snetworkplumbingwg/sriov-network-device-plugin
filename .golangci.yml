@@ -71,7 +71,8 @@ linters:
   enable:
     - bodyclose
     - deadcode
-    - depguard
+    # depguard has a bug in go 1.21 that will be fixed in future versions: https://github.com/kedacore/keda/pull/5285
+    #- depguard
     - dogsled
     - dupl
     - errcheck
