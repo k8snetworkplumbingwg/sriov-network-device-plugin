@@ -51,6 +51,7 @@ type resourceServer struct {
 const (
 	rsWatchInterval    = 5 * time.Second
 	serverStartTimeout = 5 * time.Second
+	unix               = "unix"
 )
 
 // NewResourceServer returns an instance of ResourceServer
@@ -77,7 +78,7 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := "unix:" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
+	kubeletEndpoint := unix + ":" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
 	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
@@ -252,7 +253,7 @@ func (rs *resourceServer) Start() error {
 	}
 
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
-	lis, err := net.Listen("unix", rs.sockPath)
+	lis, err := net.Listen(unix, rs.sockPath)
 	if err != nil {
 		glog.Errorf("error starting %s device plugin endpoint: %v", resourceName, err)
 		return err
@@ -273,7 +274,7 @@ func (rs *resourceServer) Start() error {
 	// Wait for server to start by launching a blocking connection
 	ctx, _ := context.WithTimeout(context.TODO(), serverStartTimeout)
 	conn, err := grpc.DialContext(
-		ctx, "unix:"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		ctx, unix+":"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 	if err != nil {
 		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)

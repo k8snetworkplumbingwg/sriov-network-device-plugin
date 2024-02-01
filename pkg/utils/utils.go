@@ -42,6 +42,7 @@ const (
 	classIDBitSize       = 64
 	maxVendorName        = 20
 	maxProductName       = 40
+	ellipsis             = "..."
 )
 
 // DetectPluginWatchMode returns true if plugins registry directory exist
@@ -504,7 +505,7 @@ func HasDefaultRoute(pciAddr string) (bool, error) {
 func NormalizeVendorName(vendor string) string {
 	vendorName := vendor
 	if len(vendor) > maxVendorName {
-		vendorName = string([]byte(vendorName)[0:17]) + "..."
+		vendorName = string([]byte(vendorName)[0:17]) + ellipsis
 	}
 	return vendorName
 }
@@ -513,7 +514,7 @@ func NormalizeVendorName(vendor string) string {
 func NormalizeProductName(product string) string {
 	productName := product
 	if len(product) > maxProductName {
-		productName = string([]byte(productName)[0:37]) + "..."
+		productName = string([]byte(productName)[0:37]) + ellipsis
 	}
 	return productName
 }

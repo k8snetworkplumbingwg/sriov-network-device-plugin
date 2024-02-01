@@ -127,7 +127,7 @@ func (s *fakeRegistrationServer) Register(
 }
 
 func (s *fakeRegistrationServer) start() {
-	l, err := net.Listen("unix", path.Join(s.sockDir, types.KubeEndPoint))
+	l, err := net.Listen(unix, path.Join(s.sockDir, types.KubeEndPoint))
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +145,7 @@ func (s *fakeRegistrationServer) waitForServer(timeout time.Duration) error {
 		if time.Now().After(maxWaitTime) {
 			return fmt.Errorf("waiting for the fake registration server timed out")
 		}
-		c, err := net.DialTimeout("unix", path.Join(s.sockDir, types.KubeEndPoint), time.Second)
+		c, err := net.DialTimeout(unix, path.Join(s.sockDir, types.KubeEndPoint), time.Second)
 		if err == nil {
 			return c.Close()
 		}
