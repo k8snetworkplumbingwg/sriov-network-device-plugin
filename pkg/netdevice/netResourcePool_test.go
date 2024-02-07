@@ -24,6 +24,8 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
+	utilsmocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -113,11 +115,17 @@ var _ = Describe("NetResourcePool", func() {
 
 			fake1 := &mocks.PciNetDevice{}
 			fake1.On("GetPciAddr").Return("0000:01:00.1").
-				On("GetVdpaDevice").Return(nil)
+				On("GetVdpaDevice").Return(nil).
+				On("IsRdma").Return(true)
 			fake2 := &mocks.PciNetDevice{}
 			fake2.On("GetPciAddr").Return("0000:01:00.2").
-				On("GetVdpaDevice").Return(nil)
+				On("GetVdpaDevice").Return(nil).
+				On("IsRdma").Return(false)
 			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2}
+
+			fakeRdmaProvider := utilsmocks.RdmaProvider{}
+			fakeRdmaProvider.On("GetRdmaDevicesForPcidev", "0000:01:00.1").Return([]string{"rdmadevice1"})
+			utils.SetRdmaProviderInst(&fakeRdmaProvider)
 
 			It("should call nadutils to create a well formatted DeviceInfo object", func() {
 				nadutils := &mocks.NadUtils{}
@@ -126,12 +134,18 @@ var _ = Describe("NetResourcePool", func() {
 						if devInfo.Type != nettypes.DeviceInfoTypePCI || devInfo.Pci == nil || devInfo.Pci.PciAddress != "0000:01:00.1" {
 							return fmt.Errorf("wrong device info")
 						}
+						if devInfo.Pci.RdmaDevice != "rdmadevice1" {
+							return fmt.Errorf("wrong rdma device")
+						}
 						return nil
 					})
 				nadutils.On("SaveDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2", Anything).
 					Return(func(rName, id string, devInfo *nettypes.DeviceInfo) error {
 						if devInfo.Type != nettypes.DeviceInfoTypePCI || devInfo.Pci == nil || devInfo.Pci.PciAddress != "0000:01:00.2" {
 							return fmt.Errorf("wrong device info")
+						}
+						if devInfo.Pci.RdmaDevice != "" {
+							return fmt.Errorf("wrong rdma device")
 						}
 						return nil
 					})
