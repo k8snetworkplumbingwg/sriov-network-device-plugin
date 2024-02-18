@@ -136,6 +136,7 @@ type NetDeviceSelectors struct {
 	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
 	NeedVhostNet bool     // share vhost-net along the selected resource
 	VdpaType     VdpaType `json:"vdpaType,omitempty"`
+	PKeys        []string `json:"pKeys,omitempty"`
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
@@ -281,6 +282,8 @@ type PciNetDevice interface {
 	GetDDPProfiles() string
 	// GetVdpaDevice returns VDPA device
 	GetVdpaDevice() VdpaDevice
+	// GetPKey return IB Partition key
+	GetPKey() string
 }
 
 // AccelDevice extends PciDevice interface

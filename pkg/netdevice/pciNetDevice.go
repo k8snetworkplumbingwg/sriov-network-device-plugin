@@ -30,9 +30,12 @@ type pciNetDevice struct {
 	devices.GenPciDevice
 	devices.GenNetDevice
 	vdpaDev types.VdpaDevice
+	pKey    string
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
+//
+//nolint:gocyclo
 func NewPciNetDevice(dev *ghw.PCIDevice,
 	rFactory types.ResourceFactory, rc *types.ResourceConfig, selectorIndex int) (types.PciNetDevice, error) {
 	var vdpaDev types.VdpaDevice
@@ -95,11 +98,21 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 		return nil, err
 	}
 
+	pKey := ""
+	if netDev.GetLinkType() == "infiniband" {
+		pciAddr := pciDev.GetPciAddr()
+		pKey, err = utils.GetPKey(pciAddr)
+		if err != nil {
+			glog.Infof("getPKey(): unable to get PKey for device %s : %q", pciAddr, err)
+		}
+	}
+
 	return &pciNetDevice{
 		HostDevice:   hostDev,
 		GenPciDevice: *pciDev,
 		GenNetDevice: *netDev,
 		vdpaDev:      vdpaDev,
+		pKey:         pKey,
 	}, nil
 }
 
@@ -115,4 +128,8 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 
 func (nd *pciNetDevice) GetVdpaDevice() types.VdpaDevice {
 	return nd.vdpaDev
+}
+
+func (nd *pciNetDevice) GetPKey() string {
+	return nd.pKey
 }

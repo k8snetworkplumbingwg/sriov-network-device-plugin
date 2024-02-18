@@ -537,3 +537,27 @@ func ParseAuxDeviceType(deviceID string) string {
 	// not an auxiliary device
 	return ""
 }
+
+// isInfinibandDevice checks if a pci device has infiniband config folder
+func isInfinibandDevice(pciAddr string) bool {
+	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, "infiniband")
+	if _, err := os.Stat(totalVfFilePath); err != nil {
+		return false
+	}
+	return true
+}
+
+// GetPKey returns IB Partition Key for the given IB device
+// If device is not IB device or has no PKey then it will return empty string
+func GetPKey(pciAddr string) (string, error) {
+	if !isInfinibandDevice(pciAddr) {
+		return "", nil
+	}
+
+	pKey, err := GetSriovnetProvider().GetDefaultPKeyFromPci(pciAddr)
+	if err != nil {
+		return "", err
+	}
+
+	return pKey, nil
+}

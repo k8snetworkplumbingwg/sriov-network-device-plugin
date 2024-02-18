@@ -132,8 +132,8 @@ github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/utils
-# github.com/k8snetworkplumbingwg/sriovnet v1.2.0
-## explicit; go 1.18
+# github.com/k8snetworkplumbingwg/sriovnet v1.2.1-0.20240128120937-3ca5e43034e6
+## explicit; go 1.20
 github.com/k8snetworkplumbingwg/sriovnet
 github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/filesystem
 github.com/k8snetworkplumbingwg/sriovnet/pkg/utils/netlinkops
@@ -213,7 +213,7 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/spf13/afero v1.9.4
+# github.com/spf13/afero v1.9.5
 ## explicit; go 1.16
 github.com/spf13/afero
 github.com/spf13/afero/internal/common

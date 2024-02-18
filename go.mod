@@ -10,7 +10,7 @@ require (
 	github.com/jaypipes/pcidb v1.0.0
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0
-	github.com/k8snetworkplumbingwg/sriovnet v1.2.0
+	github.com/k8snetworkplumbingwg/sriovnet v1.2.1-0.20240128120937-3ca5e43034e6
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.30.0
 	github.com/pkg/errors v0.9.1
@@ -50,7 +50,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.0.3-0.20220825212826-86290f6a00fb // indirect
 	github.com/opencontainers/runtime-tools v0.9.1-0.20221107090550-2e043c6bd626 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/spf13/afero v1.9.4 // indirect
+	github.com/spf13/afero v1.9.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect

@@ -157,6 +157,30 @@ func (_m *SriovnetProvider) GetUplinkRepresentorFromAux(auxDev string) (string, 
 	return r0, r1
 }
 
+// GetDefaultPKeyFromPci provides a mock function with given fields: pciAddr
+func (_m *SriovnetProvider) GetDefaultPKeyFromPci(pciAddr string) (string, error) {
+	ret := _m.Called(pciAddr)
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (string, error)); ok {
+		return rf(pciAddr)
+	}
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(pciAddr)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(pciAddr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewSriovnetProvider creates a new instance of SriovnetProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewSriovnetProvider(t interface {
