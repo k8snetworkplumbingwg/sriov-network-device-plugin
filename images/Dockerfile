@@ -10,7 +10,7 @@ WORKDIR /usr/src/sriov-network-device-plugin
 RUN make clean && \
     make build
 
-FROM golang:1.21-alpine3.19 as ddp-builder
+FROM golang:1.20-alpine3.16 as ddp-builder
 
 ADD images/ddptool-1.0.1.12.tar.gz /tmp/ddptool/
 
