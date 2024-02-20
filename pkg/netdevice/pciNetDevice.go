@@ -29,11 +29,8 @@ type pciNetDevice struct {
 	types.HostDevice
 	devices.GenPciDevice
 	devices.GenNetDevice
-	vdpaDev       types.VdpaDevice
-	getDDPProfile ddpProfileGetFunc
+	vdpaDev types.VdpaDevice
 }
-
-type ddpProfileGetFunc func(string) (string, error)
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
 //
@@ -100,38 +97,38 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 		return nil, err
 	}
 
-	var ddpFunc ddpProfileGetFunc
-
-	if utils.IsDevlinkDDPSupportedByPCIDevice(netDev.GetPfPciAddr()) {
-		ddpFunc = utils.DevlinkGetDDPProfiles
-	} else if utils.IsDDPToolSupportedByDevice(netDev.GetPfPciAddr()) {
-		ddpFunc = utils.GetDDPProfiles
-	} else {
-		ddpFunc = unsupportedDDP
-	}
-
 	return &pciNetDevice{
-		HostDevice:    hostDev,
-		GenPciDevice:  *pciDev,
-		GenNetDevice:  *netDev,
-		vdpaDev:       vdpaDev,
-		getDDPProfile: ddpFunc,
+		HostDevice:   hostDev,
+		GenPciDevice: *pciDev,
+		GenNetDevice: *netDev,
+		vdpaDev:      vdpaDev,
 	}, nil
 }
 
 func (nd *pciNetDevice) GetDDPProfiles() string {
+	ddpProfile := ""
 	pciAddr := nd.GetPciAddr()
-	ddpProfile, err := nd.getDDPProfile(pciAddr)
-	if err != nil {
-		pfPCI := nd.GetPfPciAddr()
-		ddpProfile, err = nd.getDDPProfile(pfPCI)
+	if utils.IsDevlinkDDPSupportedByPCIDevice(nd.GetPfPciAddr()) {
+		var err error
+		ddpProfile, err = utils.DevlinkGetDDPProfiles(pciAddr)
 		if err != nil {
-			// default to ddptool if devlink failed
-			ddpProfile, err = utils.GetDDPProfiles(pciAddr)
+			pfPCI := nd.GetPfPciAddr()
+			ddpProfile, err = utils.DevlinkGetDDPProfiles(pfPCI)
 			if err != nil {
-				glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
-				return ""
+				// default to ddptool if devlink failed
+				ddpProfile, err = utils.GetDDPProfiles(pciAddr)
+				if err != nil {
+					glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
+					return ""
+				}
 			}
+		}
+	} else if utils.IsDDPToolSupportedByDevice(nd.GetPfPciAddr()) {
+		var err error
+		ddpProfile, err = utils.GetDDPProfiles(pciAddr)
+		if err != nil {
+			glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, nd.GetPfPciAddr(), err)
+			return ""
 		}
 	}
 	return ddpProfile
@@ -139,8 +136,4 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 
 func (nd *pciNetDevice) GetVdpaDevice() types.VdpaDevice {
 	return nd.vdpaDev
-}
-
-func unsupportedDDP(device string) (string, error) {
-	return "", utils.DDPNotSupportedError(device)
 }
