@@ -73,15 +73,7 @@ func DevlinkGetDeviceInfoByNameAndKey(device, key string) (string, error) {
 // ErrKeyNotFound error when key is not found in the parsed response
 var ErrKeyNotFound = errors.New("key could not be found")
 
-// ErrDDPNotSupported error when device does not support DDP
-var ErrDDPNotSupported = errors.New("this device seems not to support DDP")
-
 // KeyNotFoundError returns ErrKeyNotFound
 func KeyNotFoundError(function, key string) error {
 	return fmt.Errorf("%s - %w: %s", function, ErrKeyNotFound, key)
-}
-
-// DDPNotSupportedError returns ErrDDPNotSupported
-func DDPNotSupportedError(device string) error {
-	return fmt.Errorf("%w: %s", ErrDDPNotSupported, device)
 }

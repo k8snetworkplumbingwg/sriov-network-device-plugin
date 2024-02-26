@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -55,15 +53,6 @@ var _ = Describe("In the devlink related functions", func() {
 		},
 		Entry("should return no error", FakeNetlinkSuccess, "fakeDevice", fwAppNameKey, true),
 		Entry("should return error", FakeNetlinkSuccess, "fakeDevice", "fakeKey", false),
-	)
-	DescribeTable("DDPNotSupportedError",
-		func(device string) {
-			err := DDPNotSupportedError(device)
-			expectedErrorMessage := fmt.Errorf("%w: %s", ErrDDPNotSupported, device)
-			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal(expectedErrorMessage.Error()))
-		},
-		Entry("should return no error", "fakeDevice"),
 	)
 })
 

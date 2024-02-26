@@ -56,7 +56,7 @@ var ddpExecCommand = exec.Command
 
 // IsDDPToolSupportedByDevice checks if DDPTool can be used with device
 func IsDDPToolSupportedByDevice(dev string) bool {
-	if _, err := GetDDPProfiles(dev); err != nil && err != ErrProfileNameNotFound {
+	if _, err := GetDDPProfiles(dev); err != nil && !errors.Is(err, ErrProfileNameNotFound) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.ExitCode() == ddpNoDDPProfile {
 				return true
