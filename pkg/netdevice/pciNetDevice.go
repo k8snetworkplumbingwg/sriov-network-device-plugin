@@ -121,7 +121,7 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 				}
 			}
 		}
-	} else if utils.IsDDPToolSupportedByDevice(nd.GetPfPciAddr()) {
+	} else if utils.IsDDPToolSupportedByDevice(pciAddr) {
 		var err error
 		ddpProfile, err = utils.GetDDPProfiles(pciAddr)
 		if err != nil {
