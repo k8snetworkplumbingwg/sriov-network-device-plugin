@@ -24,6 +24,7 @@ import (
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 type netResourcePool struct {
@@ -112,6 +113,15 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error 
 				Pci: &nettypes.PciDevice{
 					PciAddress: netDev.GetPciAddr(),
 				},
+			}
+
+			if netDev.IsRdma() {
+				rdmaDevices := utils.GetRdmaProvider().GetRdmaDevicesForPcidev(devInfo.Pci.PciAddress)
+				if len(rdmaDevices) == 0 {
+					glog.Errorf("No RDMA devices available for RDMA capable device: %s", devInfo.Pci.PciAddress)
+				} else {
+					devInfo.Pci.RdmaDevice = strings.Join(rdmaDevices, ",")
+				}
 			}
 		}
 		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
