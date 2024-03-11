@@ -5,6 +5,7 @@ on:
       - v*
 jobs:
   build-and-push-amd64-device-plugin:
+    if: github.repository == 'k8snetworkplumbingwg/sriov-network-device-plugin'
     name: Image push AMD64
     runs-on: ubuntu-20.04
     env:
@@ -44,6 +45,7 @@ jobs:
           file: images/Dockerfile
 
   build-and-push-arm64-device-plugin:
+    if: github.repository == 'k8snetworkplumbingwg/sriov-network-device-plugin'
     name: Image push ARM64
     runs-on: ubuntu-20.04
     env:
@@ -87,6 +89,7 @@ jobs:
           file: images/Dockerfile.arm64
 
   build-and-push-ppc64le-device-plugin:
+    if: github.repository == 'k8snetworkplumbingwg/sriov-network-device-plugin'
     name: Image push ppc64le
     runs-on: ubuntu-20.04
     env:
@@ -129,6 +132,7 @@ jobs:
           file: images/Dockerfile.ppc64le
 
   push-manifest:
+    if: github.repository == 'k8snetworkplumbingwg/sriov-network-device-plugin'
     runs-on: ubuntu-20.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
