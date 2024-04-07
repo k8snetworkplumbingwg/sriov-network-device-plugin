@@ -53,12 +53,17 @@ func (fs *FakeFilesystem) Use() func() {
 		panic(fmt.Errorf("error creating fake cdi directory: %s", err.Error()))
 	}
 
-	// TODO: Remove writing pci.ids file once ghw is mocked
-	// This is to fix the CI failure where ghw lib fails to
-	// unzip pci.ids file downloaded from internet.
+	// To avoid having to download the pci.ids file from the Internet on every
+	// workflow run, we copy a local pci.ids file into the temporary rootfs so
+	// ghw (and the pcidb) library can find a local copy.
 	pciData, err := os.ReadFile("/usr/share/hwdata/pci.ids")
 	if err != nil {
-		panic(fmt.Errorf("error reading file: %s", err.Error()))
+		// Debian-based systems typically store this file at
+		// /usr/share/misc/pci.ids
+		pciData, err = os.ReadFile("/usr/share/misc/pci.ids")
+		if err != nil {
+			panic(fmt.Errorf("error reading file: %s", err.Error()))
+		}
 	}
 	//nolint: gomnd
 	err = os.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
