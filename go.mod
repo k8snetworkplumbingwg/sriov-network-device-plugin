@@ -9,20 +9,21 @@ require (
 	github.com/jaypipes/ghw v0.12.0
 	github.com/jaypipes/pcidb v1.0.0
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.6.0
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.0
 	github.com/k8snetworkplumbingwg/sriovnet v1.2.1-0.20240128120937-3ca5e43034e6
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.32.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.9.0
 	github.com/vishvananda/netlink v1.2.1-beta.2
-	google.golang.org/grpc v1.63.0
+	google.golang.org/grpc v1.63.2
 	k8s.io/kubelet v0.29.3
 )
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/containernetworking/cni v1.0.1 // indirect
+	github.com/containernetworking/cni v1.2.0-rc1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -54,7 +55,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
-	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
