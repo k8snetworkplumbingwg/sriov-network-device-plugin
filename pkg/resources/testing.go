@@ -21,7 +21,6 @@ import (
 
 const (
 	notifyTimeout = 5 * time.Second
-	dialTimeout   = 10 * time.Second
 	startTimeout  = 5 * time.Second
 )
 
@@ -46,11 +45,8 @@ func createFakeRegistrationServer(
 
 func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.ClientConn, error) {
 	sockPath := path.Join(s.sockDir, s.pluginEndpoint)
-	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
-	defer cancel()
-
-	c, err := grpc.DialContext(
-		ctx, "unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	c, err := grpc.NewClient(
+		"unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial socket %s, err: %v", sockPath, err)
