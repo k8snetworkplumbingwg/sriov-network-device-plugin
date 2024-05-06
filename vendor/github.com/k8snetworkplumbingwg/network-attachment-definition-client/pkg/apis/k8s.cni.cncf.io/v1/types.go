@@ -107,6 +107,7 @@ type NetworkStatus struct {
 	Interface  string      `json:"interface,omitempty"`
 	IPs        []string    `json:"ips,omitempty"`
 	Mac        string      `json:"mac,omitempty"`
+	Mtu        int         `json:"mtu,omitempty"`
 	Default    bool        `json:"default,omitempty"`
 	DNS        DNS         `json:"dns,omitempty"`
 	DeviceInfo *DeviceInfo `json:"device-info,omitempty"`
