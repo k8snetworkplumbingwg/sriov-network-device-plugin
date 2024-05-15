@@ -7,7 +7,6 @@ env:
   image-push-owner: 'k8snetworkplumbingwg'
 jobs:
   build-and-push-amd64-device-plugin:
-    if: ${{ github.repository_owner == env.image-push-owner }}
     name: Image push AMD64
     runs-on: ubuntu-20.04
     env:
@@ -27,6 +26,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -38,7 +38,6 @@ jobs:
           file: images/Dockerfile
 
   build-and-push-arm64-device-plugin:
-    if: ${{ github.repository_owner == env.image-push-owner }}
     name: Image push ARM64
     runs-on: ubuntu-20.04
     env:
@@ -61,6 +60,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -71,7 +71,6 @@ jobs:
           file: images/Dockerfile.arm64
 
   build-and-push-ppc64le-device-plugin:
-    if: ${{ github.repository_owner == env.image-push-owner }}
     name: Image push ppc64le
     runs-on: ubuntu-20.04
     env:
@@ -94,6 +93,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -104,7 +104,6 @@ jobs:
           file: images/Dockerfile.ppc64le
 
   push-manifest:
-    if: ${{ github.repository_owner == env.image-push-owner }}
     runs-on: ubuntu-20.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
