@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -75,6 +76,9 @@ func GetDDPProfiles(dev string) (string, error) {
 	cmd := ddpExecCommand("ddptool", "-l", "-a", "-j", "-s", dev)
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
+		if strings.Contains(err.Error(), ErrProfileNameNotFound.Error()) {
+			return "", fmt.Errorf("error while getting DDP profiles: %w", ErrProfileNameNotFound)
+		}
 		return "", err
 	}
 

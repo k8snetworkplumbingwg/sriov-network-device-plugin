@@ -27,7 +27,7 @@ func IsDevlinkDDPSupportedByPCIDevice(device string) bool {
 
 // IsDevlinkDDPSupportedByDevice checks if DDP of device can be acquired with devlink info command
 func IsDevlinkDDPSupportedByDevice(device string) bool {
-	if _, err := DevlinkGetDeviceInfoByNameAndKey(device, fwAppNameKey); err != nil {
+	if _, err := devlinkGetDeviceInfoByNameAndKey(device, fwAppNameKey); err != nil {
 		return false
 	}
 
@@ -36,7 +36,7 @@ func IsDevlinkDDPSupportedByDevice(device string) bool {
 
 // DevlinkGetDDPProfiles returns DDP for selected device
 func DevlinkGetDDPProfiles(device string) (string, error) {
-	return DevlinkGetDeviceInfoByNameAndKey(device, fwAppNameKey)
+	return devlinkGetDeviceInfoByNameAndKey(device, fwAppNameKey)
 }
 
 // DevlinkGetDeviceInfoByNameAndKeys returns values for selected keys in device info
@@ -52,7 +52,7 @@ func DevlinkGetDeviceInfoByNameAndKeys(device string, keys []string) (map[string
 		if value, exists := data[key]; exists {
 			info[key] = value
 		} else {
-			return nil, KeyNotFoundError("DevlinkGetDeviceInfoByNameAndKeys", key)
+			return nil, keyNotFoundError("DevlinkGetDeviceInfoByNameAndKeys", key)
 		}
 	}
 
@@ -60,7 +60,7 @@ func DevlinkGetDeviceInfoByNameAndKeys(device string, keys []string) (map[string
 }
 
 // DevlinkGetDeviceInfoByNameAndKey returns values for selected key in device infol
-func DevlinkGetDeviceInfoByNameAndKey(device, key string) (string, error) {
+func devlinkGetDeviceInfoByNameAndKey(device, key string) (string, error) {
 	keys := []string{key}
 	info, err := DevlinkGetDeviceInfoByNameAndKeys(device, keys)
 	if err != nil {
@@ -74,6 +74,6 @@ func DevlinkGetDeviceInfoByNameAndKey(device, key string) (string, error) {
 var ErrKeyNotFound = errors.New("key could not be found")
 
 // KeyNotFoundError returns ErrKeyNotFound
-func KeyNotFoundError(function, key string) error {
+func keyNotFoundError(function, key string) error {
 	return fmt.Errorf("%s - %w: %s", function, ErrKeyNotFound, key)
 }
