@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/stretchr/testify/mock"
 	nl "github.com/vishvananda/netlink"
@@ -53,23 +54,7 @@ func (fs *FakeFilesystem) Use() func() {
 		panic(fmt.Errorf("error creating fake cdi directory: %s", err.Error()))
 	}
 
-	// To avoid having to download the pci.ids file from the Internet on every
-	// workflow run, we copy a local pci.ids file into the temporary rootfs so
-	// ghw (and the pcidb) library can find a local copy.
-	pciData, err := os.ReadFile("/usr/share/hwdata/pci.ids")
-	if err != nil {
-		// Debian-based systems typically store this file at
-		// /usr/share/misc/pci.ids
-		pciData, err = os.ReadFile("/usr/share/misc/pci.ids")
-		if err != nil {
-			panic(fmt.Errorf("error reading file: %s", err.Error()))
-		}
-	}
-	//nolint: gomnd
-	err = os.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
-	if err != nil {
-		panic(fmt.Errorf("error creating fake file: %s", err.Error()))
-	}
+	writePciIds(fs)
 
 	for link, target := range fs.Symlinks {
 		err = os.Symlink(target, path.Join(fs.RootDir, link))
@@ -87,6 +72,29 @@ func (fs *FakeFilesystem) Use() func() {
 		if err != nil {
 			panic(fmt.Errorf("error tearing down fake filesystem: %s", err.Error()))
 		}
+	}
+}
+
+// TODO: Remove writing pci.ids file once ghw is mocked
+// This is to fix the CI failure where ghw lib fails to
+// unzip pci.ids file downloaded from internet,
+// or we run inside a container where we don't have the pci ids file
+func writePciIds(fs *FakeFilesystem) {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(fmt.Errorf("error getting working directory: %s", err.Error()))
+	}
+
+	//nolint: gocritic
+	pciIdsPath := filepath.Join(dir, "../../pkg/utils/testdata/pci.ids")
+	pciData, err := os.ReadFile(pciIdsPath)
+	if err != nil {
+		panic(fmt.Errorf("error reading testdata pci file working directory %s: %s", pciIdsPath, err.Error()))
+	}
+	//nolint: gomnd
+	err = os.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
+	if err != nil {
+		panic(fmt.Errorf("error creating fake file: %s", err.Error()))
 	}
 }
 
