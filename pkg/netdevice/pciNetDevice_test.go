@@ -15,6 +15,7 @@
 package netdevice_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/jaypipes/ghw"
@@ -22,6 +23,7 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
@@ -252,7 +254,11 @@ var _ = Describe("PciNetDevice", func() {
 					"sys/bus/pci/devices/0000:00:00.1",
 					"sys/kernel/iommu_groups/0",
 					"sys/bus/pci/drivers/vfio-pci",
-					// "dev/vhost-net", FIXME: /dev folder is not mocked
+					"dev/net",
+				},
+				Files: map[string][]byte{
+					"/dev/vhost-net": nil,
+					"/dev/net/tun":   nil,
 				},
 				Symlinks: map[string]string{
 					"sys/bus/pci/devices/0000:00:00.1/iommu_group": "../../../../kernel/iommu_groups/0",
@@ -265,6 +271,11 @@ var _ = Describe("PciNetDevice", func() {
 			It("should add the vhost-net deviceSpec", func() {
 				defer fs.Use()()
 				utils.SetDefaultMockNetlinkProvider()
+
+				//nolint: gocritic
+				infoprovider.HostNet = filepath.Join(fs.RootDir, "/dev/vhost-net")
+				//nolint: gocritic
+				infoprovider.HostTun = filepath.Join(fs.RootDir, "/dev/net/tun")
 
 				dev, err := netdevice.NewPciNetDevice(in, f, rc, vhost_net_selector_index)
 

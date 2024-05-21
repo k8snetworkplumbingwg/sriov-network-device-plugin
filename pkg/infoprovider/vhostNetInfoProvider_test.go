@@ -18,11 +18,15 @@
 package infoprovider_test
 
 import (
+	"path/filepath"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 var _ = Describe("vdpaInfoProvider", func() {
@@ -35,6 +39,18 @@ var _ = Describe("vdpaInfoProvider", func() {
 	})
 	Describe("GetDeviceSpecs", func() {
 		It("should return correct specs for vhost net device", func() {
+			fakeFs := &utils.FakeFilesystem{
+				Dirs: []string{"/dev/net/"},
+				Files: map[string][]byte{
+					"/dev/vhost-net": nil,
+					"/dev/net/tun":   nil},
+			}
+			defer fakeFs.Use()()
+			//nolint: gocritic
+			infoprovider.HostNet = filepath.Join(fakeFs.RootDir, "/dev/vhost-net")
+			//nolint: gocritic
+			infoprovider.HostTun = filepath.Join(fakeFs.RootDir, "/dev/net/tun")
+
 			dip := infoprovider.NewVhostNetInfoProvider()
 			Expect(dip.GetDeviceSpecs()).To(Equal([]*pluginapi.DeviceSpec{
 				{

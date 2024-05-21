@@ -26,6 +26,15 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
 
+var (
+	// HostNet variable for vhost-net device path
+	// used to check path for unit-tests
+	HostNet = "/dev/vhost-net"
+	// HostTun variable for tun device path
+	// used to check path for unit-tests
+	HostTun = "/dev/net/tun"
+)
+
 /*
 VhostNetInfoProvider wraps any DeviceInfoProvider and adds a vhost-net device
 */
@@ -39,7 +48,7 @@ func NewVhostNetInfoProvider() types.DeviceInfoProvider {
 
 // VhostNetDeviceExist returns true if /dev/vhost-net exists
 func VhostNetDeviceExist() bool {
-	_, err := os.Stat("/dev/vhost-net")
+	_, err := os.Stat(HostNet)
 	return err == nil
 }
 
@@ -57,7 +66,7 @@ func getVhostNetDeviceSpec() []*pluginapi.DeviceSpec {
 
 // TunDeviceExist returns true if /dev/net/tun exists
 func tunDeviceExist() bool {
-	_, err := os.Stat("/dev/net/tun")
+	_, err := os.Stat(HostTun)
 	return err == nil
 }
 

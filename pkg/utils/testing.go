@@ -91,6 +91,7 @@ func writePciIds(fs *FakeFilesystem) {
 	if err != nil {
 		panic(fmt.Errorf("error reading testdata pci file working directory %s: %s", pciIdsPath, err.Error()))
 	}
+
 	//nolint: gomnd
 	err = os.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
 	if err != nil {
