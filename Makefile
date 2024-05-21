@@ -74,25 +74,25 @@ $(BUILDDIR)/$(BINARY_NAME): $(GOFILES) | $(BUILDDIR)
 	@cd $(BASE)/cmd/$(BINARY_NAME) && CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -tags no_openssl -v
 
 $(GOLINT): | $(BASE) ; $(info  building golint...)
-	$Q go install golang.org/x/lint/golint@latest
+	$(call go-install-tool,$(GOLINT),golang.org/x/lint/golint@latest)
 
 $(GOCOVMERGE): | $(BASE) ; $(info  building gocovmerge...)
-	$Q go install github.com/wadey/gocovmerge@latest
+	$(call go-install-tool,$(GOCOVMERGE),github.com/wadey/gocovmerge@latest)
 
 $(GOCOV): | $(BASE) ; $(info  building gocov...)
-	$Q go install github.com/axw/gocov/gocov@v1.1.0
+	$(call go-install-tool,$(GOCOV),github.com/axw/gocov/gocov@v1.1.0)
 
 $(GCOV2LCOV): | $(BASE) ; $(info  building gcov2lcov...)
-	$Q go install github.com/jandelgado/gcov2lcov@latest
+	$(call go-install-tool,$(GCOV2LCOV),github.com/jandelgado/gcov2lcov@latest)
 
 $(GOCOVXML): | $(BASE) ; $(info  building gocov-xml...)
-	$Q go install github.com/AlekSi/gocov-xml@latest
+	$(call go-install-tool,$(GOCOVXML),github.com/AlekSi/gocov-xml@latest)
 
 $(GO2XUNIT): | $(BASE) ; $(info  building go2xunit...)
-	$Q go install github.com/tebeka/go2xunit@latest
+	$(call go-install-tool,$(GO2XUNIT),github.com/tebeka/go2xunit@latest)
 
 $(GOMOCKERY): | $(BASE) ; $(info  building go2xunit...)
-	$Q go install github.com/vektra/mockery/v2@latest
+	$(call go-install-tool,$(GOMOCKERY),github.com/vektra/mockery/v2@latest)
 
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
 .PHONY: $(TEST_TARGETS) test-xml check test tests
@@ -166,3 +166,13 @@ mockery: | $(BASE) $(GOMOCKERY) ; $(info  Running mockery...) @ ## Run golint on
 help: ; @ ## Display this help message
 	@grep -E '^[ a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+
+# go-install-tool will 'go install' any package $2 and install it to $1.
+define go-install-tool
+@[ -f $(1) ] || { \
+set -e ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(GOBIN) go install -mod=mod $(2) ;\
+}
+endef
