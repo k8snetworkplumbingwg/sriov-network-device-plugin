@@ -18,10 +18,10 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("In the devlink related functions", func() {
-	DescribeTable("IsDevlinkDDPSupportedByPCIDevice",
+	DescribeTable("IsDevlinkDDPSupportedByDevice",
 		func(nf NetlinkFunction, device string, expectedValue bool) {
 			netlinkDevlinkGetDeviceInfoByNameAsMap = nf
-			result := IsDevlinkDDPSupportedByPCIDevice(device)
+			result := IsDevlinkDDPSupportedByDevice(device)
 			Expect(result).To(Equal(expectedValue))
 		},
 		Entry("should return true", FakeNetlinkSuccess, "fakeDevice", true),

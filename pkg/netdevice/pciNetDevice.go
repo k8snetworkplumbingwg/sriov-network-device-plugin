@@ -106,7 +106,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 func (nd *pciNetDevice) GetDDPProfiles() string {
 	ddpProfile := ""
 	pciAddr := nd.GetPciAddr()
-	if utils.IsDevlinkDDPSupportedByPCIDevice(nd.GetPfPciAddr()) {
+	if utils.IsDevlinkDDPSupportedByDevice(nd.GetPfPciAddr()) {
 		var err error
 		ddpProfile, err = utils.DevlinkGetDDPProfiles(pciAddr)
 		if err != nil {

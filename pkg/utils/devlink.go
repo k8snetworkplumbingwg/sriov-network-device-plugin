@@ -20,11 +20,6 @@ var (
 	netlinkDevlinkGetDeviceInfoByNameAsMap = netlink.DevlinkGetDeviceInfoByNameAsMap
 )
 
-// IsDevlinkDDPSupportedByPCIDevice checks if DDP of PCI device can be acquired with devlink info command
-func IsDevlinkDDPSupportedByPCIDevice(device string) bool {
-	return IsDevlinkDDPSupportedByDevice(device)
-}
-
 // IsDevlinkDDPSupportedByDevice checks if DDP of device can be acquired with devlink info command
 func IsDevlinkDDPSupportedByDevice(device string) bool {
 	if _, err := devlinkGetDeviceInfoByNameAndKey(device, fwAppNameKey); err != nil {
