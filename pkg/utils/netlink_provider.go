@@ -30,7 +30,7 @@ type NetlinkProvider interface {
 	// GetIPv4RouteList returns a list of IPv4 routes for specified interface
 	GetIPv4RouteList(ifName string) ([]nl.Route, error)
 	// DevlinkGetDeviceInfoByNameAsMap returns devlink info for selected device as a map
-	GetDevlinkGetDeviceInfoByNameAsMap(bus string, device string) (map[string]string, error)
+	GetDevlinkGetDeviceInfoByNameAsMap(bus, device string) (map[string]string, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -39,7 +39,7 @@ type defaultNetlinkProvider struct {
 var netlinkProvider NetlinkProvider = &defaultNetlinkProvider{}
 
 // Implement the DevlinkGetDeviceInfoByNameAsMap method
-func (defaultNetlinkProvider) GetDevlinkGetDeviceInfoByNameAsMap(bus string, device string) (map[string]string, error) {
+func (defaultNetlinkProvider) GetDevlinkGetDeviceInfoByNameAsMap(bus, device string) (map[string]string, error) {
 	return nl.DevlinkGetDeviceInfoByNameAsMap(bus, device)
 }
 
