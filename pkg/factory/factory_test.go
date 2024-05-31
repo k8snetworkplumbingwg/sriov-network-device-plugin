@@ -97,6 +97,7 @@ var _ = Describe("Factory", func() {
 		Entry("rootDevices", "rootDevices", true, reflect.TypeOf(resources.NewRootDeviceSelector([]string{}))),
 		Entry("linkTypes", "linkTypes", true, reflect.TypeOf(resources.NewLinkTypeSelector([]string{}))),
 		Entry("ddpProfiles", "ddpProfiles", true, reflect.TypeOf(resources.NewDdpSelector([]string{}))),
+		Entry("pKeys", "pKeys", true, reflect.TypeOf(resources.NewPKeySelector([]string{}))),
 		Entry("invalid", "fakeAndInvalid", false, reflect.TypeOf(nil)),
 	)
 	Describe("getting resource pool for netdevice", func() {
@@ -119,6 +120,7 @@ var _ = Describe("Factory", func() {
 				rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
 				linkTypes := []string{"ether", "infiniband", "other", "other2"}
 				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+				pKeys := []string{"0x1", "0x2", "0xABCD", "0x50"}
 				for i := range devs {
 					d := &mocks.PciNetDevice{}
 					d.On("GetVendor").Return(vendors[i]).
@@ -130,7 +132,8 @@ var _ = Describe("Factory", func() {
 						On("GetPfPciAddr").Return(rootDevices[i]).
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
-						On("GetDDPProfiles").Return(ddpProfiles[i])
+						On("GetDDPProfiles").Return(ddpProfiles[i]).
+						On("GetPKey").Return(pKeys[i])
 					devs[i] = d
 				}
 
@@ -145,7 +148,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}
 					]`),
 				)
@@ -197,6 +201,7 @@ var _ = Describe("Factory", func() {
 			rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
 			linkTypes := []string{"ether", "infiniband", "other", "other2"}
 			ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+			pKeys := []string{"0x1", "0x2", "0xABCD", "0x50"}
 			for i := range devs {
 				d := &mocks.PciNetDevice{}
 				d.On("GetVendor").Return(vendors[i]).
@@ -209,7 +214,8 @@ var _ = Describe("Factory", func() {
 					On("GetAPIDevice").Return(&pluginapi.Device{}).
 					On("GetLinkType").Return(linkTypes[i]).
 					On("GetDDPProfiles").Return(ddpProfiles[i]).
-					On("GetFuncID").Return(-1)
+					On("GetFuncID").Return(-1).
+					On("GetPKey").Return(pKeys[i])
 				devs[i] = d
 			}
 
@@ -254,7 +260,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}`), []string{"0000:03:02.0"}),
 		Entry("with a slice of one selector object it should match devices", []byte(`
 						[{
@@ -265,7 +272,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}]`), []string{"0000:03:02.0"}),
 		Entry("with more than one selector object, it should match devices from all selector objects", []byte(`
 						[{
@@ -276,7 +284,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}, {
 							"vendors": ["8086"],
 							"devices": ["1111"],
@@ -285,7 +294,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["net2"],
 							"rootDevices": ["0000:86:00.3"],
 							"linkTypes": ["other2"],
-							"ddpProfiles": ["PPPoE"]
+							"ddpProfiles": ["PPPoE"],
+							"pKeys": ["0x50"]
 						}]`), []string{"0000:03:02.0", "0000:03:02.3"}),
 	)
 	Describe("getting exclusive resource pool for netdevice", func() {
@@ -308,6 +318,7 @@ var _ = Describe("Factory", func() {
 				rootDevices := []string{"0000:86:00.0", "0000:86:00.1", "0000:86:00.2", "0000:86:00.3"}
 				linkTypes := []string{"ether", "infiniband", "other", "other2"}
 				ddpProfiles := []string{"GTP", "PPPoE", "GTP", "PPPoE"}
+				pKeys := []string{"0x1", "0x2", "0xABCD", "0x50"}
 				for i := range devs {
 					d := &mocks.PciNetDevice{}
 					d.On("GetVendor").Return(vendors[i]).
@@ -320,7 +331,8 @@ var _ = Describe("Factory", func() {
 						On("GetAPIDevice").Return(&pluginapi.Device{}).
 						On("GetLinkType").Return(linkTypes[i]).
 						On("GetDDPProfiles").Return(ddpProfiles[i]).
-						On("GetFuncID").Return(-1)
+						On("GetFuncID").Return(-1).
+						On("GetPKey").Return(pKeys[i])
 					devs[i] = d
 				}
 
@@ -334,7 +346,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}
 					`),
 				)
@@ -350,7 +363,8 @@ var _ = Describe("Factory", func() {
 							"pfNames": ["enp2s0f2"],
 							"rootDevices": ["0000:86:00.0"],
 							"linkTypes": ["ether"],
-							"ddpProfiles": ["GTP"]
+							"ddpProfiles": ["GTP"],
+							"pKeys": ["0x1"]
 						}]
 					`),
 				)

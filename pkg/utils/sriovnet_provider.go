@@ -12,6 +12,7 @@ type SriovnetProvider interface {
 	GetSfIndexByAuxDev(auxDev string) (int, error)
 	GetNetDevicesFromAux(auxDev string) ([]string, error)
 	GetAuxNetDevicesFromPci(pciAddr string) ([]string, error)
+	GetDefaultPKeyFromPci(pciAddr string) (string, error)
 }
 
 type defaultSriovnetProvider struct {
@@ -51,4 +52,8 @@ func (defaultSriovnetProvider) GetNetDevicesFromAux(auxDev string) ([]string, er
 
 func (defaultSriovnetProvider) GetAuxNetDevicesFromPci(pciAddr string) ([]string, error) {
 	return sriovnet.GetAuxNetDevicesFromPci(pciAddr)
+}
+
+func (defaultSriovnetProvider) GetDefaultPKeyFromPci(pciAddr string) (string, error) {
+	return sriovnet.GetDefaultPKeyFromPci(pciAddr)
 }

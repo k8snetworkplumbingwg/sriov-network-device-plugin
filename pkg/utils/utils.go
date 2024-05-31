@@ -42,6 +42,7 @@ const (
 	classIDBitSize       = 64
 	maxVendorName        = 20
 	maxProductName       = 40
+	ellipsis             = "..."
 )
 
 // DetectPluginWatchMode returns true if plugins registry directory exist
@@ -102,6 +103,30 @@ func GetPfName(pciAddr string) (string, error) {
 		return files[0].Name(), nil
 	}
 	return "", fmt.Errorf("the PF name is not found for device %s", pciAddr)
+}
+
+// GetPfNameFromAuxDev returns netdevice name of the PF associated with the
+// provided auxiliary device name.
+func GetPfNameFromAuxDev(auxDevName string) (string, error) {
+	pfName, err := GetSriovnetProvider().GetUplinkRepresentorFromAux(auxDevName)
+	if err != nil {
+		// fallback, try to get PF netdev name from PF PCI Address
+		pfAddr, err := GetSriovnetProvider().GetPfPciFromAux(auxDevName)
+		if err != nil {
+			return "", err
+		}
+		netdevs, err := GetNetNames(pfAddr)
+		if err != nil {
+			return "", err
+		}
+
+		if len(netdevs) == 0 {
+			return "", fmt.Errorf("no netdevs for PF address %s", pfAddr)
+		}
+
+		return netdevs[0], nil
+	}
+	return pfName, err
 }
 
 // IsSriovPF check if a pci device SRIOV capable given its pci address
@@ -480,7 +505,7 @@ func HasDefaultRoute(pciAddr string) (bool, error) {
 func NormalizeVendorName(vendor string) string {
 	vendorName := vendor
 	if len(vendor) > maxVendorName {
-		vendorName = string([]byte(vendorName)[0:17]) + "..."
+		vendorName = string([]byte(vendorName)[0:17]) + ellipsis
 	}
 	return vendorName
 }
@@ -489,7 +514,7 @@ func NormalizeVendorName(vendor string) string {
 func NormalizeProductName(product string) string {
 	productName := product
 	if len(product) > maxProductName {
-		productName = string([]byte(productName)[0:37]) + "..."
+		productName = string([]byte(productName)[0:37]) + ellipsis
 	}
 	return productName
 }
@@ -511,4 +536,28 @@ func ParseAuxDeviceType(deviceID string) string {
 	}
 	// not an auxiliary device
 	return ""
+}
+
+// isInfinibandDevice checks if a pci device has infiniband config folder
+func isInfinibandDevice(pciAddr string) bool {
+	totalVfFilePath := filepath.Join(sysBusPci, pciAddr, "infiniband")
+	if _, err := os.Stat(totalVfFilePath); err != nil {
+		return false
+	}
+	return true
+}
+
+// GetPKey returns IB Partition Key for the given IB device
+// If device is not IB device or has no PKey then it will return empty string
+func GetPKey(pciAddr string) (string, error) {
+	if !isInfinibandDevice(pciAddr) {
+		return "", nil
+	}
+
+	pKey, err := GetSriovnetProvider().GetDefaultPKeyFromPci(pciAddr)
+	if err != nil {
+		return "", err
+	}
+
+	return pKey, nil
 }

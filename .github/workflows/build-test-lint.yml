@@ -5,7 +5,7 @@ jobs:
     name: build
     strategy:
       matrix:
-        go-version: [1.20.x]
+        go-version: [1.21.x]
         goarch: [amd64]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
@@ -32,7 +32,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
@@ -51,7 +51,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
 
       - uses: actions/checkout@v3
 
@@ -74,13 +74,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
-          version: v1.52.2
+          version: v1.55.2
 
   shellcheck:
     name: Shellcheck
@@ -113,7 +113,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.20.x
+        go-version: 1.21.x
 
     # if this fails, run go mod tidy
     - name: Check if module files are consistent with code
@@ -122,3 +122,34 @@ jobs:
     # if this fails, run go mod vendor
     - name: Check if vendor directory is consistent with go modules
       run: go mod vendor && git diff --exit-code
+
+  sriov-operator-e2e-test:
+    name: SR-IOV operator e2e tests
+    needs: [ build,test ]
+    runs-on: [ sriov ]
+    env:
+      TEST_REPORT_PATH: k8s-artifacts
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: build sriov-network-device-plugin image
+        run: podman build -f images/Dockerfile -t ghaction-sriov-network-device-plugin:pr-${{github.event.pull_request.number}} .
+
+      - name: Check out sriov operator's code
+        uses: actions/checkout@v2
+        with:
+          repository: k8snetworkplumbingwg/sriov-network-operator
+          path: sriov-network-operator-wc
+
+      - name: run test
+        run: make test-e2e-conformance-virtual-k8s-cluster-ci
+        working-directory: sriov-network-operator-wc
+        env:
+          LOCAL_SRIOV_DEVICE_PLUGIN_IMAGE: ghaction-sriov-network-device-plugin:pr-${{github.event.pull_request.number}}
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ${{ env.TEST_REPORT_PATH }}
+          path: ./sriov-network-operator-wc/${{ env.TEST_REPORT_PATH }}

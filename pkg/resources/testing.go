@@ -21,7 +21,6 @@ import (
 
 const (
 	notifyTimeout = 5 * time.Second
-	dialTimeout   = 10 * time.Second
 	startTimeout  = 5 * time.Second
 )
 
@@ -46,11 +45,8 @@ func createFakeRegistrationServer(
 
 func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.ClientConn, error) {
 	sockPath := path.Join(s.sockDir, s.pluginEndpoint)
-	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
-	defer cancel()
-
-	c, err := grpc.DialContext(
-		ctx, "unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	c, err := grpc.NewClient(
+		"unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial socket %s, err: %v", sockPath, err)
@@ -127,7 +123,7 @@ func (s *fakeRegistrationServer) Register(
 }
 
 func (s *fakeRegistrationServer) start() {
-	l, err := net.Listen("unix", path.Join(s.sockDir, types.KubeEndPoint))
+	l, err := net.Listen(unix, path.Join(s.sockDir, types.KubeEndPoint))
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +141,7 @@ func (s *fakeRegistrationServer) waitForServer(timeout time.Duration) error {
 		if time.Now().After(maxWaitTime) {
 			return fmt.Errorf("waiting for the fake registration server timed out")
 		}
-		c, err := net.DialTimeout("unix", path.Join(s.sockDir, types.KubeEndPoint), time.Second)
+		c, err := net.DialTimeout(unix, path.Join(s.sockDir, types.KubeEndPoint), time.Second)
 		if err == nil {
 			return c.Close()
 		}

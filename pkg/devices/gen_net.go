@@ -59,10 +59,11 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 		}
 		netNames, _ = utils.GetNetNames(deviceID)
 	case types.AuxNetDeviceType:
-		if pfName, err = utils.GetSriovnetProvider().GetUplinkRepresentorFromAux(deviceID); err != nil {
+		if pfName, err = utils.GetPfNameFromAuxDev(deviceID); err != nil {
 			// AuxNetDeviceType by design should have PF, return error if failed to get PF name
 			return nil, err
 		}
+
 		if pfAddr, err = utils.GetSriovnetProvider().GetPfPciFromAux(deviceID); err != nil {
 			return nil, err
 		}

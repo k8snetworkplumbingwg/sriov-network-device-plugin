@@ -51,6 +51,7 @@ type resourceServer struct {
 const (
 	rsWatchInterval    = 5 * time.Second
 	serverStartTimeout = 5 * time.Second
+	unix               = "unix"
 )
 
 // NewResourceServer returns an instance of ResourceServer
@@ -77,8 +78,8 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := "unix:" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
-	conn, err := grpc.Dial(kubeletEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	kubeletEndpoint := unix + ":" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
+	conn, err := grpc.NewClient(kubeletEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
 		return err
@@ -252,7 +253,7 @@ func (rs *resourceServer) Start() error {
 	}
 
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
-	lis, err := net.Listen("unix", rs.sockPath)
+	lis, err := net.Listen(unix, rs.sockPath)
 	if err != nil {
 		glog.Errorf("error starting %s device plugin endpoint: %v", resourceName, err)
 		return err
@@ -270,17 +271,31 @@ func (rs *resourceServer) Start() error {
 			glog.Errorf("serving incoming requests failed: %s", err.Error())
 		}
 	}()
-	// Wait for server to start by launching a blocking connection
-	ctx, _ := context.WithTimeout(context.TODO(), serverStartTimeout)
-	conn, err := grpc.DialContext(
-		ctx, "unix:"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 
+	conn, err := grpc.NewClient(
+		unix+":"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)
+		glog.Errorf("error. unable to create grpc client for test connection with %s gRPC server: %v", resourceName, err)
 		return err
 	}
-	glog.Infof("%s device plugin endpoint started serving", resourceName)
-	conn.Close()
+
+	// Wait for server to start by launching a blocking connection
+	connChan := make(chan interface{}, 1)
+	go func() {
+		conn.Connect()
+		connChan <- true
+	}()
+
+	ctx, cancel := context.WithTimeout(context.TODO(), serverStartTimeout)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)
+		conn.Close()
+		return err
+	case <-connChan:
+		glog.Infof("%s device plugin endpoint started serving", resourceName)
+	}
 
 	rs.triggerUpdate()
 
