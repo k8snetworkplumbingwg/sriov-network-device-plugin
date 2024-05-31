@@ -9,16 +9,6 @@ import (
 	"strings"
 )
 
-// import (
-// 	"bytes"
-// 	"encoding/json"
-// 	"fmt"
-// 	"os/exec"
-// 	"strings"
-
-// 	"github.com/pkg/errors"
-// )
-
 // /*
 // Example output of DDP tool
 // $ ./ddptool -l -a -j -s 0000:02:00.0
