@@ -3,10 +3,11 @@ package utils
 import (
 	"errors"
 
-	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 )
 
 const (
