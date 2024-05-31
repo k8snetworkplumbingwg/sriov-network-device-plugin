@@ -3,31 +3,40 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
-/*
-Example output of DDP tool
-$ ./ddptool -l -a -j -s 0000:02:00.0
-{
-        "DDPInventory": {
-                "device": "1572",
-                "address": "0000:02:00.0",
-                "name": "enp2s0f0",
-                "display": "Intel(R) Ethernet Converged Network Adapter X710-4",
-                "DDPpackage": {
-                        "track_id": "80000008",
-                        "version": "1.0.3.0",
-                        "name": "GTPv1-C/U IPv4/IPv6 payload"
-                }
-        }
-}
+// import (
+// 	"bytes"
+// 	"encoding/json"
+// 	"fmt"
+// 	"os/exec"
+// 	"strings"
 
-*/
+// 	"github.com/pkg/errors"
+// )
+
+// /*
+// Example output of DDP tool
+// $ ./ddptool -l -a -j -s 0000:02:00.0
+// {
+//         "DDPInventory": {
+//                 "device": "1572",
+//                 "address": "0000:02:00.0",
+//                 "name": "enp2s0f0",
+//                 "display": "Intel(R) Ethernet Converged Network Adapter X710-4",
+//                 "DDPpackage": {
+//                         "track_id": "80000008",
+//                         "version": "1.0.3.0",
+//                         "name": "GTPv1-C/U IPv4/IPv6 payload"
+//                 }
+//         }
+// }
+
+// */
 
 // DDPInfo is the toplevel container of DDPInventory
 type DDPInfo struct {

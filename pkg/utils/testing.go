@@ -87,7 +87,7 @@ func (fs *FakeFilesystem) Use() func() {
 
 // SetDefaultMockNetlinkProvider sets a mocked instance of NetlinkProvider to be used by unit test in other packages
 func SetDefaultMockNetlinkProvider() {
-	mockProvider := mocks.NetlinkProvider{}
+	mockProvider := &mocks.NetlinkProvider{}
 
 	mockProvider.
 		On("GetLinkAttrs", mock.AnythingOfType("string")).
@@ -98,6 +98,8 @@ func SetDefaultMockNetlinkProvider() {
 	mockProvider.
 		On("GetIPv4RouteList", mock.AnythingOfType("string")).
 		Return([]nl.Route{{Dst: nil}}, nil)
-
-	SetNetlinkProviderInst(&mockProvider)
+	mockProvider.
+		On("GetDevlinkGetDeviceInfoByNameAsMap", mock.AnythingOfType("string")).
+		Return(map[string]string{"someKey": "someValue"}, nil)
+	SetNetlinkProviderInst(mockProvider)
 }
