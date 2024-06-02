@@ -2,7 +2,6 @@
 run:
   timeout: 3m
   skip-dirs:
-    - vendor/
     - .github/
     - deployments/
     - docs/

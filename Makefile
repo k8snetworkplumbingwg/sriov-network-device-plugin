@@ -21,8 +21,8 @@ ORG_PATH=github.com/k8snetworkplumbingwg
 BUILDDIR=$(CURDIR)/build
 REPO_PATH=$(ORG_PATH)/$(PACKAGE)
 BASE=$(GOPATH)/src/$(REPO_PATH)
-PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./... | grep -v "^$(PACKAGE)/vendor/"))
-GOFILES = $(shell find . -name *.go | grep -vE "(\/vendor\/)|(_test.go)")
+PKGS = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) go list ./...))
+GOFILES = $(shell find . -name *.go | grep -v "_test.go")
 # Test artifacts and settings
 TESTPKGS = $(shell env GOPATH=$(GOPATH) go list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 TIMEOUT = 15
@@ -117,7 +117,7 @@ test-coverage: fmt lint test-coverage-tools | $(BASE) ; $(info  Running coverage
 	$Q cd $(BASE) && for pkg in $(TESTPKGS); do \
 		go test \
 			-coverpkg=$$(go list -f '{{ join .Deps "\n" }}' $$pkg | \
-					grep '^$(PACKAGE)/' | grep -v '^$(PACKAGE)/vendor/' | \
+					grep '^$(PACKAGE)/' | \
 					tr '\n' ',')$$pkg \
 			-covermode=$(COVERAGE_MODE) \
 			-coverprofile="$(COVERAGE_DIR)/coverage/`echo $$pkg | tr "/" "-"`.cover" $$pkg ;\
@@ -135,13 +135,13 @@ lint: | $(BASE) $(GOLINT) ; $(info  Running golint...) @ ## Run golint on all so
 
 .PHONY: fmt
 fmt: ; $(info  running gofmt...) @ ## Run gofmt on all source files
-	@ret=0 && for d in $$(go list -f '{{.Dir}}' ./... | grep -v /vendor/); do \
+	@ret=0 && for d in $$(go list -f '{{.Dir}}' ./...); do \
 		gofmt -l -w $$d/*.go || ret=$$? ; \
 	 done ; exit $$ret
 
 .PHONY: deps-update
 deps-update: ; $(info  Updating dependencies...) @ ## Update dependencies
-	@go mod tidy && go mod vendor
+	@go mod tidy
 
 .PHONY: image
 image: | $(BASE) ; $(info Building Docker image...) @ ## Build SR-IOV Network device plugin docker image
