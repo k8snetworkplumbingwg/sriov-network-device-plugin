@@ -132,6 +132,9 @@ var _ = Describe("Devices", func() {
 				testMockProvider.
 					On("GetIPv4RouteList", mock.AnythingOfType("string")).
 					Return([]nl.Route{{Dst: nil}}, nil)
+				testMockProvider.
+					On("DevlinkGetDeviceInfoByNameAsMap", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+					Return(map[string]string{"someKey": "someValue"}, nil)
 				utils.SetNetlinkProviderInst(&testMockProvider)
 
 				pciAddr := "0000:00:00.1"

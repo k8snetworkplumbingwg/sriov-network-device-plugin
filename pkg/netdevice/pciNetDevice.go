@@ -117,11 +117,30 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 }
 
 func (nd *pciNetDevice) GetDDPProfiles() string {
+	ddpProfile := ""
 	pciAddr := nd.GetPciAddr()
-	ddpProfile, err := utils.GetDDPProfiles(pciAddr)
-	if err != nil {
-		glog.Infof("GetDDPProfiles(): unable to get ddp profiles for device %s : %q", pciAddr, err)
-		return ""
+	if utils.IsDevlinkDDPSupportedByDevice(nd.GetPfPciAddr()) {
+		var err error
+		ddpProfile, err = utils.DevlinkGetDDPProfiles(pciAddr)
+		if err != nil {
+			pfPCI := nd.GetPfPciAddr()
+			ddpProfile, err = utils.DevlinkGetDDPProfiles(pfPCI)
+			if err != nil {
+				// default to ddptool if devlink failed
+				ddpProfile, err = utils.GetDDPProfiles(pciAddr)
+				if err != nil {
+					glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
+					return ""
+				}
+			}
+		}
+	} else if utils.IsDDPToolSupportedByDevice(pciAddr) {
+		var err error
+		ddpProfile, err = utils.GetDDPProfiles(pciAddr)
+		if err != nil {
+			glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, nd.GetPfPciAddr(), err)
+			return ""
+		}
 	}
 	return ddpProfile
 }
