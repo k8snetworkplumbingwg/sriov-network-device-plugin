@@ -397,6 +397,38 @@ func GetNetNames(pciAddr string) ([]string, error) {
 	return names, nil
 }
 
+// GetNetIndex returns host net interface index as int for a PCI device from its pci address
+func GetNetIndex(pciAddr string) (int, error) {
+	// get interface name
+	names, err := GetNetNames(pciAddr)
+	if err != nil {
+		return -1, err
+	}
+
+	// check we have exactly one interface name
+	if len(names) != 1 {
+		return -1, fmt.Errorf("GetNetIndex(): unexpected number if interfaces founded: %v", len(names))
+	}
+
+	netDir := filepath.Join(sysBusPci, pciAddr, "net", names[0])
+	if _, err := os.Lstat(netDir); err != nil {
+		return -1, fmt.Errorf("GetNetIndex(): no interface name directory under pci device %s: %q", pciAddr, err)
+	}
+
+	// read the ifindex file from the interface folder
+	indexFile := filepath.Join(netDir, "ifindex")
+	ifIndex, err := os.ReadFile(indexFile)
+	if err != nil {
+		return -1, fmt.Errorf("GetNetIndex(): failed to read ifindex file %s: %q", indexFile, err)
+	}
+
+	intIfIndex, err := strconv.Atoi(strings.TrimSpace(string(ifIndex)))
+	if err != nil {
+		return -1, fmt.Errorf("GetNetIndex(): failed to parse ifindex file content %s: %q", string(ifIndex), err)
+	}
+	return intIfIndex, nil
+}
+
 // GetDriverName returns current driver attached to a pci device from its pci address
 func GetDriverName(pciAddr string) (string, error) {
 	driverLink := filepath.Join(sysBusPci, pciAddr, "driver")
