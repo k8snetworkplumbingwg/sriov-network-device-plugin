@@ -403,6 +403,39 @@ var _ = Describe("In the utils package", func() {
 		),
 	)
 
+	DescribeTable("getting interface index",
+		func(fs *FakeFilesystem, device string, expected int, shouldFail bool) {
+			defer fs.Use()()
+			actual, err := GetNetIndex(device)
+			Expect(actual).To(Equal(expected))
+			assertShouldFail(err, shouldFail)
+		},
+		Entry("device doesn't exist", &FakeFilesystem{}, "0000:01:10.0", -1, true),
+		Entry("net is not a directory",
+			&FakeFilesystem{
+				Dirs:  []string{"sys/bus/pci/devices/0000:01:10.0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net": []byte("junk")},
+			},
+			"0000:01:10.0", -1, true,
+		),
+		Entry("ifindex is not a number",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net/fake0/ifindex": []byte("test")}},
+			"0000:01:10.0", -1, true,
+		),
+		Entry("single network interface",
+			&FakeFilesystem{Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0"},
+				Files: map[string][]byte{"sys/bus/pci/devices/0000:01:10.0/net/fake0/ifindex": []byte("72")}},
+			"0000:01:10.0", 72, false,
+		),
+		Entry("multiple network interfaces for single device",
+			&FakeFilesystem{
+				Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/net/fake0", "sys/bus/pci/devices/0000:01:10.0/net/fake1"},
+			},
+			"0000:01:10.0", -1, true,
+		),
+	)
+
 	DescribeTable("getting PF names legacy",
 		func(fs *FakeFilesystem, device string, expected string, shouldFail bool) {
 			fakeNetlinkProvider := mocks.NetlinkProvider{}
