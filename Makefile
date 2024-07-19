@@ -44,7 +44,7 @@ endif
 
 LDFLAGS=
 ifdef STATIC
-	export CGO_ENABLED=0
+	export CGO_ENABLED=1
 	LDFLAGS=-a -ldflags '-extldflags \"-static\"'
 endif
 
@@ -71,7 +71,7 @@ build: $(BUILDDIR)/$(BINARY_NAME) | ; $(info Building $(BINARY_NAME)...) @ ## Bu
 	$(info Done!)
 
 $(BUILDDIR)/$(BINARY_NAME): $(GOFILES) | $(BUILDDIR)
-	@cd $(BASE)/cmd/$(BINARY_NAME) && CGO_ENABLED=0 go build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -tags no_openssl -v
+	@cd $(BASE)/cmd/$(BINARY_NAME) && CGO_ENABLED=1 go build $(LDFLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -v
 
 $(GOLINT): | $(BASE) ; $(info  building golint...)
 	$(call go-install-tool,$(GOLINT),golang.org/x/lint/golint@latest)
