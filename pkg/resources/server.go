@@ -49,9 +49,8 @@ type resourceServer struct {
 }
 
 const (
-	rsWatchInterval    = 5 * time.Second
-	serverStartTimeout = 5 * time.Second
-	unix               = "unix"
+	rsWatchInterval = 5 * time.Second
+	unix            = "unix"
 )
 
 // NewResourceServer returns an instance of ResourceServer
@@ -265,37 +264,13 @@ func (rs *resourceServer) Start() error {
 	}
 	pluginapi.RegisterDevicePluginServer(rs.grpcServer, rs)
 
+	// start serving from grpcServer
 	go func() {
 		err := rs.grpcServer.Serve(lis)
 		if err != nil {
 			glog.Errorf("serving incoming requests failed: %s", err.Error())
 		}
 	}()
-
-	conn, err := grpc.NewClient(
-		unix+":"+rs.sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		glog.Errorf("error. unable to create grpc client for test connection with %s gRPC server: %v", resourceName, err)
-		return err
-	}
-
-	// Wait for server to start by launching a blocking connection
-	connChan := make(chan interface{}, 1)
-	go func() {
-		conn.Connect()
-		connChan <- true
-	}()
-
-	ctx, cancel := context.WithTimeout(context.TODO(), serverStartTimeout)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		glog.Errorf("error. unable to establish test connection with %s gRPC server: %v", resourceName, err)
-		conn.Close()
-		return err
-	case <-connChan:
-		glog.Infof("%s device plugin endpoint started serving", resourceName)
-	}
 
 	rs.triggerUpdate()
 

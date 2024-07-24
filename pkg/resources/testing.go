@@ -46,7 +46,7 @@ func createFakeRegistrationServer(
 func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.ClientConn, error) {
 	sockPath := path.Join(s.sockDir, s.pluginEndpoint)
 	c, err := grpc.NewClient(
-		"unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		"unix:"+sockPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to dial socket %s, err: %v", sockPath, err)
@@ -57,7 +57,7 @@ func (s *fakeRegistrationServer) dial() (registerapi.RegistrationClient, *grpc.C
 
 func (s *fakeRegistrationServer) getInfo(
 	ctx context.Context, client registerapi.RegistrationClient) (*registerapi.PluginInfo, error) {
-	infoResp, err := client.GetInfo(ctx, &registerapi.InfoRequest{})
+	infoResp, err := client.GetInfo(ctx, &registerapi.InfoRequest{}, grpc.WaitForReady(true))
 	if err != nil {
 		return infoResp, fmt.Errorf("failed to get plugin info using RPC GetInfo, err: %v", err)
 	}
@@ -75,7 +75,7 @@ func (s *fakeRegistrationServer) notifyPlugin(
 		Error:            errStr,
 	}
 
-	if _, err := client.NotifyRegistrationStatus(ctx, status); err != nil {
+	if _, err := client.NotifyRegistrationStatus(ctx, status, grpc.WaitForReady(true)); err != nil {
 		return errors.Wrap(err, errStr)
 	}
 
