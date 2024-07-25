@@ -29,6 +29,7 @@ endif
 GO_BUILD_OPTS ?=
 GO_LDFLAGS ?=
 GO_FLAGS ?=
+GO_TAGS ?=-tags no_openssl
 
 ifdef STATIC
 	GO_BUILD_OPTS+= CGO_ENABLED=0
@@ -50,7 +51,7 @@ $(BINDIR) $(BUILDDIR) $(COVERAGE_DIR): ; $(info Creating directory $@...)
 
 .PHONY: build
 build: | $(BUILDDIR) ; $(info Building $(BINARY_NAME)...) @ ## Build SR-IOV Network device plugin
-	$Q cd $(CURDIR)/cmd/$(BINARY_NAME) && $(GO_BUILD_OPTS) go build -ldflags '$(GO_LDFLAGS)' $(GO_FLAGS) -o $(BUILDDIR)/$(BINARY_NAME) -tags no_openssl -v
+	$Q cd $(CURDIR)/cmd/$(BINARY_NAME) && $(GO_BUILD_OPTS) go build -ldflags '$(GO_LDFLAGS)' $(GO_FLAGS) -o $(BUILDDIR)/$(BINARY_NAME) $(GO_TAGS) -v
 	$(info Done!)
 
 GOLANGCI_LINT = $(BINDIR)/golangci-lint
