@@ -84,19 +84,13 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 		cdiSpec.Devices = append(cdiSpec.Devices, device)
 	}
 
-	// calculate hash of the cdiSpec
-	digest, err := extractEncodedFromDigest(Digest(cdiSpec).String())
-	if err != nil {
-		glog.Errorf("CreateCDISpecForPool(): can not calculate hash of the cdiSpec: %v", err)
-		return err
-	}
-	name, err := cdi.GenerateNameForTransientSpec(&cdiSpec, digest)
+	name, err := cdi.GenerateNameForSpec(&cdiSpec)
 	if err != nil {
 		glog.Errorf("CreateCDISpecForPool(): can not generate transient name: %v", err)
 		return err
 	}
 
-	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, cdiSpecPrefix+name)
+	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, cdiSpecPrefix+name+"-"+rPool.GetResourceName())
 	if err != nil {
 		glog.Errorf("CreateCDISpecForPool(): can not create CDI json: %v", err)
 		return err
