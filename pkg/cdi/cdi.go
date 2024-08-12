@@ -18,6 +18,7 @@
 package cdi
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -39,10 +40,6 @@ type CDI interface {
 
 // impl implements CDI interface
 type impl struct {
-	// lastGeneratedName is the last computed file name to which the CDI spec
-	// was written. This is used to remove the spec file when the resource pool
-	// is removed or updated.
-	lastGeneratedName string
 }
 
 // New returns an instance of CDI interface implementation
@@ -52,11 +49,6 @@ func New() CDI {
 
 // CreateCDISpecForPool creates CDI spec file with specified devices
 func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error {
-	err := c.removeOldSpec()
-	if err != nil {
-		glog.Errorf("CreateCDISpecForPool(): can not cleanup old spec file: %v", err)
-		return err
-	}
 	cdiDevices := make([]cdiSpecs.Device, 0)
 	cdiSpec := cdiSpecs.Spec{
 		Version: cdiSpecs.CurrentVersion,
@@ -86,18 +78,17 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 
 	name, err := cdi.GenerateNameForSpec(&cdiSpec)
 	if err != nil {
-		glog.Errorf("CreateCDISpecForPool(): can not generate transient name: %v", err)
+		glog.Errorf("GenerateNameForSpec(): can not generate name: %v", err)
 		return err
 	}
 
-	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, cdiSpecPrefix+name+"-"+rPool.GetResourceName())
+	// this will overwrite any existing file for this spec with the same name
+	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, fmt.Sprintf("%s%s-%s", cdiSpecPrefix, name, rPool.GetResourceName()))
 	if err != nil {
 		glog.Errorf("CreateCDISpecForPool(): can not create CDI json: %v", err)
 		return err
 	}
 
-	// save the last generated name to remove the spec file later
-	c.lastGeneratedName = cdiSpecPrefix + name
 	return nil
 }
 
@@ -121,14 +112,6 @@ func (c *impl) CreateContainerAnnotations(devicesIDs []string, resourcePrefix, r
 	annotations[annoKey] = annoValue
 
 	return annotations, nil
-}
-
-func (c *impl) removeOldSpec() error {
-	if c.lastGeneratedName == "" {
-		return nil
-	}
-	registry := cdi.GetRegistry()
-	return registry.SpecDB().RemoveSpec(c.lastGeneratedName)
 }
 
 // CleanupSpecs removes previously-created CDI specs
