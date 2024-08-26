@@ -18,6 +18,7 @@
 package cdi
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -48,11 +49,6 @@ func New() CDI {
 
 // CreateCDISpecForPool creates CDI spec file with specified devices
 func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error {
-	err := c.CleanupSpecs()
-	if err != nil {
-		glog.Errorf("CreateCDISpecForPool(): can not cleanup old spec files: %v", err)
-		return err
-	}
 	cdiDevices := make([]cdiSpecs.Device, 0)
 	cdiSpec := cdiSpecs.Spec{
 		Version: cdiSpecs.CurrentVersion,
@@ -80,7 +76,14 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 		cdiSpec.Devices = append(cdiSpec.Devices, device)
 	}
 
-	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, cdiSpecPrefix+resourcePrefix)
+	name, err := cdi.GenerateNameForSpec(&cdiSpec)
+	if err != nil {
+		glog.Errorf("GenerateNameForSpec(): can not generate name: %v", err)
+		return err
+	}
+
+	// this will overwrite any existing file for this spec with the same name
+	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, fmt.Sprintf("%s%s-%s", cdiSpecPrefix, name, rPool.GetResourceName()))
 	if err != nil {
 		glog.Errorf("CreateCDISpecForPool(): can not create CDI json: %v", err)
 		return err
