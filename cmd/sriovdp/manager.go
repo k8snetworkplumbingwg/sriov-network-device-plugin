@@ -243,17 +243,16 @@ func (rm *resourceManager) validConfigs() bool {
 func (rm *resourceManager) discoverHostDevices() error {
 	pci, err := ghw.PCI()
 	if err != nil {
-		return fmt.Errorf("discoverDevices(): error getting PCI info: %v", err)
+		return fmt.Errorf("discoverHostDevices(): error getting PCI info: %v", err)
 	}
 
-	devices := pci.ListDevices()
-	if len(devices) == 0 {
-		glog.Warningf("discoverDevices(): no PCI network device found")
+	if len(pci.Devices) == 0 {
+		glog.Warningf("discoverHostDevices(): no PCI network device found")
 	}
 
 	for k, v := range types.SupportedDevices {
 		if dp, ok := rm.deviceProviders[k]; ok {
-			if err := dp.AddTargetDevices(devices, v); err != nil {
+			if err := dp.AddTargetDevices(pci.Devices, v); err != nil {
 				glog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
 			}
 		}
