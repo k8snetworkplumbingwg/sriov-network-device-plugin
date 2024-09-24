@@ -115,8 +115,8 @@ func (rs *resourceServer) NotifyRegistrationStatus(ctx context.Context,
 	if regstat.PluginRegistered {
 		glog.Infof("Plugin: %s gets registered successfully at Kubelet\n", rs.endPoint)
 	} else {
-		glog.Infof("Plugin: %s failed to be registered at Kubelet: %v; restarting.\n", rs.endPoint, regstat.Error)
 		rs.grpcServer.Stop()
+		glog.Fatalf("Plugin: %s failed to be registered at Kubelet: %v; restarting.\n", rs.endPoint, regstat.Error)
 	}
 	return &registerapi.RegistrationStatusResponse{}, nil
 }
