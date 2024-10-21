@@ -18,6 +18,7 @@
 package devices
 
 import (
+	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -25,15 +26,61 @@ import (
 )
 
 type rdmaSpec struct {
-	isSupportRdma bool
-	deviceSpec    []*pluginapi.DeviceSpec
+	deviceID   string
+	deviceType types.DeviceType
 }
 
-func newRdmaSpec(rdmaResources []string) types.RdmaSpec {
+// NewRdmaSpec returns the RdmaSpec
+func NewRdmaSpec(dt types.DeviceType, id string) types.RdmaSpec {
+	if dt == types.AcceleratorType {
+		return nil
+	}
+	return &rdmaSpec{deviceID: id, deviceType: dt}
+}
+
+func (r *rdmaSpec) IsRdma() bool {
+	if len(r.getRdmaResources()) > 0 {
+		return true
+	}
+	var bus string
+	//nolint: exhaustive
+	switch r.deviceType {
+	case types.NetDeviceType:
+		bus = "pci"
+	case types.AuxNetDeviceType:
+		bus = "auxiliary"
+	default:
+		return false
+	}
+	// In case of exclusive RDMA, if the resource is assigned to a pod
+	// the files used to check if the device support RDMA are removed from the host.
+	// In order to still report the resource in this state,
+	// netlink param "enable_rdma" is checked to verify if the device supports RDMA.
+	// This scenario cann happen if the device is discovered, assigned to a pod and then the plugin is restarted.
+	rdma, err := utils.HasRdmaParam(bus, r.deviceID)
+	if err != nil {
+		glog.Infof("HasRdmaParam(): unable to get Netlink RDMA param for device %s : %q", r.deviceID, err)
+		return false
+	}
+	return rdma
+}
+
+func (r *rdmaSpec) getRdmaResources() []string {
+	//nolint: exhaustive
+	switch r.deviceType {
+	case types.NetDeviceType:
+		return utils.GetRdmaProvider().GetRdmaDevicesForPcidev(r.deviceID)
+	case types.AuxNetDeviceType:
+		return utils.GetRdmaProvider().GetRdmaDevicesForAuxdev(r.deviceID)
+	default:
+		return make([]string, 0)
+	}
+}
+
+func (r *rdmaSpec) GetRdmaDeviceSpec() []*pluginapi.DeviceSpec {
+	rdmaResources := r.getRdmaResources()
 	deviceSpec := make([]*pluginapi.DeviceSpec, 0)
-	isSupportRdma := false
 	if len(rdmaResources) > 0 {
-		isSupportRdma = true
 		for _, res := range rdmaResources {
 			resRdmaDevices := utils.GetRdmaProvider().GetRdmaCharDevices(res)
 			for _, rdmaDevice := range resRdmaDevices {
@@ -45,26 +92,5 @@ func newRdmaSpec(rdmaResources []string) types.RdmaSpec {
 			}
 		}
 	}
-
-	return &rdmaSpec{isSupportRdma: isSupportRdma, deviceSpec: deviceSpec}
-}
-
-// NewRdmaSpec returns the RdmaSpec for PCI address
-func NewRdmaSpec(pciAddr string) types.RdmaSpec {
-	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForPcidev(pciAddr)
-	return newRdmaSpec(rdmaResources)
-}
-
-// NewAuxRdmaSpec returns the RdmaSpec for auxiliary device ID
-func NewAuxRdmaSpec(deviceID string) types.RdmaSpec {
-	rdmaResources := utils.GetRdmaProvider().GetRdmaDevicesForAuxdev(deviceID)
-	return newRdmaSpec(rdmaResources)
-}
-
-func (r *rdmaSpec) IsRdma() bool {
-	return r.isSupportRdma
-}
-
-func (r *rdmaSpec) GetRdmaDeviceSpec() []*pluginapi.DeviceSpec {
-	return r.deviceSpec
+	return deviceSpec
 }

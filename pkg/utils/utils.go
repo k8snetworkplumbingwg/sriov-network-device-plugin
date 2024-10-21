@@ -474,6 +474,17 @@ func GetPfEswitchMode(pciAddr string) (string, error) {
 	return devLinkDeviceAttrs.Mode, nil
 }
 
+// HasRdmaParam returns true if deviceID has "enable_rdma" param
+// for example: pci 0000:d8:01.1
+// or auxiliary mlx5_core.sf.4
+func HasRdmaParam(bus, deviceID string) (bool, error) {
+	rdma, err := GetNetlinkProvider().HasRdmaParam(bus, deviceID)
+	if err != nil {
+		return false, err
+	}
+	return rdma, nil
+}
+
 // HasDefaultRoute returns true if PCI network device is default route interface
 func HasDefaultRoute(pciAddr string) (bool, error) {
 	// Get net interface name

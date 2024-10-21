@@ -23,6 +23,7 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 )
@@ -31,13 +32,55 @@ var _ = Describe("RdmaSpec", func() {
 	Describe("creating new RdmaSpec", func() {
 		t := GinkgoT()
 		Context("successfully", func() {
-			It("without device specs", func() {
+			It("without device specs, without netlink enable_rdma param", func() {
+				mockProvider := &mocks.NetlinkProvider{}
+				mockProvider.On("HasRdmaParam", "pci", "0000:00:00.0").Return(false, nil)
+				utils.SetNetlinkProviderInst(mockProvider)
 				fakeRdmaProvider := mocks.RdmaProvider{}
 				fakeRdmaProvider.On("GetRdmaDevicesForPcidev", "0000:00:00.0").Return([]string{})
 				utils.SetRdmaProviderInst(&fakeRdmaProvider)
-				spec := devices.NewRdmaSpec("0000:00:00.0")
+				spec := devices.NewRdmaSpec(types.NetDeviceType, "0000:00:00.0")
 
 				Expect(spec.IsRdma()).To(BeFalse())
+				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				fakeRdmaProvider.AssertExpectations(t)
+			})
+			It("without device specs, with netlink enable_rdma param", func() {
+				mockProvider := &mocks.NetlinkProvider{}
+				mockProvider.On("HasRdmaParam", "pci", "0000:00:00.0").Return(true, nil)
+				utils.SetNetlinkProviderInst(mockProvider)
+				fakeRdmaProvider := mocks.RdmaProvider{}
+				fakeRdmaProvider.On("GetRdmaDevicesForPcidev", "0000:00:00.0").Return([]string{})
+				utils.SetRdmaProviderInst(&fakeRdmaProvider)
+				spec := devices.NewRdmaSpec(types.NetDeviceType, "0000:00:00.0")
+
+				Expect(spec.IsRdma()).To(BeTrue())
+				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				fakeRdmaProvider.AssertExpectations(t)
+			})
+			It("aux without device specs, without netlink enable_rdma param", func() {
+				mockProvider := &mocks.NetlinkProvider{}
+				mockProvider.On("HasRdmaParam", "auxiliary", "mlx5_core.sf.4").Return(false, nil)
+				utils.SetNetlinkProviderInst(mockProvider)
+				fakeRdmaProvider := mocks.RdmaProvider{}
+				fakeRdmaProvider.On("GetRdmaDevicesForAuxdev", "mlx5_core.sf.4").Return([]string{})
+				utils.SetRdmaProviderInst(&fakeRdmaProvider)
+				spec := devices.NewRdmaSpec(types.AuxNetDeviceType, "mlx5_core.sf.4")
+
+				Expect(spec.IsRdma()).To(BeFalse())
+				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				fakeRdmaProvider.AssertExpectations(t)
+			})
+			It("aux without device specs, with netlink enable_rdma param", func() {
+				mockProvider := &mocks.NetlinkProvider{}
+				mockProvider.On("HasRdmaParam", "auxiliary", "mlx5_core.sf.4").Return(true, nil)
+				utils.SetNetlinkProviderInst(mockProvider)
+				fakeRdmaProvider := mocks.RdmaProvider{}
+				fakeRdmaProvider.On("GetRdmaDevicesForAuxdev", "mlx5_core.sf.4").Return([]string{})
+				utils.SetRdmaProviderInst(&fakeRdmaProvider)
+				spec := devices.NewRdmaSpec(types.AuxNetDeviceType, "mlx5_core.sf.4")
+
+				Expect(spec.IsRdma()).To(BeTrue())
 				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
 				fakeRdmaProvider.AssertExpectations(t)
 			})
@@ -50,7 +93,7 @@ var _ = Describe("RdmaSpec", func() {
 					"/dev/infiniband/uverbs0", "/dev/infiniband/rdma_cm",
 				}).On("GetRdmaCharDevices", "fake_1").Return([]string{"/dev/infiniband/rdma_cm"})
 				utils.SetRdmaProviderInst(&fakeRdmaProvider)
-				spec := devices.NewRdmaSpec("0000:00:00.0")
+				spec := devices.NewRdmaSpec(types.NetDeviceType, "0000:00:00.0")
 
 				Expect(spec.IsRdma()).To(BeTrue())
 				Expect(spec.GetRdmaDeviceSpec()).To(Equal([]*pluginapi.DeviceSpec{
