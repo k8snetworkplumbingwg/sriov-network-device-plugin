@@ -132,6 +132,34 @@ func (_m *NetlinkProvider) GetLinkAttrs(ifName string) (*netlink.LinkAttrs, erro
 	return r0, r1
 }
 
+// HasRdmaParam provides a mock function with given fields: pciAddr
+func (_m *NetlinkProvider) HasRdmaParam(pciAddr string) (bool, error) {
+	ret := _m.Called(pciAddr)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasRdmaParam")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) (bool, error)); ok {
+		return rf(pciAddr)
+	}
+	if rf, ok := ret.Get(0).(func(string) bool); ok {
+		r0 = rf(pciAddr)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(pciAddr)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewNetlinkProvider creates a new instance of NetlinkProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewNetlinkProvider(t interface {

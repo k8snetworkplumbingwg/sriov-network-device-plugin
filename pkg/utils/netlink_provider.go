@@ -31,6 +31,8 @@ type NetlinkProvider interface {
 	GetIPv4RouteList(ifName string) ([]nl.Route, error)
 	// DevlinkGetDeviceInfoByNameAsMap returns devlink info for selected device as a map
 	GetDevlinkGetDeviceInfoByNameAsMap(bus, device string) (map[string]string, error)
+	// HasRdmaParam returns true if PCI device has "enable_rdma" param
+	HasRdmaParam(pciAddr string) (bool, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -46,6 +48,19 @@ func (defaultNetlinkProvider) GetDevlinkGetDeviceInfoByNameAsMap(bus, device str
 // GetNetlinkProvider will be invoked by functions in other packages that would need access to the netlink library
 func GetNetlinkProvider() NetlinkProvider {
 	return netlinkProvider
+}
+
+// HasRdmaParam returns true if PCI device has "enable_rdma" param
+// equivalent to "devlink dev param show pci/0000:d8:01.1 name enable_rdma"
+func (defaultNetlinkProvider) HasRdmaParam(pciAddr string) (bool, error) {
+	param, err := nl.DevlinkGetDeviceParamByName("pci", pciAddr, "enable_rdma")
+	if err != nil {
+		return false, fmt.Errorf("error getting enable_rdma attribute for pci device %s %v", pciAddr, err)
+	}
+	if len(param.Values) == 0 || param.Values[0].Data == nil {
+		return false, nil
+	}
+	return true, nil
 }
 
 // GetLinkAttrs returns a net device's link attributes.
