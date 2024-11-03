@@ -25,10 +25,12 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
+	utilmocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -606,6 +608,10 @@ var _ = Describe("Factory", func() {
 	)
 	Describe("getting rdma spec", func() {
 		Context("check c rdma spec", func() {
+			mockProvider := &utilmocks.NetlinkProvider{}
+			mockProvider.On("HasRdmaParam", mock.AnythingOfType("string"),
+				mock.AnythingOfType("string")).Return(false, nil)
+			utils.SetNetlinkProviderInst(mockProvider)
 			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rs1 := f.GetRdmaSpec(types.NetDeviceType, "0000:00:00.1")
 			rs2 := f.GetRdmaSpec(types.AcceleratorType, "0000:00:00.2")

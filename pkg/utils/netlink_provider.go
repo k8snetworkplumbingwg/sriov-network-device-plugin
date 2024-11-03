@@ -31,6 +31,8 @@ type NetlinkProvider interface {
 	GetIPv4RouteList(ifName string) ([]nl.Route, error)
 	// DevlinkGetDeviceInfoByNameAsMap returns devlink info for selected device as a map
 	GetDevlinkGetDeviceInfoByNameAsMap(bus, device string) (map[string]string, error)
+	// HasRdmaParam returns true if device has "enable_rdma" param
+	HasRdmaParam(bus, pciAddr string) (bool, error)
 }
 
 type defaultNetlinkProvider struct {
@@ -46,6 +48,26 @@ func (defaultNetlinkProvider) GetDevlinkGetDeviceInfoByNameAsMap(bus, device str
 // GetNetlinkProvider will be invoked by functions in other packages that would need access to the netlink library
 func GetNetlinkProvider() NetlinkProvider {
 	return netlinkProvider
+}
+
+// HasRdmaParam returns true if device has "enable_rdma" param
+// equivalent to "devlink dev param show pci/0000:d8:01.1 name enable_rdma"
+// or "devlink dev param show auxiliary/mlx5_core.sf.4 name enable_rdma"
+func (defaultNetlinkProvider) HasRdmaParam(bus, deviceID string) (bool, error) {
+	param, err := nl.DevlinkGetDeviceParamByName(bus, deviceID, "enable_rdma")
+	if err != nil {
+		return false, fmt.Errorf("error getting enable_rdma attribute for device %s on bus %s %v",
+			deviceID, bus, err)
+	}
+	if len(param.Values) == 0 || param.Values[0].Data == nil {
+		return false, nil
+	}
+	var boolValue bool
+	boolValue, ok := param.Values[0].Data.(bool)
+	if !ok {
+		return false, fmt.Errorf("value is not a bool")
+	}
+	return boolValue, nil
 }
 
 // GetLinkAttrs returns a net device's link attributes.
