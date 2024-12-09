@@ -194,7 +194,7 @@ type ResourcePool interface {
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
 	GetEnvs(prefix string, deviceIDs []string) (map[string]string, error)
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
-	StoreDeviceInfoFile(resourceNamePrefix string) error
+	StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
 	GetCDIName() string
 }

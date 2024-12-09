@@ -167,7 +167,7 @@ func (rp *ResourcePoolImpl) GetDevicePool() map[string]types.HostDevice {
 
 // StoreDeviceInfoFile does nothing. DeviceType-specific ResourcePools might
 // store information according to the k8snetworkplumbingwg/device-info-spec
-func (rp *ResourcePoolImpl) StoreDeviceInfoFile(resourceNamePrefix string) error {
+func (rp *ResourcePoolImpl) StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error {
 	return nil
 }
 
