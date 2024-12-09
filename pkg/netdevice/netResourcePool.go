@@ -68,9 +68,13 @@ func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devic
 
 // StoreDeviceInfoFile stores the Device Info files according to the
 // k8snetworkplumbingwg/device-info-spec
-func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string) error {
+// for the requested deviceIDs
+func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error {
 	var devInfo nettypes.DeviceInfo
-	for id, dev := range rp.GetDevicePool() {
+	devicePool := rp.GetDevicePool()
+
+	for _, id := range deviceIDs {
+		dev := devicePool[id]
 		netDev, ok := dev.(types.PciNetDevice)
 		if !ok {
 			return fmt.Errorf("storeDeviceInfoFile: Only pciNetDevices are supported")

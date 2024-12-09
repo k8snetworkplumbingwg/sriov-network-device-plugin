@@ -61,7 +61,6 @@ var _ = Describe("Server", func() {
 			rp := mocks.ResourcePool{}
 			rp.On("Probe").Return(false)
 			rp.On("GetResourceName").Return("fakename")
-			rp.On("StoreDeviceInfoFile", "fakeprefix").Return(nil)
 			rp.On("CleanDeviceInfoFile", "fakeprefix").Return(nil)
 
 			// Use faked dir as socket dir
@@ -78,7 +77,6 @@ var _ = Describe("Server", func() {
 				if shouldEnablePluginWatch {
 					_ = rs.Start()
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fakeprefix")
-					rp.AssertCalled(t, "StoreDeviceInfoFile", "fakeprefix")
 				} else {
 					_ = os.MkdirAll(pluginapi.DevicePluginPath, 0755)
 					registrationServer.start()
@@ -153,7 +151,6 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
-					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled
@@ -195,7 +192,6 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
-					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 				// Create ResourceServer with plugin watch mode enabled
 				rs := NewResourceServer("fake", "fake", true, false, &rp).(*resourceServer)
@@ -230,7 +226,6 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
-					On("StoreDeviceInfoFile", "fake").Return(nil).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled
@@ -274,7 +269,9 @@ var _ = Describe("Server", func() {
 				On("GetEnvs", "fake.com", []string{"00:00.01"}).
 				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
 				On("GetMounts", []string{"00:00.01"}).
-				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}})
+				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}}).
+				On("StoreDeviceInfoFile", "fake.com", []string{"00:00.01"}).
+				Return(nil)
 
 			rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
 
@@ -318,7 +315,9 @@ var _ = Describe("Server", func() {
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}}).
 				On("GetCDIName").
-				Return("fake.com")
+				Return("fake.com").
+				On("StoreDeviceInfoFile", "fake.com", []string{"00:00.01"}).
+				Return(nil)
 
 			rs := NewResourceServer("fake.com", "fake", true, true, &rp).(*resourceServer)
 

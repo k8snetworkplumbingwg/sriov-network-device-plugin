@@ -145,6 +145,12 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 			containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
 		}
 
+		err = rs.resourcePool.StoreDeviceInfoFile(rs.resourceNamePrefix, container.DevicesIDs)
+		if err != nil {
+			glog.Errorf("failed to store device info file for device IDs %v: %v", container.DevicesIDs, err)
+			return nil, err
+		}
+
 		containerResp.Envs = envs
 		resp.ContainerResponses = append(resp.ContainerResponses, containerResp)
 	}
@@ -246,10 +252,6 @@ func (rs *resourceServer) Init() error {
 func (rs *resourceServer) Start() error {
 	resourceName := rs.resourcePool.GetResourceName()
 	_ = rs.cleanUp() // try tp clean up and continue
-
-	if err := rs.resourcePool.StoreDeviceInfoFile(rs.resourceNamePrefix); err != nil {
-		glog.Errorf("%s: error creating DeviceInfo File: %s", rs.resourcePool.GetResourceName(), err.Error())
-	}
 
 	glog.Infof("starting %s device plugin endpoint at: %s\n", resourceName, rs.endPoint)
 	lis, err := net.Listen(unix, rs.sockPath)

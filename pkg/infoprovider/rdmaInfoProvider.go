@@ -54,6 +54,7 @@ func (ip *rdmaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	}
 
 	devsSpec := ip.rdmaSpec.GetRdmaDeviceSpec()
+	glog.Infof("GetDeviceSpecs(): GetRdmaDeviceSpec returned %v", devsSpec)
 	return devsSpec
 }
 
