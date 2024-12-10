@@ -149,6 +149,8 @@ var _ = Describe("NetResourcePool", func() {
 						}
 						return nil
 					})
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1").Return(nil)
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2").Return(nil)
 				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.StoreDeviceInfoFile("fakeOrg.io", []string{"fake1", "fake2"})
 				nadutils.AssertExpectations(t)
@@ -216,6 +218,9 @@ var _ = Describe("NetResourcePool", func() {
 						}
 						return nil
 					})
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake1").Return(nil)
+				nadutils.On("CleanDeviceInfoFile", "fakeOrg.io/fakeResource", "fake2").Return(nil)
+
 				rp := netdevice.NewNetResourcePool(nadutils, rc, pcis)
 				err := rp.StoreDeviceInfoFile("fakeOrg.io", []string{"fake1", "fake2"})
 				Expect(err).ToNot(HaveOccurred())
