@@ -129,6 +129,9 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string, device
 			}
 		}
 		resource := fmt.Sprintf("%s/%s", resourceNamePrefix, rp.GetConfig().ResourceName)
+		if err := rp.nadutils.CleanDeviceInfoFile(resource, id); err != nil {
+			return err
+		}
 		if err := rp.nadutils.SaveDeviceInfoFile(resource, id, &devInfo); err != nil {
 			return err
 		}
