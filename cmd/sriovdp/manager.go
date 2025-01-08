@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
@@ -34,6 +35,7 @@ const (
 
 // cliParams presents CLI parameters for SR-IOV Network Device Plugin
 type cliParams struct {
+	kubeletRootDir string
 	configFile     string
 	resourcePrefix string
 	useCdi         bool
@@ -52,14 +54,14 @@ type resourceManager struct {
 
 // newResourceManager initiates a new instance of resourceManager
 func newResourceManager(cp *cliParams) *resourceManager {
-	pluginWatchMode := utils.DetectPluginWatchMode(types.SockDir)
+	pluginWatchMode := utils.DetectPluginWatchMode(path.Join(cp.kubeletRootDir, types.PluginRegistry))
 	if pluginWatchMode {
 		glog.Infof("Using Kubelet Plugin Registry Mode")
 	} else {
 		glog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
 
-	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode, cp.useCdi)
+	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, cp.kubeletRootDir, pluginWatchMode, cp.useCdi)
 	dp := make(map[types.DeviceType]types.DeviceProvider)
 	for k := range types.SupportedDevices {
 		dp[k] = rf.GetDeviceProvider(k)

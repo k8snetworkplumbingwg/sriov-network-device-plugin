@@ -30,6 +30,7 @@ import (
 )
 
 type resourceFactory struct {
+	kubeletRootDir string
 	endPointPrefix string
 	endPointSuffix string
 	pluginWatch    bool
@@ -39,11 +40,12 @@ type resourceFactory struct {
 var instance *resourceFactory
 
 // NewResourceFactory returns an instance of Resource Server factory
-func NewResourceFactory(prefix, suffix string, pluginWatch, useCdi bool) types.ResourceFactory {
+func NewResourceFactory(prefix, suffix, kubeletRootDir string, pluginWatch, useCdi bool) types.ResourceFactory {
 	if instance == nil {
 		return &resourceFactory{
 			endPointPrefix: prefix,
 			endPointSuffix: suffix,
+			kubeletRootDir: kubeletRootDir,
 			pluginWatch:    pluginWatch,
 			useCdi:         useCdi,
 		}
@@ -58,7 +60,7 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rf.useCdi, rp), nil
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.kubeletRootDir, rf.pluginWatch, rf.useCdi, rp), nil
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }

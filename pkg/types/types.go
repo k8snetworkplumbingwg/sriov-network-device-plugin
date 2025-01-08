@@ -24,10 +24,11 @@ import (
 )
 
 var (
+
 	// SockDir is the default Kubelet device plugin socket directory
-	SockDir = "/var/lib/kubelet/plugins_registry"
+	PluginRegistry = "plugins_registry"
 	// DeprecatedSockDir is the deprecated Kubelet device plugin socket directory
-	DeprecatedSockDir = "/var/lib/kubelet/device-plugins"
+	DeprecatedDevicePlugins = "device-plugins"
 )
 
 const (
