@@ -443,7 +443,7 @@ var _ = Describe("Resource manager", func() {
 				_ = os.Unsetenv("GHW_CHROOT")
 			}()
 
-			rf := factory.NewResourceFactory("fake", "fake", true, false)
+			rf := factory.NewResourceFactory("fake", "fake", "/var/lib/kubelet", true, false)
 
 			rm := &resourceManager{
 				rFactory: rf,

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ import (
 type resourceServer struct {
 	resourcePool       types.ResourcePool
 	pluginWatch        bool
+	kubeletRootDir     string // Kubelet root dir
 	endPoint           string // Socket file
 	sockPath           string // Socket file path
 	resourceNamePrefix string
@@ -54,15 +56,24 @@ const (
 )
 
 // NewResourceServer returns an instance of ResourceServer
-func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types.ResourcePool) types.ResourceServer {
+func NewResourceServer(prefix, suffix, kubeletRootDir string, pluginWatch, useCdi bool, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
-	sockPath := filepath.Join(types.SockDir, sockName)
+	sockPath := filepath.Join(
+		path.Join(kubeletRootDir, types.PluginRegistry),
+		sockName,
+	)
+
 	if !pluginWatch {
-		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
+		sockPath = filepath.Join(
+			path.Join(kubeletRootDir, types.DeprecatedDevicePlugins),
+			sockName,
+		)
 	}
+
 	return &resourceServer{
 		resourcePool:       rp,
 		pluginWatch:        pluginWatch,
+		kubeletRootDir:     kubeletRootDir,
 		endPoint:           sockName,
 		sockPath:           sockPath,
 		resourceNamePrefix: prefix,
@@ -77,7 +88,11 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 }
 
 func (rs *resourceServer) register() error {
-	kubeletEndpoint := unix + ":" + filepath.Join(types.DeprecatedSockDir, types.KubeEndPoint)
+	kubeletEndpoint := unix + ":" + filepath.Join(
+		path.Join(rs.kubeletRootDir, types.DeprecatedDevicePlugins),
+		types.KubeEndPoint,
+	)
+
 	conn, err := grpc.NewClient(kubeletEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		glog.Errorf("%s device plugin unable connect to Kubelet : %v", rs.resourcePool.GetResourceName(), err)
@@ -101,10 +116,11 @@ func (rs *resourceServer) register() error {
 }
 
 func (rs *resourceServer) GetInfo(ctx context.Context, rqt *registerapi.InfoRequest) (*registerapi.PluginInfo, error) {
+	kubeletSockDir := path.Join(rs.kubeletRootDir, types.PluginRegistry)
 	pluginInfoResponse := &registerapi.PluginInfo{
 		Type:              registerapi.DevicePlugin,
 		Name:              fmt.Sprintf("%s/%s", rs.resourceNamePrefix, rs.resourcePool.GetResourceName()),
-		Endpoint:          filepath.Join(types.SockDir, rs.endPoint),
+		Endpoint:          filepath.Join(kubeletSockDir, rs.endPoint),
 		SupportedVersions: []string{"v1alpha1", "v1beta1"},
 	}
 	return pluginInfoResponse, nil

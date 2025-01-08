@@ -24,11 +24,14 @@ import (
 )
 
 const (
-	defaultConfig = "/etc/pcidp/config.json"
+	defaultConfig     = "/etc/pcidp/config.json"
+	defaultKubeletDir = "/var/lib/kubelet"
 )
 
 // flagInit parse command line flags
 func flagInit(cp *cliParams) {
+	flag.StringVar(&cp.kubeletRootDir, "kubelet-root-dir", defaultKubeletDir,
+		"kubelet root dir")
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
