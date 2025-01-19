@@ -88,28 +88,28 @@ func (ap *accelDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 
 	rf := ap.rFactory
 	// filter by vendor list
-	if af.Vendors != nil && len(af.Vendors) > 0 {
+	if len(af.Vendors) > 0 {
 		if selector, err := rf.GetSelector("vendors", af.Vendors); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by device list
-	if af.Devices != nil && len(af.Devices) > 0 {
+	if len(af.Devices) > 0 {
 		if selector, err := rf.GetSelector("devices", af.Devices); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by driver list
-	if af.Drivers != nil && len(af.Drivers) > 0 {
+	if len(af.Drivers) > 0 {
 		if selector, err := rf.GetSelector("drivers", af.Drivers); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by pciAddresses list
-	if af.PciAddresses != nil && len(af.PciAddresses) > 0 {
+	if len(af.PciAddresses) > 0 {
 		if selector, err := rf.GetSelector("pciAddresses", af.PciAddresses); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}

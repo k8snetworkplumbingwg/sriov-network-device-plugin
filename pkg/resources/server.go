@@ -60,6 +60,8 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 	if !pluginWatch {
 		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
 	}
+
+	//nolint:mnd
 	return &resourceServer{
 		resourcePool:       rp,
 		pluginWatch:        pluginWatch,

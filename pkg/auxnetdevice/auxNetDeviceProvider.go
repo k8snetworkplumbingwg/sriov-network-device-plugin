@@ -104,49 +104,49 @@ func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, r
 
 	rf := ap.rFactory
 	// filter by vendor list
-	if nf.Vendors != nil && len(nf.Vendors) > 0 {
+	if len(nf.Vendors) > 0 {
 		if selector, err := rf.GetSelector("vendors", nf.Vendors); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by device list
-	if nf.Devices != nil && len(nf.Devices) > 0 {
+	if len(nf.Devices) > 0 {
 		if selector, err := rf.GetSelector("devices", nf.Devices); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by driver list
-	if nf.Drivers != nil && len(nf.Drivers) > 0 {
+	if len(nf.Drivers) > 0 {
 		if selector, err := rf.GetSelector("drivers", nf.Drivers); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by auxiliary device type list
-	if nf.AuxTypes != nil && len(nf.AuxTypes) > 0 {
+	if len(nf.AuxTypes) > 0 {
 		if selector, err := rf.GetSelector("auxTypes", nf.AuxTypes); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by PfNames list
-	if nf.PfNames != nil && len(nf.PfNames) > 0 {
+	if len(nf.PfNames) > 0 {
 		if selector, err := rf.GetSelector("pfNames", nf.PfNames); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by RootDevices list
-	if nf.RootDevices != nil && len(nf.RootDevices) > 0 {
+	if len(nf.RootDevices) > 0 {
 		if selector, err := rf.GetSelector("rootDevices", nf.RootDevices); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
 		}
 	}
 
 	// filter by linkTypes list
-	if nf.LinkTypes != nil && len(nf.LinkTypes) > 0 {
+	if len(nf.LinkTypes) > 0 {
 		if len(nf.LinkTypes) > 1 {
 			glog.Warningf("Link type selector should have a single value.")
 		}
