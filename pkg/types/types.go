@@ -79,6 +79,7 @@ Processing accelerators subclasses. ref: https://pci-ids.ucw.cz/read/PD/12
 00	Processing accelerators
 01	AI Inference Accelerator
 */
+//nolint:mnd
 var SupportedDevices = map[DeviceType]int{
 	NetDeviceType:    0x02,
 	AcceleratorType:  0x12,

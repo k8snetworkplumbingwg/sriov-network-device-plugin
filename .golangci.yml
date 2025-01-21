@@ -1,11 +1,6 @@
 # Tested with golangci-lint ver. 1.37
 run:
   timeout: 3m
-  skip-dirs:
-    - .github/
-    - deployments/
-    - docs/
-    - images/
 
 linters-settings:
   depguard:
@@ -74,7 +69,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - funlen
       #- gochecknoinits
@@ -83,7 +78,7 @@ linters:
     - gocyclo
     - gofmt
     - goimports
-    - gomnd
+    - mnd
     - goprintffuncname
     - gosec
     - gosimple
@@ -114,3 +109,8 @@ issues:
         - lll
         - stylecheck
         - goconst
+  exclude-dirs:
+    - .github/
+    - deployments/
+    - docs/
+    - images/

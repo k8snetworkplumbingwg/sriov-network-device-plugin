@@ -30,25 +30,25 @@ func (fs *FakeFilesystem) Use() func() {
 	fs.RootDir = tmpDir
 
 	for _, dir := range fs.Dirs {
-		//nolint: gomnd
+		//nolint: mnd
 		err := os.MkdirAll(path.Join(fs.RootDir, dir), 0755)
 		if err != nil {
 			panic(fmt.Errorf("error creating fake directory: %s", err.Error()))
 		}
 	}
 	for filename, body := range fs.Files {
-		//nolint: gomnd
+		//nolint: mnd
 		err := os.WriteFile(path.Join(fs.RootDir, filename), body, 0600)
 		if err != nil {
 			panic(fmt.Errorf("error creating fake file: %s", err.Error()))
 		}
 	}
-	//nolint: gomnd
+	//nolint: mnd
 	err = os.MkdirAll(path.Join(fs.RootDir, "usr/share/hwdata"), 0755)
 	if err != nil {
 		panic(fmt.Errorf("error creating fake directory: %s", err.Error()))
 	}
-	//nolint: gomnd
+	//nolint: mnd
 	err = os.MkdirAll(path.Join(fs.RootDir, "var/run/cdi"), 0755)
 	if err != nil {
 		panic(fmt.Errorf("error creating fake cdi directory: %s", err.Error()))
@@ -92,7 +92,7 @@ func writePciIds(fs *FakeFilesystem) {
 		panic(fmt.Errorf("error reading testdata pci file working directory %s: %s", pciIdsPath, err.Error()))
 	}
 
-	//nolint: gomnd
+	//nolint: mnd
 	err = os.WriteFile(path.Join(fs.RootDir, "usr/share/hwdata/pci.ids"), pciData, 0600)
 	if err != nil {
 		panic(fmt.Errorf("error creating fake file: %s", err.Error()))

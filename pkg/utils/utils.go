@@ -539,7 +539,7 @@ func ParseDeviceID(deviceID string) (int64, error) {
 func ParseAuxDeviceType(deviceID string) string {
 	chunks := strings.Split(deviceID, ".")
 	// auxiliary device name is of form <driver_name>.<kind_of_a_type>.<id> where id is an unsigned integer
-	//nolint: gomnd
+	//nolint: mnd
 	if len(chunks) == 3 {
 		if id, err := strconv.Atoi(chunks[2]); err == nil && id >= 0 {
 			return chunks[1]
