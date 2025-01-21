@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/Mellanox/rdmamap v1.1.0
 	github.com/container-orchestrated-devices/container-device-interface v0.5.4
-	github.com/golang/glog v1.2.3
+	github.com/golang/glog v1.2.4
 	github.com/jaypipes/ghw v0.13.0
 	github.com/jaypipes/pcidb v1.0.1
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
@@ -16,8 +16,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/vishvananda/netlink v1.3.0
-	google.golang.org/grpc v1.69.2
-	k8s.io/kubelet v0.32.0
+	google.golang.org/grpc v1.69.4
+	k8s.io/kubelet v0.32.1
 )
 
 require (
@@ -70,9 +70,9 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect
-	k8s.io/api v0.32.0 // indirect
-	k8s.io/apimachinery v0.32.0 // indirect
-	k8s.io/client-go v0.32.0 // indirect
+	k8s.io/api v0.32.1 // indirect
+	k8s.io/apimachinery v0.32.1 // indirect
+	k8s.io/client-go v0.32.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
