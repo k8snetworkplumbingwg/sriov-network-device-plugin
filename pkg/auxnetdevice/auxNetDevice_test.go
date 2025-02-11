@@ -134,6 +134,9 @@ var _ = Describe("AuxNetDevice", func() {
 			pciAddr2 := "0000:00:00.2"
 			auxDevName1 := "mlx5_core.eth.1"
 			auxDevName2 := "mlx5_core.eth-rep.2"
+			token := "3e49019f-412f-4f02-824e-4cd195944205"
+			addintionalInfo := make(map[string]types.AdditionalInfo)
+			addintionalInfo["*"] = map[string]string{"token": token}
 			mockInfo1 := &tmocks.DeviceInfoProvider{}
 			mockEnv1 := types.AdditionalInfo{"deviceID": auxDevName1}
 			mockInfo1.On("GetName").Return("generic")
@@ -219,20 +222,24 @@ var _ = Describe("AuxNetDevice", func() {
 						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true},
 					}, &types.AuxNetDeviceSelectors{
 						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: false},
-					}}}
+					}},
+					AdditionalInfo: addintionalInfo}
 				// passing an RDMA capable device, but selector index chooses the IsRdma: false selector
 				dev, err := auxnetdevice.NewAuxNetDevice(in1, auxDevName1, f, rc, 1)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev.GetEnvVal()
-				Expect(envs).To(HaveLen(1))
+				Expect(envs).To(HaveLen(2))
 				_, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
 				pci, exist := envs["generic"]["deviceID"]
 				Expect(exist).To(BeTrue())
 				Expect(pci).To(Equal(auxDevName1))
 				Expect(exist).To(BeTrue())
+				extra, exist := envs["extra"]["token"]
+				Expect(exist).To(BeTrue())
+				Expect(extra).To(Equal(token))
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))
