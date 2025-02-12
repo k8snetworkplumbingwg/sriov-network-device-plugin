@@ -134,9 +134,6 @@ var _ = Describe("AuxNetDevice", func() {
 			pciAddr2 := "0000:00:00.2"
 			auxDevName1 := "mlx5_core.eth.1"
 			auxDevName2 := "mlx5_core.eth-rep.2"
-			token := "3e49019f-412f-4f02-824e-4cd195944205"
-			addintionalInfo := make(map[string]types.AdditionalInfo)
-			addintionalInfo["*"] = map[string]string{"token": token}
 			mockInfo1 := &tmocks.DeviceInfoProvider{}
 			mockEnv1 := types.AdditionalInfo{"deviceID": auxDevName1}
 			mockInfo1.On("GetName").Return("generic")
@@ -222,30 +219,82 @@ var _ = Describe("AuxNetDevice", func() {
 						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true},
 					}, &types.AuxNetDeviceSelectors{
 						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: false},
-					}},
-					AdditionalInfo: addintionalInfo}
+					}}}
 				// passing an RDMA capable device, but selector index chooses the IsRdma: false selector
 				dev, err := auxnetdevice.NewAuxNetDevice(in1, auxDevName1, f, rc, 1)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
 				envs := dev.GetEnvVal()
-				Expect(envs).To(HaveLen(2))
+				Expect(envs).To(HaveLen(1))
 				_, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
 				pci, exist := envs["generic"]["deviceID"]
 				Expect(exist).To(BeTrue())
 				Expect(pci).To(Equal(auxDevName1))
 				Expect(exist).To(BeTrue())
-				extra, exist := envs["extra"]["token"]
-				Expect(exist).To(BeTrue())
-				Expect(extra).To(Equal(token))
 				Expect(dev.IsRdma()).To(BeFalse())
 				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
 				Expect(dev.GetMounts()).To(HaveLen(0))
 				Expect(dev.GetAuxType()).To(Equal("eth"))
 				mockInfo1.AssertExpectations(t)
 				rdma1.AssertExpectations(t)
+			})
+		})
+		Context("with additional info fields", func() {
+			It("should populate additional info fields", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.1/net/net0",
+						"sys/bus/pci/drivers/mlx5_core",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
+					},
+					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+				}
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+				auxDevID := "mlx5_core.sf.0"
+				token := "3e49019f-412f-4f02-824e-4cd195944205"
+				addintionalInfo := make(map[string]types.AdditionalInfo)
+				addintionalInfo["*"] = map[string]string{"token": token}
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", auxDevID).Return("net0", nil).
+					On("GetPfPciFromAux", auxDevID).Return("0000:00:00.1", nil).
+					On("GetSfIndexByAuxDev", auxDevID).Return(1, nil).
+					On("GetNetDevicesFromAux", auxDevID).Return([]string{"eth0"}, nil)
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				f := factory.NewResourceFactory("fake", "fake", true, false)
+				in := newPciDevice("0000:00:00.1")
+				rc := &types.ResourceConfig{
+					ResourceName:   "fake",
+					ResourcePrefix: "fake",
+					DeviceType:     types.AuxNetDeviceType,
+					AdditionalInfo: addintionalInfo}
+
+				dev, err := auxnetdevice.NewAuxNetDevice(in, auxDevID, f, rc, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				Expect(dev.GetNetName()).To(Equal("eth0"))
+				envs := dev.GetEnvVal()
+				Expect(len(envs)).To(Equal(2))
+				pci, exist := envs["generic"]["deviceID"]
+				Expect(exist).To(BeTrue())
+				Expect(pci).To(Equal("mlx5_core.sf.0"))
+				extra, exist := envs["extra"]["token"]
+				Expect(exist).To(BeTrue())
+				Expect(extra).To(Equal(token))
+				Expect(dev.GetDeviceSpecs()).To(HaveLen(0))
+				Expect(dev.IsRdma()).To(BeFalse())
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetFuncID()).To(Equal(1))
+				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetAuxType()).To(Equal("sf"))
+				fakeSriovnetProvider.AssertExpectations(t)
 			})
 		})
 	})
