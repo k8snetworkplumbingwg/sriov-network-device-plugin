@@ -46,6 +46,10 @@ func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.Resourc
 	}
 
 	infoProviders := rFactory.GetDefaultInfoProvider(deviceID, driverName)
+	if rc.AdditionalInfo != nil {
+		infoProviders = append(infoProviders, infoprovider.NewExtraInfoProvider(dev.Address, rc.AdditionalInfo))
+	}
+
 	isRdma := false
 	ok := false
 	if selectorIndex >= 0 && selectorIndex < len(rc.SelectorObjs) {
