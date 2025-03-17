@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	github.com/Mellanox/rdmamap v1.1.0
 	github.com/container-orchestrated-devices/container-device-interface v0.5.4
-	github.com/golang/glog v1.2.3
+	github.com/golang/glog v1.2.4
 	github.com/jaypipes/ghw v0.13.0
 	github.com/jaypipes/pcidb v1.0.1
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
