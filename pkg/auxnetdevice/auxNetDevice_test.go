@@ -123,7 +123,9 @@ var _ = Describe("AuxNetDevice", func() {
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
-			rdma1.On("IsRdma").Return(true).On("GetRdmaDeviceSpec").Return(fake1ds)
+			rdma1.On("IsRdma").Return(true).
+				On("GetRdmaDeviceSpec").Return(fake1ds).
+				On("GetRdmaDeviceName").Return("mlx5_3")
 
 			rdma2 := &tmocks.RdmaSpec{}
 			rdma2.On("IsRdma").Return(false)
