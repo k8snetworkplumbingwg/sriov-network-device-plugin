@@ -126,7 +126,9 @@ var _ = Describe("PciNetDevice", func() {
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
-			rdma1.On("IsRdma").Return(true).On("GetRdmaDeviceSpec").Return(fake1ds)
+			rdma1.On("IsRdma").Return(true).
+				On("GetRdmaDeviceSpec").Return(fake1ds).
+				On("GetRdmaDeviceName").Return("mlx5_1")
 
 			rdma2 := &mocks.RdmaSpec{}
 			rdma2.On("IsRdma").Return(false)

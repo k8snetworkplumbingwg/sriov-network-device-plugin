@@ -94,3 +94,12 @@ func (r *rdmaSpec) GetRdmaDeviceSpec() []*pluginapi.DeviceSpec {
 	}
 	return deviceSpec
 }
+
+// GetRdmaDeviceName returns the rdma device name
+func (r *rdmaSpec) GetRdmaDeviceName() string {
+	rdmaResource := r.getRdmaResources()
+	if len(rdmaResource) > 0 {
+		return rdmaResource[0]
+	}
+	return ""
+}
