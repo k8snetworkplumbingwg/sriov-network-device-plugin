@@ -24,6 +24,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -57,6 +58,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -89,6 +91,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push sriov-network-device-plugin
+        if: ${{ github.repository_owner == env.image-push-owner }}
         uses: docker/build-push-action@v4
         with:
           context: .
