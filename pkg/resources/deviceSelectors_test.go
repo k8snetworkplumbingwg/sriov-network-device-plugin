@@ -317,4 +317,24 @@ var _ = Describe("DeviceSelectors", func() {
 			})
 		})
 	})
+
+	Describe("linkState selector", func() {
+		Context("filtering", func() {
+			It("should return devices matching the correct link state", func() {
+				linkStates := []string{"UP"}
+				sel := resources.NewLinkStateSelector(linkStates)
+
+				dev0 := mocks.PciNetDevice{}
+				dev0.On("GetLinkState").Return("UP")
+				dev1 := mocks.PciNetDevice{}
+				dev1.On("GetLinkState").Return("DOWN")
+
+				in := []types.HostDevice{&dev0, &dev1}
+				filtered := sel.Filter(in)
+
+				Expect(filtered).To(ContainElement(&dev0))
+				Expect(filtered).NotTo(ContainElement(&dev1))
+			})
+		})
+	})
 })

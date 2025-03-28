@@ -210,6 +210,26 @@ func (s *auxTypeSelector) Filter(inDevices []types.HostDevice) []types.HostDevic
 	return filteredList
 }
 
+// NewLinkStateSelector returns a DeviceSelector interface for link state filtering
+func NewLinkStateSelector(linkStates []string) types.DeviceSelector {
+	return &linkStateSelector{linkStates: linkStates}
+}
+
+type linkStateSelector struct {
+	linkStates []string
+}
+
+func (s *linkStateSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
+	for _, dev := range inDevices {
+		linkState := dev.(types.NetDevice).GetLinkState()
+		if contains(s.linkStates, linkState) {
+			filteredList = append(filteredList, dev)
+		}
+	}
+	return filteredList
+}
+
 func contains(hay []string, needle string) bool {
 	for _, s := range hay {
 		if s == needle {
