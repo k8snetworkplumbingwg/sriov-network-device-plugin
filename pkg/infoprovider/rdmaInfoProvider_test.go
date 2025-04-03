@@ -63,11 +63,12 @@ var _ = Describe("rdmaInfoProvider", func() {
 				{ContainerPath: "/dev/infiniband/issm4"},
 				{ContainerPath: "/dev/infiniband/umad4"},
 				{ContainerPath: "/dev/infiniband/uverbs4"},
-				{ContainerPath: "/dev/infiniband/rdma_cm"}})
+				{ContainerPath: "/dev/infiniband/rdma_cm"}}).
+				On("GetRdmaDeviceName").Return("mlx5_3")
 			dip := infoprovider.NewRdmaInfoProvider(rdma)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(4))
+			Expect(len(envs)).To(Equal(5))
 			mount, exist := envs["rdma_cm"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/infiniband/rdma_cm"))
@@ -80,6 +81,9 @@ var _ = Describe("rdmaInfoProvider", func() {
 			mount, exist = envs["issm"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/infiniband/issm4"))
+			rdmadev, exist := envs["rdma_dev"]
+			Expect(exist).To(BeTrue())
+			Expect(rdmadev).To(Equal("mlx5_3"))
 		})
 	})
 	Describe("GetMounts", func() {

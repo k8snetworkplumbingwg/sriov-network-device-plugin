@@ -322,6 +322,7 @@ type LinkWatcher interface { // This is not fully defined yet!!
 type RdmaSpec interface {
 	IsRdma() bool
 	GetRdmaDeviceSpec() []*pluginapi.DeviceSpec
+	GetRdmaDeviceName() string
 }
 
 // NadUtils is an interface for Network-Attachment-Definition utilities
