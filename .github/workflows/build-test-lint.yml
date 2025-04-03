@@ -3,29 +3,21 @@ on: [push, pull_request]
 jobs:
   build:
     name: build
-    strategy:
-      matrix:
-        go-version: [1.23.x]
-        goarch: [amd64]
-        os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
     steps:
       - name: Set up Go matrix
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: 1.23.x
 
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
 
       - name: Build
-        env:
-          GOARCH: ${{ matrix.goarch }}
-          GOOS: ${{ matrix.goos }}
         run: make build
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     name: test
     steps:
@@ -44,7 +36,7 @@ jobs:
         run: make test-race
 
   test-coverage:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     name: test-coverage
     steps:
@@ -69,7 +61,7 @@ jobs:
 
   golangci:
     name: Golangci-lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -84,7 +76,7 @@ jobs:
 
   shellcheck:
     name: Shellcheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       SHELLCHECK_OPTS: -e SC3037 # disabled because of false issue in entrypoint.sh ln 14-21. Not using any complicated flags. Works with alpines almquist shell.
     steps:
@@ -95,7 +87,7 @@ jobs:
         ignore: vendor
 
   hadolint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     name: Hadolint
     steps:
     - uses: actions/checkout@v3
@@ -106,7 +98,7 @@ jobs:
        ignore: DL3018 # DL3018: GH issue 368
 
   go-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v3
 

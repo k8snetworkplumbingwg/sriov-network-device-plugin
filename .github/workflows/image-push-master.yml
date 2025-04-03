@@ -6,7 +6,7 @@ on:
 jobs:
   build-and-push-amd64-device-plugin:
     name: Image push AMD64
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     steps:
@@ -36,7 +36,7 @@ jobs:
 
   build-and-push-arm64-device-plugin:
     name: Image push ARM64
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     steps:
@@ -68,7 +68,7 @@ jobs:
 
   build-and-push-ppc64le-device-plugin:
     name: Image push ppc64le
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     steps:
@@ -99,7 +99,7 @@ jobs:
           file: images/Dockerfile.ppc64le
 
   push-manifest:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     needs: [build-and-push-amd64-device-plugin,build-and-push-arm64-device-plugin,build-and-push-ppc64le-device-plugin]
