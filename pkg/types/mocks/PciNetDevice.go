@@ -181,6 +181,24 @@ func (_m *PciNetDevice) GetFuncID() int {
 	return r0
 }
 
+// GetHealth provides a mock function with no fields
+func (_m *PciNetDevice) GetHealth() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetHealth")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // GetLinkSpeed provides a mock function with no fields
 func (_m *PciNetDevice) GetLinkSpeed() string {
 	ret := _m.Called()
@@ -381,6 +399,11 @@ func (_m *PciNetDevice) IsRdma() bool {
 	}
 
 	return r0
+}
+
+// SetHealth provides a mock function with given fields: _a0
+func (_m *PciNetDevice) SetHealth(_a0 bool) {
+	_m.Called(_a0)
 }
 
 // NewPciNetDevice creates a new instance of PciNetDevice. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
