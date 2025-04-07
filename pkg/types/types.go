@@ -227,6 +227,10 @@ type APIDevice interface {
 	GetMounts() []*pluginapi.Mount
 	// GetAPIDevice returns k8s API device
 	GetAPIDevice() *pluginapi.Device
+	// GetHealth returns the health status of the device
+	GetHealth() bool
+	// SetHealth sets the health status of the device
+	SetHealth(bool)
 }
 
 // HostDevice provides an interface to get generic device information

@@ -82,3 +82,17 @@ func (ad *APIDeviceImpl) GetMounts() []*pluginapi.Mount {
 func (ad *APIDeviceImpl) GetAPIDevice() *pluginapi.Device {
 	return ad.device
 }
+
+// GetHealth returns device health status
+func (ad *APIDeviceImpl) GetHealth() bool {
+	return ad.device.Health == pluginapi.Healthy
+}
+
+// SetHealth sets device health status
+func (ad *APIDeviceImpl) SetHealth(health bool) {
+	if health {
+		ad.device.Health = pluginapi.Healthy
+	} else {
+		ad.device.Health = pluginapi.Unhealthy
+	}
+}
