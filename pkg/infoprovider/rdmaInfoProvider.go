@@ -73,6 +73,11 @@ func (ip *rdmaInfoProvider) GetEnvVal() types.AdditionalInfo {
 		}
 	}
 
+	rdmadev := ip.rdmaSpec.GetRdmaDeviceName()
+	if rdmadev != "" {
+		envs["rdma_dev"] = rdmadev
+	}
+
 	return envs
 }
 
