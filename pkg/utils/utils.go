@@ -272,16 +272,16 @@ func ValidPciAddr(addr string) (string, error) {
 	var validShortID = regexp.MustCompile(`^[0-9a-f]{2}:[0-9a-f]{2}.[0-7]$`)
 
 	if validLongID.MatchString(addr) {
-		return addr, deviceExist(addr)
+		return addr, DeviceExist(addr)
 	} else if validShortID.MatchString(addr) {
 		addr = "0000:" + addr // make short form to sysfs represtation
-		return addr, deviceExist(addr)
+		return addr, DeviceExist(addr)
 	}
 
 	return "", fmt.Errorf("invalid pci address %s", addr)
 }
 
-func deviceExist(addr string) error {
+func DeviceExist(addr string) error {
 	devPath := filepath.Join(sysBusPci, addr)
 	_, err := os.Lstat(devPath)
 	if err != nil {
