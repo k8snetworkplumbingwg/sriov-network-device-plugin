@@ -254,6 +254,8 @@ type PciDevice interface {
 	HostDevice
 	// GetPciAddr returns PCI address of the device
 	GetPciAddr() string
+	// DeviceExists returns true if the device exists in the system
+	DeviceExists() bool
 	// GetAcpiIndex returns ACPI index of the device
 	GetAcpiIndex() string
 }
@@ -266,6 +268,8 @@ type NetDevice interface {
 	GetPfNetName() string
 	// GetPfPciAddr returns PCI address of the parent PCI device
 	GetPfPciAddr() string
+	// IsPfLinkUp returns true if link is up and carrier is present
+	IsPfLinkUp() (bool, error)
 	// GetNetName returns netdevice name of the device
 	GetNetName() string
 	// GetLinkSpeed returns link speed of the devuce
