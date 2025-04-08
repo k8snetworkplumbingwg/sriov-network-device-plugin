@@ -97,12 +97,14 @@ type ResourceConfig struct {
 	// optional resource prefix that will overwrite	global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
-	ResourceName    string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
-	DeviceType      DeviceType                `json:"deviceType,omitempty"`
-	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
-	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
-	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
-	SelectorObjs    []interface{}
+	ResourceName             string                    `json:"resourceName"` // the resource name will be added with resource prefix in K8s api
+	DeviceType               DeviceType                `json:"deviceType,omitempty"`
+	ExcludeTopology          bool                      `json:"excludeTopology,omitempty"`
+	CheckHealthOnPf          bool                      `json:"checkHealthOnPf,omitempty"`
+	CheckHealthOnDeviceExist bool                      `json:"checkHealthOnDeviceExist,omitempty"`
+	Selectors                *json.RawMessage          `json:"selectors,omitempty"`
+	AdditionalInfo           map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
+	SelectorObjs             []interface{}
 }
 
 // DeviceSelectors contains common device selectors fields
