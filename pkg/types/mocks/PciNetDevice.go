@@ -13,6 +13,24 @@ type PciNetDevice struct {
 	mock.Mock
 }
 
+// DeviceExists provides a mock function with no fields
+func (_m *PciNetDevice) DeviceExists() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeviceExists")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // GetAPIDevice provides a mock function with no fields
 func (_m *PciNetDevice) GetAPIDevice() *v1beta1.Device {
 	ret := _m.Called()
@@ -176,6 +194,24 @@ func (_m *PciNetDevice) GetFuncID() int {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
+// GetHealth provides a mock function with no fields
+func (_m *PciNetDevice) GetHealth() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetHealth")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
 	}
 
 	return r0
@@ -365,6 +401,34 @@ func (_m *PciNetDevice) GetVendor() string {
 	return r0
 }
 
+// IsPfLinkUp provides a mock function with no fields
+func (_m *PciNetDevice) IsPfLinkUp() (bool, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsPfLinkUp")
+	}
+
+	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (bool, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // IsRdma provides a mock function with no fields
 func (_m *PciNetDevice) IsRdma() bool {
 	ret := _m.Called()
@@ -381,6 +445,11 @@ func (_m *PciNetDevice) IsRdma() bool {
 	}
 
 	return r0
+}
+
+// SetHealth provides a mock function with given fields: _a0
+func (_m *PciNetDevice) SetHealth(_a0 bool) {
+	_m.Called(_a0)
 }
 
 // NewPciNetDevice creates a new instance of PciNetDevice. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

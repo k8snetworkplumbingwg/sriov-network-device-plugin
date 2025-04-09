@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"golang.org/x/sys/unix"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -115,6 +116,15 @@ func (nd *GenNetDevice) GetPfNetName() string {
 // GetPfPciAddr returns PF pci address
 func (nd *GenNetDevice) GetPfPciAddr() string {
 	return nd.pfAddr
+}
+
+// IsPfLinkUp returns whether the link has carrier and is up
+func (nd *GenNetDevice) IsPfLinkUp() (bool, error) {
+	la, err := utils.GetNetlinkProvider().GetLinkAttrs(nd.GetPfNetName())
+	if err != nil {
+		return false, err
+	}
+	return la.RawFlags&(unix.IFF_UP|unix.IFF_RUNNING) == (unix.IFF_UP | unix.IFF_RUNNING), nil
 }
 
 // GetNetName returns name of the network interface
