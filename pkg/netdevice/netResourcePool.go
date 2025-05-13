@@ -103,40 +103,24 @@ func (rp *netResourcePool) Probe() bool {
 				}
 				cachedPfLinkStatus[pfName] = pfIsUp
 			}
-			pfIsUpLog = fmt.Sprintf("PF %s", pfName)
-			if pfIsUp {
-				pfIsUpLog = fmt.Sprintf("%s is UP, ", pfIsUpLog)
-			} else {
-				pfIsUpLog = fmt.Sprintf("%s is DOWN, ", pfIsUpLog)
-			}
+			pfIsUpLog = fmt.Sprintf("PF %s is %s,", pfName, map[bool]string{true: "Up", false: "Down"}[pfIsUp])
 		}
 
 		deviceExists := true
 		deviceExistsLog := ""
 		if rp.config.CheckHealthOnDeviceExist {
 			deviceExists = netDev.DeviceExists()
-			deviceExistsLog = fmt.Sprintf("Device %s", netDev.GetPciAddr())
-			if deviceExists {
-				deviceExistsLog = fmt.Sprintf("%s is existing, ", deviceExistsLog)
-			} else {
-				deviceExistsLog = fmt.Sprintf("%s is missing, ", deviceExistsLog)
-			}
+			deviceExistsLog = fmt.Sprintf("Device %s is %s,", netDev.GetPciAddr(),
+				map[bool]string{true: "existing", false: "missing"}[deviceExists])
 		}
 
 		if pfIsUp && deviceExists && !currentHealth {
-			glog.Infof("%s%sdevice was unhealthy, marking device %s as healthy", pfIsUpLog, deviceExistsLog, id)
+			glog.Infof("%s %s device was unhealthy, marking device %s as healthy", pfIsUpLog, deviceExistsLog, id)
 			device.SetHealth(true)
 			changes = true
-		} else if !pfIsUp && deviceExists && currentHealth {
-			glog.Infof("%s%sdevice was healthy, marking device %s as unhealthy", pfIsUpLog, deviceExistsLog, id)
-			device.SetHealth(false)
-			changes = true
-		} else if pfIsUp && !deviceExists && currentHealth {
-			glog.Infof("%s%sdevice was healthy, marking device %s as unhealthy", pfIsUpLog, deviceExistsLog, id)
-			device.SetHealth(false)
-			changes = true
-		} else if !pfIsUp && !deviceExists && currentHealth {
-			glog.Infof("%s%sdevice was healthy, marking device %s as unhealthy", pfIsUpLog, deviceExistsLog, id)
+		} else if (!pfIsUp || !deviceExists) && currentHealth {
+			// If either the PF is down or the device is missing:
+			glog.Infof("%s %s device was healthy, marking device %s as unhealthy", pfIsUpLog, deviceExistsLog, id)
 			device.SetHealth(false)
 			changes = true
 		}
