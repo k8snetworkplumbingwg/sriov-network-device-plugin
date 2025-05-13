@@ -73,7 +73,7 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 		termSignal:         make(chan bool, 1),
 		updateSignal:       make(chan bool),
 		stopWatcher:        make(chan bool),
-		checkIntervals:     20, // updates every 20 seconds
+		checkIntervals:     5, // updates every 5 seconds
 		cdi:                cdiPkg.New(),
 	}
 }
