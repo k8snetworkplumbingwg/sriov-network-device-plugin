@@ -49,6 +49,11 @@ func (pd *GenPciDevice) GetPciAddr() string {
 	return pd.pciAddr
 }
 
+// DeviceExists returns true if the device exists in the system
+func (pd *GenPciDevice) DeviceExists() bool {
+	return utils.DeviceExist(pd.GetPciAddr()) == nil
+}
+
 // GetAcpiIndex returns ACPI index of the device
 func (pd *GenPciDevice) GetAcpiIndex() string {
 	return pd.acpiIndex

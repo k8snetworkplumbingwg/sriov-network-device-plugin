@@ -13,6 +13,24 @@ type PciDevice struct {
 	mock.Mock
 }
 
+// DeviceExists provides a mock function with no fields
+func (_m *PciDevice) DeviceExists() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeviceExists")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // GetAPIDevice provides a mock function with no fields
 func (_m *PciDevice) GetAPIDevice() *v1beta1.Device {
 	ret := _m.Called()
@@ -145,6 +163,24 @@ func (_m *PciDevice) GetEnvVal() map[string]types.AdditionalInfo {
 	return r0
 }
 
+// GetHealth provides a mock function with no fields
+func (_m *PciDevice) GetHealth() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetHealth")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // GetMounts provides a mock function with no fields
 func (_m *PciDevice) GetMounts() []*v1beta1.Mount {
 	ret := _m.Called()
@@ -199,6 +235,11 @@ func (_m *PciDevice) GetVendor() string {
 	}
 
 	return r0
+}
+
+// SetHealth provides a mock function with given fields: _a0
+func (_m *PciDevice) SetHealth(_a0 bool) {
+	_m.Called(_a0)
 }
 
 // NewPciDevice creates a new instance of PciDevice. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

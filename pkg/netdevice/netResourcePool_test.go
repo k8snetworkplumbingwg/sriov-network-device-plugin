@@ -237,4 +237,117 @@ var _ = Describe("NetResourcePool", func() {
 			})
 		})
 	})
+	Describe("Health Checking on Net Devices", func() {
+		Context("PF link status and device existence for VFs with Same PF", func() {
+			var fake1health bool
+			var fake2health bool
+			var fake1 *mocks.PciNetDevice
+			var fake2 *mocks.PciNetDevice
+			var rp types.ResourcePool
+
+			BeforeEach(func() {
+				rf := factory.NewResourceFactory("fake", "fake", true, false)
+				nadutils := rf.GetNadUtils()
+				rc := &types.ResourceConfig{
+					ResourceName:             "fake",
+					ResourcePrefix:           "fake",
+					CheckHealthOnPf:          true,
+					CheckHealthOnDeviceExist: true,
+					SelectorObjs:             []interface{}{&types.NetDeviceSelectors{}},
+				}
+
+				fake1 = &mocks.PciNetDevice{}
+				fake1.On("GetPfNetName").Return("fakepf1")
+				fake1.On("GetPciAddr").Return("0000:01:00.1")
+				fake1.On("SetHealth", Anything).Run(func(args Arguments) {
+					fake1health = args.Bool(0)
+				}).Return()
+				fake1health = true
+
+				fake2 = &mocks.PciNetDevice{}
+				fake2.On("GetPfNetName").Return("fakepf1")
+				fake2.On("GetPciAddr").Return("0000:01:00.2")
+				fake2.On("SetHealth", Anything).Run(func(args Arguments) {
+					fake2health = args.Bool(0)
+				}).Return()
+				fake2health = true
+
+				pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2}
+
+				rp = netdevice.NewNetResourcePool(nadutils, rc, pcis)
+			})
+
+			SetCurrentHealth := func(health bool) {
+				fake1health = health
+				fake2health = health
+				fake1.On("GetHealth").Return(health).Once()
+				fake2.On("GetHealth").Return(health).Once()
+			}
+
+			SetCurrentLinkState := func(up bool) {
+				fake1.On("IsPfLinkUp").Return(up, nil).Once()
+				fake2.On("IsPfLinkUp").Return(up, nil).Once()
+			}
+
+			SetCurrentDeviceExistance := func(exist bool) {
+				fake1.On("DeviceExists").Return(exist).Once()
+				fake2.On("DeviceExists").Return(exist).Once()
+			}
+
+			SetupHealthProbeTest := func(health, link, exist bool) {
+				SetCurrentHealth(health)
+				SetCurrentLinkState(link)
+				SetCurrentDeviceExistance(exist)
+			}
+
+			It("Currently Device Healthy, PF Link Up, Device exists", func() {
+				SetupHealthProbeTest(true, true, true)
+				Expect(rp.Probe()).To(BeFalse())
+				Expect(fake1health).To(BeTrue())
+				Expect(fake2health).To(BeTrue())
+			})
+			It("Currently Device Healthy, PF Link Up, Device missing", func() {
+				SetupHealthProbeTest(true, true, false)
+				Expect(rp.Probe()).To(BeTrue())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+			It("Currently Device Healthy, PF Link Down, Device exists", func() {
+				SetupHealthProbeTest(true, false, true)
+				Expect(rp.Probe()).To(BeTrue())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+			It("Currently Device Healthy, PF Link Down, Device missing", func() {
+				SetupHealthProbeTest(true, false, false)
+				Expect(rp.Probe()).To(BeTrue())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+			It("Currently Device Unhealthy, PF Link Up, Device exists", func() {
+				SetupHealthProbeTest(false, true, true)
+				Expect(rp.Probe()).To(BeTrue())
+				Expect(fake1health).To(BeTrue())
+				Expect(fake2health).To(BeTrue())
+			})
+			It("Currently Device Unhealthy, PF Link Up, Device missing", func() {
+				SetupHealthProbeTest(false, true, false)
+				Expect(rp.Probe()).To(BeFalse())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+			It("Currently Device Unhealthy, PF Link Down, Device exists", func() {
+				SetupHealthProbeTest(false, false, true)
+				Expect(rp.Probe()).To(BeFalse())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+			It("Currently Device Unhealthy, PF Link Down, Device missing", func() {
+				SetupHealthProbeTest(false, false, false)
+				Expect(rp.Probe()).To(BeFalse())
+				Expect(fake1health).To(BeFalse())
+				Expect(fake2health).To(BeFalse())
+			})
+		})
+	})
 })
