@@ -290,8 +290,8 @@ var _ = Describe("NetResourcePool", func() {
 			}
 
 			SetCurrentDeviceExistance := func(exist bool) {
-				fake1.On("DeviceExists").Return(exist, nil).Once()
-				fake2.On("DeviceExists").Return(exist, nil).Once()
+				fake1.On("DeviceExists").Return(exist).Once()
+				fake2.On("DeviceExists").Return(exist).Once()
 			}
 
 			SetupHealthProbeTest := func(health, link, exist bool) {
