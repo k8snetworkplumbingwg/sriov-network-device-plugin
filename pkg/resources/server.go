@@ -179,6 +179,7 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 	if err := stream.Send(resp); err != nil {
 		glog.Errorf("%s: error: cannot update device states: %v\n", methodID, err)
 		rs.grpcServer.Stop()
+		glog.Fatal(err)
 		return err
 	}
 
