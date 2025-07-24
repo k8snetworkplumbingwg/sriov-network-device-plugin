@@ -1,6 +1,6 @@
 module github.com/k8snetworkplumbingwg/sriov-network-device-plugin
 
-go 1.23.4
+go 1.23.0
 
 require (
 	github.com/Mellanox/rdmamap v1.1.0
