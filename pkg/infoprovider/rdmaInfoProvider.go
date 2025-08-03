@@ -62,13 +62,14 @@ func (ip *rdmaInfoProvider) GetEnvVal() types.AdditionalInfo {
 	envs := make(map[string]string, 0)
 	devsSpec := ip.rdmaSpec.GetRdmaDeviceSpec()
 	for _, devSpec := range devsSpec {
-		if strings.Contains(devSpec.ContainerPath, "uverbs") {
+		switch {
+		case strings.Contains(devSpec.ContainerPath, "uverbs"):
 			envs["uverbs"] = devSpec.ContainerPath
-		} else if strings.Contains(devSpec.ContainerPath, "umad") {
+		case strings.Contains(devSpec.ContainerPath, "umad"):
 			envs["umad"] = devSpec.ContainerPath
-		} else if strings.Contains(devSpec.ContainerPath, "issm") {
+		case strings.Contains(devSpec.ContainerPath, "issm"):
 			envs["issm"] = devSpec.ContainerPath
-		} else if strings.Contains(devSpec.ContainerPath, "rdma_cm") {
+		case strings.Contains(devSpec.ContainerPath, "rdma_cm"):
 			envs["rdma_cm"] = devSpec.ContainerPath
 		}
 	}
