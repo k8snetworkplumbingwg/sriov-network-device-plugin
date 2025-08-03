@@ -22,7 +22,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
@@ -33,7 +32,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 	Describe("creating new vdpaInfoProvider", func() {
 		It("should return valid vdpaInfoProvider object", func() {
 			dip := infoprovider.NewVhostNetInfoProvider()
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&vdpaInfoProvider{})))
 		})
 	})
@@ -70,7 +69,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 		It("should always return the device mounts info", func() {
 			dip := infoprovider.NewVhostNetInfoProvider()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(2))
+			Expect(envs).To(HaveLen(2))
 			mount, exist := envs["net-mount"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/vhost-net"))

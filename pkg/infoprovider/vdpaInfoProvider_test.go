@@ -31,7 +31,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 	Describe("creating new vdpaInfoProvider", func() {
 		It("should return valid vdpaInfoProvider object", func() {
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVirtioType, nil)
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&vdpaInfoProvider{})))
 		})
 	})
@@ -61,7 +61,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 			vdpa := &mocks.VdpaDevice{}
 			vdpa.On("GetType").Return(types.VdpaVirtioType)
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVirtioType, vdpa)
-			Expect(dip.GetDeviceSpecs()).To(HaveLen(0))
+			Expect(dip.GetDeviceSpecs()).To(BeEmpty())
 		})
 		It("should return correct spec for vdpa vhost type device", func() {
 			vdpa := &mocks.VdpaDevice{}
@@ -79,7 +79,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 		It("should return an empty list if there are no mounts", func() {
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVirtioType, nil)
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(0))
+			Expect(envs).To(BeEmpty())
 		})
 		It("should return object with the mounts", func() {
 			vdpa := &mocks.VdpaDevice{}
@@ -88,7 +88,7 @@ var _ = Describe("vdpaInfoProvider", func() {
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVhostType, vdpa)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(1))
+			Expect(envs).To(HaveLen(1))
 			mount, exist := envs["mount"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/vhost-vdpa1"))

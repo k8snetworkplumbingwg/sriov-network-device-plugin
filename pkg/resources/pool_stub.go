@@ -121,12 +121,12 @@ func (rp *ResourcePoolImpl) GetEnvs(prefix string, deviceIDs []string) (map[stri
 
 	// construct PCIDEVICE_<prefix>_<resource-name> environment variable
 	key := fmt.Sprintf("%s_%s_%s", "PCIDEVICE", prefix, rp.GetResourceName())
-	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+	key = strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
 	envs[key] = strings.Join(IDList, ",")
 
 	// construct PCIDEVICE_<prefix>_<resource-name>_INFO environment variable
 	key = fmt.Sprintf("%s_%s_%s_INFO", "PCIDEVICE", prefix, rp.GetResourceName())
-	key = strings.ToUpper(strings.Replace(key, ".", "_", -1))
+	key = strings.ToUpper(strings.ReplaceAll(key, ".", "_"))
 	envData, err := json.Marshal(devInfos)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal environment variable object: %v", err)

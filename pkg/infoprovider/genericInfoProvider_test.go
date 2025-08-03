@@ -28,7 +28,7 @@ var _ = Describe("genericInfoProvider", func() {
 	Describe("creating new genericInfoProvider", func() {
 		It("should return valid genericInfoProvider object", func() {
 			dip := infoprovider.NewGenericInfoProvider("fakePCIAddr")
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&genericInfoProvider{})))
 		})
 	})

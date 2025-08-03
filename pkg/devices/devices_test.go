@@ -83,7 +83,7 @@ var _ = Describe("Devices", func() {
 				Expect(dev.GetLinkSpeed()).To(Equal(""))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetFuncID()).To(Equal(0))
-				Expect(dev.IsRdma()).To(Equal(true))
+				Expect(dev.IsRdma()).To(BeTrue())
 			})
 			It("device's PF name is not available", func() {
 				fs := &utils.FakeFilesystem{
@@ -169,7 +169,7 @@ var _ = Describe("Devices", func() {
 				Expect(dev.GetLinkSpeed()).To(Equal(""))
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetFuncID()).To(Equal(1))
-				Expect(dev.IsRdma()).To(Equal(true))
+				Expect(dev.IsRdma()).To(BeTrue())
 			})
 			It("no SF index for auxiliary device", func() {
 				fakeSriovnetProvider := mocks.SriovnetProvider{}

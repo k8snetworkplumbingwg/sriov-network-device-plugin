@@ -83,6 +83,10 @@ test-coverage: | $(COVERAGE_DIR) ; $(info  Running coverage tests...) @ ## Run c
 lint: $(GOLANGCI_LINT) ; $(info  Running golangci-lint linter...) @ ## Run golangci-lint linter
 	$Q $(GOLANGCI_LINT) run
 
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ; $(info  Running golangci-lint linter with --fix...) @ ## Run golangci-lint linter with --fix to fix lint issues
+	$Q $(GOLANGCI_LINT) run --fix
+
 .PHONY: deps-update
 deps-update: ; $(info  Updating dependencies...) @ ## Update dependencies
 	$Q go mod tidy
