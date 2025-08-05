@@ -18,13 +18,12 @@
 package auxnetdevice_test
 
 import (
+	"github.com/jaypipes/ghw"
+	"github.com/jaypipes/pcidb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/jaypipes/ghw"
-	"github.com/jaypipes/pcidb"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/auxnetdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"

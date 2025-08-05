@@ -17,14 +17,13 @@ package accelerator_test
 import (
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/pcidb"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Accelerator", func() {
@@ -63,11 +62,11 @@ var _ = Describe("Accelerator", func() {
 				Expect(out.GetDriver()).To(Equal("vfio-pci"))
 				Expect(out.GetDeviceSpecs()).To(HaveLen(2)) // /dev/vfio/vfio0 and default /dev/vfio/vfio
 				envs := out.GetEnvVal()
-				Expect(len(envs)).To(Equal(2))
+				Expect(envs).To(HaveLen(2))
 
 				vfioMap, exist := envs["vfio"]
 				Expect(exist).To(BeTrue())
-				Expect(len(vfioMap)).To(Equal(2))
+				Expect(vfioMap).To(HaveLen(2))
 				vfio, exist := envs["vfio"]["mount"]
 				Expect(exist).To(BeTrue())
 				Expect(vfio).To(Equal("/dev/vfio/vfio"))
@@ -76,7 +75,7 @@ var _ = Describe("Accelerator", func() {
 				Expect(vfio).To(Equal("/dev/vfio/0"))
 				genericMap, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
-				Expect(len(genericMap)).To(Equal(1))
+				Expect(genericMap).To(HaveLen(1))
 				generic, exist := envs["generic"]["deviceID"]
 				Expect(exist).To(BeTrue())
 				Expect(generic).To(Equal("0000:00:00.1"))
@@ -194,10 +193,10 @@ var _ = Describe("Accelerator", func() {
 				Expect(dev).NotTo(BeNil())
 
 				envs := dev.GetEnvVal()
-				Expect(len(envs)).To(Equal(2))
+				Expect(envs).To(HaveLen(2))
 				genericMap, exist := envs["generic"]
 				Expect(exist).To(BeTrue())
-				Expect(len(genericMap)).To(Equal(1))
+				Expect(genericMap).To(HaveLen(1))
 				generic, exist := envs["generic"]["deviceID"]
 				Expect(exist).To(BeTrue())
 				Expect(generic).To(Equal("0000:00:00.1"))

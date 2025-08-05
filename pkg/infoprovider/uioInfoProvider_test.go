@@ -31,7 +31,7 @@ var _ = Describe("uioInfoProvider", func() {
 	Describe("creating new uioInfoProvider", func() {
 		It("should return valid uioInfoProvider object", func() {
 			dip := infoprovider.NewUioInfoProvider("fakePCIAddr")
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&uioInfoProvider{})))
 		})
 	})
@@ -74,7 +74,7 @@ var _ = Describe("uioInfoProvider", func() {
 			dip := infoprovider.NewUioInfoProvider(pciAddr)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(1))
+			Expect(envs).To(HaveLen(1))
 			mount, exist := envs["mount"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/uio0"))

@@ -3,6 +3,8 @@ package resources_test
 import (
 	"github.com/jaypipes/ghw"
 	"github.com/jaypipes/pcidb"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -10,9 +12,6 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ResourcePool", func() {
@@ -98,7 +97,7 @@ var _ = Describe("ResourcePool", func() {
 
 				// in current implementation vfio and others return empty arrays
 				expected := []*pluginapi.Mount{}
-				Expect(mounts).To(HaveLen(0))
+				Expect(mounts).To(BeEmpty())
 				Expect(mounts).To(ConsistOf(expected))
 			})
 

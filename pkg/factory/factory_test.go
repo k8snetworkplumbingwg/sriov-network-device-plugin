@@ -19,6 +19,12 @@ import (
 	"reflect"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -26,12 +32,6 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 	utilmocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils/mocks"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/mock"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 func TestFactory(t *testing.T) {
@@ -619,7 +619,7 @@ var _ = Describe("Factory", func() {
 			It("shoud return valid rdma spec for netdevice", func() {
 				Expect(rs1).ToNot(BeNil())
 				Expect(rs1.IsRdma()).ToNot(BeTrue())
-				Expect(rs1.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(rs1.GetRdmaDeviceSpec()).To(BeEmpty())
 			})
 			It("shoud return nil for accelerator", func() {
 				Expect(rs2).To(BeNil())
@@ -627,7 +627,7 @@ var _ = Describe("Factory", func() {
 			It("shoud return valid rdma spec for auxnetdevice", func() {
 				Expect(rs3).ToNot(BeNil())
 				Expect(rs3.IsRdma()).ToNot(BeTrue())
-				Expect(rs3.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(rs3.GetRdmaDeviceSpec()).To(BeEmpty())
 			})
 		})
 	})

@@ -19,18 +19,17 @@ import (
 	"os"
 	"testing"
 
-	CDImocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi/mocks"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 
+	CDImocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/netdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestSriovdp(t *testing.T) {
@@ -126,7 +125,7 @@ var _ = Describe("Resource manager", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should load resources list", func() {
-				Expect(len(rm.configList)).To(Equal(2))
+				Expect(rm.configList).To(HaveLen(2))
 			})
 		})
 		Context("when the multi-selector config reading is successful", func() {
@@ -235,7 +234,7 @@ var _ = Describe("Resource manager", func() {
 			})
 			It("should return false", func() {
 				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
+				Expect(rm.validConfigs()).To(BeFalse())
 			})
 		})
 		Context("when resource name is duplicated", func() {
@@ -269,7 +268,7 @@ var _ = Describe("Resource manager", func() {
 			})
 			It("should return false", func() {
 				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
+				Expect(rm.validConfigs()).To(BeFalse())
 			})
 		})
 		Context("when both IsRdma and VdpaType are configured", func() {
@@ -298,7 +297,7 @@ var _ = Describe("Resource manager", func() {
 			})
 			It("should return false", func() {
 				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
+				Expect(rm.validConfigs()).To(BeFalse())
 			})
 		})
 		Context("when isRdma and vdpaType are configured in separate selectors", func() {
@@ -331,7 +330,7 @@ var _ = Describe("Resource manager", func() {
 			})
 			It("should return true", func() {
 				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(true))
+				Expect(rm.validConfigs()).To(BeTrue())
 			})
 		})
 		Context("when isRdma and vdpaType are configured in a second selector", func() {
@@ -365,7 +364,7 @@ var _ = Describe("Resource manager", func() {
 			})
 			It("should return false", func() {
 				defer fs.Use()()
-				Expect(rm.validConfigs()).To(Equal(false))
+				Expect(rm.validConfigs()).To(BeFalse())
 			})
 		})
 		Describe("managing resources servers", func() {
@@ -386,7 +385,7 @@ var _ = Describe("Resource manager", func() {
 						Expect(rm.initServers()).NotTo(HaveOccurred())
 					})
 					It("should finish with empty list of servers", func() {
-						Expect(len(rm.resourceServers)).To(Equal(0))
+						Expect(rm.resourceServers).To(BeEmpty())
 					})
 				})
 				Context("when server is properly initialized", func() {

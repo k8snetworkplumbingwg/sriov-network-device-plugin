@@ -53,7 +53,7 @@ var _ = Describe("ApiDevice", func() {
 			dev := devices.NewAPIDeviceImpl("0000:00:00.1", infoProviders, -1)
 
 			envs := dev.GetEnvVal()
-			Expect(len(envs)).To(Equal(1))
+			Expect(envs).To(HaveLen(1))
 			_, exist := envs["generic"]
 			Expect(exist).To(BeTrue())
 			pci, exist := envs["generic"]["deviceID"]
@@ -61,7 +61,7 @@ var _ = Describe("ApiDevice", func() {
 			Expect(pci).To(Equal("0000:00:00.1"))
 
 			Expect(dev.GetDeviceSpecs()).To(HaveLen(2))
-			Expect(dev.GetMounts()).To(HaveLen(0))
+			Expect(dev.GetMounts()).To(BeEmpty())
 			Expect(dev.GetAPIDevice()).NotTo(BeNil())
 			Expect(dev.GetAPIDevice().ID).To(Equal("0000:00:00.1"))
 			Expect(dev.GetAPIDevice().Topology).To(BeNil())

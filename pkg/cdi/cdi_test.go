@@ -38,7 +38,7 @@ var _ = Describe("Cdi", func() {
 			cdi := cdiPkg.New()
 			annotations, err := cdi.CreateContainerAnnotations([]string{deviceId}, "example.com", "net")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(annotations)).To(Equal(1))
+			Expect(annotations).To(HaveLen(1))
 			annoKey := "cdi.k8s.io/example.com_net"
 			annoVal := "example.com/net=0000:00:00.1"
 			Expect(annotations[annoKey]).To(Equal(annoVal))

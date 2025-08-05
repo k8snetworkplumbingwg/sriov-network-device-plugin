@@ -16,7 +16,6 @@ package accelerator
 
 import (
 	"github.com/golang/glog"
-
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"

@@ -26,19 +26,19 @@ var _ = Describe("ExtraInfoProvider", func() {
 	Describe("creating new extraInfoProvider", func() {
 		It("should return valid rdmaInfoProvider object", func() {
 			dip := infoprovider.NewExtraInfoProvider("fake01", map[string]types.AdditionalInfo{})
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 		})
 	})
 	Describe("GetEnvVal", func() {
 		It("should return an empty list if there are no environment variables", func() {
 			dip := infoprovider.NewExtraInfoProvider("fake", nil)
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(0))
+			Expect(envs).To(BeEmpty())
 		})
 		It("should return an object with environment variables", func() {
 			dip := infoprovider.NewExtraInfoProvider("fake", map[string]types.AdditionalInfo{"*": map[string]string{"test": "test"}})
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(1))
+			Expect(envs).To(HaveLen(1))
 			value, exist := envs["test"]
 			Expect(exist).To(BeTrue())
 			Expect(value).To(Equal("test"))
@@ -53,7 +53,7 @@ var _ = Describe("ExtraInfoProvider", func() {
 		It("should return an object with specific selector for multiple environment variable", func() {
 			dip := infoprovider.NewExtraInfoProvider("0000:00:00.1", map[string]types.AdditionalInfo{"*": map[string]string{"test": "test", "bla": "bla"}, "0000:00:00.1": map[string]string{"test": "test1"}})
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(2))
+			Expect(envs).To(HaveLen(2))
 			value, exist := envs["test"]
 			Expect(exist).To(BeTrue())
 			Expect(value).To(Equal("test1"))
@@ -64,7 +64,7 @@ var _ = Describe("ExtraInfoProvider", func() {
 		It("should return an object with multiple specific selector for environment variable", func() {
 			dip := infoprovider.NewExtraInfoProvider("0000:00:00.1", map[string]types.AdditionalInfo{"*": map[string]string{"test": "test"}, "0000:00:00.1": map[string]string{"test": "test1", "bla": "bla"}})
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(2))
+			Expect(envs).To(HaveLen(2))
 			value, exist := envs["test"]
 			Expect(exist).To(BeTrue())
 			Expect(value).To(Equal("test1"))

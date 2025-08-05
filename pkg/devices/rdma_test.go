@@ -42,7 +42,7 @@ var _ = Describe("RdmaSpec", func() {
 				spec := devices.NewRdmaSpec(types.NetDeviceType, "0000:00:00.0")
 
 				Expect(spec.IsRdma()).To(BeFalse())
-				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(spec.GetRdmaDeviceSpec()).To(BeEmpty())
 				fakeRdmaProvider.AssertExpectations(t)
 			})
 			It("without device specs, with netlink enable_rdma param", func() {
@@ -55,7 +55,7 @@ var _ = Describe("RdmaSpec", func() {
 				spec := devices.NewRdmaSpec(types.NetDeviceType, "0000:00:00.0")
 
 				Expect(spec.IsRdma()).To(BeTrue())
-				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(spec.GetRdmaDeviceSpec()).To(BeEmpty())
 				fakeRdmaProvider.AssertExpectations(t)
 			})
 			It("aux without device specs, without netlink enable_rdma param", func() {
@@ -68,7 +68,7 @@ var _ = Describe("RdmaSpec", func() {
 				spec := devices.NewRdmaSpec(types.AuxNetDeviceType, "mlx5_core.sf.4")
 
 				Expect(spec.IsRdma()).To(BeFalse())
-				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(spec.GetRdmaDeviceSpec()).To(BeEmpty())
 				fakeRdmaProvider.AssertExpectations(t)
 			})
 			It("aux without device specs, with netlink enable_rdma param", func() {
@@ -81,7 +81,7 @@ var _ = Describe("RdmaSpec", func() {
 				spec := devices.NewRdmaSpec(types.AuxNetDeviceType, "mlx5_core.sf.4")
 
 				Expect(spec.IsRdma()).To(BeTrue())
-				Expect(spec.GetRdmaDeviceSpec()).To(HaveLen(0))
+				Expect(spec.GetRdmaDeviceSpec()).To(BeEmpty())
 				fakeRdmaProvider.AssertExpectations(t)
 			})
 			It("with device specs", func() {

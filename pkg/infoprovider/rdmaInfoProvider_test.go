@@ -31,7 +31,7 @@ var _ = Describe("rdmaInfoProvider", func() {
 		It("should return valid rdmaInfoProvider object", func() {
 			rdma := &mocks.RdmaSpec{}
 			dip := infoprovider.NewRdmaInfoProvider(rdma)
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&rdmaInfoProvider{})))
 		})
 	})
@@ -68,7 +68,7 @@ var _ = Describe("rdmaInfoProvider", func() {
 			dip := infoprovider.NewRdmaInfoProvider(rdma)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(5))
+			Expect(envs).To(HaveLen(5))
 			mount, exist := envs["rdma_cm"]
 			Expect(exist).To(BeTrue())
 			Expect(mount).To(Equal("/dev/infiniband/rdma_cm"))

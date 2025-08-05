@@ -31,7 +31,7 @@ var _ = Describe("vfioInfoProvider", func() {
 	Describe("creating new vfioInfoProvider", func() {
 		It("should return valid vfioInfoProvider object", func() {
 			dip := infoprovider.NewVfioInfoProvider("fakePCIAddr")
-			Expect(dip).NotTo(Equal(nil))
+			Expect(dip).NotTo(BeNil())
 			// FIXME: Expect(reflect.TypeOf(dip)).To(Equal(reflect.TypeOf(&vfioInfoProvider{})))
 		})
 	})
@@ -88,7 +88,7 @@ var _ = Describe("vfioInfoProvider", func() {
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
 			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
-			Expect(len(envs)).To(Equal(2))
+			Expect(envs).To(HaveLen(2))
 			devMount, exist := envs["dev-mount"]
 			Expect(exist).To(BeTrue())
 			Expect(devMount).To(Equal("/dev/vfio/0"))

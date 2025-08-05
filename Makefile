@@ -55,11 +55,11 @@ build: | $(BUILDDIR) ; $(info Building $(BINARY_NAME)...) @ ## Build SR-IOV Netw
 	$(info Done!)
 
 GOLANGCI_LINT = $(BINDIR)/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.63.4
+GOLANGCI_LINT_VERSION ?= v2.3.1
 $(GOLANGCI_LINT): | $(BINDIR) ; $(info  installing golangci-lint...)
 	$Q[ -f $(GOLANGCI_LINT) ] || { \
 	set -e ;\
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
 	}
 
 MOCKERY = $(BINDIR)/mockery
@@ -82,6 +82,10 @@ test-coverage: | $(COVERAGE_DIR) ; $(info  Running coverage tests...) @ ## Run c
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ; $(info  Running golangci-lint linter...) @ ## Run golangci-lint linter
 	$Q $(GOLANGCI_LINT) run
+
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ; $(info  Running golangci-lint linter with --fix...) @ ## Run golangci-lint linter with --fix to fix lint issues
+	$Q $(GOLANGCI_LINT) run --fix
 
 .PHONY: deps-update
 deps-update: ; $(info  Updating dependencies...) @ ## Update dependencies
