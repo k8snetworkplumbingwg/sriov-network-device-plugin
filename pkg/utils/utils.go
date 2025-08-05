@@ -75,8 +75,8 @@ func GetPfName(pciAddr string) (string, error) {
 	}
 
 	pfEswitchMode, err := GetPfEswitchMode(pciAddr)
-	switch pfEswitchMode {
-	case "":
+
+	if pfEswitchMode == "" {
 		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
 		// fall back to the default implementation
 		if err == nil || strings.Contains(strings.ToLower(err.Error()), "error getting devlink device attributes for net device") {
@@ -84,7 +84,7 @@ func GetPfName(pciAddr string) (string, error) {
 		} else {
 			return "", err
 		}
-	case eswitchModeSwitchdev:
+	} else if pfEswitchMode == eswitchModeSwitchdev {
 		name, err := GetSriovnetProvider().GetUplinkRepresentor(pciAddr)
 		if err != nil {
 			return "", err
