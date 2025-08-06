@@ -1,37 +1,37 @@
 version: 2
 updates:
  # Docker images
-- package-ecosystem: docker
-  directory: /images
+- package-ecosystem: "docker"
+  directory: "/images"
   schedule:
-    interval: weekly
-    day: monday
+    interval: "weekly"
+    day: "monday"
   commit-message:
     prefix: "chore:"
 
 # GitHub Actions
-- package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    commit-message:
-      prefix: "chore:"
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  commit-message:
+    prefix: "chore:"
 
 # Go modules
-- package-ecosystem: gomod
-  directory: /
+- package-ecosystem: "gomod"
+  directory: "/"
   schedule:
-    interval: weekly
-    day: monday
+    interval: "weekly"
+    day: "monday"
   commit-message:
     prefix: "chore:"
   groups:
     kubernetes-dependencies:
       patterns:
-        - k8s.io/*
+        - "k8s.io/*"
     gomod-dependencies:
       patterns:
-        - '*'
+        - "*"
       exclude-patterns:
-        - k8s.io/*
+        - "k8s.io/*"
