@@ -56,6 +56,8 @@ linters:
         - all
         - -ST1000
         - -ST1003
+        - -ST1016
+        - -QF1003
         - -QF1008
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2
