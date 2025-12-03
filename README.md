@@ -720,17 +720,12 @@ The supported architectures:
 - AMD64
 - ARM64
 - PPC64LE
+- S390X
 
-Buiding image for AMD64:
+Building image:
 
 ```sh
 $ DOCKERFILE=Dockerfile make image
-```
-
-Building image for PPC64LE:
-
-```sh
-$ DOCKERFILE=images/Dockerfile.ppc64le TAG=ghcr.io/k8snetworkplumbingwg/sriov-device-plugin:latest-ppc64le make image
 ```
 
 ## Container Device Interface
