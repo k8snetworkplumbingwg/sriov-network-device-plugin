@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"

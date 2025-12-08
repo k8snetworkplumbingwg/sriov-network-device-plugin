@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
@@ -140,7 +139,7 @@ var _ = Describe("Server", func() {
 			fs = &utils.FakeFilesystem{}
 		})
 		Context("starting, restarting and stopping the resource server", func() {
-			It("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func() {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.DeprecatedSockDir = fs.RootDir
@@ -167,7 +166,7 @@ var _ = Describe("Server", func() {
 
 				err = rs.restart()
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
+				Eventually(rs.termSignal).WithTimeout(time.Second * 10).Should(Receive())
 
 				go func() {
 					rp.On("CleanDeviceInfoFile", "fake").Return(nil)
@@ -175,12 +174,11 @@ var _ = Describe("Server", func() {
 					Expect(err).NotTo(HaveOccurred())
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
-				Eventually(rs.stopWatcher, time.Second*10).Should(Receive())
+				Eventually(rs.termSignal).WithTimeout(time.Second * 10).Should(Receive())
+				Eventually(rs.stopWatcher).WithTimeout(time.Second * 10).Should(Receive())
+			})
 
-				close(done)
-			}, 12.0)
-			It("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func() {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.SockDir = fs.RootDir
@@ -209,13 +207,11 @@ var _ = Describe("Server", func() {
 					Expect(err).NotTo(HaveOccurred())
 					rp.AssertCalled(t, "CleanDeviceInfoFile", "fake")
 				}()
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
-
-				close(done)
-			}, 12.0)
+				Eventually(rs.termSignal).WithTimeout(time.Second * 10).Should(Receive())
+			})
 		})
 		Context("starting, watching and stopping the resource server", func() {
-			It("should not fail and messages should be received on the channels", func(done Done) {
+			It("should not fail and messages should be received on the channels", func() {
 				defer fs.Use()()
 				// Use faked dir as socket dir
 				types.DeprecatedSockDir = fs.RootDir
@@ -248,11 +244,8 @@ var _ = Describe("Server", func() {
 				time.Sleep(time.Second)
 				err = rs.Stop()
 				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(rs.termSignal, time.Second*10).Should(Receive())
-
-				close(done)
-			}, 12.0)
+				Eventually(rs.termSignal).WithTimeout(time.Second * 10).Should(Receive())
+			})
 		})
 	})
 
@@ -390,7 +383,7 @@ var _ = Describe("Server", func() {
 			})
 		})
 		Context("when Send call in DevicePlugin_ListAndWatch breaks", func() {
-			It("should receive not fail", func(done Done) {
+			It("should receive not fail", func() {
 				fs := &utils.FakeFilesystem{}
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
@@ -416,16 +409,15 @@ var _ = Describe("Server", func() {
 				}()
 
 				// wait for the initial update to reach ListAndWatchServer
-				Eventually(lwSrv.updates, time.Second*30).Should(Receive())
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 30).Should(Receive())
 				// this time it should break
 				rs.updateSignal <- true
-				Eventually(lwSrv.updates, time.Second*30).ShouldNot(Receive())
-
-				close(done)
-			}, 60.0)
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 30).ShouldNot(Receive())
+			})
 		})
+
 		Context("when received multiple update requests and then the term signal", func() {
-			It("should receive not fail", func(done Done) {
+			It("should receive not fail", func() {
 				fs := &utils.FakeFilesystem{}
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
@@ -450,20 +442,18 @@ var _ = Describe("Server", func() {
 				}()
 
 				// wait for the initial update to reach ListAndWatchServer
-				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 10).Should(Receive())
 
 				// send another set of updates and wait for the ListAndWatchServer
 				rs.updateSignal <- true
-				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 10).Should(Receive())
 
 				// finally send term signal
 				rs.termSignal <- true
-
-				close(done)
-			}, 30.0)
+			})
 		})
 		Context("when CDI is enabled", func() {
-			It("should not fail", func(done Done) {
+			It("should not fail", func() {
 				fs := &utils.FakeFilesystem{}
 				defer fs.Use()()
 				rp := mocks.ResourcePool{}
@@ -492,17 +482,15 @@ var _ = Describe("Server", func() {
 				}()
 
 				// wait for the initial update to reach ListAndWatchServer
-				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 10).Should(Receive())
 
 				// send another set of updates and wait for the ListAndWatchServer
 				rs.updateSignal <- true
-				Eventually(lwSrv.updates, time.Second*10).Should(Receive())
+				Eventually(lwSrv.updates).WithTimeout(time.Second * 10).Should(Receive())
 
 				// finally send term signal
 				rs.termSignal <- true
-
-				close(done)
-			}, 30)
+			})
 		})
 	})
 })
