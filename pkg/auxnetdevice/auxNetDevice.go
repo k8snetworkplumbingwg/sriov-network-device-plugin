@@ -65,6 +65,14 @@ func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.Resourc
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", deviceID)
 			}
 		}
+
+		if nf.NeedVhostNet {
+			if infoprovider.VhostNetDeviceExist() {
+				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
+			} else {
+				glog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", deviceID)
+			}
+		}
 	}
 
 	hostDev, err := devices.NewHostDeviceImpl(dev, deviceID, rFactory, rc, infoProviders)

@@ -244,8 +244,9 @@ var _ = Describe("PciNetDevice", func() {
 				ResourcePrefix: "fake",
 				SelectorObjs: []interface{}{&types.NetDeviceSelectors{},
 					&types.NetDeviceSelectors{
-						NeedVhostNet: true,
-					},
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+							NeedVhostNet: true,
+						}},
 				}}
 			no_vhost_net_selector_index := 0
 			vhost_net_selector_index := 1
