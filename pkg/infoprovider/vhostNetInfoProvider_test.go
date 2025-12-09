@@ -20,7 +20,7 @@ package infoprovider_test
 import (
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
