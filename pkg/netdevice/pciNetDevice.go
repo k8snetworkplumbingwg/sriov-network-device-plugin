@@ -78,7 +78,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 			if infoprovider.VhostNetDeviceExist() {
 				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
-				glog.Errorf("GetDeviceSpecs(): vhost-net is required in the configuration but /dev/vhost-net doesn't exist")
+				glog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", dev.Address)
 			}
 		}
 	}

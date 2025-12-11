@@ -18,6 +18,7 @@
 package auxnetdevice_test
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/jaypipes/ghw"
@@ -28,6 +29,7 @@ import (
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/auxnetdevice"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	tmocks "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -292,6 +294,138 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(extra).To(Equal(token))
 				Expect(dev.GetDeviceSpecs()).To(BeEmpty())
 				Expect(dev.IsRdma()).To(BeFalse())
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetFuncID()).To(Equal(1))
+				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetAuxType()).To(Equal("sf"))
+				fakeSriovnetProvider.AssertExpectations(t)
+			})
+		})
+
+		Context("with needVhostNet", func() {
+			It("should provide expected environment variables and mounts", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.1/net/net0",
+						"sys/bus/pci/drivers/mlx5_core",
+						"dev/net/tun",
+						"dev/vhost-net",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
+					},
+					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+				}
+				defer fs.Use()()
+
+				infoprovider.HostNet = filepath.Join(fs.RootDir, "dev/vhost-net")
+				infoprovider.HostTun = filepath.Join(fs.RootDir, "dev/net/tun")
+
+				utils.SetDefaultMockNetlinkProvider()
+				auxDevID := "mlx5_core.sf.0"
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", auxDevID).Return("net0", nil).
+					On("GetPfPciFromAux", auxDevID).Return("0000:00:00.1", nil).
+					On("GetSfIndexByAuxDev", auxDevID).Return(1, nil).
+					On("GetNetDevicesFromAux", auxDevID).Return([]string{"eth0"}, nil)
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				f := factory.NewResourceFactory("fake", "fake", true, false)
+				in := newPciDevice("0000:00:00.1")
+				rc := &types.ResourceConfig{
+					ResourceName:   "fake",
+					ResourcePrefix: "fake",
+					DeviceType:     types.AuxNetDeviceType,
+					SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+							NeedVhostNet: true,
+						},
+					}}}
+
+				dev, err := auxnetdevice.NewAuxNetDevice(in, auxDevID, f, rc, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				Expect(dev.GetNetName()).To(Equal("eth0"))
+
+				envs := dev.GetEnvVal()
+				Expect(envs).To(HaveLen(2))
+				// validate device ID env var
+				Expect(envs).To(HaveKey("generic"))
+				Expect(envs["generic"]).To(HaveKeyWithValue("deviceID", "mlx5_core.sf.0"))
+				// validate vhost env vars
+				Expect(envs).To(HaveKey("vhost"))
+				Expect(envs["vhost"]).To(HaveKeyWithValue("net-mount", "/dev/vhost-net"))
+				Expect(envs["vhost"]).To(HaveKeyWithValue("tun-mount", "/dev/net/tun"))
+
+				// validate mounts
+				devSpecs := dev.GetDeviceSpecs()
+				Expect(devSpecs).To(HaveLen(2))
+				Expect(devSpecs).To(ConsistOf(
+					And(HaveField("HostPath", "/dev/vhost-net"), HaveField("ContainerPath", "/dev/vhost-net")),
+					And(HaveField("HostPath", "/dev/net/tun"), HaveField("ContainerPath", "/dev/net/tun")),
+				))
+
+				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
+				Expect(dev.GetFuncID()).To(Equal(1))
+				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))
+				Expect(dev.GetAuxType()).To(Equal("sf"))
+				fakeSriovnetProvider.AssertExpectations(t)
+			})
+
+			It("should not contain vhost related environment variables and mounts if vhost-net device does not exist", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.1/net/net0",
+						"sys/bus/pci/drivers/mlx5_core",
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/driver": "../../../../bus/pci/drivers/mlx5_core",
+					},
+					Files: map[string][]byte{"sys/bus/pci/devices/0000:00:00.1/numa_node": []byte("0")},
+				}
+				defer fs.Use()()
+
+				infoprovider.HostNet = filepath.Join(fs.RootDir, "dev/vhost-net")
+				infoprovider.HostTun = filepath.Join(fs.RootDir, "dev/net/tun")
+
+				utils.SetDefaultMockNetlinkProvider()
+				auxDevID := "mlx5_core.sf.0"
+				fakeSriovnetProvider := mocks.SriovnetProvider{}
+				fakeSriovnetProvider.
+					On("GetUplinkRepresentorFromAux", auxDevID).Return("net0", nil).
+					On("GetPfPciFromAux", auxDevID).Return("0000:00:00.1", nil).
+					On("GetSfIndexByAuxDev", auxDevID).Return(1, nil).
+					On("GetNetDevicesFromAux", auxDevID).Return([]string{"eth0"}, nil)
+				utils.SetSriovnetProviderInst(&fakeSriovnetProvider)
+
+				f := factory.NewResourceFactory("fake", "fake", true, false)
+				in := newPciDevice("0000:00:00.1")
+				rc := &types.ResourceConfig{
+					ResourceName:   "fake",
+					ResourcePrefix: "fake",
+					DeviceType:     types.AuxNetDeviceType,
+					SelectorObjs: []interface{}{&types.AuxNetDeviceSelectors{
+						GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{
+							NeedVhostNet: true,
+						},
+					}}}
+
+				dev, err := auxnetdevice.NewAuxNetDevice(in, auxDevID, f, rc, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev).NotTo(BeNil())
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				Expect(dev.GetNetName()).To(Equal("eth0"))
+
+				envs := dev.GetEnvVal()
+				Expect(envs).To(HaveLen(1))
+				// validate device ID env var
+				Expect(envs).To(HaveKey("generic"))
+				Expect(envs["generic"]).To(HaveKeyWithValue("deviceID", "mlx5_core.sf.0"))
+
+				// validate no mounts
+				Expect(dev.GetDeviceSpecs()).To(BeEmpty())
 				Expect(dev.GetLinkType()).To(Equal("fakeLinkType"))
 				Expect(dev.GetFuncID()).To(Equal(1))
 				Expect(dev.GetAPIDevice().Topology.Nodes[0].ID).To(Equal(int64(0)))

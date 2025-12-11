@@ -122,11 +122,12 @@ type GenericPciDeviceSelectors struct {
 
 // GenericNetDeviceSelectors contains common net device selectors fields
 type GenericNetDeviceSelectors struct {
-	PfNames     []string `json:"pfNames,omitempty"`
-	RootDevices []string `json:"rootDevices,omitempty"`
-	LinkTypes   []string `json:"linkTypes,omitempty"`
-	IsRdma      bool     // the resource support rdma
-	AcpiIndexes []string `json:"acpiIndexes,omitempty"`
+	PfNames      []string `json:"pfNames,omitempty"`
+	RootDevices  []string `json:"rootDevices,omitempty"`
+	LinkTypes    []string `json:"linkTypes,omitempty"`
+	IsRdma       bool     // the resource support rdma
+	AcpiIndexes  []string `json:"acpiIndexes,omitempty"`
+	NeedVhostNet bool     `json:"needVhostNet,omitempty"` // share vhost-net along the selected resource
 }
 
 // NetDeviceSelectors contains network device related selectors fields
@@ -134,10 +135,9 @@ type NetDeviceSelectors struct {
 	DeviceSelectors
 	GenericPciDeviceSelectors
 	GenericNetDeviceSelectors
-	DDPProfiles  []string `json:"ddpProfiles,omitempty"`
-	NeedVhostNet bool     // share vhost-net along the selected resource
-	VdpaType     VdpaType `json:"vdpaType,omitempty"`
-	PKeys        []string `json:"pKeys,omitempty"`
+	DDPProfiles []string `json:"ddpProfiles,omitempty"`
+	VdpaType    VdpaType `json:"vdpaType,omitempty"`
+	PKeys       []string `json:"pKeys,omitempty"`
 }
 
 // AccelDeviceSelectors contains accelerator(FPGA etc.) related selectors fields
