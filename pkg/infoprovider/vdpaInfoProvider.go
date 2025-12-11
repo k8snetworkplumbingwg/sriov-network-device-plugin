@@ -39,6 +39,14 @@ func NewVdpaInfoProvider(vdpaType types.VdpaType, vdpaDev types.VdpaDevice) type
 		dev:      vdpaDev,
 		vdpaType: vdpaType,
 	}
+	if vdpaType == types.VdpaVhostType && vdpaDev != nil {
+		vdpaPath, err := vdpaDev.GetPath()
+		if err != nil {
+			glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
+		}
+		vdpaInfoProvider.vdpaPath = vdpaPath
+	}
+
 	return vdpaInfoProvider
 }
 
@@ -58,20 +66,14 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	}
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
-	// DeviceSpecs only required for vhost vdpa type as the
-	if vip.vdpaType == types.VdpaVhostType {
-		vdpaPath, err := vip.dev.GetPath()
-		if err != nil {
-			glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
-			return nil
-		}
+	if vip.vdpaPath != "" {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      vdpaPath,
-			ContainerPath: vdpaPath,
+			HostPath:      vip.vdpaPath,
+			ContainerPath: vip.vdpaPath,
 			Permissions:   "rw",
 		})
-		vip.vdpaPath = vdpaPath
 	}
+
 	return devSpecs
 }
 
