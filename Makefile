@@ -55,7 +55,7 @@ build: | $(BUILDDIR) ; $(info Building $(BINARY_NAME)...) @ ## Build SR-IOV Netw
 	$(info Done!)
 
 GOLANGCI_LINT = $(BINDIR)/golangci-lint
-GOLANGCI_LINT_VERSION ?= v2.3.1
+GOLANGCI_LINT_VERSION ?= v2.6.2
 $(GOLANGCI_LINT): | $(BINDIR) ; $(info  installing golangci-lint...)
 	$Q[ -f $(GOLANGCI_LINT) ] || { \
 	set -e ;\
