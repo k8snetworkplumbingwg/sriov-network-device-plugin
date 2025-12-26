@@ -76,3 +76,21 @@ spec:
             items:
             - key: config.json
               path: config.json
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sriov-device-plugin
+  namespace: kube-system
+spec:
+  podSelector:
+    matchLabels:
+      name: sriov-device-plugin
+      tier: node
+      app: sriovdp
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
