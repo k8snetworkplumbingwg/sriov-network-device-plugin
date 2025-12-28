@@ -1,34 +1,54 @@
+# Tested with golangci-lint ver. 2.x
 version: "2"
+
 run:
-  timeout: 5m
+  timeout: 10m
   allow-parallel-runners: true
+
 linters:
   default: none
   enable:
+    - asciicheck        # checks for non-ASCII identifiers
+    - bidichk           # checks for dangerous unicode sequences (security)
+    - bodyclose
     - copyloopvar
+    - depguard
+    - dogsled
     - dupl
     - errcheck
+    - errname           # checks error naming conventions
+    - exhaustive
     - funlen
     - ginkgolinter
+    - gocheckcompilerdirectives  # validates go compiler directives
     - goconst
-    - gocyclo
-    - govet
     - gocritic
-    - gosec
+    - gocyclo
     - goprintffuncname
+    - gosec
+    - govet
     - importas
     - ineffassign
     - lll
+    - makezero          # finds slice declarations with non-zero initial length
     - misspell
     - mnd
     - nakedret
     - prealloc
+    - reassign          # checks package variable reassignment
     - staticcheck
     - unconvert
     - unparam
     - unused
     - whitespace
+
   settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: github.com/sirupsen/logrus
+              desc: "logging is allowed only by logutils.Log"
     dupl:
       threshold: 100
     funlen:
@@ -57,13 +77,19 @@ linters:
         - -ST1000
         - -ST1003
         - -ST1016
+        - -QF1001
         - -QF1003
         - -QF1008
       dot-import-whitelist:
         - github.com/onsi/ginkgo/v2
         - github.com/onsi/gomega
+        - github.com/onsi/gomega/gstruct
+
   exclusions:
     generated: lax
+    presets:
+      - comments
+      - std-error-handling
     paths:
       - .github/*
       - deployments/*
@@ -81,6 +107,7 @@ linters:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+
 formatters:
   enable:
     - gci
@@ -93,3 +120,6 @@ formatters:
         - default
         - prefix(github.com/k8snetworkplumbingwg/sriov-network-device-plugin)
       custom-order: true
+    goimports:
+      local-prefixes:
+        - github.com/k8snetworkplumbingwg/sriov-network-device-plugin
