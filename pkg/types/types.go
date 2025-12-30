@@ -160,8 +160,6 @@ type ResourceConfList struct {
 
 // ResourceServer is gRPC server implements K8s device plugin api
 type ResourceServer interface {
-	// Device manager API
-	pluginapi.DevicePluginServer
 	// grpc server related
 	Start() error
 	Stop() error
