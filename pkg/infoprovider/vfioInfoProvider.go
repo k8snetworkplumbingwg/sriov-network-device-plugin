@@ -26,9 +26,8 @@ import (
 vfioInfoProvider implements DeviceInfoProvider
 */
 type vfioInfoProvider struct {
-	pciAddr          string
-	vfioMount        string
-	vfioDevContainer string
+	pciAddr   string
+	vfioMount string
 }
 
 // NewVfioInfoProvider create instance of VFIO DeviceInfoProvider
@@ -63,7 +62,6 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 			ContainerPath: vfioDevContainer,
 			Permissions:   "rw",
 		})
-		rp.vfioDevContainer = vfioDevContainer
 	}
 
 	return devSpecs
@@ -72,8 +70,12 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 func (rp *vfioInfoProvider) GetEnvVal() types.AdditionalInfo {
 	envs := make(map[string]string, 0)
 	envs["mount"] = "/dev/vfio/vfio"
-	if rp.vfioDevContainer != "" {
-		envs["dev-mount"] = rp.vfioDevContainer
+
+	_, vfioDevContainer, err := utils.GetVFIODeviceFile(rp.pciAddr)
+	if err != nil {
+		glog.Errorf("GetEnvVal(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
+	} else {
+		envs["dev-mount"] = vfioDevContainer
 	}
 
 	return envs
