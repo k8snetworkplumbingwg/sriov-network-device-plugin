@@ -28,15 +28,28 @@ vfioInfoProvider implements DeviceInfoProvider
 type vfioInfoProvider struct {
 	pciAddr          string
 	vfioMount        string
+	vfioDevHost      string
 	vfioDevContainer string
 }
 
 // NewVfioInfoProvider create instance of VFIO DeviceInfoProvider
 func NewVfioInfoProvider(pciAddr string) types.DeviceInfoProvider {
-	return &vfioInfoProvider{
+	vip := &vfioInfoProvider{
 		pciAddr:   pciAddr,
 		vfioMount: "/dev/vfio/vfio",
 	}
+
+	// Pre-compute VFIO device file so it's available for both GetDeviceSpecs and GetEnvVal
+	// regardless of call order
+	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(pciAddr)
+	if err != nil {
+		glog.Errorf("NewVfioInfoProvider(): error getting vfio device file for device: %s, %s", pciAddr, err.Error())
+	} else {
+		vip.vfioDevHost = vfioDevHost
+		vip.vfioDevContainer = vfioDevContainer
+	}
+
+	return vip
 }
 
 // *****************************************************************
@@ -54,16 +67,12 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		Permissions:   "rw",
 	})
 
-	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(rp.pciAddr)
-	if err != nil {
-		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
-	} else {
+	if rp.vfioDevHost != "" && rp.vfioDevContainer != "" {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
-			HostPath:      vfioDevHost,
-			ContainerPath: vfioDevContainer,
+			HostPath:      rp.vfioDevHost,
+			ContainerPath: rp.vfioDevContainer,
 			Permissions:   "rw",
 		})
-		rp.vfioDevContainer = vfioDevContainer
 	}
 
 	return devSpecs

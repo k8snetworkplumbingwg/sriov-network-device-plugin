@@ -72,7 +72,7 @@ var _ = Describe("vfioInfoProvider", func() {
 		})
 	})
 	Describe("getting env val", func() {
-		It("should return passed PCI address and vfio device mount", func() {
+		It("should return vfio devices mounts", func() {
 			pciAddr := "0000:02:00.0"
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
@@ -85,7 +85,6 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
-			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
 			Expect(envs).To(HaveLen(2))
 			devMount, exist := envs["dev-mount"]
