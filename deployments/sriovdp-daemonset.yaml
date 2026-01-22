@@ -26,6 +26,7 @@ spec:
         app: sriovdp
     spec:
       hostNetwork: true
+      hostUsers: true
       serviceAccountName: sriov-device-plugin
       containers:
       - name: kube-sriovdp
@@ -36,6 +37,7 @@ spec:
         - --log-level=10
         securityContext:
           privileged: true
+          runAsNonRoot: false
         resources:
           requests:
             cpu: "250m"
