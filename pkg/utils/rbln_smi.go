@@ -49,9 +49,24 @@ const (
 )
 
 func getRblnSmiAbsolutePath() (string, error) {
+	// Prefer explicit driver/installed locations before falling back to PATH lookup.
+	candidates := []string{
+		"/usr/bin/rbln-smi",
+		"/run/rbln/driver/usr/bin/rbln-smi",
+		"/host/usr/bin/rbln-smi",
+		"/host/driver/usr/bin/rbln-smi",
+	}
+
+	for _, p := range candidates {
+		info, err := os.Stat(p)
+		if err == nil && !info.IsDir() && info.Mode().Perm()&0o111 != 0 {
+			return p, nil
+		}
+	}
+
 	abs, err := exec.LookPath(rblnSmiCommand)
 	if err != nil {
-		return "", fmt.Errorf("cannot find %s command: %w", rblnSmiCommand, err)
+		return "", fmt.Errorf("cannot find %s command in predefined paths or PATH: %w", rblnSmiCommand, err)
 	}
 	return abs, nil
 }

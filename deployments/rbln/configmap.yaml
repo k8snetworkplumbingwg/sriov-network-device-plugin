@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rbln-device-plugin-config
-  namespace: kube-system
+  namespace: rbln-system
 data:
   config.json: |
     {

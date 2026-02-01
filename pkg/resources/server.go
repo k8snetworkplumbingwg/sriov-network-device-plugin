@@ -143,13 +143,11 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 		}
 
 		if rs.useCdi {
-			containerResp.Annotations, err = rs.cdi.CreateContainerAnnotations(
-				container.DevicesIDs, rs.resourceNamePrefix, rs.resourcePool.GetCDIName())
+			containerResp.Annotations, err = cdiPkg.CreateRuntimeAnnotations(rs.resourceNamePrefix, rs.resourcePool.GetCDIName())
 			if err != nil {
 				return nil, fmt.Errorf("can't create container annotation: %s", err)
 			}
-			containerResp.Devices = cdiPkg.CreateCdiDeviceSpecs(container.DevicesIDs)
-			containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)
+			containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
 		} else {
 			containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIDs)
 			containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIDs)

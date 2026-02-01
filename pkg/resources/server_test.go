@@ -315,7 +315,7 @@ var _ = Describe("Server", func() {
 				On("GetMounts", []string{"00:00.01"}).
 				Return([]*pluginapi.Mount{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", ReadOnly: false}}).
 				On("GetCDIName").
-				Return("fake.com").
+				Return("fake").
 				On("StoreDeviceInfoFile", "fake.com", []string{"00:00.01"}).
 				Return(nil)
 

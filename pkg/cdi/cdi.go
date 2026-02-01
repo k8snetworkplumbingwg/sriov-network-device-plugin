@@ -37,6 +37,7 @@ const (
 	cdiCommonDeviceName = "common"
 	SysfsDriverPools    = "/sys/bus/pci/drivers/rebellions/%s/pools"
 	containerRsdPath    = "/dev/rsd0"
+	runtimeDeviceName   = "runtime"
 )
 
 // CDI represents CDI API required by Device plugin
@@ -124,6 +125,27 @@ func (c *impl) CreateContainerAnnotations(devicesIDs []string, resourcePrefix, r
 	}
 	annotations[annoKey] = annoValue
 
+	return annotations, nil
+}
+
+// CreateRuntimeAnnotations is a package-level helper that builds CDI annotations
+func CreateRuntimeAnnotations(resourcePrefix, resourceKind string) (map[string]string, error) {
+	annotations := make(map[string]string, 0)
+
+	annoKey, err := cdi.AnnotationKey(resourcePrefix, resourceKind)
+	if err != nil {
+		glog.Errorf("CreateRuntimeAnnotations(): can't create container annotation: %v", err)
+		return nil, err
+	}
+
+	runtimeDevice := cdi.QualifiedName(resourcePrefix, resourceKind, runtimeDeviceName)
+	annoValue, err := cdi.AnnotationValue([]string{runtimeDevice})
+	if err != nil {
+		glog.Errorf("CreateRuntimeAnnotations(): can't create container annotation: %v", err)
+		return nil, err
+	}
+
+	annotations[annoKey] = annoValue
 	return annotations, nil
 }
 

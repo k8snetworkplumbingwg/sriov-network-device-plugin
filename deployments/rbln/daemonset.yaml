@@ -3,14 +3,14 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: rbln-device-plugin
-  namespace: kube-system
+  namespace: rbln-system
 
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: rbln-device-plugin
-  namespace: kube-system
+  namespace: rbln-system
   labels:
     tier: node
     app: rbln-device-plugin
@@ -38,7 +38,7 @@ spec:
       serviceAccountName: rbln-device-plugin
       containers:
         - name: device-plugin
-          image: rebellions/k8s-device-plugin:v0.3.0
+          image: rebellions/k8s-device-plugin:v0.3.6
           imagePullPolicy: IfNotPresent
           args:
             - --log-dir=device-plugin
@@ -66,8 +66,11 @@ spec:
               mountPath: /etc/pcidp
             - name: device-info
               mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
-            - name: host-usr-local-bin
-              mountPath: /usr/local/bin
+            - name: host-usr-bin
+              mountPath: /host/usr/bin
+              readOnly: true
+            - name: host-driver-usr-bin
+              mountPath: /host/driver/usr/bin
               readOnly: true
             - name: host-dev
               mountPath: /dev
@@ -101,7 +104,11 @@ spec:
           hostPath:
             path: /dev
             type: Directory
-        - name: host-usr-local-bin
+        - name: host-usr-bin
           hostPath:
-            path: /usr/local/bin
+            path: /usr/bin
             type: Directory
+        - name: host-driver-usr-bin
+          hostPath:
+            path: /run/rbln/driver/usr/bin
+            type: DirectoryOrCreate
