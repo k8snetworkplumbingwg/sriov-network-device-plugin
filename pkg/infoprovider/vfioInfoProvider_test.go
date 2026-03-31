@@ -72,7 +72,7 @@ var _ = Describe("vfioInfoProvider", func() {
 		})
 	})
 	Describe("getting env val", func() {
-		It("should return passed PCI address and vfio device mount", func() {
+		It("should return vfio devices mounts", func() {
 			pciAddr := "0000:02:00.0"
 			fs := &utils.FakeFilesystem{
 				Dirs: []string{
@@ -85,7 +85,6 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
-			dip.GetDeviceSpecs()
 			envs := dip.GetEnvVal()
 			Expect(envs).To(HaveLen(2))
 			devMount, exist := envs["dev-mount"]
@@ -94,6 +93,46 @@ var _ = Describe("vfioInfoProvider", func() {
 			vfioMount, exist := envs["mount"]
 			Expect(exist).To(BeTrue())
 			Expect(vfioMount).To(Equal("/dev/vfio/vfio"))
+		})
+		It("should return only mount when VFIO device file lookup fails", func() {
+			dip := infoprovider.NewVfioInfoProvider("nonexistent")
+			envs := dip.GetEnvVal()
+			Expect(envs).To(HaveLen(1))
+			_, exist := envs["dev-mount"]
+			Expect(exist).To(BeFalse())
+			vfioMount, exist := envs["mount"]
+			Expect(exist).To(BeTrue())
+			Expect(vfioMount).To(Equal("/dev/vfio/vfio"))
+		})
+		It("should compute VFIO device file on the fly and reflect filesystem changes", func() {
+			pciAddr := "0000:02:00.0"
+			dip := infoprovider.NewVfioInfoProvider(pciAddr)
+
+			fs1 := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:02:00.0", "sys/kernel/iommu_groups/5",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:02:00.0/iommu_group": "../../../../kernel/iommu_groups/5",
+				},
+			}
+			cleanup1 := fs1.Use()
+			envs := dip.GetEnvVal()
+			Expect(envs["dev-mount"]).To(Equal("/dev/vfio/5"))
+			cleanup1()
+
+			fs2 := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:02:00.0", "sys/kernel/iommu_groups/10",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:02:00.0/iommu_group": "../../../../kernel/iommu_groups/10",
+				},
+			}
+			cleanup2 := fs2.Use()
+			envs = dip.GetEnvVal()
+			Expect(envs["dev-mount"]).To(Equal("/dev/vfio/10"))
+			cleanup2()
 		})
 	})
 })
