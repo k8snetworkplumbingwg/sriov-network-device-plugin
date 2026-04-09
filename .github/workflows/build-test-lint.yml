@@ -131,7 +131,8 @@ jobs:
       - name: Check out sriov operator's code
         uses: actions/checkout@v6
         with:
-          repository: k8snetworkplumbingwg/sriov-network-operator
+          repository: ArkaSaha30/sriov-network-operator
+          ref: test-k8s-1.34
           path: sriov-network-operator-wc
 
       - name: run test
