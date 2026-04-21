@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository is no longer maintained. For the latest code and documentation, see [rbln-sw/k8s-device-plugin](https://github.com/rbln-sw/k8s-device-plugin).
+
 # Rebellions Kubernetes Device Plugin
 
 [![build-test-lint](https://github.com/rebellions-sw/rbln-k8s-device-plugin/actions/workflows/build-test-lint.yml/badge.svg)](https://github.com/rebellions-sw/rbln-k8s-device-plugin/actions/workflows/build-test-lint.yml)
