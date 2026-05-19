@@ -11,12 +11,12 @@ require (
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/k8snetworkplumbingwg/sriovnet v1.2.1-0.20240128120937-3ca5e43034e6
-	github.com/onsi/ginkgo/v2 v2.28.3
-	github.com/onsi/gomega v1.40.0
+	github.com/onsi/ginkgo/v2 v2.29.0
+	github.com/onsi/gomega v1.41.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netlink v1.3.1
-	google.golang.org/grpc v1.81.0
+	google.golang.org/grpc v1.81.1
 	k8s.io/kubelet v0.34.3
 )
 
