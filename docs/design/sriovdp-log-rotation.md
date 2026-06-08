@@ -312,7 +312,6 @@ The operator would pass these as additional args or environment variables to the
 --log-max-size       Maximum size in MB of a log file before rotation (default: 100)
 --log-max-files      Maximum number of old log files to retain (default: 5)
 --log-max-age        Maximum number of days to retain old log files (default: 30)
---log-compress       Compress rotated log files (default: true)
 ```
 
 These flags are added to cmd/sriovdp/main.go alongside existing glog flags.
