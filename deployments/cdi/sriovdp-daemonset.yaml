@@ -64,6 +64,8 @@ spec:
             cpu: 1
             memory: "200Mi"
         volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins
         - name: plugins-registry
@@ -77,6 +79,9 @@ spec:
         - name: dynamic-cdi
           mountPath: /var/run/cdi
       volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 32Mi
       - name: devicesock
         hostPath:
           path: /var/lib/kubelet/device-plugins
