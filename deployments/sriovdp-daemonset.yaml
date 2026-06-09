@@ -43,6 +43,39 @@ spec:
           limits:
             cpu: 1
             memory: "200Mi"
+        startupProbe:
+          exec:
+            command:
+            - test
+            - -S
+            - /var/lib/kubelet/device-plugins/kubelet.sock
+          failureThreshold: 30
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command:
+            - test
+            - -S
+            - /var/lib/kubelet/device-plugins/kubelet.sock
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - >
+              test -n "$(
+                find /var/lib/kubelet/plugins_registry \
+                  -maxdepth 1 \
+                  -type s \
+                  -name 'intel.com_intel_sriov*.sock' \
+                  -print -quit
+              )"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins
