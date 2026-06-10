@@ -36,18 +36,19 @@ import (
 type resourceServer struct {
 	pluginapi.UnimplementedDevicePluginServer
 	registerapi.UnimplementedRegistrationServer
-	resourcePool       types.ResourcePool
-	pluginWatch        bool
-	endPoint           string // Socket file
-	sockPath           string // Socket file path
-	resourceNamePrefix string
-	grpcServer         *grpc.Server
-	termSignal         chan bool
-	updateSignal       chan bool
-	stopWatcher        chan bool
-	checkIntervals     int // health check intervals in seconds
-	useCdi             bool
-	cdi                cdiPkg.CDI
+	resourcePool        types.ResourcePool
+	pluginWatch         bool
+	endPoint            string // Socket file
+	sockPath            string // Socket file path
+	resourceNamePrefix  string
+	grpcServer          *grpc.Server
+	termSignal          chan bool
+	updateSignal        chan bool
+	stopWatcher         chan bool
+	checkIntervals      int // health check intervals in seconds
+	useCdi              bool
+	cdi                 cdiPkg.CDI
+	healthCheckCallback func(map[string]*pluginapi.Device)
 }
 
 const (
@@ -251,6 +252,12 @@ func (rs *resourceServer) Init() error {
 	return nil
 }
 
+// SetHealthCheckCallback sets the callback for device health updates
+func (rs *resourceServer) SetHealthCheckCallback(callback func(map[string]*pluginapi.Device)) error {
+	rs.healthCheckCallback = callback
+	return nil
+}
+
 // gRPC server related
 func (rs *resourceServer) Start() error {
 	resourceName := rs.resourcePool.GetResourceName()
@@ -371,6 +378,18 @@ func (rs *resourceServer) triggerUpdate() {
 		go func() {
 			for {
 				changed := rp.Probe()
+
+				// Update device health status and notify health check server
+				if err := rp.UpdateDeviceProbeStatus(); err != nil {
+					glog.Warningf("error updating device probe status: %v", err)
+				}
+
+				// Invoke health check callback if set
+				if rs.healthCheckCallback != nil {
+					devices := rp.GetDevicesForHealthCheck()
+					rs.healthCheckCallback(devices)
+				}
+
 				if changed {
 					rs.updateSignal <- true
 				}
