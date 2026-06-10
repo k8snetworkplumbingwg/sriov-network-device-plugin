@@ -55,7 +55,21 @@ spec:
         - --log-level=10
         - --use-cdi
         securityContext:
-          privileged: true
+          privileged: false
+          capabilities:
+            add:
+              - BPF
+              - IPC_LOCK
+              - NET_ADMIN
+              - NET_RAW
+              - SYS_ADMIN
+              - SYS_PTRACE
+              - SYS_RAWIO
+            drop:
+              - ALL
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
         resources:
           requests:
             cpu: "250m"
