@@ -38,6 +38,9 @@ type cliParams struct {
 	configFile     string
 	resourcePrefix string
 	useCdi         bool
+	logMaxSize     int
+	logMaxFiles    int
+	logMaxAge      int
 }
 
 // resourceManager manages resources for SR-IOV Network Device Plugin binaries
