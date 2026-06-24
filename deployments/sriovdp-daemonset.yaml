@@ -43,6 +43,36 @@ spec:
           limits:
             cpu: 1
             memory: "200Mi"
+        startupProbe:
+          exec:
+            command:
+            - /usr/bin/sriovdp
+            - health
+            - liveness
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        livenessProbe:
+          exec:
+            command:
+            - /usr/bin/sriovdp
+            - health
+            - liveness
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /usr/bin/sriovdp
+            - health
+            - readiness
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         volumeMounts:
         - name: devicesock
           mountPath: /var/lib/kubelet/device-plugins
