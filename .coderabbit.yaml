@@ -1,0 +1,282 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: false
+enable_free_tier: true
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  in_progress_fortune: false
+  review_status: true
+  collapse_walkthrough: false
+
+  path_filters:
+    - "!**/vendor/**"
+    - "!vendor/**"
+    - "!go.sum"
+
+  auto_review:
+    enabled: true
+    drafts: true
+
+  # ── Path instructions ────────────────────────────────────────
+  path_instructions:
+
+    # ── Go code — general ────────────────────────────────────────
+    - path: "**/*.go"
+      instructions: |
+        Go security and best practices:
+        - Never ignore error returns; wrap errors with context using fmt.Errorf("...: %w", err)
+        - Use stdlib crypto/* and golang.org/x/crypto; avoid third-party crypto libraries
+        - Integer overflow: bounds-check user-supplied sizes
+        - context.Context for cancellation and timeouts on all network/hardware operations
+        - Nil pointer checks on hardware info structs (PCI device info, network device
+          attributes, ghw snapshots) before accessing fields — SR-IOV hardware discovery
+          can return incomplete data from sysfs
+        - Use structured logging (klog) with appropriate verbosity levels
+        - gRPC best practices: proper error codes, context propagation, graceful shutdown
+
+    # ── Device discovery ─────────────────────────────────────────
+    - path: "pkg/devices/**/*.go"
+      instructions: |
+        Device discovery review (PCI, network, RDMA, vDPA):
+        - Sysfs reads: validate paths before reading; handle ENOENT/EACCES gracefully
+          since devices can disappear at runtime (hot-unplug, driver unbind)
+        - Nil checks on ghw PCI device info and network device attributes before
+          dereferencing — hardware topology can be incomplete
+        - RDMA device discovery: handle cases where RDMA subsystem is not loaded
+        - vDPA device discovery: validate vDPA bus availability before enumeration
+        - PCI address parsing: validate BDF (Bus:Device.Function) format strictly
+        - Device filtering: ensure selector logic (vendor, device, driver, pfName,
+          linkType) handles empty/wildcard values correctly
+        - Error aggregation: collect and report all discovery errors rather than
+          failing on the first error
+
+    # ── Resource management ──────────────────────────────────────
+    - path: "pkg/resources/**/*.go"
+      instructions: |
+        Resource pool and device plugin server review:
+        - gRPC DevicePlugin server: verify ListAndWatch correctly reports device
+          health changes and handles kubelet reconnection
+        - Allocate: validate container requests against available devices; handle
+          race conditions between health check and allocation
+        - Resource pool lifecycle: proper cleanup on Stop(); unregister from kubelet
+        - Device health monitoring: detect VF state changes (driver unbind, link down)
+          and update health status promptly
+        - Kubelet socket registration: verify socket path, cleanup stale sockets,
+          handle registration failures with retry
+        - Thread safety: resource pools are accessed concurrently by gRPC handlers
+          and health monitors — verify proper synchronization (mutexes, channels)
+        - Device selector validation: reject invalid or conflicting selectors early
+          with clear error messages
+
+    # ── Device providers ─────────────────────────────────────────
+    - path: "pkg/{netdevice,accelerator,auxnetdevice}/**/*.go"
+      instructions: |
+        Device provider review:
+        - Provider interface compliance: verify DeviceProvider interface methods
+          (GetDiscoveredDevices, GetDevices, AddTargetDevices, GetFilteredDevices)
+          are implemented correctly for each device type
+        - Device filtering: ensure PCI vendor/device ID selectors, driver selectors,
+          PF name selectors, and link type selectors work independently and combined
+        - Resource pool creation: verify pool configuration matches device capabilities
+        - Device type consistency: netDevice, accelerator, and auxNetDevice must not
+          overlap in device claiming
+        - NAD (Network Attachment Definition) annotation handling in netdevice provider:
+          validate annotation format and content
+
+    # ── Factory ──────────────────────────────────────────────────
+    - path: "pkg/factory/**/*.go"
+      instructions: |
+        Factory pattern review:
+        - All device types (netDevice, accelerator, auxNetDevice) must be handled
+          in switch/case statements — verify no missing cases
+        - New device type registration: adding a new DeviceType should require
+          minimal changes — check extensibility
+        - Resource pool factory: verify correct pool type is created for each
+          device type and configuration combination
+        - Error handling: return clear errors for unknown device types or
+          invalid configurations
+
+    # ── Info providers ───────────────────────────────────────────
+    - path: "pkg/infoprovider/**/*.go"
+      instructions: |
+        Device info provider review:
+        - RDMA info: verify RDMA device detection and character device path accuracy
+        - UIO/VFIO info: validate device binding state before reporting info
+        - vDPA info: check virtio-net vs vhost-vdpa type accuracy and device paths
+        - vhost-net info: verify /dev/vhost-net availability check
+        - Generic info: ensure fallback info provider returns minimal valid data
+        - CDI spec generation: verify generated specs match CDI schema and include
+          correct device nodes, mounts, and environment variables
+        - Environment variables: ensure device info env vars do not leak sensitive
+          information and follow Kubernetes naming conventions
+        - Mount paths: validate all host paths exist before including in device specs
+
+    # ── CDI support ──────────────────────────────────────────────
+    - path: "pkg/cdi/**/*.go"
+      instructions: |
+        Container Device Interface (CDI) review:
+        - CDI spec generation: verify specs conform to the CDI specification
+        - Device naming: ensure CDI device names are unique and deterministic
+        - Registry operations: handle CDI registry errors gracefully (missing
+          directory, permission issues, concurrent writes)
+        - Cleanup: verify stale CDI specs are cleaned up when devices are removed
+        - Compatibility: ensure CDI specs work with container runtimes that
+          support CDI (containerd, CRI-O)
+
+    # ── Device plugin manager ────────────────────────────────────
+    - path: "cmd/sriovdp/**/*.go"
+      instructions: |
+        Device plugin manager review:
+        - ConfigMap parsing: validate JSON configuration strictly; reject unknown
+          fields and invalid resource names
+        - Resource server lifecycle: verify servers start, restart on config change,
+          and stop cleanly
+        - Signal handling: SIGTERM/SIGINT must trigger graceful shutdown —
+          unregister from kubelet, close gRPC servers, release resources
+        - Config file watching: handle inotify events correctly; debounce rapid
+          changes to avoid restart storms
+        - Resource name validation: must conform to Kubernetes extended resource
+          naming rules (vendor.com/resource format)
+
+    # ── Types and interfaces ─────────────────────────────────────
+    - path: "pkg/types/**/*.go"
+      instructions: |
+        Type definitions and interface review:
+        - Interface changes: verify backward compatibility; new methods should
+          have default implementations or be in new interfaces
+        - DeviceType enum: ensure new device types are added to all switch
+          statements and factory methods
+        - Mock generation: changes to interfaces require regenerating mocks
+          (make generate-mocks) — flag if interface changed but mocks were not updated
+        - Exported types: verify JSON tags, documentation, and field validation
+        - VdpaType: ensure virtio and vhost types are handled consistently
+
+    # ── Kubernetes manifests ─────────────────────────────────────
+    - path: "{deployments,docs}/**/*.{yaml,yml}"
+      instructions: |
+        Kubernetes manifest security and best practices:
+        - securityContext: runAsNonRoot, readOnlyRootFilesystem,
+          allowPrivilegeEscalation: false where applicable
+        - Drop ALL capabilities, add only what is required
+        - Resource limits (cpu, memory) on every container
+        - RBAC: least privilege; no cluster-admin for workloads
+        - Liveness + readiness probes defined
+        - automountServiceAccountToken: false unless needed
+
+        SR-IOV device plugin specifics:
+        - DaemonSet: hostNetwork may be required for device plugin socket
+          access — verify justification is documented
+        - ConfigMap: validate resource definition JSON schema (resourceList
+          with resourceName, selectors, deviceType)
+        - RBAC: device plugin ServiceAccount should only need minimal
+          permissions (typically none beyond default)
+        - Volume mounts: verify /var/lib/kubelet/device-plugins and
+          /sys paths are mounted correctly with appropriate read-only flags
+
+    # ── Dockerfiles / container images ───────────────────────────
+    - path: "**/{Dockerfile,Containerfile}*"
+      instructions: |
+        Container image security:
+        - Multi-stage builds preferred; no build tools in final image
+        - USER non-root where possible
+        - COPY specific files, not entire context
+        - No secrets in ENV, ARG, or COPY
+        - No package manager cache in final layer
+        - This project has a multi-stage Dockerfile at images/Dockerfile:
+          Stage 1: Go builder (builds sriovdp binary)
+          Stage 2: DDP tool builder (builds ddptool)
+          Stage 3: Alpine final image with hwdata-pci, ddptool, entrypoint.sh
+        - Verify the DDP tool builder stage uses a pinned Go version
+        - entrypoint.sh: verify it copies the binary to the correct host path
+
+    # ── Unit tests ───────────────────────────────────────────────
+    - path: "{cmd,pkg}/**/*_test.go"
+      instructions: |
+        Unit test quality:
+        - Use table-driven tests for validation logic with multiple cases
+        - Mock external dependencies (hardware access via sysfs, ghw library,
+          netlink operations, Kubernetes API calls) rather than requiring
+          real hardware or a cluster
+        - Test error paths, not just happy paths — especially for hardware
+          operations that can fail (missing sysfs entries, permission errors)
+        - gRPC server tests: verify ListAndWatch and Allocate behavior with
+          mock device pools
+        - Device selector tests: cover edge cases (empty selectors, wildcard
+          matching, overlapping selectors)
+        - Assertions should include descriptive failure messages
+
+    # ── Supply chain & dependencies ──────────────────────────────
+    - path: "**/go.mod"
+      instructions: |
+        Supply chain security:
+        - New dependencies: justify the need, check license compatibility
+        - Pin exact versions; verify no unnecessary indirect dependencies added
+        - Flag known CVEs (cross-ref osv.dev)
+        - Check for replace directives pointing to forks — ensure they are
+          intentional and documented
+        - Key dependencies to watch: k8s.io/kubelet (device plugin API),
+          github.com/jaypipes/ghw (hardware discovery),
+          github.com/k8snetworkplumbingwg/sriovnet (SR-IOV utilities),
+          github.com/k8snetworkplumbingwg/govdpa (vDPA management)
+        - Version bumps of k8s.io/* dependencies should be coordinated
+
+    # ── CI/CD & GitHub Actions ───────────────────────────────────
+    - path: ".github/workflows/**/*"
+      instructions: |
+        CI/CD security:
+        - Pin actions by full SHA, not tag
+        - No secrets in logs; mask sensitive outputs
+        - Least privilege: minimize GITHUB_TOKEN permissions
+        - No pull_request_target with checkout of PR head
+        - Verify build-test-lint.yml runs the full validation suite
+        - Image build workflows: verify image tags and push targets are correct
+        - E2E test workflow: verify sriov-network-operator checkout and
+          device-plugin image override are configured correctly
+
+    # ── Cryptography files ───────────────────────────────────────
+    - path: "**/*{crypt,cipher,sign,hash,tls,ssl,cert,key,token}*"
+      instructions: |
+        Cryptographic security:
+        - Banned: MD5, SHA1, DES, RC4, 3DES, Blowfish, ECB mode
+        - Symmetric: AES-256-GCM or ChaCha20-Poly1305
+        - Signing: Ed25519 or ECDSA P-256+
+        - Constant-time comparison for all secret/token data
+        - No custom crypto; use vetted libraries only
+
+  # ── Security scanners ────────────────────────────────────────
+  tools:
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    checkov:
+      enabled: true
+    hadolint:
+      enabled: true
+    trivy:
+      enabled: true
+    osvScanner:
+      enabled: true
+    actionlint:
+      enabled: true
+    ast-grep:
+      essential_rules: true
+
+# ── Knowledge base ───────────────────────────────────────────
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "**/CONTRIBUTING.md"
+  issues:
+    scope: "auto"
+  pull_requests:
+    scope: "auto"
+
+chat:
+  auto_reply: true
+  art: false
