@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netlink v1.3.1
 	google.golang.org/grpc v1.81.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	k8s.io/kubelet v0.34.3
 )
 
