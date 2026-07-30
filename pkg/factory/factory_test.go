@@ -639,6 +639,27 @@ var _ = Describe("Factory", func() {
 				Expect(rs).To(BeNil())
 			})
 		})
+		Context("when resource pool uses invalid prefix", func() {
+			f := factory.NewResourceFactory("fake", "fake", true, false)
+			rp := mocks.ResourcePool{}
+			rp.On("GetResourcePrefix").Return("/invalid")
+			rs, e := f.GetResourceServer(&rp)
+			It("should fail", func() {
+				Expect(e).To(HaveOccurred())
+				Expect(rs).To(BeNil())
+			})
+		})
+		Context("when resource server construction fails", func() {
+			f := factory.NewResourceFactory("fake", "fake", true, false)
+			rp := mocks.ResourcePool{}
+			rp.On("GetResourcePrefix").Return("").
+				On("GetResourceName").Return("../../../../escape")
+			rs, e := f.GetResourceServer(&rp)
+			It("should return the construction error", func() {
+				Expect(e).To(MatchError(ContainSubstring("escapes base directory")))
+				Expect(rs).To(BeNil())
+			})
+		})
 		Context("when resource pool uses overridden prefix", func() {
 			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rp := mocks.ResourcePool{}
