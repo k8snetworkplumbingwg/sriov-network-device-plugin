@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -210,6 +211,10 @@ func (rm *resourceManager) validConfigs() bool {
 		resourcePrefix := rm.cliParams.resourcePrefix
 		if conf.ResourcePrefix != "" {
 			resourcePrefix = conf.ResourcePrefix
+		}
+		if errs := validation.IsDNS1123Subdomain(resourcePrefix); len(errs) > 0 {
+			glog.Errorf("invalid resource prefix %q: %v", resourcePrefix, errs)
+			return false
 		}
 
 		resourceName := resourcePrefix + "/" + conf.ResourceName

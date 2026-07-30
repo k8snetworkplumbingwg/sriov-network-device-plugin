@@ -56,11 +56,15 @@ const (
 )
 
 // NewResourceServer returns an instance of ResourceServer
-func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types.ResourcePool) types.ResourceServer {
+func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types.ResourcePool) (types.ResourceServer, error) {
 	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
-	sockPath := filepath.Join(types.SockDir, sockName)
+	baseDir := types.SockDir
 	if !pluginWatch {
-		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
+		baseDir = types.DeprecatedSockDir
+	}
+	sockPath := filepath.Join(baseDir, sockName)
+	if !strings.HasPrefix(filepath.Clean(sockPath), filepath.Clean(baseDir)+string(filepath.Separator)) {
+		return nil, fmt.Errorf("computed socket path %q escapes base directory %q", sockPath, baseDir)
 	}
 
 	//nolint:mnd
@@ -77,7 +81,7 @@ func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types
 		stopWatcher:        make(chan bool),
 		checkIntervals:     20, // updates every 20 seconds
 		cdi:                cdiPkg.New(),
-	}
+	}, nil
 }
 
 func (rs *resourceServer) register() error {
