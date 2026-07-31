@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Check author permissions
         id: check-perm
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const commenter = context.payload.comment.user.login;
@@ -43,7 +43,7 @@ jobs:
             }
 
       - name: Add reaction and dispatch E2E workflow
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
             const prNumber = context.payload.issue.number;
@@ -69,13 +69,14 @@ jobs:
               console.log('Failed to add reaction:', err);
             }
 
-            console.log(`Dispatching build-test-lint.yml for PR #${prNumber} on ref ${pr.head.sha}`);
+            const defaultBranch = context.payload.repository.default_branch;
+            console.log(`Dispatching build-test-lint.yml for PR #${prNumber} on ref ${pr.head.sha} (workflow ref: ${defaultBranch})`);
 
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'build-test-lint.yml',
-              ref: context.repo.default_branch,
+              ref: defaultBranch,
               inputs: {
                 pr_number: String(prNumber),
                 ref: pr.head.sha
