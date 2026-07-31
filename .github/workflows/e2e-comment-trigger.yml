@@ -1,0 +1,83 @@
+name: e2e-comment-trigger
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: write
+  issues: write
+
+jobs:
+  e2e-trigger:
+    name: Trigger E2E on Slash Command
+    if: |
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '/test-all') || contains(github.event.comment.body, '/test-sriov-operator-e2e-test'))
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check author permissions
+        id: check-perm
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commenter = context.payload.comment.user.login;
+            const association = context.payload.comment.author_association;
+            const allowed = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+
+            if (allowed.includes(association)) {
+              console.log(`User ${commenter} is authorized via association: ${association}`);
+              return;
+            }
+
+            const { data: perm } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: commenter,
+            });
+
+            if (!['admin', 'write'].includes(perm.permission)) {
+              core.setFailed(`User ${commenter} does not have write access to trigger e2e tests.`);
+            }
+
+      - name: Add reaction and dispatch E2E workflow
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.issue.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            if (pr.state !== 'open') {
+              core.setFailed(`PR #${prNumber} is not open.`);
+              return;
+            }
+
+            try {
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'rocket'
+              });
+            } catch (err) {
+              console.log('Failed to add reaction:', err);
+            }
+
+            console.log(`Dispatching build-test-lint.yml for PR #${prNumber} on ref ${pr.head.sha}`);
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build-test-lint.yml',
+              ref: context.repo.default_branch,
+              inputs: {
+                pr_number: String(prNumber),
+                ref: pr.head.sha
+              }
+            });
