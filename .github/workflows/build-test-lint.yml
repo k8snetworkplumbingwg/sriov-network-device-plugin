@@ -92,6 +92,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
 
       - name: lint test
@@ -105,6 +106,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
+        ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
@@ -117,6 +119,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
+        ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
     - uses: hadolint/hadolint-action@v3.5.0
       name: Run Hadolint
@@ -129,6 +132,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
       with:
+        ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
 
     - name: Set up Go
