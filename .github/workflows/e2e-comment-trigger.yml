@@ -5,7 +5,6 @@ on:
     types: [created]
 
 permissions:
-  contents: read
   pull-requests: read
   actions: write
   issues: write
@@ -46,6 +45,14 @@ jobs:
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         with:
           script: |
+            const commentBody = context.payload.comment.body || '';
+            const isValidCommand = /(?:^|\s|\|)\/(test-all|test-sriov-operator-e2e-test)(?:\s|\||$)/m.test(commentBody);
+
+            if (!isValidCommand) {
+              console.log('Comment does not contain a valid slash command. Skipping dispatch.');
+              return;
+            }
+
             const prNumber = context.payload.issue.number;
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,

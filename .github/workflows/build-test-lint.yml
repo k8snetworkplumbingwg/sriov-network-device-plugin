@@ -12,6 +12,9 @@ on:
         description: 'Git ref / commit SHA'
         required: false
         type: string
+
+permissions:
+  contents: read
 jobs:
   build:
     name: build
@@ -23,7 +26,7 @@ jobs:
           go-version: 1.26.x
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
@@ -42,7 +45,7 @@ jobs:
           go-version: 1.26.x
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
@@ -63,7 +66,7 @@ jobs:
         with:
           go-version: 1.26.x
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
@@ -90,7 +93,7 @@ jobs:
           go-version: 1.26.x
 
       - name: checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
@@ -104,7 +107,7 @@ jobs:
     env:
       SHELLCHECK_OPTS: -e SC3037 # disabled because of false issue in entrypoint.sh ln 14-21. Not using any complicated flags. Works with alpines almquist shell.
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
@@ -117,7 +120,7 @@ jobs:
     runs-on: ubuntu-24.04
     name: Hadolint
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
@@ -130,7 +133,7 @@ jobs:
   go-check:
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ inputs.ref || github.ref }}
         persist-credentials: false
@@ -162,7 +165,7 @@ jobs:
       PR_NUM: ${{ inputs.pr_number || github.event.pull_request.number || github.run_id }}
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
@@ -171,7 +174,7 @@ jobs:
         run: podman build -f images/Dockerfile -t "ghaction-sriov-network-device-plugin:pr-${PR_NUM}" .
 
       - name: Check out sriov operator's code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: k8snetworkplumbingwg/sriov-network-operator
           path: sriov-network-operator-wc
