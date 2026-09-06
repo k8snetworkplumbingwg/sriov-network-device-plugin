@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/vishvananda/netlink v1.3.2-0.20251101063711-6e61cd407d1d
 	google.golang.org/grpc v1.83.0
+	k8s.io/apimachinery v0.36.2
 	k8s.io/kubelet v0.36.2
 )
 
@@ -72,7 +73,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9 // indirect
 	k8s.io/api v0.36.2 // indirect
-	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/client-go v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
