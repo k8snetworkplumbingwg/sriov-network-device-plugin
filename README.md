@@ -19,6 +19,7 @@
     - [Install one compatible CNI meta plugin](#install-one-compatible-cni-meta-plugin)
   - [Configurations](#configurations)
     - [Config parameters](#config-parameters)
+    - [Driver recovery](#driver-recovery)
     - [Command line arguments](#command-line-arguments)
     - [Assumptions](#assumptions)
     - [Workflow](#workflow)
@@ -288,6 +289,7 @@ This plugin creates device plugin endpoints based on the configurations given in
 | "excludeTopology" | N        | Exclude advertising of device's NUMA topology                                                                                          | bool Default: "false"                                 | "excludeTopology": true                                                |
 | "selectors"       | N        | Either a single device selector map or a list of maps. The list syntax is preferred. The "deviceType" value determines the device selector options.                                                  | json list of objects or json object. Default: null                   | Example: "selectors": [{"vendors": ["8086"],"devices": ["154c"]}]        |
 | "additionalInfo" | N | A map of map to add additional information to the pod via environment variables to devices                                             | json object as string Default: null  | Example: "additionalInfo": {"*": {"token": "3e49019f-412f-4f02-824e-4cd195944205"}} |
+| "driverRecovery" | N | Restore a VF left on `vfio-pci` to the configured driver when it is next allocated. Supported only for `netDevice` resources. | object Default: null | "driverRecovery": {"desiredDriver": "mlx5_core"} |
 
 Note: "resourceName" must be unique only in the scope of a given prefix, including the one specified globally in the CLI params, e.g. "example.com/10G", "acme.com/10G" and "acme.com/40G" are perfectly valid names.
 
@@ -413,6 +415,51 @@ output for pod allocating the specific deviceID:
 {"0000:86:00.0":{"extraInfo":{"token":"specific"}
 ```
 
+### Driver recovery
+
+Driver recovery is an opt-in safety mechanism for `netDevice` resource pools whose VFs can be temporarily rebound to `vfio-pci`, for example by a Kata Containers workload. The `desiredDriver` field is required and must name the driver that each VF in the pool must use before allocation:
+
+```json
+{
+  "resourceList": [{
+    "resourceName": "mlnx_sriov_kata",
+    "deviceType": "netDevice",
+    "driverRecovery": {
+      "desiredDriver": "mlx5_core"
+    },
+    "selectors": [{
+      "vendors": ["15b3"],
+      "devices": ["1018"],
+      "drivers": ["mlx5_core"]
+    }]
+  }]
+}
+```
+
+When this option is enabled, the device plugin treats `desiredDriver` as the effective driver during discovery. This keeps a VF in its configured resource pool after a device-plugin restart even if the VF was left bound to `vfio-pci`.
+
+On the next `Allocate` request for the VF, the device plugin:
+
+1. If the VF is already bound to `desiredDriver`, leaves the binding in place and clears any stale driver override.
+2. If the VF is bound to `vfio-pci`, checks the host for a process that still has its VFIO group open.
+3. Fails the allocation while the VFIO group is still in use. The device plugin does not terminate Kata, QEMU, or other host processes.
+4. Otherwise, rebinds the VF to `desiredDriver`, verifies the result, and continues the allocation.
+
+Any recovery or verification error fails the allocation. Drivers other than `vfio-pci` are not automatically replaced. The desired driver must already be loaded on the node.
+
+Recovery is triggered only by a new `Allocate` request. Kubernetes does not provide the device plugin with a deallocation callback, so deleting a Pod does not trigger recovery. A container restart or `CrashLoopBackOff` that reuses a cached device allocation might not trigger it either.
+
+The device-plugin container needs additional access to host PCI sysfs, process information, and VFIO devices. Apply the opt-in [driver recovery DaemonSet patch](deployments/driver-recovery-patch.yaml) to either the standard or CDI DaemonSet:
+
+```sh
+kubectl patch daemonset kube-sriov-device-plugin \
+  --namespace kube-system \
+  --type strategic \
+  --patch-file deployments/driver-recovery-patch.yaml
+```
+
+The patch mounts `/sys/bus/pci` read-write and mounts `/proc` and `/dev/vfio` read-only at the host paths expected by the recovery implementation. These mounts grant sensitive host access. Review the manifest against the cluster's security policy before enabling the feature; SELinux-enabled and OpenShift clusters might also require an appropriate security context or SCC.
+
 ### Command line arguments
 
 This plugin accepts the following optional run-time command line arguments:
@@ -443,7 +490,7 @@ Usage of ./sriovdp:
 
 ### Assumptions
 
-This plugin does not bind or unbind any driver to any device whether it's PFs or VFs. It also doesn't create virtual functions either. Usually, the virtual functions are created at boot time when kernel module for the device is loaded. Same with SFs. Required device drivers could be loaded on system boot-up time by allow-listing/deny-listing the right modules. But plugin needs to be aware of the driver type of the resources (i.e. devices) that it is registering as K8s extended resource so that it's able to create appropriate Device Specs for the requested resource.
+By default, this plugin does not bind or unbind any driver to any device whether it's PFs or VFs. The only exception is the explicitly configured [`driverRecovery`](#driver-recovery) behavior for `netDevice` VFs left on `vfio-pci`. The plugin does not create virtual functions. Usually, the virtual functions are created at boot time when the kernel module for the device is loaded. The same applies to SFs. Required device drivers can be loaded during system boot by allow-listing or deny-listing the appropriate modules. The plugin needs to know the driver type of the resources it registers as Kubernetes extended resources so that it can create the appropriate Device Specs for the requested resource.
 
 For example, if the driver type is uio (i.e. igb_uio.ko) then there are specific device files to add in Device Spec. For vfio-pci, device files are different. And if it is Linux kernel network driver then there is no device file to be added.
 

@@ -1,0 +1,36 @@
+# Strategic merge patch for the optional driverRecovery feature.
+# Apply this patch to the standard or CDI sriov-device-plugin DaemonSet only
+# when at least one resource pool has driverRecovery configured.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-sriov-device-plugin
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+      - name: kube-sriovdp
+        volumeMounts:
+        - name: host-pci-sysfs
+          mountPath: /host/sys/bus/pci
+          readOnly: false
+        - name: host-proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: host-vfio
+          mountPath: /host/dev/vfio
+          readOnly: true
+      volumes:
+      - name: host-pci-sysfs
+        hostPath:
+          path: /sys/bus/pci
+          type: Directory
+      - name: host-proc
+        hostPath:
+          path: /proc
+          type: Directory
+      - name: host-vfio
+        hostPath:
+          path: /dev/vfio
+          type: Directory
