@@ -270,4 +270,35 @@ var _ = Describe("NetDeviceProvider", func() {
 			})
 		})
 	})
+	DescribeTable("validating driver recovery configuration",
+		func(recovery *types.DriverRecoveryConfig, selector *types.NetDeviceSelectors, expected bool) {
+			provider := netdevice.NewNetDeviceProvider(&mocks.ResourceFactory{})
+			config := &types.ResourceConfig{
+				DriverRecovery: recovery,
+				SelectorObjs:   []interface{}{selector},
+			}
+
+			Expect(provider.ValidConfig(config)).To(Equal(expected))
+		},
+		Entry("accepts an empty driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{}, true),
+		Entry("accepts a matching driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"mlx5_core"}}}, true),
+		Entry("rejects an empty desired driver", &types.DriverRecoveryConfig{},
+			&types.NetDeviceSelectors{}, false),
+		Entry("rejects an unsafe desired driver", &types.DriverRecoveryConfig{DesiredDriver: "../mlx5_core"},
+			&types.NetDeviceSelectors{}, false),
+		Entry("rejects a different driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"vfio-pci"}}}, false),
+		Entry("rejects a mixed driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"mlx5_core", "vfio-pci"}}}, false),
+		Entry("rejects RDMA selection", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{GenericNetDeviceSelectors: types.GenericNetDeviceSelectors{IsRdma: true}}, false),
+		Entry("rejects vDPA selection", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{VdpaType: types.VdpaVhostType}, false),
+		Entry("rejects DDP selection", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{DDPProfiles: []string{"profile"}}, false),
+		Entry("rejects PKey selection", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			&types.NetDeviceSelectors{PKeys: []string{"0x8001"}}, false),
+	)
 })

@@ -97,6 +97,76 @@ var _ = Describe("PciNetDevice", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
+		DescribeTable("using the desired driver during recovery discovery",
+			func(currentDriver string, expectError bool) {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:00:00.0",
+						"sys/bus/pci/devices/0000:00:00.1",
+						"sys/bus/pci/drivers/" + currentDriver,
+					},
+					Symlinks: map[string]string{
+						"sys/bus/pci/devices/0000:00:00.1/driver":  "../../../../bus/pci/drivers/" + currentDriver,
+						"sys/bus/pci/devices/0000:00:00.1/physfn":  "../0000:00:00.0",
+						"sys/bus/pci/devices/0000:00:00.0/virtfn0": "../0000:00:00.1",
+					},
+				}
+				defer fs.Use()()
+				utils.SetDefaultMockNetlinkProvider()
+
+				f := factory.NewResourceFactory("fake", "fake", true, false)
+				selector := &types.NetDeviceSelectors{
+					DeviceSelectors: types.DeviceSelectors{Drivers: []string{"mlx5_core"}},
+				}
+				rc := &types.ResourceConfig{
+					DriverRecovery: &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+					SelectorObjs:   []interface{}{selector},
+				}
+
+				dev, err := netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.1"), f, rc, 0)
+				if expectError {
+					Expect(err).To(HaveOccurred())
+					Expect(dev).To(BeNil())
+					return
+				}
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(dev.GetDriver()).To(Equal("mlx5_core"))
+				Expect(dev.GetDeviceSpecs()).To(BeEmpty())
+				Expect(dev.GetEnvVal()).To(HaveKey("generic"))
+				Expect(dev.GetEnvVal()).NotTo(HaveKey("vfio"))
+
+				provider := netdevice.NewNetDeviceProvider(f)
+				filtered, err := provider.GetFilteredDevices([]types.HostDevice{dev}, rc, 0)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filtered).To(ConsistOf(dev))
+			},
+			Entry("when already bound to the desired driver", "mlx5_core", false),
+			Entry("when left bound to vfio-pci", "vfio-pci", false),
+			Entry("when bound to an unrelated driver", "iavf", true),
+		)
+		It("rejects driver recovery for a physical function", func() {
+			fs := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:00:00.0",
+					"sys/bus/pci/drivers/vfio-pci",
+				},
+				Symlinks: map[string]string{
+					"sys/bus/pci/devices/0000:00:00.0/driver": "../../../../bus/pci/drivers/vfio-pci",
+				},
+			}
+			defer fs.Use()()
+
+			f := factory.NewResourceFactory("fake", "fake", true, false)
+			rc := &types.ResourceConfig{
+				DriverRecovery: &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
+			}
+
+			dev, err := netdevice.NewPciNetDevice(newPciDeviceFn("0000:00:00.0"), f, rc, 0)
+
+			Expect(err).To(MatchError(ContainSubstring("only supported for SR-IOV VFs")))
+			Expect(dev).To(BeNil())
+		})
 		Context("with two devices but only one of them being RDMA", func() {
 			rc := &types.ResourceConfig{
 				ResourceName:   "fake",

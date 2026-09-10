@@ -15,6 +15,8 @@
 package netdevice
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
 
@@ -23,6 +25,8 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
+
+const vfioPciDriver = "vfio-pci"
 
 // pciNetDevice extends HostDevice and embedds GenPciDevice and GenNetDevice
 type pciNetDevice struct {
@@ -41,9 +45,20 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 	var vdpaDev types.VdpaDevice
 	var nf *types.NetDeviceSelectors
 
-	driverName, err := utils.GetDriverName(dev.Address)
+	currentDriver, err := utils.GetDriverName(dev.Address)
 	if err != nil {
 		return nil, err
+	}
+	driverName := currentDriver
+	if rc.DriverRecovery != nil {
+		if !utils.IsSriovVF(dev.Address) {
+			return nil, fmt.Errorf("driver recovery is only supported for SR-IOV VFs: %s", dev.Address)
+		}
+		driverName = rc.DriverRecovery.DesiredDriver
+		if currentDriver != driverName && currentDriver != vfioPciDriver {
+			return nil, fmt.Errorf("device %s is bound to driver %s, expected %s or %s for driver recovery",
+				dev.Address, currentDriver, driverName, vfioPciDriver)
+		}
 	}
 
 	infoProviders := rFactory.GetDefaultInfoProvider(dev.Address, driverName)

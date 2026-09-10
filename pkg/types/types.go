@@ -102,7 +102,13 @@ type ResourceConfig struct {
 	ExcludeTopology bool                      `json:"excludeTopology,omitempty"`
 	Selectors       *json.RawMessage          `json:"selectors,omitempty"`
 	AdditionalInfo  map[string]AdditionalInfo `json:"additionalInfo,omitempty"`
+	DriverRecovery  *DriverRecoveryConfig     `json:"driverRecovery,omitempty"`
 	SelectorObjs    []interface{}
+}
+
+// DriverRecoveryConfig configures recovery of devices left bound to vfio-pci.
+type DriverRecoveryConfig struct {
+	DesiredDriver string `json:"desiredDriver"`
 }
 
 // DeviceSelectors contains common device selectors fields
@@ -190,6 +196,7 @@ type ResourcePool interface {
 	GetResourcePrefix() string
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
+	EnsureDriver(deviceIDs []string) error
 	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
 	GetEnvs(prefix string, deviceIDs []string) (map[string]string, error)
 	GetMounts(deviceIDs []string) []*pluginapi.Mount

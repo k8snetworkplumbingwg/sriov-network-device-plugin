@@ -228,6 +228,10 @@ func (rm *resourceManager) validConfigs() bool {
 			glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
 			return false
 		}
+		if conf.DriverRecovery != nil && conf.DeviceType != types.NetDeviceType {
+			glog.Errorf("driverRecovery is only supported for deviceType %q", types.NetDeviceType)
+			return false
+		}
 
 		// Check DeviceType-specific configuration
 		if !rm.deviceProviders[conf.DeviceType].ValidConfig(conf) {

@@ -366,6 +366,18 @@ var _ = Describe("Resource manager", func() {
 				Expect(rm.validConfigs()).To(BeFalse())
 			})
 		})
+		Context("when driver recovery is configured for a non-network device", func() {
+			It("should return false", func() {
+				rm.configList = []*types.ResourceConfig{{
+					ResourceName:   "accelerator",
+					DeviceType:     types.AcceleratorType,
+					DriverRecovery: &types.DriverRecoveryConfig{DesiredDriver: "vfio-pci"},
+					SelectorObjs:   []interface{}{&types.AccelDeviceSelectors{}},
+				}}
+
+				Expect(rm.validConfigs()).To(BeFalse())
+			})
+		})
 		Describe("managing resources servers", func() {
 			Describe("initializing servers", func() {
 				Context("when initializing server fails", func() {

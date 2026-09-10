@@ -16,6 +16,7 @@ package netdevice
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
@@ -23,6 +24,8 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
+
+var pciDriverNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 
 type netDeviceProvider struct {
 	deviceList []*ghw.PCIDevice
@@ -159,6 +162,18 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 
 // ValidConfig performs validation of NetDeviceSelectors
 func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
+	desiredDriver := ""
+	if rc.DriverRecovery != nil {
+		desiredDriver = rc.DriverRecovery.DesiredDriver
+		if desiredDriver == "" {
+			glog.Errorf("invalid config: driverRecovery.desiredDriver must not be empty")
+			return false
+		}
+		if !pciDriverNamePattern.MatchString(desiredDriver) {
+			glog.Errorf("invalid config: driverRecovery.desiredDriver %q is not a valid PCI driver name", desiredDriver)
+			return false
+		}
+	}
 	for _, selector := range rc.SelectorObjs {
 		nf, ok := selector.(*types.NetDeviceSelectors)
 		if !ok {
@@ -168,6 +183,19 @@ func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
 		if nf.IsRdma && nf.VdpaType != "" {
 			glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
 			return false
+		}
+		if rc.DriverRecovery != nil {
+			for _, driver := range nf.Drivers {
+				if driver != desiredDriver {
+					glog.Errorf("invalid config: driver selector %q must match driverRecovery.desiredDriver %q",
+						driver, desiredDriver)
+					return false
+				}
+			}
+			if nf.IsRdma || nf.VdpaType != "" || len(nf.DDPProfiles) > 0 || len(nf.PKeys) > 0 {
+				glog.Errorf("invalid config: driverRecovery cannot be combined with isRdma, vdpaType, ddpProfiles, or pKeys")
+				return false
+			}
 		}
 	}
 	return true

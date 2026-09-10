@@ -43,6 +43,9 @@ func NewHostDeviceImpl(dev *ghw.PCIDevice, deviceID string, rFactory types.Resou
 	if err != nil {
 		return nil, err
 	}
+	if rc.DriverRecovery != nil {
+		driverName = rc.DriverRecovery.DesiredDriver
+	}
 
 	// Use the default Information Provided if not
 	if len(infoProviders) == 0 {
