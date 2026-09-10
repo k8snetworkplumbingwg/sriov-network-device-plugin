@@ -28,6 +28,7 @@ spec:
       hostNetwork: true
       hostUsers: true
       serviceAccountName: sriov-device-plugin
+      automountServiceAccountToken: false
       containers:
       - name: kube-sriovdp
         image: ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
@@ -39,18 +40,14 @@ spec:
           privileged: false
           capabilities:
             add:
-              - BPF
-              - IPC_LOCK
               - NET_ADMIN
-              - NET_RAW
-              - SYS_ADMIN
-              - SYS_PTRACE
-              - SYS_RAWIO
             drop:
               - ALL
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: false
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           requests:
             cpu: "250m"
@@ -68,11 +65,14 @@ spec:
           mountPath: /var/lib/kubelet/plugins_registry
           readOnly: false
         - name: log
-          mountPath: /var/log
+          mountPath: /var/log/sriovdp
         - name: config-volume
           mountPath: /etc/pcidp
         - name: device-info
           mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
+        - name: sys
+          mountPath: /sys
+          readOnly: true
       volumes:
         - name: tmp
           emptyDir:
@@ -85,7 +85,8 @@ spec:
             path: /var/lib/kubelet/plugins_registry
         - name: log
           hostPath:
-            path: /var/log
+            path: /var/log/sriovdp
+            type: DirectoryOrCreate
         - name: device-info
           hostPath:
             path: /var/run/k8s.cni.cncf.io/devinfo/dp
@@ -96,3 +97,7 @@ spec:
             items:
             - key: config.json
               path: config.json
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
