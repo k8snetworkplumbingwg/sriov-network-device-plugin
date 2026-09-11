@@ -15,6 +15,9 @@
 package accelerator
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
@@ -23,7 +26,8 @@ import (
 )
 
 const (
-	accelPoolType = "net-accel"
+	accelPoolType         = "net-accel"
+	deviceHealthVerbosity = 4
 )
 
 type accelResourcePool struct {
@@ -64,4 +68,36 @@ func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Dev
 // GetCDIKind returns device kind for CDI spec
 func (rp *accelResourcePool) GetCDIName() string {
 	return accelPoolType
+}
+
+// UpdateDeviceProbeStatus updates device health based on availability checks
+func (rp *accelResourcePool) UpdateDeviceProbeStatus() error {
+	devicePool := rp.GetDevicePool()
+	for deviceID, dev := range devicePool {
+		if dev == nil {
+			continue
+		}
+		apiDev := dev.GetAPIDevice()
+		if apiDev == nil {
+			continue
+		}
+		if !rp.isDeviceHealthy(deviceID) {
+			apiDev.Health = pluginapi.Unhealthy
+		} else {
+			apiDev.Health = pluginapi.Healthy
+		}
+	}
+	return nil
+}
+
+// isDeviceHealthy checks if an accelerator device is healthy
+func (rp *accelResourcePool) isDeviceHealthy(deviceID string) bool {
+	// Check if device file exists in /sys/bus/pci/devices
+	sysPath := fmt.Sprintf("/sys/bus/pci/devices/%s", deviceID)
+	if _, err := os.Stat(sysPath); err != nil {
+		glog.V(deviceHealthVerbosity).Infof("Device %s not found in sysfs: %v", deviceID, err)
+		return false
+	}
+	// Device exists and is accessible
+	return true
 }
