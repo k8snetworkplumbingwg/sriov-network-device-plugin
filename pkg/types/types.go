@@ -126,6 +126,7 @@ type GenericNetDeviceSelectors struct {
 	RootDevices  []string `json:"rootDevices,omitempty"`
 	LinkTypes    []string `json:"linkTypes,omitempty"`
 	IsRdma       bool     // the resource support rdma
+	IsCxi        bool     // the resource is a Cassini (CXI) device with a /dev/cxiN char device
 	AcpiIndexes  []string `json:"acpiIndexes,omitempty"`
 	NeedVhostNet bool     `json:"needVhostNet,omitempty"` // share vhost-net along the selected resource
 }

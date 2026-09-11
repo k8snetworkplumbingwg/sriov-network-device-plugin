@@ -217,6 +217,15 @@ This plugin creates device plugin endpoints based on the configurations given in
             }]
         },
         {
+            "resourceName": "cxi",
+            "resourcePrefix": "hpe.com",
+            "selectors": [{
+                "vendors": ["1590"],
+                "devices": ["0372"],
+                "isCxi": true
+            }]
+        },
+        {
             "resourceName": "ct6dx_vdpa_vhost",
             "selectors": [{
                 "vendors": ["15b3"],
@@ -339,6 +348,7 @@ These selectors are applicable when "deviceType" is "netDevice" (note: this is d
 | "ddpProfiles"  | N        | A map of device selectors                                                | `string` list Default: `null`                       | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
 | "pKeys"        | N        | Infiniband Partition Keys. Will match only to the devices' default (index0) PKeys. Compatible only with linkTypes = infiniband | `string` list Default: `null`                       | "pKeys": ["0x1", "0xABCD", "0x50"]         |
 | "isRdma"       | N        | Mount RDMA resources. Incompatible with vdpaType                         | `bool` values `true` or `false` Default: `false`    | "isRdma": `true`                                                                                 |
+| "isCxi"        | N        | Mount the Cassini (CXI) `/dev/cxiN` char device associated with the VF   | `bool` values `true` or `false` Default: `false`    | "isCxi": `true`                                                                                  |
 | "needVhostNet" | N        | Share /dev/vhost-net and /dev/net/tun                                    | `bool` values `true` or `false` Default: `false`    | "needVhostNet": `true`                                                                           |
 | "vdpaType"     | N        | The type of vDPA device (virtio, vhost). Incompatible with isRdma = true | `string` values `vhost` or `virtio` Default: `null` | "vdpaType": "vhost"                                                                              |
 

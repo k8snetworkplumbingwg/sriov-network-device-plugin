@@ -378,6 +378,42 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 	return
 }
 
+// HasCxiDevice returns true if the PCI device has an associated Cassini (CXI) char device
+func HasCxiDevice(pciAddr string) bool {
+	cxiDir := filepath.Join(sysBusPci, pciAddr, "cxi")
+	files, err := os.ReadDir(cxiDir)
+	if err != nil {
+		return false
+	}
+	return len(files) > 0
+}
+
+// GetCxiDeviceFile returns the Cassini (CXI) char device file (e.g. /dev/cxi4)
+// for a CXI PCI device given its PCI address
+func GetCxiDeviceFile(dev string) (devFile string, err error) {
+	cxiDir := filepath.Join(sysBusPci, dev, "cxi")
+
+	_, err = os.Lstat(cxiDir)
+	if err != nil {
+		return "", fmt.Errorf("GetCxiDeviceFile(): could not get directory information for device: %s Err: %w", cxiDir, err)
+	}
+
+	files, err := os.ReadDir(cxiDir)
+	if err != nil {
+		return "", fmt.Errorf("GetCxiDeviceFile(): failed to read cxi directory %s: %w", cxiDir, err)
+	}
+
+	if len(files) == 0 {
+		return "", fmt.Errorf("GetCxiDeviceFile(): no cxi device found under %s", cxiDir)
+	}
+
+	// cxi directory should contain a single entry e.g. cxi4
+	// with a corresponding device file in /dev e.g. /dev/cxi4
+	devFile = filepath.Join(devDir, files[0].Name())
+
+	return devFile, nil
+}
+
 // GetNetNames returns host net interface names as string for a PCI device from its pci address
 func GetNetNames(pciAddr string) ([]string, error) {
 	netDir := filepath.Join(sysBusPci, pciAddr, "net")

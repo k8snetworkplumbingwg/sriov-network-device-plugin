@@ -139,6 +139,17 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 		filteredDevice = rdmaDevices
 	}
 
+	// filter for cxi (Cassini) devices
+	if nf.IsCxi {
+		cxiDevices := make([]types.HostDevice, 0)
+		for _, dev := range filteredDevice {
+			if utils.HasCxiDevice(dev.(types.PciNetDevice).GetPciAddr()) {
+				cxiDevices = append(cxiDevices, dev)
+			}
+		}
+		filteredDevice = cxiDevices
+	}
+
 	// filter for vDPA-capable devices
 	if nf.VdpaType != "" {
 		vdpaDevices := make([]types.HostDevice, 0)
