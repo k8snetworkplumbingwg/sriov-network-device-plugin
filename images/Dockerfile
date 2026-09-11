@@ -28,8 +28,7 @@ FROM alpine:3
 RUN apk add --no-cache hwdata-pci
 COPY --from=builder /usr/src/sriov-network-device-plugin/build/sriovdp /usr/bin/
 COPY --from=ddp-builder /tmp/ddptool/ddptool /usr/bin/
-COPY ./images/entrypoint.sh /
 
 WORKDIR /
 LABEL io.k8s.display-name="SRIOV Network Device Plugin"
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/sriovdp"]
