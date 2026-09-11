@@ -162,17 +162,8 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 
 // ValidConfig performs validation of NetDeviceSelectors
 func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
-	desiredDriver := ""
-	if rc.DriverRecovery != nil {
-		desiredDriver = rc.DriverRecovery.DesiredDriver
-		if desiredDriver == "" {
-			glog.Errorf("invalid config: driverRecovery.desiredDriver must not be empty")
-			return false
-		}
-		if !pciDriverNamePattern.MatchString(desiredDriver) {
-			glog.Errorf("invalid config: driverRecovery.desiredDriver %q is not a valid PCI driver name", desiredDriver)
-			return false
-		}
+	if !validDriverRecovery(rc.DriverRecovery) {
+		return false
 	}
 	for _, selector := range rc.SelectorObjs {
 		nf, ok := selector.(*types.NetDeviceSelectors)
@@ -184,19 +175,47 @@ func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
 			glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
 			return false
 		}
-		if rc.DriverRecovery != nil {
-			for _, driver := range nf.Drivers {
-				if driver != desiredDriver {
-					glog.Errorf("invalid config: driver selector %q must match driverRecovery.desiredDriver %q",
-						driver, desiredDriver)
-					return false
-				}
-			}
-			if nf.IsRdma || nf.VdpaType != "" || len(nf.DDPProfiles) > 0 || len(nf.PKeys) > 0 {
-				glog.Errorf("invalid config: driverRecovery cannot be combined with isRdma, vdpaType, ddpProfiles, or pKeys")
-				return false
-			}
+		if !validDriverRecoverySelector(rc.DriverRecovery, nf) {
+			return false
 		}
+	}
+	return true
+}
+
+func validDriverRecovery(recovery *types.DriverRecoveryConfig) bool {
+	if recovery == nil {
+		return true
+	}
+	desiredDriver := recovery.DesiredDriver
+	if desiredDriver == "" {
+		glog.Errorf("invalid config: driverRecovery.desiredDriver must not be empty")
+		return false
+	}
+	if !pciDriverNamePattern.MatchString(desiredDriver) {
+		glog.Errorf("invalid config: driverRecovery.desiredDriver %q is not a valid PCI driver name", desiredDriver)
+		return false
+	}
+	if desiredDriver == "vfio-pci" {
+		glog.Errorf("invalid config: driverRecovery.desiredDriver must be a native PCI driver, not vfio-pci")
+		return false
+	}
+	return true
+}
+
+func validDriverRecoverySelector(recovery *types.DriverRecoveryConfig, selector *types.NetDeviceSelectors) bool {
+	if recovery == nil {
+		return true
+	}
+	for _, driver := range selector.Drivers {
+		if driver != recovery.DesiredDriver {
+			glog.Errorf("invalid config: driver selector %q must match driverRecovery.desiredDriver %q",
+				driver, recovery.DesiredDriver)
+			return false
+		}
+	}
+	if selector.IsRdma || selector.VdpaType != "" || len(selector.DDPProfiles) > 0 || len(selector.PKeys) > 0 {
+		glog.Errorf("invalid config: driverRecovery cannot be combined with isRdma, vdpaType, ddpProfiles, or pKeys")
+		return false
 	}
 	return true
 }

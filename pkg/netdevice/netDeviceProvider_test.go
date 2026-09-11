@@ -288,6 +288,8 @@ var _ = Describe("NetDeviceProvider", func() {
 			&types.NetDeviceSelectors{}, false),
 		Entry("rejects an unsafe desired driver", &types.DriverRecoveryConfig{DesiredDriver: "../mlx5_core"},
 			&types.NetDeviceSelectors{}, false),
+		Entry("rejects vfio-pci as the desired driver", &types.DriverRecoveryConfig{DesiredDriver: "vfio-pci"},
+			&types.NetDeviceSelectors{}, false),
 		Entry("rejects a different driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},
 			&types.NetDeviceSelectors{DeviceSelectors: types.DeviceSelectors{Drivers: []string{"vfio-pci"}}}, false),
 		Entry("rejects a mixed driver selector", &types.DriverRecoveryConfig{DesiredDriver: "mlx5_core"},

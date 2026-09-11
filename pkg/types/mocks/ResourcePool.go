@@ -13,6 +13,20 @@ type ResourcePool struct {
 	mock.Mock
 }
 
+// EnsureDriver provides a mock function with given fields: deviceIDs
+func (_m *ResourcePool) EnsureDriver(deviceIDs []string) error {
+	ret := _m.Called(deviceIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EnsureDriver")
+	}
+
+	if rf, ok := ret.Get(0).(func([]string) error); ok {
+		return rf(deviceIDs)
+	}
+	return ret.Error(0)
+}
+
 // CleanDeviceInfoFile provides a mock function with given fields: resourceNamePrefix
 func (_m *ResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
 	ret := _m.Called(resourceNamePrefix)

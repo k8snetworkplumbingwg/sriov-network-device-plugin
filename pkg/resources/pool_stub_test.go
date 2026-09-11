@@ -124,4 +124,22 @@ var _ = Describe("ResourcePool", func() {
 			Expect(devices["0000:00:00.2"].ID).To(Equal("0000:00:00.2"))
 		})
 	})
+	Describe("ensuring the configured driver", func() {
+		It("is a no-op when driver recovery is disabled", func() {
+			pool := resources.NewResourcePool(&types.ResourceConfig{ResourceName: "test"}, nil)
+			Expect(pool.EnsureDriver([]string{"0000:00:00.1"})).To(Succeed())
+		})
+
+		It("rejects an unknown device before accessing host driver state", func() {
+			pool := resources.NewResourcePool(&types.ResourceConfig{
+				ResourceName: "test",
+				DriverRecovery: &types.DriverRecoveryConfig{
+					DesiredDriver: "mlx5_core",
+				},
+			}, map[string]types.HostDevice{})
+
+			err := pool.EnsureDriver([]string{"0000:00:00.1"})
+			Expect(err).To(MatchError(ContainSubstring("is not present in resource pool test")))
+		})
+	})
 })

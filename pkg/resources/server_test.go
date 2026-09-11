@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"time"
@@ -254,6 +255,10 @@ var _ = Describe("Server", func() {
 			rp := mocks.ResourcePool{}
 			rp.On("GetResourceName").
 				Return("fake.com").
+				On("EnsureDriver", []string{"00:00.01"}).
+				Return(nil).
+				On("EnsureDriver", []string{}).
+				Return(nil).
 				On("GetDeviceFiles").
 				Return(map[string]string{"00:00.01": "/dev/fake"}).
 				On("GetDeviceSpecs", []string{"00:00.01"}).
@@ -298,6 +303,10 @@ var _ = Describe("Server", func() {
 			rp := mocks.ResourcePool{}
 			rp.On("GetResourceName").
 				Return("fake.com").
+				On("EnsureDriver", []string{"00:00.01"}).
+				Return(nil).
+				On("EnsureDriver", []string{}).
+				Return(nil).
 				On("GetDeviceFiles").
 				Return(map[string]string{"00:00.01": "/dev/fake"}).
 				On("GetDeviceSpecs", []string{"00:00.01"}).
@@ -345,6 +354,26 @@ var _ = Describe("Server", func() {
 		),
 		Entry("empty AllocateRequest", &pluginapi.AllocateRequest{}, 0, false),
 	)
+	It("fails allocation before creating response side effects when driver recovery fails", func() {
+		rp := mocks.ResourcePool{}
+		deviceIDs := []string{"00:00.01", "00:00.02"}
+		rp.On("GetResourceName").Return("fake.com").
+			On("EnsureDriver", deviceIDs).Return(errors.New("VFIO device is still in use"))
+		rs := NewResourceServer("fake.com", "fake", true, false, &rp).(*resourceServer)
+
+		resp, err := rs.Allocate(context.TODO(), &pluginapi.AllocateRequest{
+			ContainerRequests: []*pluginapi.ContainerAllocateRequest{
+				{DevicesIds: deviceIDs[:1]},
+				{DevicesIds: deviceIDs[1:]},
+			},
+		})
+
+		Expect(resp).To(BeNil())
+		Expect(err).To(MatchError("VFIO device is still in use"))
+		rp.AssertNotCalled(GinkgoT(), "GetEnvs")
+		rp.AssertNotCalled(GinkgoT(), "GetDeviceSpecs")
+		rp.AssertNotCalled(GinkgoT(), "StoreDeviceInfoFile")
+	})
 	Describe("running PreStartContainer", func() {
 		It("should not fail", func() {
 			rs := &resourceServer{}

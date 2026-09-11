@@ -31,8 +31,9 @@ const (
 
 // ResourcePoolImpl implements stub ResourcePool interface
 type ResourcePoolImpl struct {
-	config     *types.ResourceConfig
-	devicePool map[string]types.HostDevice
+	config        *types.ResourceConfig
+	devicePool    map[string]types.HostDevice
+	driverManager pciDriverManager
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
@@ -40,8 +41,9 @@ var _ types.ResourcePool = &ResourcePoolImpl{}
 // NewResourcePool returns an instance of resourcePool
 func NewResourcePool(rc *types.ResourceConfig, devicePool map[string]types.HostDevice) *ResourcePoolImpl {
 	return &ResourcePoolImpl{
-		config:     rc,
-		devicePool: devicePool,
+		config:        rc,
+		devicePool:    devicePool,
+		driverManager: newHostPCIDriverManager(),
 	}
 }
 
@@ -79,6 +81,20 @@ func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
 func (rp *ResourcePoolImpl) Probe() bool {
 	// TO-DO: Implement this
 	return false
+}
+
+// EnsureDriver restores requested devices to the configured desired driver before allocation.
+func (rp *ResourcePoolImpl) EnsureDriver(deviceIDs []string) error {
+	if rp.config.DriverRecovery == nil {
+		return nil
+	}
+
+	for _, id := range deviceIDs {
+		if _, ok := rp.devicePool[id]; !ok {
+			return fmt.Errorf("device %s is not present in resource pool %s", id, rp.GetResourceName())
+		}
+	}
+	return rp.driverManager.EnsureDrivers(deviceIDs, rp.config.DriverRecovery.DesiredDriver)
 }
 
 // GetDeviceSpecs returns list of plugin API device specs for a list of device IDs

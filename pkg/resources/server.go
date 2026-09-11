@@ -128,6 +128,14 @@ func (rs *resourceServer) NotifyRegistrationStatus(ctx context.Context,
 func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	glog.Infof("Allocate() called with %+v", rqt)
 	resp := new(pluginapi.AllocateResponse)
+	deviceIDs := make([]string, 0)
+	for _, container := range rqt.ContainerRequests {
+		deviceIDs = append(deviceIDs, container.DevicesIds...)
+	}
+	if err := rs.resourcePool.EnsureDriver(deviceIDs); err != nil {
+		glog.Errorf("failed to ensure desired driver for device IDs %v: %v", deviceIDs, err)
+		return nil, err
+	}
 
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
