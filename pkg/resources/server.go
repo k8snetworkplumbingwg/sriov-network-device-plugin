@@ -58,9 +58,16 @@ const (
 // NewResourceServer returns an instance of ResourceServer
 func NewResourceServer(prefix, suffix string, pluginWatch, useCdi bool, rp types.ResourcePool) types.ResourceServer {
 	sockName := fmt.Sprintf("%s_%s.%s", prefix, rp.GetResourceName(), suffix)
-	sockPath := filepath.Join(types.SockDir, sockName)
+	baseDir := types.SockDir
 	if !pluginWatch {
-		sockPath = filepath.Join(types.DeprecatedSockDir, sockName)
+		baseDir = types.DeprecatedSockDir
+	}
+	sockPath := filepath.Join(baseDir, sockName)
+	if !strings.HasPrefix(filepath.Clean(sockPath), filepath.Clean(baseDir)+string(filepath.Separator)) {
+		glog.Errorf("computed socket path %q escapes base directory %q; using sanitized prefix", sockPath, baseDir)
+		prefix = "invalid-prefix"
+		sockName = fmt.Sprintf("invalid-prefix_%s.%s", rp.GetResourceName(), suffix)
+		sockPath = filepath.Join(baseDir, sockName)
 	}
 
 	//nolint:mnd
