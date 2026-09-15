@@ -24,10 +24,9 @@ jobs:
           script: |
             const commenter = context.payload.comment.user.login;
             const association = context.payload.comment.author_association;
-            const allowed = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 
-            if (allowed.includes(association)) {
-              console.log(`User ${commenter} is authorized via association: ${association}`);
+            if (association === 'OWNER') {
+              console.log(`User ${commenter} is authorized as repository owner.`);
               return;
             }
 
@@ -38,8 +37,11 @@ jobs:
             });
 
             if (!['admin', 'write'].includes(perm.permission)) {
-              core.setFailed(`User ${commenter} does not have write access to trigger e2e tests.`);
+              core.setFailed(`User ${commenter} does not have write access to trigger e2e tests (permission: ${perm.permission}).`);
+              return;
             }
+
+            console.log(`User ${commenter} is authorized with permission: ${perm.permission}`);
 
       - name: Add reaction and dispatch E2E workflow
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
