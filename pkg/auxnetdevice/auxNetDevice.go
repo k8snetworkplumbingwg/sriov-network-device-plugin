@@ -20,8 +20,8 @@ package auxnetdevice
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
@@ -62,7 +62,7 @@ func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.Resourc
 				isRdma = true
 				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
 			} else {
-				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", deviceID)
+				klog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", deviceID)
 			}
 		}
 
@@ -70,7 +70,7 @@ func NewAuxNetDevice(dev *ghw.PCIDevice, deviceID string, rFactory types.Resourc
 			if infoprovider.VhostNetDeviceExist() {
 				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
-				glog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", deviceID)
+				klog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", deviceID)
 			}
 		}
 	}

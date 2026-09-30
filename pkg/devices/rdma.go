@@ -18,7 +18,7 @@
 package devices
 
 import (
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -59,7 +59,7 @@ func (r *rdmaSpec) IsRdma() bool {
 	// This scenario cann happen if the device is discovered, assigned to a pod and then the plugin is restarted.
 	rdma, err := utils.HasRdmaParam(bus, r.deviceID)
 	if err != nil {
-		glog.Infof("HasRdmaParam(): unable to get Netlink RDMA param for device %s : %q", r.deviceID, err)
+		klog.Infof("HasRdmaParam(): unable to get Netlink RDMA param for device %s : %q", r.deviceID, err)
 		return false
 	}
 	return rdma

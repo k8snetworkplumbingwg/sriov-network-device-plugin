@@ -15,34 +15,32 @@
 package logging
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/golang/glog"
-	"golang.org/x/sys/unix"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"k8s.io/klog/v2"
 )
 
 const (
-	allowedLogBase     = "/var/log"
-	defaultLogDir      = "/var/log/sriovdp"
-	defaultMaxSizeMB   = 100
-	defaultMaxFiles    = 5
-	defaultMaxAge      = 30
+	allowedLogBase = "/var/log"
+
+	DefaultLogDir    = "/var/log/sriovdp"
+	DefaultMaxSizeMB = 100
+	DefaultMaxFiles  = 5
+	DefaultMaxAge    = 30
+
 	logFileName        = "sriovdp.log"
 	logDirPerms        = 0750
 	maxAllowedSizeMB   = 1024 // 1GB
 	maxAllowedFiles    = 100
 	maxAllowedAgeDays  = 365
 	startupHeaderWidth = 80
-	stderrTeeBufSize   = 32 * 1024
 )
 
 type Config struct {
@@ -50,98 +48,137 @@ type Config struct {
 	MaxSizeMB  int
 	MaxFiles   int
 	MaxAgeDays int
-	Compress   bool
 }
 
 type StartupInfo struct {
 	ConfigFile     string
 	ResourcePrefix string
 	UseCdi         bool
+	LogDir         string
+	LogMaxSizeMB   int
+	LogMaxFiles    int
+	LogMaxAgeDays  int
 }
 
+// LogStartupHeader prints a banner with node identity and config summary.
 func LogStartupHeader(info StartupInfo) {
 	separator := strings.Repeat("=", startupHeaderWidth)
 
-	podName := os.Getenv("POD_NAME")
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-	if podName == "" {
-		podName = hostname
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		nodeName = "unknown"
 	}
 
-	glog.Infof("%s", separator)
-	glog.Infof("SR-IOV Network Device Plugin starting")
-	glog.Infof("Pod: %s | Start time: %s",
-		podName, time.Now().Format(time.RFC3339))
-	glog.Infof("Config file: %s | Resource prefix: %s | CDI: %v",
+	klog.Infof("%s", separator)
+	klog.Infof("SR-IOV Network Device Plugin starting")
+	klog.Infof("Node: %s | Start time: %s",
+		nodeName, time.Now().Format(time.RFC3339))
+	klog.Infof("Config file: %s | Resource prefix: %s | CDI: %v",
 		info.ConfigFile, info.ResourcePrefix, info.UseCdi)
-	glog.Infof("%s", separator)
-}
 
-// SetupLogRotation enables rotating file logs via stderr capture.
-// Prefer glog --log_dir when set. Returns cleanup to defer, or nil on failure.
-func SetupLogRotation(cfg Config) func() {
-	if f := flag.Lookup("log_dir"); f != nil {
-		if v := f.Value.String(); v != "" {
-			cfg.LogDir = v
+	if info.LogDir != "" {
+		hostPath := os.Getenv("SRIOV_DP_LOG_HOST_PATH")
+		if hostPath != "" {
+			klog.Infof("sriovdp/persistent-file-logging: persistent file logging enabled")
+			klog.Infof("Path: %s (host: %s) | maxSizeMB=%d maxFiles=%d maxAgeDays=%d compress=true",
+				info.LogDir, hostPath, info.LogMaxSizeMB, info.LogMaxFiles, info.LogMaxAgeDays)
+		} else {
+			klog.Infof("sriovdp/persistent-file-logging: persistent file logging enabled")
+			klog.Infof("Path: %s | maxSizeMB=%d maxFiles=%d maxAgeDays=%d compress=true",
+				info.LogDir, info.LogMaxSizeMB, info.LogMaxFiles, info.LogMaxAgeDays)
 		}
 	}
+	klog.Infof("%s", separator)
+}
+
+// teeWriter writes every log line to both console (stderr) and the rotating
+// file. File-write errors are reported to stderr so they are never silent.
+type teeWriter struct {
+	console io.Writer
+	file    io.WriteCloser
+}
+
+func (t *teeWriter) Write(p []byte) (int, error) {
+	n, _ := t.console.Write(p)
+	if _, err := t.file.Write(p); err != nil {
+		fmt.Fprintf(t.console, "sriovdp: file-log write error: %v\n", err) //nolint:errcheck
+	}
+	return n, nil
+}
+
+// SetupLogRotation connects klog output to both stderr and a rotating log file
+// via klog.SetOutput. cfg.LogDir must be under /var/log (the DaemonSet hostPath
+// mount). Returns cleanup to defer, or nil on failure.
+func SetupLogRotation(cfg Config) func() {
+	// Collect setup messages before the tee is wired up.
+	var earlyWarnings []string
 
 	logDir := cfg.LogDir
 	if logDir == "" {
-		logDir = DefaultConfig().LogDir
+		logDir = DefaultLogDir
 	}
 	cleanDir, err := ValidateLogDir(logDir)
 	if err != nil {
-		def := DefaultConfig().LogDir
-		if logDir == def {
-			glog.Errorf("rejected log directory: %v — continuing without rotation", err)
+		if logDir == DefaultLogDir {
+			fmt.Fprintf(os.Stderr, "sriovdp: rejected log directory: %v — continuing without rotation\n", err) //nolint:errcheck
 			return nil
 		}
-		glog.Warningf("rejected log directory: %v — falling back to default %q", err, def)
-		cleanDir, err = ValidateLogDir(def)
+		earlyWarnings = append(earlyWarnings,
+			fmt.Sprintf("rejected log directory: %v — falling back to default %q", err, DefaultLogDir))
+
+		cleanDir, err = ValidateLogDir(DefaultLogDir)
 		if err != nil {
-			glog.Errorf("rejected default log directory: %v — continuing without rotation", err)
+			flushWarningsToStderr(earlyWarnings)
+			fmt.Fprintf(os.Stderr, "sriovdp: rejected default log directory: %v — continuing without rotation\n", err) //nolint:errcheck
 			return nil
 		}
 	}
 	cfg.LogDir = cleanDir
 
-	resolved, warnings, err := ResolveConfig(cfg)
-	for _, w := range warnings {
-		glog.Warning(w)
-	}
+	resolved, configWarnings, err := ResolveConfig(cfg)
+	earlyWarnings = append(earlyWarnings, configWarnings...)
 	if err != nil {
-		glog.Errorf("failed to resolve log rotation config: %v — continuing without rotation", err)
+		flushWarningsToStderr(earlyWarnings)
+		fmt.Fprintf(os.Stderr, "sriovdp: failed to resolve log rotation config: %v — continuing without rotation\n", err) //nolint:errcheck
 		return nil
 	}
 
 	rotWriter, _, err := NewRotatingWriter(resolved)
 	if err != nil {
+		flushWarningsToStderr(earlyWarnings)
 		fmt.Fprintf(os.Stderr, "sriovdp: log rotation disabled; cannot use log directory %q: %v\n", resolved.LogDir, err) //nolint:errcheck
-		glog.Errorf("failed to create log rotation writer: %v — continuing without rotation", err)
 		return nil
 	}
 
-	cleanup, err := CaptureStderr(rotWriter)
-	if err != nil {
-		glog.Errorf("failed to capture stderr for log rotation: %v — continuing without rotation", err)
-		if closeErr := rotWriter.Close(); closeErr != nil {
-			glog.Warningf("failed to close rotation writer after capture failure: %v", closeErr)
-		}
-		return nil
+	tee := &teeWriter{console: os.Stderr, file: rotWriter}
+	klog.SetOutput(tee)
+	klog.LogToStderr(false)
+	if f := flag.Lookup("one_output"); f != nil {
+		_ = f.Value.Set("true")
 	}
 
-	glog.Infof("Log rotation enabled: dir=%s maxSize=%dMB maxFiles=%d maxAge=%d compress=%v",
-		resolved.LogDir, resolved.MaxSizeMB, resolved.MaxFiles, resolved.MaxAgeDays, resolved.Compress)
+	for _, w := range earlyWarnings {
+		klog.Warning(w)
+	}
 
 	return func() {
-		cleanup()
-		if err := rotWriter.Close(); err != nil {
-			glog.Warningf("failed to close rotation writer: %v", err)
+		klog.Flush()
+		klog.LogToStderr(true)
+		if f := flag.Lookup("one_output"); f != nil {
+			_ = f.Value.Set("false")
 		}
+		klog.SetOutput(os.Stderr)
+		if err := rotWriter.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "sriovdp: failed to close rotation writer: %v\n", err) //nolint:errcheck
+		}
+	}
+}
+
+// flushWarningsToStderr prints collected warnings to stderr when rotation
+// setup fails and there is no tee to replay through.
+func flushWarningsToStderr(warnings []string) {
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "sriovdp: %s\n", w) //nolint:errcheck
 	}
 }
 
@@ -181,11 +218,13 @@ func ValidateLogDir(dir string) (string, error) {
 		return "", fmt.Errorf("cannot create log directory %q: %w", resolved, err)
 	}
 
+	if err := os.Chmod(resolved, logDirPerms); err != nil {
+		return "", fmt.Errorf("cannot set permissions on log directory %q: %w", resolved, err)
+	}
+
 	return resolved, nil
 }
 
-// resolveExistingPrefix resolves symlinks on the deepest existing ancestor
-// of path, then appends the remaining (non-existent) path components.
 func resolveExistingPrefix(path string) (string, error) {
 	path = filepath.Clean(path)
 
@@ -214,48 +253,35 @@ func checkAllowedLogBase(path string) error {
 	return nil
 }
 
+// ResolveConfig normalizes and clamps Config values, returning warnings for
+// any fields that were corrected.
 func ResolveConfig(cfg Config) (Config, []string, error) {
-	def := DefaultConfig()
 	normalized := cfg
 	warnings := []string{}
 
 	if normalized.LogDir == "" {
-		normalized.LogDir = def.LogDir
+		normalized.LogDir = DefaultLogDir
 	}
 	if normalized.MaxSizeMB <= 0 || normalized.MaxSizeMB > maxAllowedSizeMB {
 		warnings = append(warnings,
-			fmt.Sprintf("invalid --log-max-size=%d; using default %d", normalized.MaxSizeMB, def.MaxSizeMB))
-		normalized.MaxSizeMB = def.MaxSizeMB
+			fmt.Sprintf("invalid --log-max-size=%d; using default %d", normalized.MaxSizeMB, DefaultMaxSizeMB))
+		normalized.MaxSizeMB = DefaultMaxSizeMB
 	}
 	if normalized.MaxFiles <= 0 || normalized.MaxFiles > maxAllowedFiles {
 		warnings = append(warnings,
-			fmt.Sprintf("invalid --log-max-files=%d; using default %d", normalized.MaxFiles, def.MaxFiles))
-		normalized.MaxFiles = def.MaxFiles
+			fmt.Sprintf("invalid --log-max-files=%d; using default %d", normalized.MaxFiles, DefaultMaxFiles))
+		normalized.MaxFiles = DefaultMaxFiles
 	}
 	if normalized.MaxAgeDays < 0 || normalized.MaxAgeDays > maxAllowedAgeDays {
 		warnings = append(warnings,
-			fmt.Sprintf("invalid --log-max-age=%d; using default %d", normalized.MaxAgeDays, def.MaxAgeDays))
-		normalized.MaxAgeDays = def.MaxAgeDays
+			fmt.Sprintf("invalid --log-max-age=%d; using default %d", normalized.MaxAgeDays, DefaultMaxAge))
+		normalized.MaxAgeDays = DefaultMaxAge
 	}
-
-	normalized.Compress = true
 
 	return normalized, warnings, nil
 }
 
-// DefaultConfig returns production defaults.
-func DefaultConfig() Config {
-	return Config{
-		LogDir:     defaultLogDir,
-		MaxSizeMB:  defaultMaxSizeMB,
-		MaxFiles:   defaultMaxFiles,
-		MaxAgeDays: defaultMaxAge,
-		Compress:   true,
-	}
-}
-
-// NewRotatingWriter returns a lumberjack writer and any config warnings.
-// Caller must Close the writer.
+// NewRotatingWriter returns a lumberjack writer. Caller must Close it.
 func NewRotatingWriter(cfg Config) (io.WriteCloser, []string, error) {
 	var warnings []string
 
@@ -279,96 +305,6 @@ func NewRotatingWriter(cfg Config) (io.WriteCloser, []string, error) {
 		MaxSize:    cfg.MaxSizeMB,
 		MaxBackups: cfg.MaxFiles,
 		MaxAge:     cfg.MaxAgeDays,
-		Compress:   cfg.Compress,
+		Compress:   true,
 	}, warnings, nil
-}
-
-// resilientTeeWriter writes to primary + secondary; never fails the drain.
-type resilientTeeWriter struct {
-	primary   io.Writer // original stderr (or Discard after failure)
-	secondary io.Writer // rotating log (best-effort)
-}
-
-func (t *resilientTeeWriter) Write(p []byte) (int, error) {
-	if _, err := t.primary.Write(p); err != nil {
-		t.primary = io.Discard
-	}
-	_, _ = t.secondary.Write(p)
-	return len(p), nil // keep pipe drain alive
-}
-
-// CaptureStderr tees fd 2 to original stderr and w. Defer cleanup to restore fd 2.
-func CaptureStderr(w io.Writer) (cleanup func(), err error) {
-	if w == nil {
-		return nil, fmt.Errorf("writer must not be nil")
-	}
-
-	origFd, err := unix.Dup(int(os.Stderr.Fd()))
-	if err != nil {
-		return nil, fmt.Errorf("dup stderr: %w", err)
-	}
-
-	r, pw, err := os.Pipe()
-	if err != nil {
-		return nil, errors.Join(
-			fmt.Errorf("create pipe: %w", err),
-			unix.Close(origFd),
-		)
-	}
-
-	if err := unix.Dup2(int(pw.Fd()), int(os.Stderr.Fd())); err != nil {
-		return nil, errors.Join(
-			fmt.Errorf("dup2 pipe to stderr: %w", err),
-			r.Close(),
-			pw.Close(),
-			unix.Close(origFd),
-		)
-	}
-
-	if err := pw.Close(); err != nil {
-		return nil, errors.Join(
-			fmt.Errorf("close pipe writer: %w", err),
-			unix.Dup2(origFd, int(os.Stderr.Fd())),
-			r.Close(),
-			unix.Close(origFd),
-		)
-	}
-
-	origFile := os.NewFile(uintptr(origFd), "original-stderr")
-	tee := &resilientTeeWriter{primary: origFile, secondary: w}
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		buf := make([]byte, stderrTeeBufSize)
-		for {
-			n, readErr := r.Read(buf)
-			if n > 0 {
-				_, _ = tee.Write(buf[:n])
-			}
-			if readErr != nil {
-				if readErr != io.EOF {
-					_, _ = fmt.Fprintf(origFile, "sriovdp: stderr tee read error: %v\n", readErr)
-				}
-				return
-			}
-		}
-	}()
-
-	var once sync.Once
-	return func() {
-		once.Do(func() {
-			// Restore fd 2; closes pipe write end → drain gets EOF.
-			if err := unix.Dup2(origFd, int(os.Stderr.Fd())); err != nil {
-				_, _ = fmt.Fprintf(origFile, "sriovdp: failed to restore stderr: %v\n", err)
-			}
-			<-done // wait for drain before closing reader
-			if err := r.Close(); err != nil {
-				_, _ = fmt.Fprintf(origFile, "sriovdp: failed to close pipe reader: %v\n", err)
-			}
-			if err := origFile.Close(); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "sriovdp: failed to close original stderr fd: %v\n", err)
-			}
-		})
-	}, nil
 }

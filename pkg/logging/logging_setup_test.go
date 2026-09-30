@@ -15,21 +15,14 @@
 package logging
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/klog/v2"
 )
-
-func saveAndRestoreLogDir() {
-	origVal := flag.Lookup("log_dir").Value.String()
-	DeferCleanup(func() {
-		_ = flag.Set("log_dir", origVal)
-	})
-}
 
 // varLogTempDir creates a temp dir under /var/log; skips if not writable.
 func varLogTempDir() string {
@@ -104,14 +97,15 @@ var _ = Describe("ValidateLogDir", func() {
 })
 
 var _ = Describe("SetupLogRotation", func() {
-	BeforeEach(func() {
-		saveAndRestoreLogDir()
+	// Restore klog output after each test so rotation from one test
+	// does not leak into the next.
+	AfterEach(func() {
+		klog.LogToStderr(true)
+		klog.SetOutput(os.Stderr)
 	})
 
 	It("falls back to the default log dir when unset", func() {
-		Expect(flag.Set("log_dir", "")).To(Succeed())
-
-		cfg := Config{MaxSizeMB: 100, MaxFiles: 5, MaxAgeDays: 30, Compress: true}
+		cfg := Config{MaxSizeMB: 100, MaxFiles: 5, MaxAgeDays: 30}
 		cleanup := SetupLogRotation(cfg)
 		if cleanup != nil {
 			cleanup()
@@ -120,74 +114,51 @@ var _ = Describe("SetupLogRotation", func() {
 
 	It("enables rotation for a writable /var/log path", func() {
 		dir := varLogTempDir()
-		Expect(flag.Set("log_dir", dir)).To(Succeed())
 
-		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7, Compress: true}
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
 		cleanup := SetupLogRotation(cfg)
 		Expect(cleanup).NotTo(BeNil())
 
-		_, err := os.Stderr.WriteString("setup-test: logged line\n")
-		Expect(err).NotTo(HaveOccurred())
-
+		klog.Info("setup-test: logged line via klog")
 		cleanup()
 
 		data, err := os.ReadFile(filepath.Join(dir, "sriovdp.log"))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(data)).To(ContainSubstring("setup-test: logged line"))
+		Expect(string(data)).To(ContainSubstring("setup-test: logged line via klog"))
 	})
 
 	It("falls back to the default log dir when path is outside /var/log", func() {
 		dir := GinkgoT().TempDir()
-		Expect(flag.Set("log_dir", dir)).To(Succeed())
 
-		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7, Compress: true}
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
 		cleanup := SetupLogRotation(cfg)
-		// Default /var/log/sriovdp must be creatable for rotation to enable.
-		if _, err := os.Stat(defaultLogDir); err != nil && !os.IsNotExist(err) {
+		if _, err := os.Stat(DefaultLogDir); err != nil && !os.IsNotExist(err) {
 			Expect(cleanup).To(BeNil())
 			return
 		}
 		if cleanup == nil {
-			Skip(fmt.Sprintf("default log dir %q not usable in this environment", defaultLogDir))
+			Skip(fmt.Sprintf("default log dir %q not usable in this environment", DefaultLogDir))
 		}
 		cleanup()
 	})
 
 	It("falls back invalid limits to defaults without disabling rotation", func() {
 		dir := varLogTempDir()
-		Expect(flag.Set("log_dir", dir)).To(Succeed())
 
-		cfg := Config{LogDir: dir, MaxSizeMB: 0, MaxFiles: 5, MaxAgeDays: 30, Compress: true}
+		cfg := Config{LogDir: dir, MaxSizeMB: 0, MaxFiles: 5, MaxAgeDays: 30}
 		cleanup := SetupLogRotation(cfg)
 		Expect(cleanup).NotTo(BeNil())
 		cleanup()
-	})
-
-	It("restores stderr after cleanup", func() {
-		dir := varLogTempDir()
-		Expect(flag.Set("log_dir", dir)).To(Succeed())
-
-		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7, Compress: true}
-		cleanup := SetupLogRotation(cfg)
-		Expect(cleanup).NotTo(BeNil())
-
-		cleanup()
-
-		_, err := os.Stderr.WriteString("post-cleanup write OK\n")
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("writes the log file at the configured directory", func() {
 		dir := varLogTempDir()
-		Expect(flag.Set("log_dir", dir)).To(Succeed())
 
-		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, MaxAgeDays: 3, Compress: true}
+		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, MaxAgeDays: 3}
 		cleanup := SetupLogRotation(cfg)
 		Expect(cleanup).NotTo(BeNil())
 
-		_, err := os.Stderr.WriteString("config passthrough test\n")
-		Expect(err).NotTo(HaveOccurred())
-
+		klog.Info("config passthrough test")
 		cleanup()
 
 		_, statErr := os.Stat(filepath.Join(dir, "sriovdp.log"))
