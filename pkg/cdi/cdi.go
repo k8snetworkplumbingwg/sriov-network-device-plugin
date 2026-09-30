@@ -26,7 +26,7 @@ import (
 
 	"github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	cdiSpecs "github.com/container-orchestrated-devices/container-device-interface/specs-go"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
@@ -80,14 +80,14 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 
 	name, err := cdi.GenerateNameForSpec(&cdiSpec)
 	if err != nil {
-		glog.Errorf("GenerateNameForSpec(): can not generate name: %v", err)
+		klog.Errorf("GenerateNameForSpec(): can not generate name: %v", err)
 		return err
 	}
 
 	// this will overwrite any existing file for this spec with the same name
 	err = cdi.GetRegistry().SpecDB().WriteSpec(&cdiSpec, fmt.Sprintf("%s%s-%s", cdiSpecPrefix, name, rPool.GetResourceName()))
 	if err != nil {
-		glog.Errorf("CreateCDISpecForPool(): can not create CDI json: %v", err)
+		klog.Errorf("CreateCDISpecForPool(): can not create CDI json: %v", err)
 		return err
 	}
 
@@ -104,7 +104,7 @@ func (c *impl) CreateContainerAnnotations(devicesIDs []string,
 	poolID := sha256.Sum256([]byte(resourcePrefix + "/" + resourceName))
 	annoKey, err := cdi.AnnotationKey("sriovdp", base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(poolID[:]))
 	if err != nil {
-		glog.Errorf("CreateContainerAnnotations(): can't create container annotation: %v", err)
+		klog.Errorf("CreateContainerAnnotations(): can't create container annotation: %v", err)
 		return nil, err
 	}
 	devices := make([]string, 0)
@@ -113,7 +113,7 @@ func (c *impl) CreateContainerAnnotations(devicesIDs []string,
 	}
 	annoValue, err := cdi.AnnotationValue(devices)
 	if err != nil {
-		glog.Errorf("CreateContainerAnnotations(): can't create container annotation: %v", err)
+		klog.Errorf("CreateContainerAnnotations(): can't create container annotation: %v", err)
 		return nil, err
 	}
 	annotations[annoKey] = annoValue
