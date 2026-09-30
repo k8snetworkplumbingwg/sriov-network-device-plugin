@@ -18,7 +18,7 @@
 package auxnetdevice
 
 import (
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -45,7 +45,7 @@ func NewAuxNetResourcePool(rc *types.ResourceConfig, devicePool map[string]types
 
 // Overrides GetDeviceSpecs
 func (ap *auxNetResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
+	klog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
 	devicePool := ap.GetDevicePool()

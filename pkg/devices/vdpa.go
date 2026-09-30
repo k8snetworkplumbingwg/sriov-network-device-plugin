@@ -19,8 +19,8 @@ package devices
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -56,7 +56,7 @@ func (v *vdpaDevice) GetPath() (string, error) {
 func GetVdpaDevice(pciAddr string) types.VdpaDevice {
 	detailVdpaDev, err := utils.GetVdpaProvider().GetVdpaDeviceByPci(pciAddr)
 	if err != nil {
-		glog.Infof("%s - No vDPA device found: %s", pciAddr, err)
+		klog.Infof("%s - No vDPA device found: %s", pciAddr, err)
 		return nil
 	}
 	return &vdpaDevice{

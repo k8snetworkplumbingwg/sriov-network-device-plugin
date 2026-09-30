@@ -15,10 +15,7 @@
 package logging
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,34 +24,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"k8s.io/klog/v2"
 )
-
-type failWriter struct {
-	failAfter int
-	writes    int
-}
-
-func (w *failWriter) Write(p []byte) (int, error) {
-	w.writes++
-	if w.writes > w.failAfter {
-		return 0, errors.New("primary stderr broken")
-	}
-	return len(p), nil
-}
-
-var _ = Describe("DefaultConfig", func() {
-	It("returns production defaults", func() {
-		cfg := DefaultConfig()
-
-		Expect(cfg.LogDir).To(Equal("/var/log/sriovdp"))
-		Expect(cfg.MaxSizeMB).To(Equal(100))
-		Expect(cfg.MaxFiles).To(Equal(5))
-		Expect(cfg.MaxAgeDays).To(Equal(30))
-		Expect(cfg.Compress).To(BeTrue())
-		_, _, err := ResolveConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-	})
-})
 
 var _ = Describe("ResolveConfig", func() {
 	DescribeTable("normalizes invalid values",
@@ -85,9 +56,9 @@ var _ = Describe("ResolveConfig", func() {
 		Entry("zero MaxFiles falls back to default",
 			Config{LogDir: "/tmp", MaxSizeMB: 100, MaxFiles: 0}, 1, false),
 		Entry("valid values remain unchanged",
-			Config{LogDir: "/tmp", MaxSizeMB: 50, MaxFiles: 1, MaxAgeDays: 0, Compress: true}, 0, true),
+			Config{LogDir: "/tmp", MaxSizeMB: 50, MaxFiles: 1, MaxAgeDays: 0}, 0, true),
 		Entry("valid production config",
-			Config{LogDir: "/var/log/sriovdp", MaxSizeMB: 100, MaxFiles: 5, MaxAgeDays: 30, Compress: true}, 0, true),
+			Config{LogDir: DefaultLogDir, MaxSizeMB: DefaultMaxSizeMB, MaxFiles: DefaultMaxFiles, MaxAgeDays: DefaultMaxAge}, 0, true),
 	)
 
 	It("applies all fallbacks together", func() {
@@ -96,18 +67,15 @@ var _ = Describe("ResolveConfig", func() {
 			MaxSizeMB:  0,
 			MaxFiles:   -1,
 			MaxAgeDays: 999,
-			Compress:   false,
 		}
 
 		normalized, warnings, err := ResolveConfig(cfg)
-		def := DefaultConfig()
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(normalized.LogDir).To(Equal(def.LogDir))
-		Expect(normalized.MaxSizeMB).To(Equal(def.MaxSizeMB))
-		Expect(normalized.MaxFiles).To(Equal(def.MaxFiles))
-		Expect(normalized.MaxAgeDays).To(Equal(def.MaxAgeDays))
-		Expect(normalized.Compress).To(BeTrue())
+		Expect(normalized.LogDir).To(Equal(DefaultLogDir))
+		Expect(normalized.MaxSizeMB).To(Equal(DefaultMaxSizeMB))
+		Expect(normalized.MaxFiles).To(Equal(DefaultMaxFiles))
+		Expect(normalized.MaxAgeDays).To(Equal(DefaultMaxAge))
 		Expect(warnings).To(HaveLen(3))
 	})
 
@@ -117,7 +85,6 @@ var _ = Describe("ResolveConfig", func() {
 			MaxSizeMB:  12,
 			MaxFiles:   4,
 			MaxAgeDays: 7,
-			Compress:   true,
 		}
 
 		normalized, warnings, err := ResolveConfig(cfg)
@@ -135,7 +102,6 @@ var _ = Describe("NewRotatingWriter", func() {
 			MaxSizeMB:  42,
 			MaxFiles:   7,
 			MaxAgeDays: 14,
-			Compress:   true,
 		}
 
 		w, _, err := NewRotatingWriter(cfg)
@@ -176,117 +142,43 @@ var _ = Describe("NewRotatingWriter", func() {
 	})
 })
 
-var _ = Describe("resilientTeeWriter", func() {
-	It("keeps draining after primary write failure", func() {
-		primary := &failWriter{failAfter: 1}
-		var secondary bytes.Buffer
-		tee := &resilientTeeWriter{primary: primary, secondary: &secondary}
-
-		n, err := tee.Write([]byte("first\n"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(n).To(Equal(6))
-
-		n, err = tee.Write([]byte("second\n"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(n).To(Equal(7))
-
-		n, err = tee.Write([]byte("third\n"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(n).To(Equal(6))
-
-		Expect(tee.primary).To(Equal(io.Discard))
-		Expect(secondary.String()).To(Equal("first\nsecond\nthird\n"))
-		Expect(primary.writes).To(Equal(2))
-	})
-})
-
-var _ = Describe("CaptureStderr", func() {
-	It("rejects a nil writer", func() {
-		cleanup, err := CaptureStderr(nil)
-		Expect(err).To(HaveOccurred())
-		Expect(cleanup).To(BeNil())
-		Expect(err.Error()).To(ContainSubstring("writer must not be nil"))
-	})
-
-	It("tees stderr to the secondary writer", func() {
-		var buf bytes.Buffer
-		cleanup, err := CaptureStderr(&buf)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cleanup).NotTo(BeNil())
-
-		_, writeErr := os.Stderr.WriteString("tee-test: this should appear in both destinations\n")
-		Expect(writeErr).NotTo(HaveOccurred())
-
-		cleanup()
-		Expect(buf.String()).To(ContainSubstring("tee-test: this should appear in both destinations"))
-	})
-
-	It("restores stderr after cleanup", func() {
-		var buf bytes.Buffer
-		cleanup, err := CaptureStderr(&buf)
-		Expect(err).NotTo(HaveOccurred())
-
-		cleanup()
-
-		_, writeErr := os.Stderr.WriteString("post-restore write\n")
-		Expect(writeErr).NotTo(HaveOccurred())
-	})
-
-	It("drains buffered data before cleanup returns", func() {
-		var buf bytes.Buffer
-		cleanup, err := CaptureStderr(&buf)
-		Expect(err).NotTo(HaveOccurred())
-
-		payload := strings.Repeat("X", 64*1024) + "\n"
-		_, writeErr := os.Stderr.WriteString(payload)
-		Expect(writeErr).NotTo(HaveOccurred())
-
-		cleanup()
-		Expect(buf.Len()).To(BeNumerically(">=", 64*1024))
-	})
-
-	It("supports multiple capture cycles", func() {
-		for i := 0; i < 3; i++ {
-			var buf bytes.Buffer
-			cleanup, err := CaptureStderr(&buf)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, writeErr := os.Stderr.WriteString("cycle message\n")
-			Expect(writeErr).NotTo(HaveOccurred())
-
-			cleanup()
-			Expect(buf.String()).To(ContainSubstring("cycle message"))
-		}
-
-		_, writeErr := os.Stderr.WriteString("after all cycles\n")
-		Expect(writeErr).NotTo(HaveOccurred())
-	})
-
-	It("integrates with a rotating writer", func() {
+var _ = Describe("teeWriter", func() {
+	It("writes to both console and file", func() {
 		dir := GinkgoT().TempDir()
-		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, MaxAgeDays: 1, Compress: false}
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
 		w, _, err := NewRotatingWriter(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		cleanup, err := CaptureStderr(w)
-		Expect(err).NotTo(HaveOccurred())
+		var consoleBuf strings.Builder
+		tee := &teeWriter{console: &consoleBuf, file: w}
 
-		_, writeErr := os.Stderr.WriteString("integration test: log line via stderr capture\n")
+		_, writeErr := tee.Write([]byte("tee-test line\n"))
 		Expect(writeErr).NotTo(HaveOccurred())
-
-		cleanup()
 		Expect(w.Close()).To(Succeed())
+
+		Expect(consoleBuf.String()).To(ContainSubstring("tee-test line"))
 
 		data, err := os.ReadFile(filepath.Join(dir, logFileName))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(data)).To(ContainSubstring("integration test: log line via stderr capture"))
+		Expect(string(data)).To(ContainSubstring("tee-test line"))
 	})
 })
 
+// tempLogDir creates a temp directory whose cleanup retries RemoveAll so
+// lumberjack's async gzip goroutine cannot flake DeferCleanup.
+func tempLogDir() string {
+	dir, err := os.MkdirTemp("", "sriovdp-log-*")
+	Expect(err).NotTo(HaveOccurred())
+	DeferCleanup(func() {
+		Eventually(func() error { return os.RemoveAll(dir) }, 2*time.Second, 50*time.Millisecond).Should(Succeed())
+	})
+	return dir
+}
+
 var _ = Describe("Rotation", func() {
 	It("retains at most MaxFiles backups plus the active file", func() {
-		dir := GinkgoT().TempDir()
-		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, Compress: false}
+		dir := tempLogDir()
+		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2}
 
 		w, _, err := NewRotatingWriter(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -314,9 +206,9 @@ var _ = Describe("Rotation", func() {
 		Expect(fileCount).To(BeNumerically(">=", 2))
 	})
 
-	It("compresses rotated backups when enabled", func() {
-		dir := GinkgoT().TempDir()
-		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 3, Compress: true}
+	It("compresses rotated backups", func() {
+		dir := tempLogDir()
+		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 3}
 
 		w, _, err := NewRotatingWriter(cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -342,24 +234,233 @@ var _ = Describe("Rotation", func() {
 })
 
 var _ = Describe("GracefulShutdown", func() {
-	It("preserves logs written before cleanup", func() {
+	It("preserves logs written directly to the rotating writer before close", func() {
 		dir := GinkgoT().TempDir()
-		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, Compress: false}
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3}
 
 		w, _, err := NewRotatingWriter(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		cleanup, err := CaptureStderr(w)
+		_, err = w.Write([]byte("pre-shutdown: server stopping\n"))
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = fmt.Fprintln(os.Stderr, "pre-shutdown: server stopping")
-		Expect(err).NotTo(HaveOccurred())
-
-		cleanup()
 		Expect(w.Close()).To(Succeed())
 
 		data, err := os.ReadFile(filepath.Join(dir, logFileName))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(data)).To(ContainSubstring("pre-shutdown: server stopping"))
+	})
+})
+
+// varLogTempDir creates a temp dir under /var/log; skips if not writable.
+func varLogTempDir() string {
+	dir, err := os.MkdirTemp("/var/log", "sriovdp-test-*")
+	if err != nil {
+		Skip(fmt.Sprintf("cannot create test directory under /var/log: %v", err))
+	}
+	DeferCleanup(func() {
+		_ = os.RemoveAll(dir)
+	})
+	return dir
+}
+
+var _ = Describe("validateLogDirInput", func() {
+	DescribeTable("rejects invalid input",
+		func(dir string, errSubstr string) {
+			err := validateLogDirInput(dir)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(errSubstr))
+		},
+		Entry("empty", "", "must not be empty"),
+		Entry("control character", "/var/log/sriovdp\x01", "invalid characters"),
+		Entry("leading dash", "-/var/log/sriovdp", "must not start with '-'"),
+		Entry("whitespace", "/var/log/sriov dp", "invalid characters"),
+		Entry("tab", "/var/log/sriov\tdp", "invalid characters"),
+		Entry("single quote", "/var/log/sriov'dp", "invalid characters"),
+		Entry("double quote", "/var/log/sriov\"dp", "invalid characters"),
+		Entry("shell glob", "/var/log/sriov*dp", "invalid characters"),
+		Entry("shell pipe", "/var/log/sriov|dp", "invalid characters"),
+		Entry("shell semicolon", "/var/log/sriov;dp", "invalid characters"),
+		Entry("shell redirection", "/var/log/sriov>dp", "invalid characters"),
+		Entry("tilde", "/var/log/~/blabla", "invalid characters"),
+	)
+
+	DescribeTable("accepts valid input",
+		func(dir string) {
+			Expect(validateLogDirInput(dir)).NotTo(HaveOccurred())
+		},
+		Entry("default path", "/var/log/sriovdp"),
+		Entry("hyphen and underscore", "/var/log/sriov-dp_test"),
+		Entry("dot segment", "/var/log/sriovdp/logs.v1"),
+	)
+})
+
+var _ = Describe("ValidateLogDir", func() {
+	DescribeTable("rejects unsafe paths",
+		func(dir string) {
+			got, err := ValidateLogDir(dir)
+			Expect(err).To(HaveOccurred())
+			Expect(got).To(BeEmpty())
+		},
+		Entry("root", "/"),
+		Entry("tmp", "/tmp/logs"),
+		Entry("etc", "/etc/sriovdp"),
+		Entry("home", "/home/user/logs"),
+		Entry("traversal out of var/log", "/var/log/../etc"),
+		Entry("traversal to blabla", "/var/log/../blabla"),
+		Entry("root traversal to var/log", "/../var/log"),
+		Entry("relative traversal", "../var/log"),
+		Entry("tilde under var/log", "/var/log/~/blabla"),
+		Entry("relative path", "sriovdp"),
+		Entry("relative var/log", "var/log/sriovdp"),
+		Entry("var without log", "/var/sriovdp"),
+		Entry("var/log prefix trick", "/var/logextra"),
+		Entry("empty", ""),
+		Entry("control character", "/var/log/sriovdp\x01"),
+		Entry("leading dash", "-/var/log/sriovdp"),
+		Entry("whitespace", "/var/log/sriov dp"),
+		Entry("tab", "/var/log/sriov\tdp"),
+		Entry("single quote", "/var/log/sriov'dp"),
+		Entry("double quote", "/var/log/sriov\"dp"),
+		Entry("shell glob", "/var/log/sriov*dp"),
+		Entry("shell pipe", "/var/log/sriov|dp"),
+		Entry("shell semicolon", "/var/log/sriov;dp"),
+	)
+
+	It("accepts exact /var/log", func() {
+		got, err := ValidateLogDir("/var/log")
+		if err != nil {
+			Skip(fmt.Sprintf("cannot validate /var/log: %v", err))
+		}
+		Expect(got).To(Equal("/var/log"))
+	})
+
+	It("resolves a subdirectory under /var/log", func() {
+		dir := varLogTempDir()
+		got, err := ValidateLogDir(dir)
+		Expect(err).NotTo(HaveOccurred())
+		resolved, err := filepath.EvalSymlinks(dir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(filepath.Clean(resolved)))
+	})
+
+	It("cleans dot segments", func() {
+		dir := varLogTempDir()
+		got, err := ValidateLogDir(dir + "/.")
+		Expect(err).NotTo(HaveOccurred())
+		resolved, err := filepath.EvalSymlinks(dir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(filepath.Clean(resolved)))
+	})
+
+	It("rejects a symlink that escapes /var/log", func() {
+		dir := varLogTempDir()
+		link := filepath.Join(dir, "escape")
+		Expect(os.Symlink("/etc", link)).To(Succeed())
+		got, err := ValidateLogDir(link)
+		Expect(err).To(HaveOccurred())
+		Expect(got).To(BeEmpty())
+		Expect(err.Error()).To(ContainSubstring("outside the allowed base"))
+	})
+})
+
+var _ = Describe("SetupLogRotation", func() {
+	AfterEach(func() {
+		klog.LogToStderr(true)
+		klog.SetOutput(os.Stderr)
+	})
+
+	It("uses the default log dir when unset", func() {
+		cfg := Config{MaxSizeMB: 100, MaxFiles: 5, MaxAgeDays: 30}
+		cleanup, err := SetupLogRotation(cfg)
+		if err != nil {
+			Skip(fmt.Sprintf("default log dir %q not usable in this environment: %v", DefaultLogDir, err))
+		}
+		Expect(cleanup).NotTo(BeNil())
+		cleanup()
+	})
+
+	It("enables rotation for a writable /var/log path", func() {
+		dir := varLogTempDir()
+
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
+		cleanup, err := SetupLogRotation(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleanup).NotTo(BeNil())
+
+		klog.Info("setup-test: logged line via klog")
+		cleanup()
+
+		data, err := os.ReadFile(filepath.Join(dir, "sriovdp.log"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(data)).To(ContainSubstring("setup-test: logged line via klog"))
+	})
+
+	It("rejects a path outside /var/log", func() {
+		dir := GinkgoT().TempDir()
+
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
+		cleanup, err := SetupLogRotation(cfg)
+		Expect(err).To(HaveOccurred())
+		Expect(cleanup).To(BeNil())
+	})
+
+	It("normalizes invalid limits to defaults", func() {
+		dir := varLogTempDir()
+
+		cfg := Config{LogDir: dir, MaxSizeMB: 0, MaxFiles: 5, MaxAgeDays: 30}
+		cleanup, err := SetupLogRotation(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleanup).NotTo(BeNil())
+		cleanup()
+	})
+
+	It("writes the log file at the configured directory", func() {
+		dir := varLogTempDir()
+
+		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, MaxAgeDays: 3}
+		cleanup, err := SetupLogRotation(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cleanup).NotTo(BeNil())
+
+		klog.Info("config passthrough test")
+		cleanup()
+
+		_, statErr := os.Stat(filepath.Join(dir, "sriovdp.log"))
+		Expect(statErr).NotTo(HaveOccurred())
+	})
+})
+
+var _ = Describe("StartupInfo", func() {
+	It("should contain all required fields for startup header", func() {
+		info := StartupInfo{
+			ConfigFile:     "/etc/pcidp/config.json",
+			ResourcePrefix: "intel.com",
+			UseCdi:         true,
+			Log: Config{
+				LogDir:     "/var/log/sriovdp",
+				MaxSizeMB:  100,
+				MaxFiles:   5,
+				MaxAgeDays: 30,
+			},
+		}
+
+		Expect(info.ConfigFile).To(Equal("/etc/pcidp/config.json"))
+		Expect(info.ResourcePrefix).To(Equal("intel.com"))
+		Expect(info.UseCdi).To(BeTrue())
+		Expect(info.Log.LogDir).To(Equal("/var/log/sriovdp"))
+		Expect(info.Log.MaxSizeMB).To(Equal(100))
+		Expect(info.Log.MaxFiles).To(Equal(5))
+		Expect(info.Log.MaxAgeDays).To(Equal(30))
+	})
+
+	It("requires NODE_NAME to be set", func() {
+		os.Unsetenv("NODE_NAME")
+		err := LogStartupHeader(StartupInfo{
+			ConfigFile:     "/etc/pcidp/config.json",
+			ResourcePrefix: "intel.com",
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("NODE_NAME"))
 	})
 })

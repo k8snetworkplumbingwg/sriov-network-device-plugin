@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
@@ -46,7 +46,7 @@ func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig,
 
 // Overrides GetDeviceSpecs
 func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
+	klog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
 	devicePool := rp.GetDevicePool()
@@ -93,7 +93,7 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string, device
 						PciAddress:   netDev.GetPciAddr(),
 					}
 				} else {
-					glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
+					klog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
 				}
 			}
 			// either virtio/vDPA case or not able to get a mount path for vhost/vDPA
@@ -122,7 +122,7 @@ func (rp *netResourcePool) StoreDeviceInfoFile(resourceNamePrefix string, device
 			if netDev.IsRdma() {
 				rdmaDevices := utils.GetRdmaProvider().GetRdmaDevicesForPcidev(devInfo.Pci.PciAddress)
 				if len(rdmaDevices) == 0 {
-					glog.Errorf("No RDMA devices available for RDMA capable device: %s", devInfo.Pci.PciAddress)
+					klog.Errorf("No RDMA devices available for RDMA capable device: %s", devInfo.Pci.PciAddress)
 				} else {
 					devInfo.Pci.RdmaDevice = strings.Join(rdmaDevices, ",")
 				}

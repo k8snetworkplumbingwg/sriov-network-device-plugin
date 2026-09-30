@@ -20,8 +20,8 @@ package auxnetdevice
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -51,19 +51,19 @@ func (ap *auxNetDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorInd
 		auxDevs, err := utils.GetSriovnetProvider().GetAuxNetDevicesFromPci(device.Address)
 		if err == nil {
 			if len(auxDevs) == 0 {
-				glog.Warningf("auxnetdevice GetDevices(): no auxiliary devices for PCI %s", device.Address)
+				klog.Warningf("auxnetdevice GetDevices(): no auxiliary devices for PCI %s", device.Address)
 				continue
 			}
 			for _, auxDev := range auxDevs {
 				if newDevice, err := NewAuxNetDevice(device, auxDev, ap.rFactory, rc, selectorIndex); err == nil {
 					newAuxDevices = append(newAuxDevices, newDevice)
 				} else {
-					glog.Warningf("auxnetdevice GetDevices(): error creating new device %s PCI %s: %q",
+					klog.Warningf("auxnetdevice GetDevices(): error creating new device %s PCI %s: %q",
 						auxDev, device.Address, err)
 				}
 			}
 		} else {
-			glog.Warningf("auxNetDevice GetDevices(): error getting auxnetdevices from device %s: %q",
+			klog.Warningf("auxNetDevice GetDevices(): error getting auxnetdevices from device %s: %q",
 				device.Address, err)
 		}
 	}
@@ -74,14 +74,14 @@ func (ap *auxNetDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, devic
 	for _, device := range devices {
 		devClass, err := utils.ParseDeviceID(device.Class.ID)
 		if err != nil {
-			glog.Warningf("auxNetDevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
+			klog.Warningf("auxNetDevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
 		if devClass == int64(deviceCode) {
 			vendorName := utils.NormalizeVendorName(device.Vendor.Name)
 			productName := utils.NormalizeProductName(device.Product.Name)
-			glog.Infof("auxnetdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
+			klog.Infof("auxnetdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
 				device.Class.ID, vendorName, productName)
 			ap.deviceList = append(ap.deviceList, device)
 		}
@@ -148,7 +148,7 @@ func (ap *auxNetDeviceProvider) GetFilteredDevices(devices []types.HostDevice, r
 	// filter by linkTypes list
 	if len(nf.LinkTypes) > 0 {
 		if len(nf.LinkTypes) > 1 {
-			glog.Warningf("Link type selector should have a single value.")
+			klog.Warningf("Link type selector should have a single value.")
 		}
 		if selector, err := rf.GetSelector("linkTypes", nf.LinkTypes); err == nil {
 			filteredDevice = selector.Filter(filteredDevice)
@@ -174,18 +174,18 @@ func (ap *auxNetDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
 	for _, selector := range rc.SelectorObjs {
 		nf, ok := selector.(*types.AuxNetDeviceSelectors)
 		if !ok {
-			glog.Errorf("unable to convert SelectorObj to AuxNetDeviceSelectors")
+			klog.Errorf("unable to convert SelectorObj to AuxNetDeviceSelectors")
 			return false
 		}
 		if len(nf.AuxTypes) == 0 {
-			glog.Errorf("AuxTypes are not specified")
+			klog.Errorf("AuxTypes are not specified")
 			return false
 		}
 		// Check that only supported auxiliary device types are specified
 		// TODO ATM only SFs are supported; review this in the future if new types are added
 		for _, auxType := range nf.AuxTypes {
 			if auxType != "sf" {
-				glog.Errorf("Only \"sf\" auxiliary device type currently supported")
+				klog.Errorf("Only \"sf\" auxiliary device type currently supported")
 				return false
 			}
 		}

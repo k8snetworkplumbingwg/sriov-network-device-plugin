@@ -54,6 +54,11 @@ spec:
         - --log_dir=/var/log/sriovdp
         - --log-level=10
         - --use-cdi
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
         securityContext:
           privileged: false
           capabilities:

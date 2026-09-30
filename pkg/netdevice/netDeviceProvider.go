@@ -17,8 +17,8 @@ package netdevice
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -47,7 +47,7 @@ func (np *netDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorIndex 
 		if newDevice, err := NewPciNetDevice(device, np.rFactory, rc, selectorIndex); err == nil {
 			newHostDevices = append(newHostDevices, newDevice)
 		} else {
-			glog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
+			klog.Errorf("netdevice GetDevices(): error creating new device: %q", err)
 		}
 	}
 	return newHostDevices
@@ -57,14 +57,14 @@ func (np *netDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, deviceCo
 	for _, device := range devices {
 		devClass, err := utils.ParseDeviceID(device.Class.ID)
 		if err != nil {
-			glog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
+			klog.Warningf("netdevice AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
 		if devClass == int64(deviceCode) {
 			vendorName := utils.NormalizeVendorName(device.Vendor.Name)
 			productName := utils.NormalizeProductName(device.Product.Name)
-			glog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
+			klog.Infof("netdevice AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
 				device.Class.ID, vendorName, productName)
 			// exclude netdevice in-use in host
 			if isDefaultRoute, _ := utils.HasDefaultRoute(device.Address); !isDefaultRoute {
@@ -118,7 +118,7 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 
 	// filter by linkTypes list
 	if len(nf.LinkTypes) > 1 {
-		glog.Warningf("Link type selector should have a single value.")
+		klog.Warningf("Link type selector should have a single value.")
 	}
 	filteredDevice = rf.FilterBySelector("linkTypes", nf.LinkTypes, filteredDevice)
 
@@ -162,11 +162,11 @@ func (np *netDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
 	for _, selector := range rc.SelectorObjs {
 		nf, ok := selector.(*types.NetDeviceSelectors)
 		if !ok {
-			glog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
+			klog.Errorf("unable to convert SelectorObj to NetDeviceSelectors")
 			return false
 		}
 		if nf.IsRdma && nf.VdpaType != "" {
-			glog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
+			klog.Errorf("invalid config: VdpaType and IsRdma are mutually exclusive options")
 			return false
 		}
 	}
