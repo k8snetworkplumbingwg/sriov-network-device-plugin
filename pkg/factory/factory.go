@@ -166,6 +166,10 @@ func (rf *resourceFactory) GetRdmaSpec(dt types.DeviceType, deviceID string) typ
 	return devices.NewRdmaSpec(dt, deviceID)
 }
 
+func (rf *resourceFactory) GetCxiSpec(pciAddr string) types.CxiSpec {
+	return devices.NewCxiSpec(pciAddr)
+}
+
 func (rf *resourceFactory) GetVdpaDevice(pciAddr string) types.VdpaDevice {
 	return devices.GetVdpaDevice(pciAddr)
 }

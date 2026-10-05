@@ -365,6 +365,24 @@ func (_m *PciNetDevice) GetVendor() string {
 	return r0
 }
 
+// IsCxi provides a mock function with no fields
+func (_m *PciNetDevice) IsCxi() bool {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for IsCxi")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // IsRdma provides a mock function with no fields
 func (_m *PciNetDevice) IsRdma() bool {
 	ret := _m.Called()

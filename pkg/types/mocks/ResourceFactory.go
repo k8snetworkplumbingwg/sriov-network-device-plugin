@@ -32,6 +32,26 @@ func (_m *ResourceFactory) FilterBySelector(_a0 string, _a1 []string, _a2 []type
 	return r0
 }
 
+// GetCxiSpec provides a mock function with given fields: _a0
+func (_m *ResourceFactory) GetCxiSpec(_a0 string) types.CxiSpec {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCxiSpec")
+	}
+
+	var r0 types.CxiSpec
+	if rf, ok := ret.Get(0).(func(string) types.CxiSpec); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.CxiSpec)
+		}
+	}
+
+	return r0
+}
+
 // GetDefaultInfoProvider provides a mock function with given fields: _a0, _a1
 func (_m *ResourceFactory) GetDefaultInfoProvider(_a0 string, _a1 string) []types.DeviceInfoProvider {
 	ret := _m.Called(_a0, _a1)
