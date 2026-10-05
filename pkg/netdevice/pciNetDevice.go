@@ -31,6 +31,7 @@ type pciNetDevice struct {
 	devices.GenNetDevice
 	vdpaDev types.VdpaDevice
 	pKey    string
+	isCxi   bool
 }
 
 // NewPciNetDevice returns an instance of PciNetDevice interface
@@ -52,6 +53,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 	}
 
 	isRdma := false
+	isCxi := false
 	ok := false
 	if selectorIndex >= 0 && selectorIndex < len(rc.SelectorObjs) {
 		nf, ok = rc.SelectorObjs[selectorIndex].(*types.NetDeviceSelectors)
@@ -72,6 +74,14 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
 			} else {
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
+			}
+		}
+		if nf.IsCxi {
+			if utils.HasCxiDevice(dev.Address) {
+				isCxi = true
+				infoProviders = append(infoProviders, infoprovider.NewCxiInfoProvider(dev.Address))
+			} else {
+				glog.Warningf("CXI device for %s not found. Is the cxi driver loaded?", dev.Address)
 			}
 		}
 		if nf.NeedVhostNet {
@@ -113,6 +123,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 		GenNetDevice: *netDev,
 		vdpaDev:      vdpaDev,
 		pKey:         pKey,
+		isCxi:        isCxi,
 	}, nil
 }
 
@@ -151,4 +162,8 @@ func (nd *pciNetDevice) GetVdpaDevice() types.VdpaDevice {
 
 func (nd *pciNetDevice) GetPKey() string {
 	return nd.pKey
+}
+
+func (nd *pciNetDevice) IsCxi() bool {
+	return nd.isCxi
 }
