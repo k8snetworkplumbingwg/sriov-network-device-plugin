@@ -39,6 +39,15 @@ data:
                     "devices": ["1750"],
                     "drivers": ["bnxt_en"]
                 }
+            },
+            {
+                "resourceName": "cxi",
+                "resourcePrefix": "hpe.com",
+                "selectors": {
+                    "vendors": ["1590"],
+                    "devices": ["0372"],
+                    "isCxi": true
+                }
             }
         ]
     }
