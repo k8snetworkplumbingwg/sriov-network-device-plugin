@@ -6,13 +6,13 @@ require (
 	github.com/Mellanox/rdmamap v1.2.0
 	github.com/container-orchestrated-devices/container-device-interface v0.5.4
 	github.com/golang/glog v1.2.5
-	github.com/jaypipes/ghw v0.25.0
+	github.com/jaypipes/ghw v0.26.0
 	github.com/jaypipes/pcidb v1.1.1
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/k8snetworkplumbingwg/sriovnet v1.3.0
 	github.com/onsi/ginkgo/v2 v2.33.0
-	github.com/onsi/gomega v1.43.1
+	github.com/onsi/gomega v1.44.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/vishvananda/netlink v1.3.2-0.20251101063711-6e61cd407d1d
