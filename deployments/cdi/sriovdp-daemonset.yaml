@@ -27,6 +27,7 @@ spec:
     spec:
       hostNetwork: true
       serviceAccountName: sriov-device-plugin
+      automountServiceAccountToken: false
       tolerations:
       - key: node-role.kubernetes.io/master
         operator: Exists
@@ -58,18 +59,14 @@ spec:
           privileged: false
           capabilities:
             add:
-              - BPF
-              - IPC_LOCK
               - NET_ADMIN
-              - NET_RAW
-              - SYS_ADMIN
-              - SYS_PTRACE
-              - SYS_RAWIO
             drop:
               - ALL
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: false
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           requests:
             cpu: "250m"
@@ -85,13 +82,16 @@ spec:
         - name: plugins-registry
           mountPath: /var/lib/kubelet/plugins_registry
         - name: log
-          mountPath: /var/log
+          mountPath: /var/log/sriovdp
         - name: config-volume
           mountPath: /etc/pcidp
         - name: device-info
           mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
         - name: dynamic-cdi
           mountPath: /var/run/cdi
+        - name: sys
+          mountPath: /sys
+          readOnly: true
       volumes:
       - name: tmp
         emptyDir:
@@ -104,7 +104,8 @@ spec:
           path: /var/lib/kubelet/plugins_registry
       - name: log
         hostPath:
-          path: /var/log
+          path: /var/log/sriovdp
+          type: DirectoryOrCreate
       - name: device-info
         hostPath:
           path: /var/run/k8s.cni.cncf.io/devinfo/dp
@@ -119,3 +120,7 @@ spec:
         hostPath:
           path: /var/run/cdi
           type: DirectoryOrCreate
+      - name: sys
+        hostPath:
+          path: /sys
+          type: Directory
