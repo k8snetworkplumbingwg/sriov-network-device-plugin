@@ -20,7 +20,7 @@ package infoprovider
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -52,7 +52,7 @@ func (vip *vdpaInfoProvider) GetName() string {
 // GetDeviceSpecs returns the DeviceSpec slice
 func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if healthy, err := vip.isHealthy(); !healthy {
-		glog.Errorf("GetDeviceSpecs(): vDPA is required in the configuration but device does not have a healthy vdpa device: %s",
+		klog.Errorf("GetDeviceSpecs(): vDPA is required in the configuration but device does not have a healthy vdpa device: %s",
 			err)
 		return nil
 	}
@@ -62,7 +62,7 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if vip.vdpaType == types.VdpaVhostType {
 		vdpaPath, err := vip.dev.GetPath()
 		if err != nil {
-			glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
+			klog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
 			return nil
 		}
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{

@@ -3,8 +3,8 @@ package utils
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	vdpa "github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
+	"k8s.io/klog/v2"
 )
 
 // VdpaProvider is a wrapper type over go-vdpa library
@@ -39,7 +39,7 @@ func (defaultVdpaProvider) GetVdpaDeviceByPci(pciAddr string) (vdpa.VdpaDevice, 
 		return nil, fmt.Errorf("no vdpa device associated to pciAddress %s", pciAddr)
 	}
 	if numVdpaDevices > 1 {
-		glog.Infof("More than one vDPA device found for pciAddress %s, returning the first one", pciAddr)
+		klog.Infof("More than one vDPA device found for pciAddress %s, returning the first one", pciAddr)
 	}
 	return vdpaDevices[0], nil
 }

@@ -20,7 +20,7 @@ package devices
 import (
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -49,7 +49,7 @@ func NewGenNetDevice(deviceID string, dt types.DeviceType, isRdma bool) (*GenNet
 	switch dt {
 	case types.NetDeviceType:
 		if pfName, err = utils.GetPfName(deviceID); err != nil {
-			glog.Warningf("unable to get PF name %q", err.Error())
+			klog.Warningf("unable to get PF name %q", err.Error())
 		}
 		if pfAddr, err = utils.GetPfAddr(deviceID); err != nil {
 			return nil, err

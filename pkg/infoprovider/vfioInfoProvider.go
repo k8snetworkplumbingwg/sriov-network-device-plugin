@@ -15,7 +15,7 @@
 package infoprovider
 
 import (
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -55,7 +55,7 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 
 	vfioDevHost, vfioDevContainer, err := utils.GetVFIODeviceFile(rp.pciAddr)
 	if err != nil {
-		glog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
+		klog.Errorf("GetDeviceSpecs(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
 	} else {
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      vfioDevHost,
@@ -73,7 +73,7 @@ func (rp *vfioInfoProvider) GetEnvVal() types.AdditionalInfo {
 
 	_, vfioDevContainer, err := utils.GetVFIODeviceFile(rp.pciAddr)
 	if err != nil {
-		glog.Errorf("GetEnvVal(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
+		klog.Errorf("GetEnvVal(): error getting vfio device file for device: %s, %s", rp.pciAddr, err.Error())
 	} else {
 		envs["dev-mount"] = vfioDevContainer
 	}

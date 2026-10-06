@@ -20,7 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
+
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/logging"
 )
 
 const (
@@ -35,60 +37,98 @@ func flagInit(cp *cliParams) {
 		"resource name prefix used for K8s extended resource")
 	flag.BoolVar(&cp.useCdi, "use-cdi", false,
 		"Use Container Device Interface to expose devices in containers")
+	flag.IntVar(&cp.logMaxSize, "log-max-size", logging.DefaultMaxSizeMB,
+		"Maximum size in MB of a log file before rotation")
+	flag.IntVar(&cp.logMaxFiles, "log-max-files", logging.DefaultMaxFiles,
+		"Maximum number of old rotated log files to retain")
+	flag.IntVar(&cp.logMaxAge, "log-max-age", logging.DefaultMaxAge,
+		"Maximum number of days to retain old log files")
+}
+
+func resolveLogDir() string {
+	if f := flag.Lookup("log_dir"); f != nil {
+		if v := f.Value.String(); v != "" {
+			return v
+		}
+	}
+	return logging.DefaultLogDir
 }
 
 func main() {
 	cp := &cliParams{}
+	klog.InitFlags(nil)
 	flagInit(cp)
 	flag.Parse()
+
+	logCfg := logging.Config{
+		LogDir:     resolveLogDir(),
+		MaxSizeMB:  cp.logMaxSize,
+		MaxFiles:   cp.logMaxFiles,
+		MaxAgeDays: cp.logMaxAge,
+	}
+	if cleanupLog := logging.SetupLogRotation(logCfg); cleanupLog != nil {
+		defer cleanupLog()
+	}
+	defer klog.Flush()
+
+	logging.LogStartupHeader(logging.StartupInfo{
+		ConfigFile:     cp.configFile,
+		ResourcePrefix: cp.resourcePrefix,
+		UseCdi:         cp.useCdi,
+		LogDir:         logCfg.LogDir,
+		LogMaxSizeMB:   logCfg.MaxSizeMB,
+		LogMaxFiles:    logCfg.MaxFiles,
+		LogMaxAgeDays:  logCfg.MaxAgeDays,
+	})
+
 	rm := newResourceManager(cp)
 
-	glog.Infof("resource manager reading configs")
+	klog.Infof("resource manager reading configs")
 	if err := rm.readConfig(); err != nil {
-		glog.Errorf("error getting resources from file %v", err)
+		klog.Errorf("error getting resources from file %v", err)
 		return
 	}
 
 	if len(rm.configList) < 1 {
-		glog.Errorf("no resource configuration; exiting")
+		klog.Errorf("no resource configuration; exiting")
 		return // No config found
 	}
 
 	// Validate configs
 	if !rm.validConfigs() {
-		glog.Fatalf("Exiting.. one or more invalid configuration(s) given")
+		klog.Fatalf("Exiting.. one or more invalid configuration(s) given")
 		return
 	}
-	glog.Infof("Discovering host devices")
+	klog.Infof("Discovering host devices")
 	if err := rm.discoverHostDevices(); err != nil {
-		glog.Errorf("error discovering host devices%v", err)
+		klog.Errorf("error discovering host devices%v", err)
 		return
 	}
 
-	glog.Infof("Initializing resource servers")
+	klog.Infof("Initializing resource servers")
 	if err := rm.initServers(); err != nil {
-		glog.Errorf("error initializing resource servers %v", err)
+		klog.Errorf("error initializing resource servers %v", err)
 		return
 	}
 
-	glog.Infof("Starting all servers...")
+	klog.Infof("Starting all servers...")
 	if err := rm.startAllServers(); err != nil {
-		glog.Errorf("error starting resource servers %v\n", err)
+		klog.Errorf("error starting resource servers %v\n", err)
 		return
 	}
-	glog.Infof("All servers started.")
-	glog.Infof("Listening for term signals")
+	klog.Infof("All servers started.")
+	klog.Infof("Listening for term signals")
 	// respond to syscalls for termination
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// Catch termination signals
 	sig := <-sigCh
-	glog.Infof("Received signal \"%v\", shutting down.", sig)
+	klog.Infof("Received signal \"%v\", shutting down.", sig)
 	if err := rm.stopAllServers(); err != nil {
-		glog.Errorf("stopping servers produced error: %s", err.Error())
+		klog.Errorf("stopping servers produced error: %s", err.Error())
 	}
 	if err := rm.cleanupCDISpecs(); err != nil {
-		glog.Errorf("cleaning up CDI Specs produced error: %s", err.Error())
+		klog.Errorf("cleaning up CDI Specs produced error: %s", err.Error())
 	}
 }

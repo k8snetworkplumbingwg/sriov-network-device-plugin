@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -83,7 +83,7 @@ func (rp *ResourcePoolImpl) Probe() bool {
 
 // GetDeviceSpecs returns list of plugin API device specs for a list of device IDs
 func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
+	klog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
 	// Add vfio group specific devices
@@ -105,7 +105,7 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 // environment variable key base on PCIDEVICE_<prefix>_<resource-name>_INFO that contains info from all the
 // requested info providers for every pci address allocated
 func (rp *ResourcePoolImpl) GetEnvs(prefix string, deviceIDs []string) (map[string]string, error) {
-	glog.Infof("GetEnvs(): for devices: %v", deviceIDs)
+	klog.Infof("GetEnvs(): for devices: %v", deviceIDs)
 	devInfos := make(map[string]map[string]types.AdditionalInfo, 0)
 	IDList := []string{}
 	// Consolidates all ExtraEnvVariables
@@ -138,7 +138,7 @@ func (rp *ResourcePoolImpl) GetEnvs(prefix string, deviceIDs []string) (map[stri
 
 // GetMounts returns a list of Mount for device IDs
 func (rp *ResourcePoolImpl) GetMounts(deviceIDs []string) []*pluginapi.Mount {
-	glog.Infof("GetMounts(): for devices: %v", deviceIDs)
+	klog.Infof("GetMounts(): for devices: %v", deviceIDs)
 	devMounts := make([]*pluginapi.Mount, 0)
 
 	for _, id := range deviceIDs {

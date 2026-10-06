@@ -20,7 +20,7 @@ package infoprovider
 import (
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -49,12 +49,12 @@ func (ip *rdmaInfoProvider) GetName() string {
 
 func (ip *rdmaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if !ip.rdmaSpec.IsRdma() {
-		glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device is not rdma device")
+		klog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device is not rdma device")
 		return nil
 	}
 
 	devsSpec := ip.rdmaSpec.GetRdmaDeviceSpec()
-	glog.Infof("GetDeviceSpecs(): GetRdmaDeviceSpec returned %v", devsSpec)
+	klog.Infof("GetDeviceSpecs(): GetRdmaDeviceSpec returned %v", devsSpec)
 	return devsSpec
 }
 

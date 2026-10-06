@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -37,6 +37,9 @@ type cliParams struct {
 	configFile     string
 	resourcePrefix string
 	useCdi         bool
+	logMaxSize     int
+	logMaxFiles    int
+	logMaxAge      int
 }
 
 // resourceManager manages resources for SR-IOV Network Device Plugin binaries
@@ -54,9 +57,9 @@ type resourceManager struct {
 func newResourceManager(cp *cliParams) *resourceManager {
 	pluginWatchMode := utils.DetectPluginWatchMode(types.SockDir)
 	if pluginWatchMode {
-		glog.Infof("Using Kubelet Plugin Registry Mode")
+		klog.Infof("Using Kubelet Plugin Registry Mode")
 	} else {
-		glog.Infof("Using Deprecated Device Plugin Registry Path")
+		klog.Infof("Using Deprecated Device Plugin Registry Path")
 	}
 
 	rf := factory.NewResourceFactory(cp.resourcePrefix, socketSuffix, pluginWatchMode, cp.useCdi)
@@ -83,7 +86,7 @@ func (rm *resourceManager) readConfig() error {
 		return fmt.Errorf("error reading file %s, %v", rm.configFile, err)
 	}
 
-	glog.Infof("raw ResourceList: %s", rawBytes)
+	klog.Infof("raw ResourceList: %s", rawBytes)
 	if err = json.Unmarshal(rawBytes, resources); err != nil {
 		return fmt.Errorf("error unmarshalling raw bytes %v please make sure the config is in json format", err)
 	}
@@ -99,30 +102,30 @@ func (rm *resourceManager) readConfig() error {
 		if conf.SelectorObjs, err = rm.rFactory.GetDeviceFilter(conf); err == nil {
 			rm.configList = append(rm.configList, &resources.ResourceList[i])
 		} else {
-			glog.Warningf("unable to get SelectorObj from selectors list:'%s' for deviceType: %s error: %s",
+			klog.Warningf("unable to get SelectorObj from selectors list:'%s' for deviceType: %s error: %s",
 				*conf.Selectors, conf.DeviceType, err)
 		}
 	}
-	glog.Infof("unmarshalled ResourceList: %+v", resources.ResourceList)
+	klog.Infof("unmarshalled ResourceList: %+v", resources.ResourceList)
 	return nil
 }
 
 func (rm *resourceManager) initServers() error {
 	err := rm.cleanupCDISpecs()
 	if err != nil {
-		glog.Errorf("Unable to delete CDI specs: %v", err)
+		klog.Errorf("Unable to delete CDI specs: %v", err)
 		return err
 	}
 	rf := rm.rFactory
-	glog.Infof("number of config: %d\n", len(rm.configList))
+	klog.Infof("number of config: %d\n", len(rm.configList))
 	deviceAllocated := make(map[string]bool)
 	for _, rc := range rm.configList {
 		// Create new ResourcePool
-		glog.Infof("Creating new ResourcePool: %s", rc.ResourceName)
-		glog.Infof("DeviceType: %+v", rc.DeviceType)
+		klog.Infof("Creating new ResourcePool: %s", rc.ResourceName)
+		klog.Infof("DeviceType: %+v", rc.DeviceType)
 		dp, ok := rm.deviceProviders[rc.DeviceType]
 		if !ok {
-			glog.Infof("Unable to get device provider from deviceType: %s", rc.DeviceType)
+			klog.Infof("Unable to get device provider from deviceType: %s", rc.DeviceType)
 			return fmt.Errorf("error getting device provider")
 		}
 
@@ -132,28 +135,28 @@ func (rm *resourceManager) initServers() error {
 			devices := dp.GetDevices(rc, index)
 			partialFilteredDevices, err := dp.GetFilteredDevices(devices, rc, index)
 			if err != nil {
-				glog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
+				klog.Errorf("initServers(): error getting filtered devices for config %+v: %q", rc, err)
 			}
 			partialFilteredDevices = rm.excludeAllocatedDevices(partialFilteredDevices, deviceAllocated)
-			glog.Infof("initServers(): selector index %d will register %d devices", index, len(partialFilteredDevices))
+			klog.Infof("initServers(): selector index %d will register %d devices", index, len(partialFilteredDevices))
 			filteredDevices = append(filteredDevices, partialFilteredDevices...)
 		}
 		if len(filteredDevices) < 1 {
-			glog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
+			klog.Infof("no devices in device pool, skipping creating resource server for %s", rc.ResourceName)
 			continue
 		}
 		rPool, err := rm.rFactory.GetResourcePool(rc, filteredDevices)
 		if err != nil {
-			glog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
+			klog.Errorf("initServers(): error creating ResourcePool with config %+v: %q", rc, err)
 			return err
 		}
 		// Create ResourceServer with this ResourcePool
 		s, err := rf.GetResourceServer(rPool)
 		if err != nil {
-			glog.Errorf("initServers(): error creating ResourceServer: %v", err)
+			klog.Errorf("initServers(): error creating ResourceServer: %v", err)
 			return err
 		}
-		glog.Infof("New resource server is created for %s ResourcePool", rc.ResourceName)
+		klog.Infof("New resource server is created for %s ResourcePool", rc.ResourceName)
 		rm.resourceServers = append(rm.resourceServers, s)
 	}
 	return nil
@@ -166,7 +169,7 @@ func (rm *resourceManager) excludeAllocatedDevices(filteredDevices []types.HostD
 			deviceAllocated[dev.GetDeviceID()] = true
 			filteredDevicesTemp = append(filteredDevicesTemp, dev)
 		} else {
-			glog.Warningf("Cannot add device [%s]. Already allocated.", dev.GetDeviceID())
+			klog.Warningf("Cannot add device [%s]. Already allocated.", dev.GetDeviceID())
 		}
 	}
 	return filteredDevicesTemp
@@ -202,7 +205,7 @@ func (rm *resourceManager) validConfigs() bool {
 	for _, conf := range rm.configList {
 		// check if name contains acceptable characters
 		if !utils.ValidResourceName(conf.ResourceName) {
-			glog.Errorf("resource name \"%s\" contains invalid characters", conf.ResourceName)
+			klog.Errorf("resource name \"%s\" contains invalid characters", conf.ResourceName)
 			return false
 		}
 
@@ -214,18 +217,18 @@ func (rm *resourceManager) validConfigs() bool {
 
 		resourceName := resourcePrefix + "/" + conf.ResourceName
 
-		glog.Infof("validating resource name \"%s\"", resourceName)
+		klog.Infof("validating resource name \"%s\"", resourceName)
 
 		// ensure that resource name is unique
 		if _, exists := resourceNames[resourceName]; exists {
 			// resource name already exist
-			glog.Errorf("resource name \"%s\" already exists", resourceName)
+			klog.Errorf("resource name \"%s\" already exists", resourceName)
 			return false
 		}
 
 		// Check if the DeviceType is valid
 		if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
-			glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
+			klog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
 			return false
 		}
 
@@ -247,13 +250,13 @@ func (rm *resourceManager) discoverHostDevices() error {
 	}
 
 	if len(pci.Devices) == 0 {
-		glog.Warningf("discoverHostDevices(): no PCI network device found")
+		klog.Warningf("discoverHostDevices(): no PCI network device found")
 	}
 
 	for k, v := range types.SupportedDevices {
 		if dp, ok := rm.deviceProviders[k]; ok {
 			if err := dp.AddTargetDevices(pci.Devices, v); err != nil {
-				glog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
+				klog.Errorf("adding supported device identifier '%d' to device provider failed: %s", v, err.Error())
 			}
 		}
 	}

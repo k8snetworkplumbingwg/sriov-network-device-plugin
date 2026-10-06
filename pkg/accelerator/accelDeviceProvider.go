@@ -17,8 +17,8 @@ package accelerator
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
@@ -47,7 +47,7 @@ func (ap *accelDeviceProvider) GetDevices(rc *types.ResourceConfig, selectorInde
 		if newDevice, err := NewAccelDevice(device, ap.rFactory, rc); err == nil {
 			newHostDevices = append(newHostDevices, newDevice)
 		} else {
-			glog.Errorf("accelerator GetDevices() error creating new device: %q", err)
+			klog.Errorf("accelerator GetDevices() error creating new device: %q", err)
 		}
 	}
 	return newHostDevices
@@ -57,14 +57,14 @@ func (ap *accelDeviceProvider) AddTargetDevices(devices []*ghw.PCIDevice, device
 	for _, device := range devices {
 		devClass, err := utils.ParseDeviceID(device.Class.ID)
 		if err != nil {
-			glog.Warningf("accelerator AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
+			klog.Warningf("accelerator AddTargetDevices(): unable to parse device class for device %+v %q", device, err)
 			continue
 		}
 
 		if devClass == int64(deviceCode) {
 			vendorName := utils.NormalizeVendorName(device.Vendor.Name)
 			productName := utils.NormalizeProductName(device.Product.Name)
-			glog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
+			klog.Infof("accelerator AddTargetDevices(): device found: %-12s\t%-12s\t%-20s\t%-40s", device.Address,
 				device.Class.ID, vendorName, productName)
 
 			ap.deviceList = append(ap.deviceList, device)
@@ -122,7 +122,7 @@ func (ap *accelDeviceProvider) ValidConfig(rc *types.ResourceConfig) bool {
 	for _, selector := range rc.SelectorObjs {
 		_, ok := selector.(*types.AccelDeviceSelectors)
 		if !ok {
-			glog.Errorf("unable to convert SelectorObjs to AccelDeviceSelectors")
+			klog.Errorf("unable to convert SelectorObjs to AccelDeviceSelectors")
 			return false
 		}
 	}
