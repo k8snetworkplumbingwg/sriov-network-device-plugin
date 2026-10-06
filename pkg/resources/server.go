@@ -140,7 +140,7 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 
 		if rs.useCdi {
 			containerResp.Annotations, err = rs.cdi.CreateContainerAnnotations(
-				container.DevicesIds, rs.resourceNamePrefix, rs.resourcePool.GetCDIName())
+				container.DevicesIds, rs.resourceNamePrefix, rs.resourcePool.GetCDIName(), rs.resourcePool.GetResourceName())
 			if err != nil {
 				return nil, fmt.Errorf("can't create container annotation: %s", err)
 			}
