@@ -18,6 +18,9 @@
 package auxnetdevice
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
@@ -26,7 +29,8 @@ import (
 )
 
 const (
-	auxPoolType = "net-sf"
+	auxPoolType           = "net-sf"
+	deviceHealthVerbosity = 4
 )
 
 type auxNetResourcePool struct {
@@ -68,4 +72,36 @@ func (ap *auxNetResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.De
 // GetCDIKind returns device kind for CDI spec
 func (ap *auxNetResourcePool) GetCDIName() string {
 	return auxPoolType
+}
+
+// UpdateDeviceProbeStatus updates device health based on availability checks
+func (ap *auxNetResourcePool) UpdateDeviceProbeStatus() error {
+	devicePool := ap.GetDevicePool()
+	for deviceID, dev := range devicePool {
+		if dev == nil {
+			continue
+		}
+		apiDev := dev.GetAPIDevice()
+		if apiDev == nil {
+			continue
+		}
+		if !ap.isDeviceHealthy(deviceID) {
+			apiDev.Health = pluginapi.Unhealthy
+		} else {
+			apiDev.Health = pluginapi.Healthy
+		}
+	}
+	return nil
+}
+
+// isDeviceHealthy checks if an auxiliary device is healthy
+func (ap *auxNetResourcePool) isDeviceHealthy(deviceID string) bool {
+	// Check if device file exists in /sys/bus/pci/devices
+	sysPath := fmt.Sprintf("/sys/bus/pci/devices/%s", deviceID)
+	if _, err := os.Stat(sysPath); err != nil {
+		glog.V(deviceHealthVerbosity).Infof("Device %s not found in sysfs: %v", deviceID, err)
+		return false
+	}
+	// Device exists and is accessible
+	return true
 }

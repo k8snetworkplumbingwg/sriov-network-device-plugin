@@ -16,6 +16,7 @@ package netdevice
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -25,6 +26,10 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
+)
+
+const (
+	deviceHealthVerbosity = 4
 )
 
 type netResourcePool struct {
@@ -153,4 +158,36 @@ func (rp *netResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error 
 		return fmt.Errorf("%s", strings.Join(errors, ","))
 	}
 	return nil
+}
+
+// UpdateDeviceProbeStatus updates device health based on availability checks
+func (rp *netResourcePool) UpdateDeviceProbeStatus() error {
+	devicePool := rp.GetDevicePool()
+	for deviceID, dev := range devicePool {
+		if dev == nil {
+			continue
+		}
+		apiDev := dev.GetAPIDevice()
+		if apiDev == nil {
+			continue
+		}
+		if !rp.isDeviceHealthy(deviceID) {
+			apiDev.Health = pluginapi.Unhealthy
+		} else {
+			apiDev.Health = pluginapi.Healthy
+		}
+	}
+	return nil
+}
+
+// isDeviceHealthy checks if a network device is healthy
+func (rp *netResourcePool) isDeviceHealthy(deviceID string) bool {
+	// Check if device file exists in /sys/bus/pci/devices
+	sysPath := fmt.Sprintf("/sys/bus/pci/devices/%s", deviceID)
+	if _, err := os.Stat(sysPath); err != nil {
+		glog.V(deviceHealthVerbosity).Infof("Device %s not found in sysfs: %v", deviceID, err)
+		return false
+	}
+	// Device exists and is accessible
+	return true
 }

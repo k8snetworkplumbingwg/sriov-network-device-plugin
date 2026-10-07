@@ -167,6 +167,8 @@ type ResourceServer interface {
 	Init() error
 	// Watch watches for socket file deletion and restart server if needed
 	Watch()
+	// SetHealthCheckCallback sets callback for device health updates
+	SetHealthCheckCallback(callback func(map[string]*pluginapi.Device)) error
 }
 
 // ResourceFactory is an interface to get instances of ResourcePool and ResourceServer
@@ -196,6 +198,9 @@ type ResourcePool interface {
 	StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error
 	CleanDeviceInfoFile(resourceNamePrefix string) error
 	GetCDIName() string
+	// Device health check methods
+	UpdateDeviceProbeStatus() error
+	GetDevicesForHealthCheck() map[string]*pluginapi.Device
 }
 
 // DeviceProvider provides interface for device discovery
