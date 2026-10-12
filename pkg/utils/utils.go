@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -80,7 +80,7 @@ func GetPfName(pciAddr string) (string, error) {
 		// If device doesn't support eswitch mode query or doesn't have sriov enabled,
 		// fall back to the default implementation
 		if err == nil || strings.Contains(strings.ToLower(err.Error()), "error getting devlink device attributes for net device") {
-			glog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
+			klog.Infof("Devlink query for eswitch mode is not supported for device %s. %v", pciAddr, err)
 		} else {
 			return "", err
 		}
@@ -498,12 +498,12 @@ func HasDefaultRoute(pciAddr string) (bool, error) {
 		for _, ifName := range ifNames {
 			routes, err := GetNetlinkProvider().GetIPv4RouteList(ifName) // IPv6 routes: all interface has at least one link local route entry
 			if err != nil {
-				glog.Errorf("failed to get routes for interface: %s, %q", ifName, err)
+				klog.Errorf("failed to get routes for interface: %s, %q", ifName, err)
 				continue
 			}
 			for _, r := range routes {
 				if r.Dst == nil {
-					glog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
+					klog.Infof("excluding interface %s:  default route found: %+v", ifName, r)
 					return true, nil
 				}
 			}
