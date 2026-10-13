@@ -18,10 +18,13 @@
 package cdi_test
 
 import (
+	"strings"
 	"testing"
 
+	cdilib "github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
 )
@@ -36,12 +39,28 @@ var _ = Describe("Cdi", func() {
 		It("should return container annotation", func() {
 			deviceId := "0000:00:00.1"
 			cdi := cdiPkg.New()
-			annotations, err := cdi.CreateContainerAnnotations([]string{deviceId}, "example.com", "net")
+			annotations, err := cdi.CreateContainerAnnotations([]string{deviceId}, "example.com", "net", "pool")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(annotations).To(HaveLen(1))
-			annoKey := "cdi.k8s.io/example.com_net"
+			_, devices, err := cdilib.ParseAnnotations(annotations)
+			Expect(err).NotTo(HaveOccurred())
 			annoVal := "example.com/net=0000:00:00.1"
-			Expect(annotations[annoKey]).To(Equal(annoVal))
+			Expect(devices).To(Equal([]string{annoVal}))
+		})
+		It("supports long resource names with stable, valid annotation keys", func() {
+			cdi := cdiPkg.New()
+			prefix := strings.Repeat("a", 63) + ".example.com"
+			name := strings.Repeat("b", 63)
+			first, err := cdi.CreateContainerAnnotations([]string{"0000:00:00.1"}, prefix, "net-pci", name)
+			Expect(err).NotTo(HaveOccurred())
+			second, err := cdi.CreateContainerAnnotations([]string{"0000:00:00.2"}, prefix, "net-pci", name)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(first).To(HaveLen(1))
+			Expect(second).To(HaveLen(1))
+			for key := range first {
+				Expect(validation.IsQualifiedName(key)).To(BeEmpty())
+				Expect(second).To(HaveKey(key))
+			}
 		})
 	})
 })

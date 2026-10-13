@@ -48,9 +48,9 @@ func (_m *MockCDI) CreateCDISpecForPool(resourcePrefix string, rPool types.Resou
 	return r0
 }
 
-// CreateContainerAnnotations provides a mock function with given fields: devicesIDs, resourcePrefix, resourceKind
-func (_m *MockCDI) CreateContainerAnnotations(devicesIDs []string, resourcePrefix string, resourceKind string) (map[string]string, error) {
-	ret := _m.Called(devicesIDs, resourcePrefix, resourceKind)
+// CreateContainerAnnotations provides a mock function with given fields: devicesIDs, resourcePrefix, resourceKind, resourceName
+func (_m *MockCDI) CreateContainerAnnotations(devicesIDs []string, resourcePrefix string, resourceKind string, resourceName string) (map[string]string, error) {
+	ret := _m.Called(devicesIDs, resourcePrefix, resourceKind, resourceName)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateContainerAnnotations")
@@ -58,19 +58,19 @@ func (_m *MockCDI) CreateContainerAnnotations(devicesIDs []string, resourcePrefi
 
 	var r0 map[string]string
 	var r1 error
-	if rf, ok := ret.Get(0).(func([]string, string, string) (map[string]string, error)); ok {
-		return rf(devicesIDs, resourcePrefix, resourceKind)
+	if rf, ok := ret.Get(0).(func([]string, string, string, string) (map[string]string, error)); ok {
+		return rf(devicesIDs, resourcePrefix, resourceKind, resourceName)
 	}
-	if rf, ok := ret.Get(0).(func([]string, string, string) map[string]string); ok {
-		r0 = rf(devicesIDs, resourcePrefix, resourceKind)
+	if rf, ok := ret.Get(0).(func([]string, string, string, string) map[string]string); ok {
+		r0 = rf(devicesIDs, resourcePrefix, resourceKind, resourceName)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func([]string, string, string) error); ok {
-		r1 = rf(devicesIDs, resourcePrefix, resourceKind)
+	if rf, ok := ret.Get(1).(func([]string, string, string, string) error); ok {
+		r1 = rf(devicesIDs, resourcePrefix, resourceKind, resourceName)
 	} else {
 		r1 = ret.Error(1)
 	}

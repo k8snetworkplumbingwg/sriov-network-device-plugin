@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	cdilib "github.com/container-orchestrated-devices/container-device-interface/pkg/cdi"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -293,6 +294,44 @@ var _ = Describe("Server", func() {
 		),
 		Entry("empty AllocateRequest", &pluginapi.AllocateRequest{}, 0, false),
 	)
+	It("preserves CDI devices when allocations from multiple resource pools are merged", func() {
+		annotations := map[string]string{}
+		expectedDevices := []string{
+			"openshift.io/net-pci=0000:31:0b.1",
+			"openshift.io/net-pci=0000:31:0a.4",
+			"openshift.io/net-pci=0000:31:10.1",
+			"other.example.com/net-pci=0000:31:06.0",
+		}
+		pools := []struct {
+			prefix, name string
+			ids          []string
+		}{
+			{"openshift.io", "cnsbc_vfio_int_access", []string{"0000:31:0b.1", "0000:31:0a.4"}},
+			{"openshift.io", "cnsbc_vfio_int_core", []string{"0000:31:10.1"}},
+			{"other.example.com", "cnsbc_vfio_int_access", []string{"0000:31:06.0"}},
+		}
+		for _, pool := range pools {
+			rp := mocks.NewResourcePool(GinkgoT())
+			ids := pool.ids
+			rp.On("GetResourceName").Return(pool.name)
+			rp.On("GetCDIName").Return("net-pci")
+			rp.On("GetEnvs", pool.prefix, ids).Return(map[string]string{}, nil)
+			rp.On("StoreDeviceInfoFile", pool.prefix, ids).Return(nil)
+			rs := NewResourceServer(pool.prefix, "fake", true, true, rp).(*resourceServer)
+			resp, err := rs.Allocate(context.Background(), &pluginapi.AllocateRequest{
+				ContainerRequests: []*pluginapi.ContainerAllocateRequest{{DevicesIds: ids}},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ContainerResponses).To(HaveLen(1))
+			// Kubelet merges the annotation maps from all requested resource pools.
+			for key, value := range resp.ContainerResponses[0].Annotations {
+				annotations[key] = value
+			}
+		}
+		_, devices, err := cdilib.ParseAnnotations(annotations)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(devices).To(ConsistOf(expectedDevices))
+	})
 	DescribeTable("allocating with CDI",
 		func(req *pluginapi.AllocateRequest, expectedRespLength int, shouldFail bool) {
 			rp := mocks.ResourcePool{}
@@ -315,7 +354,7 @@ var _ = Describe("Server", func() {
 
 			cdi := &CDImocks.CDI{}
 			cdi.On("CreateCDISpecForPool", "fake.com", &rp).Return(nil).Twice().
-				On("CreateContainerAnnotations", []string{"00:00.01"}, "fake.com", "fake.com").
+				On("CreateContainerAnnotations", []string{"00:00.01"}, "fake.com", "fake.com", "fake.com").
 				Return(map[string]string{"00:00.01": "fake.com/net=00:00.01"}, nil)
 			rs.cdi = cdi
 

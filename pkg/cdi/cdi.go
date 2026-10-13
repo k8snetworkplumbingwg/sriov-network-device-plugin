@@ -18,6 +18,8 @@
 package cdi
 
 import (
+	"crypto/sha256"
+	"encoding/base32"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +36,7 @@ const cdiSpecPrefix = "sriov-dp-"
 // CDI represents CDI API required by Device plugin
 type CDI interface {
 	CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error
-	CreateContainerAnnotations(devicesIDs []string, resourcePrefix, resourceKind string) (map[string]string, error)
+	CreateContainerAnnotations(devicesIDs []string, resourcePrefix, resourceKind, resourceName string) (map[string]string, error)
 	CleanupSpecs() error
 }
 
@@ -93,9 +95,14 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 }
 
 // CreateContainerAnnotations creates container annotations based on CDI spec for a container runtime
-func (c *impl) CreateContainerAnnotations(devicesIDs []string, resourcePrefix, resourceKind string) (map[string]string, error) {
+func (c *impl) CreateContainerAnnotations(devicesIDs []string,
+	resourcePrefix, resourceKind, resourceName string) (map[string]string, error) {
 	annotations := make(map[string]string, 0)
-	annoKey, err := cdi.AnnotationKey(resourcePrefix, resourceKind)
+	// Kubelet merges annotations from every resource pool requested by a container.
+	// Identify the pool independently of its CDI kind, which multiple pools share.
+	// Hash the full resource name to keep the annotation name within 63 characters.
+	poolID := sha256.Sum256([]byte(resourcePrefix + "/" + resourceName))
+	annoKey, err := cdi.AnnotationKey("sriovdp", base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(poolID[:]))
 	if err != nil {
 		glog.Errorf("CreateContainerAnnotations(): can't create container annotation: %v", err)
 		return nil, err
