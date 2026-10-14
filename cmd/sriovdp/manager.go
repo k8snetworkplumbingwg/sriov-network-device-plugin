@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	cdiPkg "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/cdi"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/factory"
@@ -34,20 +35,23 @@ const (
 
 // cliParams presents CLI parameters for SR-IOV Network Device Plugin
 type cliParams struct {
-	configFile     string
-	resourcePrefix string
-	useCdi         bool
+	configFile           string
+	resourcePrefix       string
+	useCdi               bool
+	healthcheckSocketDir string
 }
 
 // resourceManager manages resources for SR-IOV Network Device Plugin binaries
 type resourceManager struct {
 	cliParams
-	pluginWatchMode bool
-	rFactory        types.ResourceFactory
-	configList      []*types.ResourceConfig
-	resourceServers []types.ResourceServer
-	deviceProviders map[types.DeviceType]types.DeviceProvider
-	cdi             cdiPkg.CDI
+	pluginWatchMode   bool
+	rFactory          types.ResourceFactory
+	configList        []*types.ResourceConfig
+	resourceServers   []types.ResourceServer
+	deviceProviders   map[types.DeviceType]types.DeviceProvider
+	cdi               cdiPkg.CDI
+	healthCheckServer HealthCheckServer
+	serverIndexMap    map[types.ResourceServer]int
 }
 
 // newResourceManager initiates a new instance of resourceManager
@@ -65,12 +69,16 @@ func newResourceManager(cp *cliParams) *resourceManager {
 		dp[k] = rf.GetDeviceProvider(k)
 	}
 
+	hcs := NewHealthCheckServer(cp.healthcheckSocketDir)
+
 	return &resourceManager{
-		cliParams:       *cp,
-		pluginWatchMode: pluginWatchMode,
-		rFactory:        rf,
-		deviceProviders: dp,
-		cdi:             cdiPkg.New(),
+		cliParams:         *cp,
+		pluginWatchMode:   pluginWatchMode,
+		rFactory:          rf,
+		deviceProviders:   dp,
+		cdi:               cdiPkg.New(),
+		healthCheckServer: hcs,
+		serverIndexMap:    make(map[types.ResourceServer]int),
 	}
 }
 
@@ -156,6 +164,19 @@ func (rm *resourceManager) initServers() error {
 		glog.Infof("New resource server is created for %s ResourcePool", rc.ResourceName)
 		rm.resourceServers = append(rm.resourceServers, s)
 	}
+
+	// Set up health check callbacks for all resource servers
+	for i, rs := range rm.resourceServers {
+		rm.serverIndexMap[rs] = i
+		// Capture index in closure
+		serverIndex := i
+		if err := rs.SetHealthCheckCallback(func(devices map[string]*pluginapi.Device) {
+			rm.healthCheckServer.UpdateDeviceStatus(serverIndex, devices)
+		}); err != nil {
+			return fmt.Errorf("failed to set health check callback: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -173,6 +194,11 @@ func (rm *resourceManager) excludeAllocatedDevices(filteredDevices []types.HostD
 }
 
 func (rm *resourceManager) startAllServers() error {
+	// Start health check server first
+	if err := rm.healthCheckServer.Start(); err != nil {
+		return fmt.Errorf("failed to start health check server: %v", err)
+	}
+
 	for _, rs := range rm.resourceServers {
 		if err := rs.Start(); err != nil {
 			return err
@@ -192,6 +218,11 @@ func (rm *resourceManager) stopAllServers() error {
 			return err
 		}
 	}
+
+	if err := rm.healthCheckServer.Stop(); err != nil {
+		glog.Errorf("error stopping health check server: %v", err)
+	}
+
 	return nil
 }
 

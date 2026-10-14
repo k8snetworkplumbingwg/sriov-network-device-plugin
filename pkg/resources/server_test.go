@@ -60,6 +60,8 @@ var _ = Describe("Server", func() {
 			rp := mocks.ResourcePool{}
 			rp.On("Probe").Return(false)
 			rp.On("GetResourceName").Return("fakename")
+			rp.On("UpdateDeviceProbeStatus").Return(nil)
+			rp.On("GetDevicesForHealthCheck").Return(map[string]*pluginapi.Device{})
 			rp.On("CleanDeviceInfoFile", "fakeprefix").Return(nil)
 
 			// Use faked dir as socket dir
@@ -150,6 +152,8 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
+					On("UpdateDeviceProbeStatus").Return(nil).
+					On("GetDevicesForHealthCheck").Return(map[string]*pluginapi.Device{}).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled
@@ -190,6 +194,8 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
+					On("UpdateDeviceProbeStatus").Return(nil).
+					On("GetDevicesForHealthCheck").Return(map[string]*pluginapi.Device{}).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 				// Create ResourceServer with plugin watch mode enabled
 				rs := NewResourceServer("fake", "fake", true, false, &rp).(*resourceServer)
@@ -222,6 +228,8 @@ var _ = Describe("Server", func() {
 					On("DiscoverDevices").Return(nil).
 					On("GetDevices").Return(map[string]*pluginapi.Device{}).
 					On("Probe").Return(true).
+					On("UpdateDeviceProbeStatus").Return(nil).
+					On("GetDevicesForHealthCheck").Return(map[string]*pluginapi.Device{}).
 					On("CleanDeviceInfoFile", "fake").Return(nil)
 
 				// Create ResourceServer with plugin watch mode disabled

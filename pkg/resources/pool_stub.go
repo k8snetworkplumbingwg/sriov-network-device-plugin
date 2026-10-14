@@ -70,6 +70,9 @@ func (rp *ResourcePoolImpl) GetResourcePrefix() string {
 func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
 	devices := make(map[string]*pluginapi.Device)
 	for id, dev := range rp.devicePool {
+		if dev == nil {
+			continue
+		}
 		devices[id] = dev.GetAPIDevice()
 	}
 	return devices
@@ -88,7 +91,7 @@ func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.Devi
 
 	// Add vfio group specific devices
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := rp.devicePool[id]; ok && dev != nil {
 			newSpecs := dev.GetDeviceSpecs()
 			for _, ds := range newSpecs {
 				if !rp.DeviceSpecExist(devSpecs, ds) {
@@ -110,7 +113,7 @@ func (rp *ResourcePoolImpl) GetEnvs(prefix string, deviceIDs []string) (map[stri
 	IDList := []string{}
 	// Consolidates all ExtraEnvVariables
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := rp.devicePool[id]; ok && dev != nil {
 			envs := dev.GetEnvVal()
 			devInfos[id] = envs
 			IDList = append(IDList, id)
@@ -142,7 +145,7 @@ func (rp *ResourcePoolImpl) GetMounts(deviceIDs []string) []*pluginapi.Mount {
 	devMounts := make([]*pluginapi.Mount, 0)
 
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
+		if dev, ok := rp.devicePool[id]; ok && dev != nil {
 			mnt := dev.GetMounts()
 			devMounts = append(devMounts, mnt...)
 		}
@@ -180,4 +183,50 @@ func (rp *ResourcePoolImpl) CleanDeviceInfoFile(resourceNamePrefix string) error
 // GetCDIName returns device kind for CDI spec
 func (rp *ResourcePoolImpl) GetCDIName() string {
 	return poolType
+}
+
+// UpdateDeviceProbeStatus updates device health based on availability checks
+func (rp *ResourcePoolImpl) UpdateDeviceProbeStatus() error {
+	for deviceID, dev := range rp.devicePool {
+		if dev == nil {
+			continue
+		}
+		apiDev := dev.GetAPIDevice()
+		if apiDev == nil {
+			continue
+		}
+		if !rp.isDeviceHealthy(deviceID) {
+			apiDev.Health = pluginapi.Unhealthy
+		} else {
+			apiDev.Health = pluginapi.Healthy
+		}
+	}
+	return nil
+}
+
+// isDeviceHealthy checks if a device is accessible and healthy
+// Stub implementation - override in subclasses for device-specific checks
+func (rp *ResourcePoolImpl) isDeviceHealthy(deviceID string) bool {
+	// Base implementation always returns true
+	// Subclasses override this with specific health checks
+	return true
+}
+
+// GetDevicesForHealthCheck returns a copy of devices for health check purposes
+func (rp *ResourcePoolImpl) GetDevicesForHealthCheck() map[string]*pluginapi.Device {
+	devices := make(map[string]*pluginapi.Device)
+	for id, dev := range rp.devicePool {
+		if dev == nil {
+			continue
+		}
+		apiDev := dev.GetAPIDevice()
+		if apiDev != nil {
+			devices[id] = &pluginapi.Device{
+				ID:       apiDev.ID,
+				Health:   apiDev.Health,
+				Topology: apiDev.Topology,
+			}
+		}
+	}
+	return devices
 }

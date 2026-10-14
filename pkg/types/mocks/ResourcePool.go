@@ -211,6 +211,44 @@ func (_m *ResourcePool) StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs
 	return r0
 }
 
+// UpdateDeviceProbeStatus provides a mock function with no fields
+func (_m *ResourcePool) UpdateDeviceProbeStatus() error {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateDeviceProbeStatus")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// GetDevicesForHealthCheck provides a mock function with no fields
+func (_m *ResourcePool) GetDevicesForHealthCheck() map[string]*v1beta1.Device {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDevicesForHealthCheck")
+	}
+
+	var r0 map[string]*v1beta1.Device
+	if rf, ok := ret.Get(0).(func() map[string]*v1beta1.Device); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]*v1beta1.Device)
+		}
+	}
+
+	return r0
+}
+
 // NewResourcePool creates a new instance of ResourcePool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewResourcePool(t interface {
