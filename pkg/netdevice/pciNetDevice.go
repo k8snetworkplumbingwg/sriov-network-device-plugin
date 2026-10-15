@@ -74,6 +74,13 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
 			}
 		}
+		if nf.IsCxi {
+			if utils.HasCxiDevice(dev.Address) {
+				infoProviders = append(infoProviders, infoprovider.NewCxiInfoProvider(dev.Address))
+			} else {
+				glog.Warningf("CXI device for %s not found. Is the cxi driver loaded?", dev.Address)
+			}
+		}
 		if nf.NeedVhostNet {
 			if infoprovider.VhostNetDeviceExist() {
 				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
