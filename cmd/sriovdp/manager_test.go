@@ -190,7 +190,7 @@ var _ = Describe("Resource manager", func() {
 		BeforeEach(func() {
 			cp = &cliParams{
 				configFile:     "/tmp/sriovdp/test_config",
-				resourcePrefix: "test_",
+				resourcePrefix: "test.example.com",
 			}
 			rm = newResourceManager(cp)
 			fs = &utils.FakeFilesystem{
@@ -209,6 +209,29 @@ var _ = Describe("Resource manager", func() {
 			rm = nil
 			cp = nil
 		})
+		DescribeTable("validating effective resource prefix",
+			func(cliPrefix, poolPrefix string, valid bool) {
+				rm.cliParams.resourcePrefix = cliPrefix
+				rm.configList = []*types.ResourceConfig{{
+					ResourceName:   "test_resource",
+					ResourcePrefix: poolPrefix,
+					DeviceType:     types.NetDeviceType,
+					SelectorObjs:   []interface{}{&types.NetDeviceSelectors{}},
+				}}
+
+				Expect(rm.validConfigs()).To(Equal(valid), "CLI prefix %q, pool prefix %q", cliPrefix, poolPrefix)
+			},
+			Entry("accepts a valid CLI prefix without an override", "example.com", "", true),
+			Entry("accepts a valid DNS override", "example.com", "sriov.example.com", true),
+			Entry("rejects a traversal override", "example.com", "../escape", false),
+			Entry("rejects an uppercase override", "example.com", "Example.com", false),
+			Entry("rejects a malformed DNS override", "example.com", "bad..example.com", false),
+			Entry("rejects an invalid CLI prefix without an override", "test_", "", false),
+			Entry("rejects a traversal CLI prefix without an override", "../escape", "", false),
+			Entry("rejects an empty effective prefix", "", "", false),
+			Entry("accepts a valid override of an invalid CLI prefix", "test_", "sriov.example.com", true),
+			Entry("accepts a valid override of an empty CLI prefix", "", "sriov.example.com", true),
+		)
 		Context("when resource name is invalid", func() {
 			BeforeEach(func() {
 				err := os.MkdirAll("/tmp/sriovdp", 0755)

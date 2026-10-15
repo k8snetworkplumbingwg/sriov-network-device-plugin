@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/auxnetdevice"
@@ -58,7 +59,10 @@ func (rf *resourceFactory) GetResourceServer(rp types.ResourcePool) (types.Resou
 		if prefixOverride := rp.GetResourcePrefix(); prefixOverride != "" {
 			prefix = prefixOverride
 		}
-		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rf.useCdi, rp), nil
+		if errs := validation.IsDNS1123Subdomain(prefix); len(errs) > 0 {
+			return nil, fmt.Errorf("factory: invalid resource prefix %q: %v", prefix, errs)
+		}
+		return resources.NewResourceServer(prefix, rf.endPointSuffix, rf.pluginWatch, rf.useCdi, rp)
 	}
 	return nil, fmt.Errorf("factory: unable to get resource pool object")
 }

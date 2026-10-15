@@ -639,15 +639,45 @@ var _ = Describe("Factory", func() {
 				Expect(rs).To(BeNil())
 			})
 		})
-		Context("when resource pool uses overridden prefix", func() {
+		DescribeTable("validating effective resource prefix",
+			func(cliPrefix, poolPrefix string, valid bool) {
+				f := factory.NewResourceFactory(cliPrefix, "sock", true, false)
+				rp := mocks.ResourcePool{}
+				rp.On("GetResourcePrefix").Return(poolPrefix).
+					On("GetResourceName").Return("test_resource")
+
+				rs, err := f.GetResourceServer(&rp)
+				if valid {
+					Expect(err).NotTo(HaveOccurred(), "CLI prefix %q, pool prefix %q", cliPrefix, poolPrefix)
+					Expect(rs).NotTo(BeNil(), "CLI prefix %q, pool prefix %q", cliPrefix, poolPrefix)
+				} else {
+					Expect(err).To(MatchError(ContainSubstring("invalid resource prefix")),
+						"CLI prefix %q, pool prefix %q", cliPrefix, poolPrefix)
+					Expect(rs).To(BeNil(), "CLI prefix %q, pool prefix %q", cliPrefix, poolPrefix)
+				}
+			},
+			Entry("accepts a valid CLI prefix without an override", "example.com", "", true),
+			Entry("accepts a valid DNS override", "example.com", "sriov.example.com", true),
+			Entry("accepts a single-label override", "example.com", "overridden", true),
+			Entry("rejects an absolute path override", "example.com", "/invalid", false),
+			Entry("rejects a traversal override", "example.com", "../escape", false),
+			Entry("rejects an uppercase override", "example.com", "Example.com", false),
+			Entry("rejects a malformed DNS override", "example.com", "bad..example.com", false),
+			Entry("rejects an invalid CLI prefix without an override", "test_", "", false),
+			Entry("rejects a traversal CLI prefix without an override", "../escape", "", false),
+			Entry("rejects an empty effective prefix", "", "", false),
+			Entry("accepts a valid override of an invalid CLI prefix", "test_", "sriov.example.com", true),
+			Entry("accepts a valid override of an empty CLI prefix", "", "sriov.example.com", true),
+		)
+		Context("when resource server construction fails", func() {
 			f := factory.NewResourceFactory("fake", "fake", true, false)
 			rp := mocks.ResourcePool{}
-			rp.On("GetResourcePrefix").Return("overridden").
-				On("GetResourceName").Return("fake")
+			rp.On("GetResourcePrefix").Return("").
+				On("GetResourceName").Return("../../../../escape")
 			rs, e := f.GetResourceServer(&rp)
-			It("should not fail", func() {
-				Expect(e).NotTo(HaveOccurred())
-				Expect(rs).NotTo(BeNil())
+			It("should return the construction error", func() {
+				Expect(e).To(MatchError(ContainSubstring("escapes base directory")))
+				Expect(rs).To(BeNil())
 			})
 		})
 	})
