@@ -57,7 +57,7 @@ spec:
         image: ghcr.io/k8snetworkplumbingwg/sriov-network-device-plugin:latest
         imagePullPolicy: IfNotPresent
         args:
-        - --log-dir=sriovdp
+        - --log_dir=/var/log/sriovdp
         - --log-level=10
         - --config-file=/etc/pcidp/$(NODE_NAME)
         env:

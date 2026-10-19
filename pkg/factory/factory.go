@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/accelerator"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/auxnetdevice"
@@ -125,7 +125,7 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, filteredDev
 	for _, dev := range filteredDevice {
 		id := dev.GetDeviceID()
 		devicePool[id] = dev
-		glog.Infof("device added: [identifier: %s, vendor: %s, device: %s, driver: %s]",
+		klog.Infof("device added: [identifier: %s, vendor: %s, device: %s, driver: %s]",
 			id,
 			dev.GetVendor(),
 			dev.GetDeviceCode(),
@@ -204,7 +204,7 @@ func parseObjectOrSlice[O types.NetDeviceSelectors | types.AccelDeviceSelectors 
 		}
 	}
 
-	glog.Infof("%T for resource %s is %+v", slice[0], rc.ResourceName, slice)
+	klog.Infof("%T for resource %s is %+v", slice[0], rc.ResourceName, slice)
 	interfaceArray := make([]any, len(slice))
 	for i := range slice {
 		interfaceArray[i] = slice[i]

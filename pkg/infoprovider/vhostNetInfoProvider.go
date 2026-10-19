@@ -20,7 +20,7 @@ package infoprovider
 import (
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -98,13 +98,13 @@ func (ip *vhostNetInfoProvider) GetName() string {
 
 func (ip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 	if !VhostNetDeviceExist() {
-		glog.Errorf("GetDeviceSpecs(): %s doesn't exist", vhostNetPath)
+		klog.Errorf("GetDeviceSpecs(): %s doesn't exist", vhostNetPath)
 		return nil
 	}
 	deviceSpec := getVhostNetDeviceSpec()
 
 	if !tunDeviceExist() {
-		glog.Errorf("GetDeviceSpecs(): %s doesn't exist", tunPath)
+		klog.Errorf("GetDeviceSpecs(): %s doesn't exist", tunPath)
 		return nil
 	}
 	deviceSpec = append(deviceSpec, getTunDeviceSpec()...)

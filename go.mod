@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/Mellanox/rdmamap v1.2.0
 	github.com/container-orchestrated-devices/container-device-interface v0.5.4
-	github.com/golang/glog v1.2.5
 	github.com/jaypipes/ghw v0.26.0
 	github.com/jaypipes/pcidb v1.1.1
 	github.com/k8snetworkplumbingwg/govdpa v0.1.4
@@ -17,7 +16,9 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/vishvananda/netlink v1.3.2-0.20251101063711-6e61cd407d1d
 	google.golang.org/grpc v1.84.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	k8s.io/apimachinery v0.36.2
+	k8s.io/klog/v2 v2.140.0
 	k8s.io/kubelet v0.36.2
 )
 
@@ -73,7 +74,6 @@ require (
 	howett.net/plist v1.0.2-0.20250314012144-ee69052608d9 // indirect
 	k8s.io/api v0.36.2 // indirect
 	k8s.io/client-go v0.36.2 // indirect
-	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect

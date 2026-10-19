@@ -15,8 +15,8 @@
 package netdevice
 
 import (
-	"github.com/golang/glog"
 	"github.com/jaypipes/ghw"
+	"k8s.io/klog/v2"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/devices"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/infoprovider"
@@ -61,7 +61,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 		if nf.VdpaType != "" {
 			vdpaDev = rFactory.GetVdpaDevice(dev.Address)
 			if vdpaDev == nil {
-				glog.Warningf("No vDPA device found for device %s", dev.Address)
+				klog.Warningf("No vDPA device found for device %s", dev.Address)
 			} else {
 				infoProviders = append(infoProviders, infoprovider.NewVdpaInfoProvider(nf.VdpaType, vdpaDev))
 			}
@@ -71,14 +71,14 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 				isRdma = true
 				infoProviders = append(infoProviders, infoprovider.NewRdmaInfoProvider(rdmaSpec))
 			} else {
-				glog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
+				klog.Warningf("RDMA resources for %s not found. Are RDMA modules loaded?", dev.Address)
 			}
 		}
 		if nf.NeedVhostNet {
 			if infoprovider.VhostNetDeviceExist() {
 				infoProviders = append(infoProviders, infoprovider.NewVhostNetInfoProvider())
 			} else {
-				glog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", dev.Address)
+				klog.Warningf("vhost-net is required in the configuration for %s but /dev/vhost-net doesn't exist", dev.Address)
 			}
 		}
 	}
@@ -103,7 +103,7 @@ func NewPciNetDevice(dev *ghw.PCIDevice,
 		pciAddr := pciDev.GetPciAddr()
 		pKey, err = utils.GetPKey(pciAddr)
 		if err != nil {
-			glog.Infof("getPKey(): unable to get PKey for device %s : %q", pciAddr, err)
+			klog.Infof("getPKey(): unable to get PKey for device %s : %q", pciAddr, err)
 		}
 	}
 
@@ -129,7 +129,7 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 				// default to ddptool if devlink failed
 				ddpProfile, err = utils.GetDDPProfiles(pciAddr)
 				if err != nil {
-					glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
+					klog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, pfPCI, err)
 					return ""
 				}
 			}
@@ -138,7 +138,7 @@ func (nd *pciNetDevice) GetDDPProfiles() string {
 		var err error
 		ddpProfile, err = utils.GetDDPProfiles(pciAddr)
 		if err != nil {
-			glog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, nd.GetPfPciAddr(), err)
+			klog.Infof("GetDDPProfiles(): unable to get ddp profiles for PCI %s and PF PCI device %s : %q", pciAddr, nd.GetPfPciAddr(), err)
 			return ""
 		}
 	}
