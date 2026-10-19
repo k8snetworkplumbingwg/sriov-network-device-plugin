@@ -45,13 +45,13 @@ func flagInit(cp *cliParams) {
 		"Maximum number of days to retain old log files")
 }
 
+// resolveLogDir returns the klog --log_dir value when explicitly set.
+// An empty return means stderr-only logging (no host file rotation).
 func resolveLogDir() string {
 	if f := flag.Lookup("log_dir"); f != nil {
-		if v := f.Value.String(); v != "" {
-			return v
-		}
+		return f.Value.String()
 	}
-	return logging.DefaultLogDir
+	return ""
 }
 
 func main() {
@@ -60,24 +60,30 @@ func main() {
 	flagInit(cp)
 	flag.Parse()
 
-	logCfg := logging.Config{
-		LogDir:     resolveLogDir(),
-		MaxSizeMB:  cp.logMaxSize,
-		MaxFiles:   cp.logMaxFiles,
-		MaxAgeDays: cp.logMaxAge,
+	effectiveLogCfg := logging.Config{}
+	cleanupLog := func() {}
+	logDir := resolveLogDir()
+	if logDir != "" {
+		logCfg := logging.Config{
+			LogDir:     logDir,
+			MaxSizeMB:  cp.logMaxSize,
+			MaxFiles:   cp.logMaxFiles,
+			MaxAgeDays: cp.logMaxAge,
+		}
+		var err error
+		cleanupLog, effectiveLogCfg, _, err = logging.SetupLogRotation(logCfg)
+		if err != nil {
+			klog.Fatalf("failed to setup log rotation: %v", err)
+		}
+		defer cleanupLog()
 	}
-	cleanupLog, err := logging.SetupLogRotation(logCfg)
-	if err != nil {
-		klog.Fatalf("failed to setup log rotation: %v", err)
-	}
-	defer cleanupLog()
 	defer klog.Flush()
 
 	if err := logging.LogStartupHeader(logging.StartupInfo{
 		ConfigFile:     cp.configFile,
 		ResourcePrefix: cp.resourcePrefix,
 		UseCdi:         cp.useCdi,
-		Log:            logCfg,
+		Log:            effectiveLogCfg,
 	}); err != nil {
 		klog.Fatalf("failed to log startup header: %v", err)
 	}

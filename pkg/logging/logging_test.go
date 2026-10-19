@@ -15,7 +15,10 @@
 package logging
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -362,9 +365,29 @@ var _ = Describe("ValidateLogDir", func() {
 		Expect(got).To(BeEmpty())
 		Expect(err.Error()).To(ContainSubstring("outside the allowed base"))
 	})
+
+	It("does not change permissions on an existing directory", func() {
+		dir := varLogTempDir()
+		const wantMode = os.FileMode(0o755)
+		Expect(os.Chmod(dir, wantMode)).To(Succeed())
+
+		got, err := ValidateLogDir(dir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).NotTo(BeEmpty())
+
+		info, err := os.Stat(dir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(wantMode))
+	})
 })
 
 var _ = Describe("SetupLogRotation", func() {
+	BeforeEach(func() {
+		if flag.Lookup("stderrthreshold") == nil {
+			klog.InitFlags(nil)
+		}
+	})
+
 	AfterEach(func() {
 		klog.LogToStderr(true)
 		klog.SetOutput(os.Stderr)
@@ -372,11 +395,13 @@ var _ = Describe("SetupLogRotation", func() {
 
 	It("uses the default log dir when unset", func() {
 		cfg := Config{MaxSizeMB: 100, MaxFiles: 5, MaxAgeDays: 30}
-		cleanup, err := SetupLogRotation(cfg)
+		cleanup, effective, warnings, err := SetupLogRotation(cfg)
 		if err != nil {
 			Skip(fmt.Sprintf("default log dir %q not usable in this environment: %v", DefaultLogDir, err))
 		}
 		Expect(cleanup).NotTo(BeNil())
+		Expect(effective.LogDir).To(Equal(DefaultLogDir))
+		Expect(warnings).To(BeEmpty())
 		cleanup()
 	})
 
@@ -384,9 +409,11 @@ var _ = Describe("SetupLogRotation", func() {
 		dir := varLogTempDir()
 
 		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
-		cleanup, err := SetupLogRotation(cfg)
+		cleanup, effective, warnings, err := SetupLogRotation(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleanup).NotTo(BeNil())
+		Expect(effective).To(Equal(cfg))
+		Expect(warnings).To(BeEmpty())
 
 		klog.Info("setup-test: logged line via klog")
 		cleanup()
@@ -400,7 +427,7 @@ var _ = Describe("SetupLogRotation", func() {
 		dir := GinkgoT().TempDir()
 
 		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
-		cleanup, err := SetupLogRotation(cfg)
+		cleanup, _, _, err := SetupLogRotation(cfg)
 		Expect(err).To(HaveOccurred())
 		Expect(cleanup).To(BeNil())
 	})
@@ -409,9 +436,19 @@ var _ = Describe("SetupLogRotation", func() {
 		dir := varLogTempDir()
 
 		cfg := Config{LogDir: dir, MaxSizeMB: 0, MaxFiles: 5, MaxAgeDays: 30}
-		cleanup, err := SetupLogRotation(cfg)
+		cleanup, effective, warnings, err := SetupLogRotation(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleanup).NotTo(BeNil())
+		Expect(effective.MaxSizeMB).To(Equal(DefaultMaxSizeMB))
+		Expect(warnings).To(HaveLen(1))
+		Expect(warnings[0]).To(ContainSubstring("invalid --log-max-size=0"))
+
+		data, readErr := os.ReadFile(filepath.Join(dir, "sriovdp.log"))
+		Expect(readErr).NotTo(HaveOccurred())
+		logText := string(data)
+		Expect(logText).To(ContainSubstring("invalid --log-max-size=0"))
+		Expect(logText).NotTo(ContainSubstring("maxSizeMB=0"))
+
 		cleanup()
 	})
 
@@ -419,7 +456,7 @@ var _ = Describe("SetupLogRotation", func() {
 		dir := varLogTempDir()
 
 		cfg := Config{LogDir: dir, MaxSizeMB: 1, MaxFiles: 2, MaxAgeDays: 3}
-		cleanup, err := SetupLogRotation(cfg)
+		cleanup, _, _, err := SetupLogRotation(cfg)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cleanup).NotTo(BeNil())
 
@@ -428,6 +465,33 @@ var _ = Describe("SetupLogRotation", func() {
 
 		_, statErr := os.Stat(filepath.Join(dir, "sriovdp.log"))
 		Expect(statErr).NotTo(HaveOccurred())
+	})
+
+	It("emits each error once on stderr when tee owns console logging", func() {
+		dir := varLogTempDir()
+		cfg := Config{LogDir: dir, MaxSizeMB: 10, MaxFiles: 3, MaxAgeDays: 7}
+
+		oldStderr := os.Stderr
+		reader, writer, err := os.Pipe()
+		Expect(err).NotTo(HaveOccurred())
+		os.Stderr = writer
+
+		cleanup, _, _, setupErr := SetupLogRotation(cfg)
+		Expect(setupErr).NotTo(HaveOccurred())
+
+		const marker = "dedup-console-test-marker"
+		klog.Error(marker)
+		klog.Flush()
+
+		Expect(writer.Close()).To(Succeed())
+		os.Stderr = oldStderr
+
+		var captured bytes.Buffer
+		_, err = io.Copy(&captured, reader)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(strings.Count(captured.String(), marker)).To(Equal(1))
+
+		cleanup()
 	})
 })
 
@@ -462,5 +526,31 @@ var _ = Describe("StartupInfo", func() {
 		})
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("NODE_NAME"))
+	})
+
+	It("prints effective rotation limits in the banner, not pre-normalization zeros", func() {
+		dir := varLogTempDir()
+		cfg := Config{LogDir: dir, MaxSizeMB: 0, MaxFiles: 5, MaxAgeDays: 30}
+
+		cleanup, effective, _, err := SetupLogRotation(cfg)
+		Expect(err).NotTo(HaveOccurred())
+		defer cleanup()
+
+		Expect(os.Setenv("NODE_NAME", "test-node.example")).To(Succeed())
+		defer os.Unsetenv("NODE_NAME")
+
+		err = LogStartupHeader(StartupInfo{
+			ConfigFile:     "/etc/pcidp/config.json",
+			ResourcePrefix: "intel.com",
+			Log:            effective,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		klog.Flush()
+
+		data, readErr := os.ReadFile(filepath.Join(dir, "sriovdp.log"))
+		Expect(readErr).NotTo(HaveOccurred())
+		logText := string(data)
+		Expect(logText).To(ContainSubstring(fmt.Sprintf("maxSizeMB=%d", DefaultMaxSizeMB)))
+		Expect(logText).NotTo(ContainSubstring("maxSizeMB=0"))
 	})
 })

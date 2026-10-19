@@ -20,6 +20,7 @@ usage()
     /bin/echo -e "./entrypoint.sh"
     /bin/echo -e "\t-h --help"
     /bin/echo -e "\t--log_dir=/var/log/sriovdp"
+    /bin/echo -e "\t--log-dir=sriovdp (legacy alias - relative folder under /var/log)"
     /bin/echo -e "\t--log-level=$LOG_LEVEL"
     /bin/echo -e "\t--log-max-size=<MB> (default: 100)"
     /bin/echo -e "\t--log-max-files=<count> (default: 5)"
@@ -27,6 +28,18 @@ usage()
     /bin/echo -e "\t--resource-prefix=$RESOURCE_PREFIX"
     /bin/echo -e "\t--config-file=$CONFIG_FILE"
     /bin/echo -e "\t--use-cdi"
+}
+
+normalize_log_dir() {
+    case "$LOG_DIR" in
+        "")
+            ;;
+        /*)
+            ;;
+        *)
+            LOG_DIR="/var/log/$LOG_DIR"
+            ;;
+    esac
 }
 
 while [ "$1" != "" ]; do
@@ -37,7 +50,7 @@ while [ "$1" != "" ]; do
             usage
             exit
             ;;
-        --log_dir)
+        --log_dir | --log-dir)
             LOG_DIR=$VALUE
             ;;
         --log-level)
@@ -69,6 +82,8 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
+
+normalize_log_dir
 
 CLI_PARAMS="-v $LOG_LEVEL"
 

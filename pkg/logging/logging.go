@@ -100,26 +100,34 @@ func (t *teeWriter) Write(p []byte) (int, error) {
 
 // SetupLogRotation connects klog output to both stderr and a rotating log file
 // via klog.SetOutput. cfg.LogDir must be under /var/log (the DaemonSet hostPath
-// mount). Returns cleanup to defer, or an error when configuration is invalid.
-func SetupLogRotation(cfg Config) (func(), error) {
+// mount). Returns cleanup to defer, the effective configuration, any normalization
+// warnings, or an error when configuration is invalid.
+func SetupLogRotation(cfg Config) (func(), Config, []string, error) {
 	logDir := cfg.LogDir
 	if logDir == "" {
 		logDir = DefaultLogDir
 	}
 	cleanDir, err := ValidateLogDir(logDir)
 	if err != nil {
-		return nil, fmt.Errorf("rejected log directory: %w", err)
+		return nil, Config{}, nil, fmt.Errorf("rejected log directory: %w", err)
 	}
 	cfg.LogDir = cleanDir
 
-	resolved, _, err := ResolveConfig(cfg)
+	resolved, warnings, err := ResolveConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve log rotation config: %w", err)
+		return nil, Config{}, nil, fmt.Errorf("failed to resolve log rotation config: %w", err)
 	}
 
-	rotWriter, _, err := NewRotatingWriter(resolved)
+	rotWriter, rotWarnings, err := NewRotatingWriter(resolved)
 	if err != nil {
-		return nil, fmt.Errorf("cannot use log directory %q: %w", resolved.LogDir, err)
+		return nil, Config{}, warnings, fmt.Errorf("cannot use log directory %q: %w", resolved.LogDir, err)
+	}
+	warnings = append(warnings, rotWarnings...)
+
+	origStderrThreshold := ""
+	if f := flag.Lookup("stderrthreshold"); f != nil {
+		origStderrThreshold = f.Value.String()
+		_ = f.Value.Set("FATAL")
 	}
 
 	tee := &teeWriter{console: os.Stderr, file: rotWriter}
@@ -128,6 +136,7 @@ func SetupLogRotation(cfg Config) (func(), error) {
 	if f := flag.Lookup("one_output"); f != nil {
 		_ = f.Value.Set("true")
 	}
+	logNormalizationWarnings(warnings)
 
 	return func() {
 		klog.Flush()
@@ -135,11 +144,14 @@ func SetupLogRotation(cfg Config) (func(), error) {
 		if f := flag.Lookup("one_output"); f != nil {
 			_ = f.Value.Set("false")
 		}
+		if f := flag.Lookup("stderrthreshold"); f != nil && origStderrThreshold != "" {
+			_ = f.Value.Set(origStderrThreshold)
+		}
 		klog.SetOutput(os.Stderr)
 		if err := rotWriter.Close(); err != nil {
 			fmt.Fprintf(os.Stderr, "sriovdp: failed to close rotation writer: %v\n", err) //nolint:errcheck
 		}
-	}, nil
+	}, resolved, warnings, nil
 }
 
 var validLogDirRegex = regexp.MustCompile(`^[a-zA-Z0-9_/\-.]+$`)
@@ -189,15 +201,42 @@ func ValidateLogDir(dir string) (string, error) {
 		return "", fmt.Errorf("log directory %q resolves to %q which is outside the allowed base %q", dir, resolved, allowedLogBase)
 	}
 
-	if err := os.MkdirAll(resolved, logDirPerms); err != nil {
-		return "", fmt.Errorf("cannot create log directory %q: %w", resolved, err)
+	created := false
+	if _, err := os.Stat(resolved); err != nil {
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(resolved, logDirPerms); err != nil {
+				return "", fmt.Errorf("cannot create log directory %q: %w", resolved, err)
+			}
+			created = true
+		} else {
+			return "", fmt.Errorf("cannot inspect log directory %q: %w", resolved, err)
+		}
 	}
 
-	if err := os.Chmod(resolved, logDirPerms); err != nil {
-		return "", fmt.Errorf("cannot set permissions on log directory %q: %w", resolved, err)
+	if created {
+		if err := os.Chmod(resolved, logDirPerms); err != nil {
+			return "", fmt.Errorf("cannot set permissions on log directory %q: %w", resolved, err)
+		}
+	} else if err := verifyLogDirWritable(resolved); err != nil {
+		return "", err
 	}
 
 	return resolved, nil
+}
+
+func verifyLogDirWritable(dir string) error {
+	probe, err := os.CreateTemp(dir, ".probe-*")
+	if err != nil {
+		return fmt.Errorf("log directory %q is not writable: %w", dir, err)
+	}
+	name := probe.Name()
+	if err := probe.Close(); err != nil {
+		return fmt.Errorf("close probe file in %q: %w", dir, err)
+	}
+	if err := os.Remove(name); err != nil {
+		return fmt.Errorf("remove probe file %q: %w", name, err)
+	}
+	return nil
 }
 
 func resolveExistingPrefix(path string) (string, error) {
@@ -254,6 +293,12 @@ func ResolveConfig(cfg Config) (Config, []string, error) {
 	}
 
 	return normalized, warnings, nil
+}
+
+func logNormalizationWarnings(warnings []string) {
+	for _, warning := range warnings {
+		klog.Warningf("log config: %s", warning)
+	}
 }
 
 // NewRotatingWriter returns a lumberjack writer. Caller must Close it.
