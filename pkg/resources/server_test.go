@@ -328,6 +328,7 @@ var _ = Describe("Server", func() {
 		}
 		for _, pool := range pools {
 			rp := mocks.NewResourcePool(GinkgoT())
+			rp.On("GetConfig").Return(&types.ResourceConfig{})
 			ids := pool.ids
 			rp.On("GetDeviceSpecs", ids).Return([]*pluginapi.DeviceSpec{}, nil)
 			rp.On("GetResourceName").Return(pool.name)
@@ -367,6 +368,7 @@ var _ = Describe("Server", func() {
 				On("StoreDeviceInfoFile", "fake.com", []string{"00:00.01"}).
 				Return(nil)
 
+			rp.On("GetConfig").Return(&types.ResourceConfig{})
 			rs := mustNewResourceServer("fake.com", "fake", true, true, &rp).(*resourceServer)
 
 			cdi := &CDImocks.CDI{}
@@ -517,6 +519,7 @@ var _ = Describe("Server", func() {
 					On("GetDevices").Return(map[string]*pluginapi.Device{"00:00.01": {ID: "00:00.01", Health: "Healthy"}}).Twice().
 					On("GetResourcePrefix").Return("fake.com").Twice()
 
+				rp.On("GetConfig").Return(&types.ResourceConfig{})
 				rs := mustNewResourceServer("fake.com", "fake", true, true, &rp).(*resourceServer)
 				rs.sockPath = fs.RootDir
 

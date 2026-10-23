@@ -16,6 +16,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.12.1
 	github.com/vishvananda/netlink v1.3.2-0.20251101063711-6e61cd407d1d
+	golang.org/x/sys v0.47.0
 	google.golang.org/grpc v1.84.0
 	k8s.io/apimachinery v0.36.2
 	k8s.io/kubelet v0.36.2
@@ -60,7 +61,6 @@ require (
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/time v0.14.0 // indirect

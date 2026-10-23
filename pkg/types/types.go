@@ -94,6 +94,9 @@ var SupportedVdpaTypes = map[VdpaType]string{
 
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
+	VFIOMode   string `json:"vfioMode,omitempty"`
+	NeedIommu  bool   `json:"needIommu,omitempty"`
+	HostDevDir string `json:"-"`
 	// optional resource prefix that will overwrite	global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
@@ -185,6 +188,7 @@ type ResourceFactory interface {
 
 // ResourcePool represents a generic resource entity
 type ResourcePool interface {
+	GetConfig() *ResourceConfig
 	// extended API for internal use
 	GetResourceName() string
 	GetResourcePrefix() string

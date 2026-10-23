@@ -30,17 +30,24 @@ func (_m *MockCDI) CleanupSpecs() error {
 	return r0
 }
 
-// CreateCDISpecForPool provides a mock function with given fields: resourcePrefix, rPool
-func (_m *MockCDI) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error {
-	ret := _m.Called(resourcePrefix, rPool)
+// CreateCDISpecForPool provides a mock function with given fields: resourcePrefix, rPool, requiredIDs
+func (_m *MockCDI) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool, requiredIDs ...string) error {
+	_va := make([]interface{}, len(requiredIDs))
+	for _i := range requiredIDs {
+		_va[_i] = requiredIDs[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, resourcePrefix, rPool)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateCDISpecForPool")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, types.ResourcePool) error); ok {
-		r0 = rf(resourcePrefix, rPool)
+	if rf, ok := ret.Get(0).(func(string, types.ResourcePool, ...string) error); ok {
+		r0 = rf(resourcePrefix, rPool, requiredIDs...)
 	} else {
 		r0 = ret.Error(0)
 	}

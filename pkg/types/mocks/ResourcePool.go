@@ -3,8 +3,8 @@
 package mocks
 
 import (
+	types "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	mock "github.com/stretchr/testify/mock"
-
 	v1beta1 "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -44,6 +44,26 @@ func (_m *ResourcePool) GetCDIName() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetConfig provides a mock function with no fields
+func (_m *ResourcePool) GetConfig() *types.ResourceConfig {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetConfig")
+	}
+
+	var r0 *types.ResourceConfig
+	if rf, ok := ret.Get(0).(func() *types.ResourceConfig); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResourceConfig)
+		}
 	}
 
 	return r0

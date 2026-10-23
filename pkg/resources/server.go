@@ -21,6 +21,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -48,6 +49,7 @@ type resourceServer struct {
 	checkIntervals     int // health check intervals in seconds
 	useCdi             bool
 	cdi                cdiPkg.CDI
+	cdiMu              sync.Mutex
 }
 
 const (
@@ -147,6 +149,11 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 		}
 
 		if rs.useCdi {
+			if rs.resourcePool.GetConfig().VFIOMode == types.VFIOModeIOMMUFD {
+				if err := rs.updateCDISpec(container.DevicesIds...); err != nil {
+					return nil, fmt.Errorf("refresh native CDI allocation: %w", err)
+				}
+			}
 			containerResp.Annotations, err = rs.cdi.CreateContainerAnnotations(
 				container.DevicesIds, rs.resourceNamePrefix, rs.resourcePool.GetCDIName(), rs.resourcePool.GetResourceName())
 			if err != nil {
@@ -221,16 +228,18 @@ func (rs *resourceServer) ListAndWatch(empty *pluginapi.Empty, stream pluginapi.
 	}
 }
 
-func (rs *resourceServer) updateCDISpec() error {
+func (rs *resourceServer) updateCDISpec(requiredIDs ...string) error {
 	// check if CDI mode is enabled
 	if !rs.useCdi {
 		return nil
 	}
+	rs.cdiMu.Lock()
+	defer rs.cdiMu.Unlock()
 	prefix := rs.resourceNamePrefix
 	if prefixOverride := rs.resourcePool.GetResourcePrefix(); prefixOverride != "" {
 		prefix = prefixOverride
 	}
-	err := rs.cdi.CreateCDISpecForPool(prefix, rs.resourcePool)
+	err := rs.cdi.CreateCDISpecForPool(prefix, rs.resourcePool, requiredIDs...)
 	if err != nil {
 		glog.Errorf("updateCDISpec(): error creating CDI spec: %v", err)
 		return err

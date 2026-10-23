@@ -27,7 +27,8 @@ import (
 )
 
 var (
-	sysBusPci = "/sys/bus/pci/devices"
+	sysBusPci     = "/sys/bus/pci/devices"
+	sysClassIommu = "/sys/class/misc/iommu"
 	// golangci-lint doesn't see it is used in the testing.go
 	//nolint: unused
 	sysBusAux = "/sys/bus/auxiliary/devices"
@@ -347,7 +348,7 @@ func GetVFIODeviceFile(dev string) (devFileHost, devFileContainer string, err er
 		vName := strings.TrimSpace(string(vfioName))
 
 		// if the iommu group name == vfio-noiommu then we are in a VM, adjust path to vfio device
-		if vName == "vfio-noiommu" {
+		if vName == vfioNoIOMMUGroup {
 			linkName = filepath.Join(filepath.Dir(linkName), "noiommu-"+filepath.Base(linkName))
 			devFileHost = filepath.Join(devDir, "vfio", filepath.Base(linkName))
 		}

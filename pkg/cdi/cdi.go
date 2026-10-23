@@ -35,7 +35,7 @@ const cdiSpecPrefix = "sriov-dp-"
 
 // CDI represents CDI API required by Device plugin
 type CDI interface {
-	CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error
+	CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool, requiredIDs ...string) error
 	CreateContainerAnnotations(devicesIDs []string, resourcePrefix, resourceKind, resourceName string) (map[string]string, error)
 	CleanupSpecs() error
 }
@@ -50,36 +50,15 @@ func New() CDI {
 }
 
 // CreateCDISpecForPool creates CDI spec file with specified devices
-func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool) error {
-	cdiDevices := make([]cdiSpecs.Device, 0)
+func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourcePool, requiredIDs ...string) error {
+	cdiDevices, err := resolveCDIDevices(rPool, requiredIDs)
+	if err != nil {
+		return err
+	}
 	cdiSpec := cdiSpecs.Spec{
 		Version: cdiSpecs.CurrentVersion,
 		Kind:    resourcePrefix + "/" + rPool.GetCDIName(),
 		Devices: cdiDevices,
-	}
-
-	for _, dev := range rPool.GetDevices() {
-		containerEdit := cdiSpecs.ContainerEdits{
-			DeviceNodes: make([]*cdiSpecs.DeviceNode, 0),
-		}
-
-		specs, err := rPool.GetDeviceSpecs([]string{dev.GetID()})
-		if err != nil {
-			return fmt.Errorf("create CDI device %s: %w", dev.GetID(), err)
-		}
-		for _, spec := range specs {
-			deviceNode := cdiSpecs.DeviceNode{
-				Path:        spec.ContainerPath,
-				HostPath:    spec.HostPath,
-				Permissions: "rw",
-			}
-			containerEdit.DeviceNodes = append(containerEdit.DeviceNodes, &deviceNode)
-		}
-		device := cdiSpecs.Device{
-			Name:           dev.GetID(),
-			ContainerEdits: containerEdit,
-		}
-		cdiSpec.Devices = append(cdiSpec.Devices, device)
 	}
 
 	name, err := cdi.GenerateNameForSpec(&cdiSpec)
@@ -96,6 +75,39 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 	}
 
 	return nil
+}
+
+// resolveCDIDevices validates current device access instead of cached health.
+// Unavailable native devices are omitted unless this allocation requires them.
+func resolveCDIDevices(rPool types.ResourcePool, requiredIDs []string) ([]cdiSpecs.Device, error) {
+	required := make(map[string]bool, len(requiredIDs))
+	for _, id := range requiredIDs {
+		required[id] = true
+	}
+	native := rPool.GetConfig().VFIOMode == types.VFIOModeIOMMUFD
+	devices := make([]cdiSpecs.Device, 0)
+	for _, dev := range rPool.GetDevices() {
+		id := dev.GetID()
+		specs, err := rPool.GetDeviceSpecs([]string{id})
+		if err != nil {
+			if native && !required[id] {
+				continue
+			}
+			return nil, fmt.Errorf("create CDI device %s: %w", id, err)
+		}
+		delete(required, id)
+		edits := cdiSpecs.ContainerEdits{DeviceNodes: make([]*cdiSpecs.DeviceNode, 0, len(specs))}
+		for _, spec := range specs {
+			edits.DeviceNodes = append(edits.DeviceNodes, &cdiSpecs.DeviceNode{
+				Path: spec.ContainerPath, HostPath: spec.HostPath, Permissions: "rw",
+			})
+		}
+		devices = append(devices, cdiSpecs.Device{Name: id, ContainerEdits: edits})
+	}
+	if len(required) != 0 {
+		return nil, fmt.Errorf("resource %s does not contain all requested CDI devices", rPool.GetResourceName())
+	}
+	return devices, nil
 }
 
 // CreateContainerAnnotations creates container annotations based on CDI spec for a container runtime
