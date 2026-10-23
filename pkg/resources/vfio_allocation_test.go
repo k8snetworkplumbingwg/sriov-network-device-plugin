@@ -46,7 +46,7 @@ func TestVFIOAllocation(t *testing.T) {
 	good := &allocationDevice{id: "0000:01:00.1", specs: []*pluginapi.DeviceSpec{{HostPath: "/dev/vfio/devices/vfio1", ContainerPath: "/dev/vfio/devices/vfio1", Permissions: "rw"}, {HostPath: "/dev/iommu", ContainerPath: "/dev/iommu", Permissions: "rw"}}}
 	other := &allocationDevice{id: "0000:01:00.2", specs: []*pluginapi.DeviceSpec{{HostPath: "/dev/vfio/devices/vfio2", ContainerPath: "/dev/vfio/devices/vfio2", Permissions: "rw"}, {HostPath: "/dev/iommu", ContainerPath: "/dev/iommu", Permissions: "rw"}}}
 	bad := &allocationDevice{id: "0000:01:00.3", err: errors.New("missing cdev")}
-	pool := NewResourcePool(&types.ResourceConfig{ResourceName: "native"}, map[string]types.HostDevice{good.id: good, other.id: other, bad.id: bad})
+	pool := NewResourcePool(&types.ResourceConfig{ResourceName: "native", VFIOMode: types.VFIOModeIOMMUFD}, map[string]types.HostDevice{good.id: good, other.id: other, bad.id: bad})
 	server := NewResourceServer("example.com", "test", false, pool)
 	for _, tc := range []struct {
 		name    string
@@ -72,6 +72,22 @@ func TestVFIOAllocation(t *testing.T) {
 				t.Fatalf("control node not deduplicated: %v", response)
 			}
 		})
+	}
+}
+
+func TestNativeVFIOHealth(t *testing.T) {
+	device := &allocationDevice{id: "0000:01:00.1", err: errors.New("missing cdev")}
+	pool := NewResourcePool(&types.ResourceConfig{VFIOMode: types.VFIOModeIOMMUFD}, map[string]types.HostDevice{device.id: device})
+	if pool.GetDevices()[device.id].Health != pluginapi.Unhealthy {
+		t.Fatal("missing cdev advertised healthy")
+	}
+	device.err = nil
+	if !pool.Probe() || pool.GetDevices()[device.id].Health != pluginapi.Healthy {
+		t.Fatal("repaired cdev health did not recover")
+	}
+	device.err = errors.New("cdev removed")
+	if !pool.Probe() || pool.GetDevices()[device.id].Health != pluginapi.Unhealthy {
+		t.Fatal("removed cdev remained healthy")
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/golang/glog"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -27,18 +28,23 @@ import (
 
 // ResourcePoolImpl implements stub ResourcePool interface
 type ResourcePoolImpl struct {
-	config     *types.ResourceConfig
-	devicePool map[string]types.HostDevice
+	config       *types.ResourceConfig
+	devicePool   map[string]types.HostDevice
+	healthMu     sync.RWMutex
+	nativeHealth map[string]string
 }
 
 var _ types.ResourcePool = &ResourcePoolImpl{}
 
 // NewResourcePool returns an instance of resourcePool
 func NewResourcePool(rc *types.ResourceConfig, devicePool map[string]types.HostDevice) *ResourcePoolImpl {
-	return &ResourcePoolImpl{
-		config:     rc,
-		devicePool: devicePool,
+	rp := &ResourcePoolImpl{
+		config:       rc,
+		devicePool:   devicePool,
+		nativeHealth: make(map[string]string),
 	}
+	rp.Probe()
+	return rp
 }
 
 // GetConfig returns ResourceConfig for this resourcePool
@@ -64,17 +70,42 @@ func (rp *ResourcePoolImpl) GetResourcePrefix() string {
 
 // GetDevices returns a map of Kubelet API devices
 func (rp *ResourcePoolImpl) GetDevices() map[string]*pluginapi.Device {
+	rp.healthMu.RLock()
+	defer rp.healthMu.RUnlock()
 	devices := make(map[string]*pluginapi.Device)
 	for id, dev := range rp.devicePool {
-		devices[id] = dev.GetAPIDevice()
+		snapshot := *dev.GetAPIDevice()
+		if health, ok := rp.nativeHealth[id]; ok {
+			snapshot.Health = health
+		}
+		devices[id] = &snapshot
 	}
 	return devices
 }
 
-// Probe - does device healthcheck. Not implemented
+// Probe checks native VFIO access without opening devices or acquiring DMA ownership.
 func (rp *ResourcePoolImpl) Probe() bool {
-	// TO-DO: Implement this
-	return false
+	if rp.config.VFIOMode != types.VFIOModeIOMMUFD {
+		return false
+	}
+	rp.healthMu.Lock()
+	defer rp.healthMu.Unlock()
+	changed := false
+	for id, dev := range rp.devicePool {
+		health := pluginapi.Healthy
+		_, err := dev.GetDeviceSpecs()
+		if err != nil {
+			health = pluginapi.Unhealthy
+		}
+		if rp.nativeHealth[id] != health {
+			if err != nil {
+				glog.Warningf("VFIO resource %s device %s is unhealthy: %v", rp.GetResourceName(), id, err)
+			}
+			changed = true
+			rp.nativeHealth[id] = health
+		}
+	}
+	return changed
 }
 
 // GetDeviceSpecs returns list of plugin API device specs for a list of device IDs

@@ -52,6 +52,15 @@ func NewHostDeviceImpl(dev *ghw.PCIDevice, deviceID string, rFactory types.Resou
 		}
 	}
 
+	// Native mode replaces only the VFIO provider. Other device access stays unchanged.
+	if driverName == "vfio-pci" && rc.VFIOMode == types.VFIOModeIOMMUFD {
+		for i, provider := range infoProviders {
+			if provider.GetName() == "vfio" {
+				infoProviders[i] = infoprovider.NewVfioInfoProviderWithConfig(deviceID, rc)
+			}
+		}
+	}
+
 	nodeNum := -1
 	if !rc.ExcludeTopology {
 		nodeNum = utils.GetDevNode(dev.Address)

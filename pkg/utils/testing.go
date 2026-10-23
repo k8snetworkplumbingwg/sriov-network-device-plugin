@@ -68,12 +68,13 @@ func (fs *FakeFilesystem) Use() func() {
 		}
 	}
 
-	oldPCI, oldAux := sysBusPci, sysBusAux
+	oldPCI, oldAux, oldIommu := sysBusPci, sysBusAux, sysClassIommu
 	sysBusPci = path.Join(fs.RootDir, "/sys/bus/pci/devices")
+	sysClassIommu = path.Join(fs.RootDir, "/sys/class/misc/iommu")
 	sysBusAux = path.Join(fs.RootDir, "/sys/bus/auxiliary/devices")
 
 	return func() {
-		sysBusPci, sysBusAux = oldPCI, oldAux
+		sysBusPci, sysBusAux, sysClassIommu = oldPCI, oldAux, oldIommu
 		// remove temporary fake fs
 		err := os.RemoveAll(fs.RootDir)
 		if err != nil {

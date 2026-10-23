@@ -87,8 +87,7 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
-			_, err := dip.GetDeviceSpecs()
-			Expect(err).NotTo(HaveOccurred())
+			// Metadata must also work before device specifications are requested.
 			envs := dip.GetEnvVal()
 			Expect(len(envs)).To(Equal(2))
 			devMount, exist := envs["dev-mount"]

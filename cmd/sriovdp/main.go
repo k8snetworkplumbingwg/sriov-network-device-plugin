@@ -29,6 +29,7 @@ const (
 
 // Parse Command line flags
 func flagInit(cp *cliParams) {
+	flag.StringVar(&cp.hostDevDir, "host-dev-dir", "/dev", "host device directory used to validate native VFIO nodes")
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
