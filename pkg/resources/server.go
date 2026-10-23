@@ -136,6 +136,10 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 	for _, container := range rqt.ContainerRequests {
 		containerResp := new(pluginapi.ContainerAllocateResponse)
 
+		specs, err := rs.resourcePool.GetDeviceSpecs(container.DevicesIds)
+		if err != nil {
+			return nil, fmt.Errorf("allocate resource %s: %w", rs.resourcePool.GetResourceName(), err)
+		}
 		envs, err := rs.getEnvs(container.DevicesIds)
 		if err != nil {
 			glog.Errorf("failed to get environment variables for device IDs %v: %v", container.DevicesIds, err)
@@ -149,7 +153,7 @@ func (rs *resourceServer) Allocate(ctx context.Context, rqt *pluginapi.AllocateR
 				return nil, fmt.Errorf("can't create container annotation: %s", err)
 			}
 		} else {
-			containerResp.Devices = rs.resourcePool.GetDeviceSpecs(container.DevicesIds)
+			containerResp.Devices = specs
 			containerResp.Mounts = rs.resourcePool.GetMounts(container.DevicesIds)
 		}
 

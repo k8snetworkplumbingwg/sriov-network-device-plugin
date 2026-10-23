@@ -45,7 +45,7 @@ func (rp *vfioInfoProvider) GetName() string {
 	return "vfio"
 }
 
-func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (rp *vfioInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 		HostPath:      rp.vfioMount,
@@ -64,7 +64,7 @@ func (rp *vfioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		})
 	}
 
-	return devSpecs
+	return devSpecs, nil
 }
 
 func (rp *vfioInfoProvider) GetEnvVal() types.AdditionalInfo {

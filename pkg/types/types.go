@@ -190,7 +190,7 @@ type ResourcePool interface {
 	GetResourcePrefix() string
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
-	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
+	GetDeviceSpecs(deviceIDs []string) ([]*pluginapi.DeviceSpec, error)
 	GetEnvs(prefix string, deviceIDs []string) (map[string]string, error)
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error
@@ -218,7 +218,7 @@ type DeviceProvider interface {
 // APIDevice provides an interface to expose device information to Kubernetes API
 type APIDevice interface {
 	// GetDeviceSpecs returns a list of specs which describes host devices
-	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error)
 	// GetEnvVal returns device information to be exposed via environment variable
 	GetEnvVal() map[string]AdditionalInfo
 	// GetMounts returns a list of host volumes associated with device
@@ -301,7 +301,7 @@ type AuxNetDevice interface {
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
 type DeviceInfoProvider interface {
 	GetName() string
-	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error)
 	GetEnvVal() AdditionalInfo
 	GetMounts() []*pluginapi.Mount
 }

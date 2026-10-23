@@ -82,22 +82,27 @@ func (rp *ResourcePoolImpl) Probe() bool {
 }
 
 // GetDeviceSpecs returns list of plugin API device specs for a list of device IDs
-func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
+func (rp *ResourcePoolImpl) GetDeviceSpecs(deviceIDs []string) ([]*pluginapi.DeviceSpec, error) {
 	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
-	// Add vfio group specific devices
+	// Resolve all devices before returning any allocation paths.
 	for _, id := range deviceIDs {
-		if dev, ok := rp.devicePool[id]; ok {
-			newSpecs := dev.GetDeviceSpecs()
-			for _, ds := range newSpecs {
-				if !rp.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
+		dev, ok := rp.devicePool[id]
+		if !ok {
+			return nil, fmt.Errorf("resource %s does not contain device %s", rp.GetResourceName(), id)
+		}
+		newSpecs, err := dev.GetDeviceSpecs()
+		if err != nil {
+			return nil, err
+		}
+		for _, ds := range newSpecs {
+			if !rp.DeviceSpecExist(devSpecs, ds) {
+				devSpecs = append(devSpecs, ds)
 			}
 		}
 	}
-	return devSpecs
+	return devSpecs, nil
 }
 
 // GetEnvs returns a map with two keys.

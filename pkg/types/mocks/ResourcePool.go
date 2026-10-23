@@ -50,7 +50,7 @@ func (_m *ResourcePool) GetCDIName() string {
 }
 
 // GetDeviceSpecs provides a mock function with given fields: deviceIDs
-func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec {
+func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) ([]*v1beta1.DeviceSpec, error) {
 	ret := _m.Called(deviceIDs)
 
 	if len(ret) == 0 {
@@ -58,6 +58,10 @@ func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec
 	}
 
 	var r0 []*v1beta1.DeviceSpec
+	var r1 error
+	if rf, ok := ret.Get(0).(func([]string) ([]*v1beta1.DeviceSpec, error)); ok {
+		return rf(deviceIDs)
+	}
 	if rf, ok := ret.Get(0).(func([]string) []*v1beta1.DeviceSpec); ok {
 		r0 = rf(deviceIDs)
 	} else {
@@ -66,7 +70,13 @@ func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = rf(deviceIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetDevices provides a mock function with no fields

@@ -274,7 +274,7 @@ var _ = Describe("Server", func() {
 				On("GetDeviceFiles").
 				Return(map[string]string{"00:00.01": "/dev/fake"}).
 				On("GetDeviceSpecs", []string{"00:00.01"}).
-				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}).
+				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}, nil).
 				On("GetEnvs", "fake.com", []string{"00:00.01"}).
 				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
 				On("GetMounts", []string{"00:00.01"}).
@@ -329,6 +329,7 @@ var _ = Describe("Server", func() {
 		for _, pool := range pools {
 			rp := mocks.NewResourcePool(GinkgoT())
 			ids := pool.ids
+			rp.On("GetDeviceSpecs", ids).Return([]*pluginapi.DeviceSpec{}, nil)
 			rp.On("GetResourceName").Return(pool.name)
 			rp.On("GetCDIName").Return("net-pci")
 			rp.On("GetEnvs", pool.prefix, ids).Return(map[string]string{}, nil)
@@ -356,7 +357,7 @@ var _ = Describe("Server", func() {
 				On("GetDeviceFiles").
 				Return(map[string]string{"00:00.01": "/dev/fake"}).
 				On("GetDeviceSpecs", []string{"00:00.01"}).
-				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}).
+				Return([]*pluginapi.DeviceSpec{{ContainerPath: "/dev/fake", HostPath: "/dev/fake", Permissions: "rw"}}, nil).
 				On("GetEnvs", "fake.com", []string{"00:00.01"}).
 				Return(map[string]string{"PCIDEVICE_FAKE_COM_FAKE_INFO": "{\"00:00.01\":{\"netdevice\":{\"pci\":\"00:00.01\"}}}"}, nil).
 				On("GetMounts", []string{"00:00.01"}).

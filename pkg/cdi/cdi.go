@@ -63,7 +63,11 @@ func (c *impl) CreateCDISpecForPool(resourcePrefix string, rPool types.ResourceP
 			DeviceNodes: make([]*cdiSpecs.DeviceNode, 0),
 		}
 
-		for _, spec := range rPool.GetDeviceSpecs([]string{dev.GetID()}) {
+		specs, err := rPool.GetDeviceSpecs([]string{dev.GetID()})
+		if err != nil {
+			return fmt.Errorf("create CDI device %s: %w", dev.GetID(), err)
+		}
+		for _, spec := range specs {
 			deviceNode := cdiSpecs.DeviceNode{
 				Path:        spec.ContainerPath,
 				HostPath:    spec.HostPath,

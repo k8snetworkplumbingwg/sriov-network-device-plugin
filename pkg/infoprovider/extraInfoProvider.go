@@ -43,9 +43,9 @@ func (rp *extraInfoProvider) GetName() string {
 	return "extra"
 }
 
-func (rp *extraInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (rp *extraInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-	return devSpecs
+	return devSpecs, nil
 }
 
 func (rp *extraInfoProvider) GetEnvVal() types.AdditionalInfo {

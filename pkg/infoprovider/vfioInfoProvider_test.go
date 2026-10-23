@@ -39,7 +39,8 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
-			specs := dip.GetDeviceSpecs()
+			specs, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(specs).To(ConsistOf(expected))
 		},
 		Entry("empty and returning default common vfio device file only",

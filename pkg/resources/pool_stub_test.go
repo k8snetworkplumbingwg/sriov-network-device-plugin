@@ -67,7 +67,8 @@ var _ = Describe("ResourcePool", func() {
 						"0000:00:00.2": d2,
 					},
 				)
-				specs := rp.GetDeviceSpecs(devs)
+				specs, err := rp.GetDeviceSpecs(devs)
+				Expect(err).NotTo(HaveOccurred())
 
 				expected := []*pluginapi.DeviceSpec{
 					{ContainerPath: "/dev/vfio/vfio", HostPath: "/dev/vfio/vfio", Permissions: "rw"},

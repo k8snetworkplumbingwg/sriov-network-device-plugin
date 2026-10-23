@@ -106,7 +106,7 @@ func (_m *PciNetDevice) GetDeviceID() string {
 }
 
 // GetDeviceSpecs provides a mock function with no fields
-func (_m *PciNetDevice) GetDeviceSpecs() []*v1beta1.DeviceSpec {
+func (_m *PciNetDevice) GetDeviceSpecs() ([]*v1beta1.DeviceSpec, error) {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
@@ -114,6 +114,10 @@ func (_m *PciNetDevice) GetDeviceSpecs() []*v1beta1.DeviceSpec {
 	}
 
 	var r0 []*v1beta1.DeviceSpec
+	var r1 error
+	if rf, ok := ret.Get(0).(func() ([]*v1beta1.DeviceSpec, error)); ok {
+		return rf()
+	}
 	if rf, ok := ret.Get(0).(func() []*v1beta1.DeviceSpec); ok {
 		r0 = rf()
 	} else {
@@ -122,7 +126,13 @@ func (_m *PciNetDevice) GetDeviceSpecs() []*v1beta1.DeviceSpec {
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetDriver provides a mock function with no fields
