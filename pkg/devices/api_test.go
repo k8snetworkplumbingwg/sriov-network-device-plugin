@@ -38,7 +38,7 @@ var _ = Describe("ApiDevice", func() {
 			mockEnv := types.AdditionalInfo{"deviceID": "0000:00:00.1"}
 			mockInfo1.On("GetName").Return("generic")
 			mockInfo1.On("GetEnvVal").Return(mockEnv)
-			mockInfo1.On("GetDeviceSpecs").Return(mockSpec1)
+			mockInfo1.On("GetDeviceSpecs").Return(mockSpec1, nil)
 			mockInfo1.On("GetMounts").Return(nil)
 			mockInfo2 := &mocks.DeviceInfoProvider{}
 			mockSpec2 := []*v1beta1.DeviceSpec{
@@ -46,7 +46,7 @@ var _ = Describe("ApiDevice", func() {
 			}
 			mockInfo2.On("GetName").Return("generic")
 			mockInfo2.On("GetEnvVal").Return(mockEnv)
-			mockInfo2.On("GetDeviceSpecs").Return(mockSpec2)
+			mockInfo2.On("GetDeviceSpecs").Return(mockSpec2, nil)
 			mockInfo2.On("GetMounts").Return(nil)
 
 			infoProviders := []types.DeviceInfoProvider{mockInfo1, mockInfo2}

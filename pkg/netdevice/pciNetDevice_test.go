@@ -136,14 +136,14 @@ var _ = Describe("PciNetDevice", func() {
 			mockEnv1 := types.AdditionalInfo{"deviceID": pciAddr1}
 			mockInfo1.On("GetName").Return("generic")
 			mockInfo1.On("GetEnvVal").Return(mockEnv1)
-			mockInfo1.On("GetDeviceSpecs").Return(nil)
+			mockInfo1.On("GetDeviceSpecs").Return(nil, nil)
 			mockInfo1.On("GetMounts").Return(nil)
 			pciAddr2 := "0000:00:00.2"
 			mockInfo2 := &mocks.DeviceInfoProvider{}
 			mockEnv2 := types.AdditionalInfo{"deviceID": pciAddr2}
 			mockInfo2.On("GetName").Return("generic")
 			mockInfo2.On("GetEnvVal").Return(mockEnv2)
-			mockInfo2.On("GetDeviceSpecs").Return(nil)
+			mockInfo2.On("GetDeviceSpecs").Return(nil, nil)
 			mockInfo2.On("GetMounts").Return(nil)
 			f.On("GetDefaultInfoProvider", pciAddr1, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo1}).
 				On("GetDefaultInfoProvider", pciAddr2, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo2}).
@@ -383,13 +383,13 @@ var _ = Describe("PciNetDevice", func() {
 			mockEnv1 := types.AdditionalInfo{"deviceID": "0000:00:00.1"}
 			defaultInfo1.On("GetName").Return("generic")
 			defaultInfo1.On("GetEnvVal").Return(mockEnv1)
-			defaultInfo1.On("GetDeviceSpecs").Return(nil)
+			defaultInfo1.On("GetDeviceSpecs").Return(nil, nil)
 			defaultInfo1.On("GetMounts").Return(nil)
 			defaultInfo2 := &mocks.DeviceInfoProvider{}
 			mockEnv2 := types.AdditionalInfo{"deviceID": "0000:00:00.2"}
 			defaultInfo2.On("GetName").Return("generic")
 			defaultInfo2.On("GetEnvVal").Return(mockEnv2)
-			defaultInfo2.On("GetDeviceSpecs").Return(nil)
+			defaultInfo2.On("GetDeviceSpecs").Return(nil, nil)
 			defaultInfo2.On("GetMounts").Return(nil)
 
 			fakeVdpaVhost := &mocks.VdpaDevice{}

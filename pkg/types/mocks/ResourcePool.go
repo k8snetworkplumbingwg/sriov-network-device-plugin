@@ -28,8 +28,12 @@ func (_m *ResourcePool) CleanDeviceInfoFile(resourceNamePrefix string) error {
 }
 
 // GetDeviceSpecs provides a mock function with given fields: deviceIDs
-func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec {
+func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) ([]*v1beta1.DeviceSpec, error) {
 	ret := _m.Called(deviceIDs)
+
+	if rf, ok := ret.Get(0).(func([]string) ([]*v1beta1.DeviceSpec, error)); ok {
+		return rf(deviceIDs)
+	}
 
 	var r0 []*v1beta1.DeviceSpec
 	if rf, ok := ret.Get(0).(func([]string) []*v1beta1.DeviceSpec); ok {
@@ -40,7 +44,13 @@ func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = rf(deviceIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
 }
 
 // GetDevices provides a mock function with given fields:

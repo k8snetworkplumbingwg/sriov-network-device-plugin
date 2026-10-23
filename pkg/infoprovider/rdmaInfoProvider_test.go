@@ -65,7 +65,8 @@ var _ = Describe("rdmaInfoProvider", func() {
 				{ContainerPath: "/dev/infiniband/uverbs4"},
 				{ContainerPath: "/dev/infiniband/rdma_cm"}})
 			dip := infoprovider.NewRdmaInfoProvider(rdma)
-			dip.GetDeviceSpecs()
+			_, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			envs := dip.GetEnvVal()
 			Expect(len(envs)).To(Equal(4))
 			mount, exist := envs["rdma_cm"]

@@ -20,7 +20,6 @@ import (
 
 	"github.com/golang/glog"
 	nettypes "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
@@ -41,28 +40,6 @@ func NewNetResourcePool(nadutils types.NadUtils, rc *types.ResourceConfig,
 		ResourcePoolImpl: rp,
 		nadutils:         nadutils,
 	}
-}
-
-// Overrides GetDeviceSpecs
-func (rp *netResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-
-	devicePool := rp.GetDevicePool()
-
-	// Add device driver specific and rdma specific devices
-	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
-			netDev := dev.(types.PciNetDevice) // convert generic HostDevice to PciNetDevice
-			newSpecs := netDev.GetDeviceSpecs()
-			for _, ds := range newSpecs {
-				if !rp.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
-			}
-		}
-	}
-	return devSpecs
 }
 
 // StoreDeviceInfoFile stores the Device Info files according to the

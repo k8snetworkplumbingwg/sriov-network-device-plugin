@@ -80,20 +80,20 @@ func (ip *vhostNetInfoProvider) GetName() string {
 	return "vhost"
 }
 
-func (ip *vhostNetInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (ip *vhostNetInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	if !VhostNetDeviceExist() {
 		glog.Errorf("GetDeviceSpecs(): /dev/vhost-net doesn't exist")
-		return nil
+		return nil, nil
 	}
 	deviceSpec := getVhostNetDeviceSpec()
 
 	if !tunDeviceExist() {
 		glog.Errorf("GetDeviceSpecs(): /dev/net/tun doesn't exist")
-		return nil
+		return nil, nil
 	}
 	deviceSpec = append(deviceSpec, getTunDeviceSpec()...)
 
-	return deviceSpec
+	return deviceSpec, nil
 }
 
 func (ip *vhostNetInfoProvider) GetEnvVal() types.AdditionalInfo {

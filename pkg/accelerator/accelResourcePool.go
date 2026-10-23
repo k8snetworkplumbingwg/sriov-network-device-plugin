@@ -15,10 +15,6 @@
 package accelerator
 
 import (
-	"github.com/golang/glog"
-
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
@@ -35,25 +31,4 @@ func NewAccelResourcePool(rc *types.ResourceConfig, devicePool map[string]types.
 	return &accelResourcePool{
 		ResourcePoolImpl: rp,
 	}
-}
-
-// Overrides GetDeviceSpecs
-func (rp *accelResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-
-	devicePool := rp.GetDevicePool()
-
-	// Add device driver specific devices
-	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
-			newSpecs := dev.GetDeviceSpecs()
-			for _, ds := range newSpecs {
-				if !rp.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
-			}
-		}
-	}
-	return devSpecs
 }

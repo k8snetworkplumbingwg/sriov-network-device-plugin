@@ -67,19 +67,19 @@ var _ = Describe("NetResourcePool", func() {
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1a"},
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake1b"},
 			}
-			fake1.On("GetDeviceSpecs").Return(fake1ds)
+			fake1.On("GetDeviceSpecs").Return(fake1ds, nil)
 
 			// fake2 will have 1 device spec
 			fake2 := &mocks.PciNetDevice{}
 			fake2ds := []*pluginapi.DeviceSpec{
 				{ContainerPath: "/fake/path", HostPath: "/dev/fake2"},
 			}
-			fake2.On("GetDeviceSpecs").Return(fake2ds)
+			fake2.On("GetDeviceSpecs").Return(fake2ds, nil)
 
 			// fake3 will have 0 device specs
 			fake3 := &mocks.PciNetDevice{}
 			fake3ds := []*pluginapi.DeviceSpec{}
-			fake3.On("GetDeviceSpecs").Return(fake3ds)
+			fake3.On("GetDeviceSpecs").Return(fake3ds, nil)
 
 			pcis := map[string]types.HostDevice{"fake1": fake1, "fake2": fake2, "fake3": fake3}
 
@@ -87,7 +87,8 @@ var _ = Describe("NetResourcePool", func() {
 
 			devIDs := []string{"fake1", "fake2"}
 
-			actual := rp.GetDeviceSpecs(devIDs)
+			actual, err := rp.GetDeviceSpecs(devIDs)
+			Expect(err).NotTo(HaveOccurred())
 
 			It("should return valid slice of device specs", func() {
 				Expect(actual).ToNot(BeNil())

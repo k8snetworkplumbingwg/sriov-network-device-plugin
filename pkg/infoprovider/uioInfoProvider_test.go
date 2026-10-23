@@ -40,7 +40,8 @@ var _ = Describe("uioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewUioInfoProvider(pciAddr)
-			specs := dip.GetDeviceSpecs()
+			specs, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(specs).To(ConsistOf(expected))
 		},
 		Entry("empty", &utils.FakeFilesystem{}, "", []*pluginapi.DeviceSpec{}),
@@ -72,7 +73,8 @@ var _ = Describe("uioInfoProvider", func() {
 			}
 			defer fs.Use()()
 			dip := infoprovider.NewUioInfoProvider(pciAddr)
-			dip.GetDeviceSpecs()
+			_, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			envs := dip.GetEnvVal()
 			Expect(len(envs)).To(Equal(1))
 			mount, exist := envs["mount"]

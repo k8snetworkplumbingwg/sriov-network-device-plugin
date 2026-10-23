@@ -41,7 +41,7 @@ func (rp *uioInfoProvider) GetName() string {
 	return "uio"
 }
 
-func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (rp *uioInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
 	uioDev, err := utils.GetUIODeviceFile(rp.pciAddr)
@@ -56,7 +56,7 @@ func (rp *uioInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		rp.uioDev = uioDev
 	}
 
-	return devSpecs
+	return devSpecs, nil
 }
 
 func (rp *uioInfoProvider) GetEnvVal() types.AdditionalInfo {

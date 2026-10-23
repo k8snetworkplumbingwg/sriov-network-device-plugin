@@ -86,7 +86,8 @@ var _ = Describe("vdpaInfoProvider", func() {
 			vdpa.On("GetType").Return(types.VdpaVhostType).
 				On("GetPath").Return("/dev/vhost-vdpa1", nil)
 			dip := infoprovider.NewVdpaInfoProvider(types.VdpaVhostType, vdpa)
-			dip.GetDeviceSpecs()
+			_, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			envs := dip.GetEnvVal()
 			Expect(len(envs)).To(Equal(1))
 			mount, exist := envs["mount"]
