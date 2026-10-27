@@ -94,6 +94,9 @@ var SupportedVdpaTypes = map[VdpaType]string{
 
 // ResourceConfig contains configuration parameters for a resource pool
 type ResourceConfig struct {
+	VFIOMode   string `json:"vfioMode,omitempty"`
+	NeedIommu  bool   `json:"needIommu,omitempty"`
+	HostDevDir string `json:"-"`
 	// optional resource prefix that will overwrite	global prefix specified in cli params
 	ResourcePrefix string `json:"resourcePrefix,omitempty"`
 	//nolint:lll
@@ -185,12 +188,13 @@ type ResourceFactory interface {
 
 // ResourcePool represents a generic resource entity
 type ResourcePool interface {
+	GetConfig() *ResourceConfig
 	// extended API for internal use
 	GetResourceName() string
 	GetResourcePrefix() string
 	GetDevices() map[string]*pluginapi.Device // for ListAndWatch
 	Probe() bool
-	GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec
+	GetDeviceSpecs(deviceIDs []string) ([]*pluginapi.DeviceSpec, error)
 	GetEnvs(prefix string, deviceIDs []string) (map[string]string, error)
 	GetMounts(deviceIDs []string) []*pluginapi.Mount
 	StoreDeviceInfoFile(resourceNamePrefix string, deviceIDs []string) error
@@ -218,7 +222,7 @@ type DeviceProvider interface {
 // APIDevice provides an interface to expose device information to Kubernetes API
 type APIDevice interface {
 	// GetDeviceSpecs returns a list of specs which describes host devices
-	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error)
 	// GetEnvVal returns device information to be exposed via environment variable
 	GetEnvVal() map[string]AdditionalInfo
 	// GetMounts returns a list of host volumes associated with device
@@ -301,7 +305,7 @@ type AuxNetDevice interface {
 // DeviceInfoProvider is an interface to get Device Plugin API specific device information
 type DeviceInfoProvider interface {
 	GetName() string
-	GetDeviceSpecs() []*pluginapi.DeviceSpec
+	GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error)
 	GetEnvVal() AdditionalInfo
 	GetMounts() []*pluginapi.Mount
 }

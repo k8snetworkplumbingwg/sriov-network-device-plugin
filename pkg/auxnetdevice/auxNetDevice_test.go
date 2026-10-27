@@ -142,13 +142,13 @@ var _ = Describe("AuxNetDevice", func() {
 			mockEnv1 := types.AdditionalInfo{"deviceID": auxDevName1}
 			mockInfo1.On("GetName").Return("generic")
 			mockInfo1.On("GetEnvVal").Return(mockEnv1)
-			mockInfo1.On("GetDeviceSpecs").Return(nil)
+			mockInfo1.On("GetDeviceSpecs").Return(nil, nil)
 			mockInfo1.On("GetMounts").Return(nil)
 			mockInfo2 := &tmocks.DeviceInfoProvider{}
 			mockEnv2 := types.AdditionalInfo{"deviceID": auxDevName2}
 			mockInfo2.On("GetName").Return("generic")
 			mockInfo2.On("GetEnvVal").Return(mockEnv2)
-			mockInfo2.On("GetDeviceSpecs").Return(nil)
+			mockInfo2.On("GetDeviceSpecs").Return(nil, nil)
 			mockInfo2.On("GetMounts").Return(nil)
 			f.On("GetDefaultInfoProvider", auxDevName1, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo1}).
 				On("GetDefaultInfoProvider", auxDevName2, "mlx5_core").Return([]types.DeviceInfoProvider{mockInfo2}).
@@ -360,7 +360,8 @@ var _ = Describe("AuxNetDevice", func() {
 				Expect(envs["vhost"]).To(HaveKeyWithValue("tun-mount", "/dev/net/tun"))
 
 				// validate mounts
-				devSpecs := dev.GetDeviceSpecs()
+				devSpecs, err := dev.GetDeviceSpecs()
+				Expect(err).NotTo(HaveOccurred())
 				Expect(devSpecs).To(HaveLen(2))
 				Expect(devSpecs).To(ConsistOf(
 					And(HaveField("HostPath", "/dev/vhost-net"), HaveField("ContainerPath", "/dev/vhost-net")),
