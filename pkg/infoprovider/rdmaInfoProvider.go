@@ -47,15 +47,15 @@ func (ip *rdmaInfoProvider) GetName() string {
 	return "rdma"
 }
 
-func (ip *rdmaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (ip *rdmaInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	if !ip.rdmaSpec.IsRdma() {
 		glog.Errorf("GetDeviceSpecs(): rdma is required in the configuration but the device is not rdma device")
-		return nil
+		return nil, nil
 	}
 
 	devsSpec := ip.rdmaSpec.GetRdmaDeviceSpec()
 	glog.Infof("GetDeviceSpecs(): GetRdmaDeviceSpec returned %v", devsSpec)
-	return devsSpec
+	return devsSpec, nil
 }
 
 func (ip *rdmaInfoProvider) GetEnvVal() types.AdditionalInfo {

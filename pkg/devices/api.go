@@ -50,13 +50,17 @@ func NewAPIDeviceImpl(id string, infoProviders []types.DeviceInfoProvider, nodeN
 }
 
 // GetDeviceSpecs returns list of device specs
-func (ad *APIDeviceImpl) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (ad *APIDeviceImpl) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	dSpecs := make([]*pluginapi.DeviceSpec, 0)
 	for _, infoProvider := range ad.infoProviders {
-		dSpecs = append(dSpecs, infoProvider.GetDeviceSpecs()...)
+		specs, err := infoProvider.GetDeviceSpecs()
+		if err != nil {
+			return nil, err
+		}
+		dSpecs = append(dSpecs, specs...)
 	}
 
-	return dSpecs
+	return dSpecs, nil
 }
 
 // GetEnvVal returns device environment variables

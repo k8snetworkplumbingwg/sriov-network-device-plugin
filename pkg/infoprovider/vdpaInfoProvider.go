@@ -50,11 +50,11 @@ func (vip *vdpaInfoProvider) GetName() string {
 }
 
 // GetDeviceSpecs returns the DeviceSpec slice
-func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (vip *vdpaInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	if healthy, err := vip.isHealthy(); !healthy {
 		glog.Errorf("GetDeviceSpecs(): vDPA is required in the configuration but device does not have a healthy vdpa device: %s",
 			err)
-		return nil
+		return nil, nil
 	}
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 
@@ -63,7 +63,7 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		vdpaPath, err := vip.dev.GetPath()
 		if err != nil {
 			glog.Errorf("Unexpected error when fetching the vdpa device path: %s", err)
-			return nil
+			return nil, nil
 		}
 		devSpecs = append(devSpecs, &pluginapi.DeviceSpec{
 			HostPath:      vdpaPath,
@@ -72,7 +72,7 @@ func (vip *vdpaInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
 		})
 		vip.vdpaPath = vdpaPath
 	}
-	return devSpecs
+	return devSpecs, nil
 }
 
 // GetEnvVal returns the environment variable value

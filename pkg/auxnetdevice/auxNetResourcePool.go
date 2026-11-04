@@ -18,9 +18,6 @@
 package auxnetdevice
 
 import (
-	"github.com/golang/glog"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 )
@@ -41,28 +38,6 @@ func NewAuxNetResourcePool(rc *types.ResourceConfig, devicePool map[string]types
 	return &auxNetResourcePool{
 		ResourcePoolImpl: rp,
 	}
-}
-
-// Overrides GetDeviceSpecs
-func (ap *auxNetResourcePool) GetDeviceSpecs(deviceIDs []string) []*pluginapi.DeviceSpec {
-	glog.Infof("GetDeviceSpecs(): for devices: %v", deviceIDs)
-	devSpecs := make([]*pluginapi.DeviceSpec, 0)
-
-	devicePool := ap.GetDevicePool()
-
-	// Add device driver specific and rdma specific devices
-	for _, id := range deviceIDs {
-		if dev, ok := devicePool[id]; ok {
-			auxDev := dev.(types.AuxNetDevice) // convert generic HostDevice to AuxNetDevice
-			newSpecs := auxDev.GetDeviceSpecs()
-			for _, ds := range newSpecs {
-				if !ap.DeviceSpecExist(devSpecs, ds) {
-					devSpecs = append(devSpecs, ds)
-				}
-			}
-		}
-	}
-	return devSpecs
 }
 
 // GetCDIKind returns device kind for CDI spec

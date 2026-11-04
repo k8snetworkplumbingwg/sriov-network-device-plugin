@@ -38,10 +38,10 @@ func (rp *genericInfoProvider) GetName() string {
 	return "generic"
 }
 
-func (rp *genericInfoProvider) GetDeviceSpecs() []*pluginapi.DeviceSpec {
+func (rp *genericInfoProvider) GetDeviceSpecs() ([]*pluginapi.DeviceSpec, error) {
 	devSpecs := make([]*pluginapi.DeviceSpec, 0)
 	// NO device file, send empty DeviceSpec map
-	return devSpecs
+	return devSpecs, nil
 }
 
 func (rp *genericInfoProvider) GetEnvVal() types.AdditionalInfo {

@@ -36,6 +36,7 @@ const (
 // cliParams presents CLI parameters for SR-IOV Network Device Plugin
 type cliParams struct {
 	configFile     string
+	hostDevDir     string
 	resourcePrefix string
 	useCdi         bool
 }
@@ -91,6 +92,7 @@ func (rm *resourceManager) readConfig() error {
 
 	for i := range resources.ResourceList {
 		conf := &resources.ResourceList[i]
+		conf.HostDevDir = rm.hostDevDir
 		// Validate deviceType
 		if conf.DeviceType == "" {
 			conf.DeviceType = types.NetDeviceType // Default to NetDeviceType
@@ -231,6 +233,11 @@ func (rm *resourceManager) validConfigs() bool {
 		// Check if the DeviceType is valid
 		if _, ok := types.SupportedDevices[conf.DeviceType]; !ok {
 			glog.Errorf("unsupported deviceType:  \"%s\" already exists", conf.DeviceType)
+			return false
+		}
+
+		if err := conf.ValidateVFIOConfig(); err != nil {
+			glog.Errorf("invalid VFIO configuration for %s: %v", resourceName, err)
 			return false
 		}
 

@@ -39,7 +39,8 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
-			specs := dip.GetDeviceSpecs()
+			specs, err := dip.GetDeviceSpecs()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(specs).To(ConsistOf(expected))
 		},
 		Entry("empty and returning default common vfio device file only",
@@ -85,6 +86,7 @@ var _ = Describe("vfioInfoProvider", func() {
 			defer fs.Use()()
 
 			dip := infoprovider.NewVfioInfoProvider(pciAddr)
+			// Metadata must also work before device specifications are requested.
 			envs := dip.GetEnvVal()
 			Expect(envs).To(HaveLen(2))
 			devMount, exist := envs["dev-mount"]

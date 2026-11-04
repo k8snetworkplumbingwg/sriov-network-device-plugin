@@ -3,8 +3,8 @@
 package mocks
 
 import (
+	types "github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	mock "github.com/stretchr/testify/mock"
-
 	v1beta1 "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
@@ -49,8 +49,28 @@ func (_m *ResourcePool) GetCDIName() string {
 	return r0
 }
 
+// GetConfig provides a mock function with no fields
+func (_m *ResourcePool) GetConfig() *types.ResourceConfig {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetConfig")
+	}
+
+	var r0 *types.ResourceConfig
+	if rf, ok := ret.Get(0).(func() *types.ResourceConfig); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResourceConfig)
+		}
+	}
+
+	return r0
+}
+
 // GetDeviceSpecs provides a mock function with given fields: deviceIDs
-func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec {
+func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) ([]*v1beta1.DeviceSpec, error) {
 	ret := _m.Called(deviceIDs)
 
 	if len(ret) == 0 {
@@ -58,6 +78,10 @@ func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec
 	}
 
 	var r0 []*v1beta1.DeviceSpec
+	var r1 error
+	if rf, ok := ret.Get(0).(func([]string) ([]*v1beta1.DeviceSpec, error)); ok {
+		return rf(deviceIDs)
+	}
 	if rf, ok := ret.Get(0).(func([]string) []*v1beta1.DeviceSpec); ok {
 		r0 = rf(deviceIDs)
 	} else {
@@ -66,7 +90,13 @@ func (_m *ResourcePool) GetDeviceSpecs(deviceIDs []string) []*v1beta1.DeviceSpec
 		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func([]string) error); ok {
+		r1 = rf(deviceIDs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetDevices provides a mock function with no fields
