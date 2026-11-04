@@ -370,6 +370,9 @@ func GetUIODeviceFile(dev string) (devFile string, err error) {
 	if err != nil {
 		return
 	}
+	if len(files) == 0 {
+		return "", fmt.Errorf("GetUIODeviceFile(): no UIO device found in %s", vfDir)
+	}
 
 	// uio directory should only contain one directory e.g uio1
 	// assuption is there's a corresponding device file in /dev e.g. /dev/uio1

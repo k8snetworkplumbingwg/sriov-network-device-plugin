@@ -347,6 +347,12 @@ var _ = Describe("In the utils package", func() {
 			},
 			"0000:01:10.0", "", true,
 		),
+		Entry("uio directory is empty",
+			&FakeFilesystem{
+				Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/uio"},
+			},
+			"0000:01:10.0", "", true,
+		),
 		Entry("uio device file path is returned",
 			&FakeFilesystem{
 				Dirs: []string{"sys/bus/pci/devices/0000:01:10.0/uio/uio1"},
