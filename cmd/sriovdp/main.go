@@ -16,19 +16,39 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/golang/glog"
 )
 
 const (
-	defaultConfig = "/etc/pcidp/config.json"
+	defaultConfig   = "/etc/pcidp/config.json"
+	defaultLogLevel = 10
 )
 
-// flagInit parse command line flags
-func flagInit(cp *cliParams) {
+func usage() {
+	fmt.Fprintf(os.Stderr,
+		"SR-IOV Network Device Plugin\n\n"+
+			"%s\n"+
+			"\t-h -help\n"+
+			"\t--log-dir=\n"+
+			"\t--log-level=%d\n"+
+			"\t--resource-prefix=\n"+
+			"\t--config-file=\n"+
+			"\t--use-cdi\n",
+		os.Args[0], defaultLogLevel)
+}
+
+// flagInit registers CLI flags (same surface as the former cmd/entrypoint wrapper).
+func flagInit(cp *cliParams, logDir *string, logLevel *int) {
+	flag.Usage = usage
+	flag.StringVar(logDir, "log-dir", "", "Log directory under /var/log/")
+	flag.IntVar(logLevel, "log-level", defaultLogLevel, "Log verbosity level")
 	flag.StringVar(&cp.configFile, "config-file", defaultConfig,
 		"JSON device pool config file location")
 	flag.StringVar(&cp.resourcePrefix, "resource-prefix", "intel.com",
@@ -37,10 +57,37 @@ func flagInit(cp *cliParams) {
 		"Use Container Device Interface to expose devices in containers")
 }
 
+// applyLogFlags configures glog after flag.Parse() so --log-dir / --log-level are honored.
+func applyLogFlags(logDir string, logLevel int) error {
+	if err := flag.Set("v", strconv.Itoa(logLevel)); err != nil {
+		return err
+	}
+	if logDir != "" {
+		logPath := filepath.Join("/var/log", logDir)
+		if err := os.MkdirAll(logPath, 0o755); err != nil {
+			return fmt.Errorf("failed to create log dir %q: %w", logPath, err)
+		}
+		if err := flag.Set("log_dir", logPath); err != nil {
+			return err
+		}
+	}
+	if err := flag.Set("logtostderr", "true"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	cp := &cliParams{}
-	flagInit(cp)
+	var logDir string
+	logLevel := defaultLogLevel
+	flagInit(cp, &logDir, &logLevel)
 	flag.Parse()
+	if err := applyLogFlags(logDir, logLevel); err != nil {
+		fmt.Fprintf(os.Stderr, "error configuring logging: %v\n", err)
+		return
+	}
 	rm := newResourceManager(cp)
 
 	glog.Infof("resource manager reading configs")
