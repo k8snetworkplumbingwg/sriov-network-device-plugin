@@ -264,7 +264,7 @@ This plugin creates device plugin endpoints based on the configurations given in
                 "vendors": ["14e4"],
                 "devices": ["1750"],
                 "drivers": ["bnxt_en"]
-            }],
+            }]
         },
         {
           "resourceName": "old_selectors_syntax_example",
