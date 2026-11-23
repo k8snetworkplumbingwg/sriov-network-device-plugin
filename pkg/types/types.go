@@ -126,6 +126,7 @@ type GenericNetDeviceSelectors struct {
 	RootDevices  []string `json:"rootDevices,omitempty"`
 	LinkTypes    []string `json:"linkTypes,omitempty"`
 	IsRdma       bool     // the resource support rdma
+	IsCxi        bool     // the resource is a Cassini (CXI) device with a /dev/cxiN char device
 	AcpiIndexes  []string `json:"acpiIndexes,omitempty"`
 	NeedVhostNet bool     `json:"needVhostNet,omitempty"` // share vhost-net along the selected resource
 }
@@ -176,6 +177,7 @@ type ResourceFactory interface {
 	GetSelector(string, []string) (DeviceSelector, error)
 	GetResourcePool(rc *ResourceConfig, deviceList []HostDevice) (ResourcePool, error)
 	GetRdmaSpec(DeviceType, string) RdmaSpec
+	GetCxiSpec(string) CxiSpec
 	GetVdpaDevice(string) VdpaDevice
 	GetDeviceProvider(DeviceType) DeviceProvider
 	GetDeviceFilter(*ResourceConfig) ([]interface{}, error)
@@ -283,6 +285,8 @@ type PciNetDevice interface {
 	GetVdpaDevice() VdpaDevice
 	// GetPKey return IB Partition key
 	GetPKey() string
+	// IsCxi returns true if device has a Cassini (CXI) char device
+	IsCxi() bool
 }
 
 // AccelDevice extends PciDevice interface
@@ -321,6 +325,12 @@ type RdmaSpec interface {
 	IsRdma() bool
 	GetRdmaDeviceSpec() []*pluginapi.DeviceSpec
 	GetRdmaDeviceName() string
+}
+
+// CxiSpec cxi (Cassini) device data
+type CxiSpec interface {
+	IsCxi() bool
+	GetCxiDeviceSpec() []*pluginapi.DeviceSpec
 }
 
 // NadUtils is an interface for Network-Attachment-Definition utilities
