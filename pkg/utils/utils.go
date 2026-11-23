@@ -16,6 +16,7 @@ package utils
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,14 +31,17 @@ var (
 	sysBusPci = "/sys/bus/pci/devices"
 	// golangci-lint doesn't see it is used in the testing.go
 	//nolint: unused
-	sysBusAux = "/sys/bus/auxiliary/devices"
-	devDir    = "/dev"
+	sysBusAux        = "/sys/bus/auxiliary/devices"
+	devDir           = "/dev"
+	NetSysDir        = "/sys/class/net"
+	physPortRepRegex = regexp.MustCompile(`^p(\d+)$`)
 )
 
 const (
 	totalVfFile          = "sriov_totalvfs"
 	configuredVfFile     = "sriov_numvfs"
 	eswitchModeSwitchdev = "switchdev"
+	netdevPhysPortName   = "phys_port_name"
 	classIDBaseInt       = 16
 	classIDBitSize       = 64
 	maxVendorName        = 20
@@ -101,9 +105,50 @@ func GetPfName(pciAddr string) (string, error) {
 		}
 		return "", err
 	} else if len(files) > 0 {
-		return files[0].Name(), nil
+		name, err := getPfNameSysFs(pciAddr)
+		if err != nil {
+			return "", err
+		}
+		glog.Infof("pciAddr and pfName %s. %s", pciAddr, name)
+		return name, nil
 	}
 	return "", fmt.Errorf("the PF name is not found for device %s", pciAddr)
+}
+
+// getPfNameSysFs gets a VF or PF PCI address (e.g '0000:03:00.4') and
+// returns the PF name.
+func getPfNameSysFs(pciAddress string) (string, error) {
+	devicePath := filepath.Join(sysBusPci, pciAddress, "physfn", "net")
+	if _, err := os.Stat(devicePath); errors.Is(err, os.ErrNotExist) {
+		// If physfn symlink to the parent PF doesn't exist, use the current device's dir
+		devicePath = filepath.Join(sysBusPci, pciAddress, "net")
+	}
+
+	devices, err := os.ReadDir(devicePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to lookup %s: %v", pciAddress, err)
+	}
+	for _, device := range devices {
+		// Try to get the phys port name, if not exists then fallback to check without it
+		// phys_port_name should be in formant p<port-num> e.g p0,p1,p2 ...etc.
+		if devicePhysPortName, err := getNetDevPhysPortName(device.Name()); err == nil {
+			if !physPortRepRegex.MatchString(devicePhysPortName) {
+				continue
+			}
+		}
+
+		return device.Name(), nil
+	}
+	return "", fmt.Errorf("pfName for %s not found", pciAddress)
+}
+
+func getNetDevPhysPortName(netDev string) (string, error) {
+	devicePortNameFile := filepath.Join(NetSysDir, netDev, netdevPhysPortName)
+	physPortName, err := os.ReadFile(devicePortNameFile)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(physPortName)), nil
 }
 
 // GetPfNameFromAuxDev returns netdevice name of the PF associated with the
