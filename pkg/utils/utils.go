@@ -434,7 +434,7 @@ func GetPciDeviceCode(pciAddr string) (string, error) {
 	deviceFile := filepath.Join(sysBusPci, pciAddr, "device")
 	deviceCode, err := os.ReadFile(deviceFile)
 	if err != nil {
-		return "", fmt.Errorf("error getting device ID for device %s %v", pciAddr, err)
+		return "", fmt.Errorf("error getting device ID for device %s: %w", pciAddr, err)
 	}
 	return strings.TrimPrefix(strings.ToLower(string(bytes.TrimSpace(deviceCode))), "0x"), nil
 }
