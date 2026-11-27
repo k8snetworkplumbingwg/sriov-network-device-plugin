@@ -135,6 +135,7 @@ type NetDeviceSelectors struct {
 	DeviceSelectors
 	GenericPciDeviceSelectors
 	GenericNetDeviceSelectors
+	PfDevices   []string `json:"pfDevices,omitempty"`
 	DDPProfiles []string `json:"ddpProfiles,omitempty"`
 	VdpaType    VdpaType `json:"vdpaType,omitempty"`
 	PKeys       []string `json:"pKeys,omitempty"`

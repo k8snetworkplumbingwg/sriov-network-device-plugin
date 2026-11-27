@@ -335,6 +335,7 @@ These selectors are applicable when "deviceType" is "netDevice" (note: this is d
 | "acpiIndexes"  | N        | Target device's acpi index as string                                     | `string` list Default: `null`                       | "acpiIndexes": ["101"]                                                                           |
 | "pfNames"      | N        | functions from PF matches list of PF names                               | `string` list Default: `null`                       | "pfNames": ["enp2s2f0"] (See follow-up sections for some advance usage of "pfNames")             |
 | "rootDevices"  | N        | functions from PF matches list of PF PCI addresses                       | `string` list Default: `null`                       | "rootDevices": ["0000:86:00.0"] (See follow-up sections for some advance usage of "rootDevices") |
+| "pfDevices"    | N        | functions from PF whose PCI device ID matches the list                   | `string` list Default: `null`                       | "pfDevices": ["101d"]                                                                            |
 | "linkTypes"    | N        | The link type of the net device associated with the PCI device           | `string` list Default: `null`                       | "linkTypes": ["ether"]                                                                           |
 | "ddpProfiles"  | N        | A map of device selectors                                                | `string` list Default: `null`                       | "ddpProfiles": ["GTPv1-C/U IPv4/IPv6 payload"]                                                   |
 | "pKeys"        | N        | Infiniband Partition Keys. Will match only to the devices' default (index0) PKeys. Compatible only with linkTypes = infiniband | `string` list Default: `null`                       | "pKeys": ["0x1", "0xABCD", "0x50"]         |
@@ -497,6 +498,14 @@ The selector for PCI address `0000:86:00.0` and VF 0, 1, 3, 4 will look like:
 ````
 
 If only PF network interface or PF PCI address is specified in the selector, then assuming that all VFs or SFs of this interface are going to the pool.
+
+#### Selecting VFs by parent PF device ID
+
+Different NIC models can expose VFs with the same device ID (e.g. NVIDIA ConnectX-6 Dx `101d` and ConnectX-6 Lx `101f` both create `101e` VFs). The `pfDevices` selector matches on the device ID of the parent PF, so VFs can be pooled per NIC model without listing node-specific PF names or PCI addresses:
+
+````json
+"selectors": [{"vendors": ["15b3"], "devices": ["101e"], "pfDevices": ["101d"]}]
+````
 
 ### Workflow
 

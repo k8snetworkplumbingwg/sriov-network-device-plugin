@@ -5,7 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/golang/glog"
+
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 const (
@@ -165,6 +168,34 @@ func (s *rootDeviceSelector) Filter(inDevices []types.HostDevice) []types.HostDe
 			if isSelected(devIdx, selector) {
 				filteredList = append(filteredList, dev)
 			}
+		}
+	}
+	return filteredList
+}
+
+// NewPfDeviceSelector returns a DeviceSelector interface matching devices by their parent PF's PCI device ID
+func NewPfDeviceSelector(pfDevices []string) types.DeviceSelector {
+	return &pfDeviceSelector{pfDevices: pfDevices}
+}
+
+type pfDeviceSelector struct {
+	pfDevices []string
+}
+
+func (s *pfDeviceSelector) Filter(inDevices []types.HostDevice) []types.HostDevice {
+	filteredList := make([]types.HostDevice, 0)
+	for _, dev := range inDevices {
+		pfAddr := dev.(types.NetDevice).GetPfPciAddr()
+		if pfAddr == "" {
+			continue
+		}
+		pfDevCode, err := utils.GetPciDeviceCode(pfAddr)
+		if err != nil {
+			glog.Warningf("pfDeviceSelector: %v", err)
+			continue
+		}
+		if contains(s.pfDevices, pfDevCode) {
+			filteredList = append(filteredList, dev)
 		}
 	}
 	return filteredList

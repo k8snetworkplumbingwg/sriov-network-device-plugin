@@ -7,6 +7,7 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 var _ = Describe("DeviceSelectors", func() {
@@ -245,6 +246,39 @@ var _ = Describe("DeviceSelectors", func() {
 				Expect(filtered).To(ContainElement(&dev8))
 				Expect(filtered).NotTo(ContainElement(&dev9))
 				Expect(filtered).To(ContainElement(&dev10))
+			})
+		})
+	})
+
+	Describe("pfDevice selector", func() {
+		Context("filtering", func() {
+			It("should return devices whose parent PF matches the device ID", func() {
+				fs := &utils.FakeFilesystem{
+					Dirs: []string{
+						"sys/bus/pci/devices/0000:3b:00.0",
+						"sys/bus/pci/devices/0000:af:00.0",
+					},
+					Files: map[string][]byte{
+						"sys/bus/pci/devices/0000:3b:00.0/device": []byte("0x101d\n"),
+						"sys/bus/pci/devices/0000:af:00.0/device": []byte("0x101f\n"),
+					},
+				}
+				defer fs.Use()()
+
+				sel := resources.NewPfDeviceSelector([]string{"101d"})
+
+				dx := mocks.PciNetDevice{}
+				dx.On("GetPfPciAddr").Return("0000:3b:00.0")
+				lx := mocks.PciNetDevice{}
+				lx.On("GetPfPciAddr").Return("0000:af:00.0")
+				noPf := mocks.PciNetDevice{}
+				noPf.On("GetPfPciAddr").Return("")
+				missingPf := mocks.PciNetDevice{}
+				missingPf.On("GetPfPciAddr").Return("0000:d8:00.0")
+
+				filtered := sel.Filter([]types.HostDevice{&dx, &lx, &noPf, &missingPf})
+
+				Expect(filtered).To(ConsistOf(&dx))
 			})
 		})
 	})
