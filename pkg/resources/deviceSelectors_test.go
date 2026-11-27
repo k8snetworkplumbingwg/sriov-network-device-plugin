@@ -7,6 +7,7 @@ import (
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/resources"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types"
 	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/types/mocks"
+	"github.com/k8snetworkplumbingwg/sriov-network-device-plugin/pkg/utils"
 )
 
 var _ = Describe("DeviceSelectors", func() {
@@ -247,6 +248,46 @@ var _ = Describe("DeviceSelectors", func() {
 				Expect(filtered).To(ContainElement(&dev10))
 			})
 		})
+	})
+
+	Describe("pfDevice selector", func() {
+		var teardown func()
+		BeforeEach(func() {
+			fs := &utils.FakeFilesystem{
+				Dirs: []string{
+					"sys/bus/pci/devices/0000:3b:00.0",
+					"sys/bus/pci/devices/0000:af:00.0",
+				},
+				Files: map[string][]byte{
+					"sys/bus/pci/devices/0000:3b:00.0/device": []byte("0x101d\n"),
+					"sys/bus/pci/devices/0000:af:00.0/device": []byte("0x101f\n"),
+				},
+			}
+			teardown = fs.Use()
+		})
+		AfterEach(func() {
+			teardown()
+		})
+
+		DescribeTable("filtering by parent PF device ID",
+			func(pfAddr string, selected bool) {
+				sel := resources.NewPfDeviceSelector([]string{"101d"})
+				dev := &mocks.PciNetDevice{}
+				dev.On("GetPfPciAddr").Return(pfAddr)
+
+				filtered := sel.Filter([]types.HostDevice{dev})
+
+				if selected {
+					Expect(filtered).To(ConsistOf(dev), "expected VF of PF %q to be selected", pfAddr)
+				} else {
+					Expect(filtered).To(BeEmpty(), "expected VF of PF %q to be filtered out", pfAddr)
+				}
+			},
+			Entry("PF device ID matches", "0000:3b:00.0", true),
+			Entry("PF device ID does not match", "0000:af:00.0", false),
+			Entry("device has no parent PF", "", false),
+			Entry("parent PF device ID is unreadable", "0000:d8:00.0", false),
+		)
 	})
 
 	Describe("linkType selector", func() {

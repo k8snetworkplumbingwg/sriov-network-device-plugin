@@ -429,6 +429,16 @@ func GetAcpiIndex(pciAddr string) (string, error) {
 	return string(bytes.TrimSpace(acpiIndex)), nil
 }
 
+// GetPciDeviceCode returns the PCI device ID (e.g. "101d") of the device with the given PCI address
+func GetPciDeviceCode(pciAddr string) (string, error) {
+	deviceFile := filepath.Join(sysBusPci, pciAddr, "device")
+	deviceCode, err := os.ReadFile(deviceFile)
+	if err != nil {
+		return "", fmt.Errorf("error getting device ID for device %s: %w", pciAddr, err)
+	}
+	return strings.TrimPrefix(strings.ToLower(string(bytes.TrimSpace(deviceCode))), "0x"), nil
+}
+
 // GetVFID returns VF ID index (within specific PF) based on PCI address
 func GetVFID(pciAddr string) (vfID int, err error) {
 	pfDir := filepath.Join(sysBusPci, pciAddr, "physfn")

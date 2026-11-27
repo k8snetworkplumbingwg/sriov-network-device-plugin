@@ -116,6 +116,9 @@ func (np *netDeviceProvider) GetFilteredDevices(devices []types.HostDevice,
 	// filter by RootDevices list
 	filteredDevice = rf.FilterBySelector("rootDevices", nf.RootDevices, filteredDevice)
 
+	// filter by PF device ID list
+	filteredDevice = rf.FilterBySelector("pfDevices", nf.PfDevices, filteredDevice)
+
 	// filter by linkTypes list
 	if len(nf.LinkTypes) > 1 {
 		glog.Warningf("Link type selector should have a single value.")
